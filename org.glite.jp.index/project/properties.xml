@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+	Copyright (c) 2004 on behalf of the EU EGEE Project: 
+	The European Organization for Nuclear Research (CERN), 
+	Istituto Nazionale di Fisica Nucleare (INFN), Italy
+	Datamat Spa, Italy
+	Centre National de la Recherche Scientifique (CNRS), France
+	CS Systeme d'Information (CSSI), France
+	Royal Institute of Technology, Center for Parallel Computers (KTH-PDC), Sweden
+	Universiteit van Amsterdam (UvA), Netherlands
+	University of Helsinki (UH.HIP), Finland
+	University of Bergen (UiB), Norway
+	Council for the Central Laboratory of the Research Councils (CCLRC), United Kingdom
+
+	Common build properties file for the Glite LB Common component
+	
+	Authors: Ales Krenek <ljocha@ics.muni.cz>
+	Version info: $Id$
+	Release: $Name$	
+	
+	Revision history:
+	$Log$
+	Revision 1.1.1.1  2004/09/20 14:59:03  ljocha
+	
+	
+	Revision 1.1  2004/09/14 12:33:31  ljocha
+	*** empty log message ***
+	
+	Revision 1.3  2004/07/16 14:56:55  flammer
+	Corrected input path of build.properties.
+	
+	Revision 1.2  2004/06/22 22:05:23  dimeglio
+	Added configuration options
+	
+-->
+
+<project name="JP Index component common properties">
+
+	<!-- Include build properties to allow overwriting 
+	     of properties for subsystem                    -->
+	<property file="project/build.properties" />	
+
+	<!-- ======================================================
+          Define corresponding subsystem properties
+		 ====================================================== -->
+
+	<!-- Subsystem name -->
+	<property name="subsystem.name" value="org.glite.jp"/>
+		
+	<!-- Subsystem prefix -->
+	<property name="subsystem.prefix" value="jp"/>
+
+	<!-- ======================================================
+          Define component properties
+		 ====================================================== -->
+		 		
+	<!-- Component name prefix -->
+	<property name="component.prefix" value="index" />
+			
+	<!-- ======================================================
+          Define general component properties
+		 ====================================================== -->
+	
+	<import file="${component.general.properties.file}" />
+						
+	<!-- ======================================================
+		 Define extra properties here ...
+		 ====================================================== -->
+		 
+		 						
+</project>

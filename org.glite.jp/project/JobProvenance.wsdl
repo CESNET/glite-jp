@@ -1,0 +1,531 @@
+<WSDL:definitions
+	xmlns:tns="http://glite.org/wsdl/services/jp"
+	xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	xmlns:jp="http://glite.org/wsdl/types/jp"
+	xmlns:SOAP="http://schemas.xmlsoap.org/wsdl/soap/"
+	xmlns:WSDL="http://schemas.xmlsoap.org/wsdl/"
+	xmlns="http://schemas.xmlsoap.org/wsdl/"
+	targetNamespace="http://glite.org/wsdl/services/jp"
+	name="JobProvenance">
+
+	<WSDL:types>
+		<schema
+			targetNamespace="http://glite.org/wsdl/types/jp"
+			xmlns="http://www.w3.org/2001/XMLSchema"
+			elementFormDefault="unqualified" attributeFormDefault="unqualified">
+			<import namespace="http://schemas.xmlsoap.org/soap/encoding/"/>
+
+			<simpleType name="Attribute">
+				<restriction base="xsd:string">
+				</restriction>
+			</simpleType>
+			<simpleType name="UploadClass">
+				<restriction base="xsd:string">
+					<enumeration value="INPUT-SANDBOX"/>
+					<enumeration value="OUTPUT-SANDBOX"/>
+					<enumeration value="JOB-LOG"/>
+				</restriction>
+			</simpleType>
+			<simpleType name="QueryOp">
+				<restriction base="xsd:string">
+					<enumeration value="EQUAL"/>
+					<enumeration value="UNEQUAL"/>
+					<enumeration value="LESS"/>
+					<enumeration value="GREATER"/>
+					<enumeration value="WITHIN"/>
+				</restriction>
+			</simpleType>
+			<complexType name="TagValue">
+				<sequence>
+					<element name="name" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="true"/>
+					<element name="sequence" type="xsd:int" minOccurs="0" maxOccurs="1"/>
+					<element name="timestamp" type="xsd:dateTime" minOccurs="0" maxOccurs="1" nillable="true"/>
+					<element name="stringValue" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="true"/>
+					<element name="blobValue" type="xsd:base64Binary" minOccurs="0" maxOccurs="1" nillable="true"/>
+				</sequence>
+			</complexType>
+			<complexType name="Attributes">
+				<sequence>
+					<element name="item" type="jp:Attribute" minOccurs="0" maxOccurs="unbounded" nillable="true"/>
+				</sequence>
+			</complexType>
+			<complexType name="GenericJPFaultType">
+				<sequence>
+					<element name="source" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+					<element name="code" type="xsd:int" minOccurs="1" maxOccurs="1"/>
+					<element name="text" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+					<element name="description" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+					<element name="reason" type="jp:GenericJPFaultType" minOccurs="0" maxOccurs="1"/>
+				</sequence>
+			</complexType>
+			<complexType name="PrimaryQueryElement">
+				<sequence>
+					<element name="attr" type="jp:Attribute" minOccurs="1" maxOccurs="1"/>
+					<element name="op" type="jp:QueryOp" minOccurs="1" maxOccurs="1"/>
+					<element name="value" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+				</sequence>
+			</complexType>
+			<complexType name="PrimaryQuery">
+				<sequence>
+					<element name="item" type="jp:PrimaryQueryElement" minOccurs="0" maxOccurs="unbounded"/>
+				</sequence>
+			</complexType>
+			<complexType name="IndexQueryRecord">
+				<sequence>
+					<element name="op" type="jp:QueryOp" minOccurs="1" maxOccurs="1"/>
+					<element name="value" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+				</sequence>
+			</complexType>
+			<complexType name="IndexQueryElement">
+				<sequence>
+					<element name="attr" type="jp:Attribute" minOccurs="1" maxOccurs="1"/>
+					<element name="record" type="jp:IndexQueryRecord" minOccurs="1"  maxOccurs="unbounded"/>
+				</sequence>
+			</complexType>
+			<complexType name="IndexQuery">
+				<sequence>
+					<element name="item" type="jp:IndexQueryElement" minOccurs="1" maxOccurs="unbounded"/>
+				</sequence>
+			</complexType>
+			<complexType name="JobRecord">
+				<sequence>
+					<element name="jobid" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+					<element name="PSContact" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+				</sequence>
+			</complexType>
+			<complexType name="JobRecords">
+				<sequence>
+					<element name="record" type="jp:JobRecord" minOccurs="0" maxOccurs="unbounded"/>
+				</sequence>
+			</complexType>
+
+			<complexType name="AttrUpdate">
+				<sequence>
+					<element name="name" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+					<element name="value" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+				</sequence>
+			</complexType>
+			<complexType name="AttrUpdates">
+				<sequence>
+					<element name="item" type="jp:AttrUpdate" minOccurs="0" maxOccurs="unbounded" nillable="true"/>
+				</sequence>
+			</complexType>
+			<complexType name="JobUpdate">
+				<sequence>
+					<element name="jobid" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+					<element name="attributes" type="jp:AttrUpdates" minOccurs="1" maxOccurs="1"/>
+					<element name="tags" type="jp:AttrUpdates" minOccurs="1" maxOccurs="1"/>
+				</sequence>
+			</complexType>
+			<complexType name="UpdateJobsData">
+				<sequence>
+					<element name="job" type="jp:JobUpdate" minOccurs="0" maxOccurs="unbounded"/>
+				</sequence>
+			</complexType>
+				
+			<complexType name="FeedIndexResponse">
+				<sequence>
+					<element name="feedId" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="true"/>
+					<element name="expires" type="xsd:dateTime" minOccurs="0" maxOccurs="1" nillable="true"/>
+				</sequence>
+			</complexType>
+			<complexType name="GetJobResponse">
+				<sequence>
+					<element name="jobLog" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="true"/>
+					<element name="inputSandbox" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="true"/>
+					<element name="outputSandbox" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="true"/>
+					<element name="tags" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="true"/>
+				</sequence>
+			</complexType>
+			<complexType name="StartUploadResponse">
+				<sequence>
+					<element name="destination" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="true"/>
+					<element name="commitBefore" type="xsd:dateTime" minOccurs="0" maxOccurs="1" nillable="true"/>
+				</sequence>
+			</complexType>
+			<element name="GenericJPFault" type="jp:GenericJPFaultType"/>
+		</schema>
+	</WSDL:types>
+	<message name="RegisterJobRequest">
+		<part name="x" type="xsd:string"/>
+	</message>
+	<message name="StartUploadRequest">
+		<part name="uclass" type="jp:UploadClass"/>
+		<part name="commitTimeout" type="xsd:duration"/>
+		<part name="contentType" type="xsd:string"/>
+	</message>
+	<message name="StartUploadResponse">
+		<part name="destination" type="xsd:string"/>
+		<part name="commitBefore" type="xsd:dateTime"/>
+	</message>
+	<message name="CommitUploadRequest">
+		<part name="destination" type="xsd:string"/>
+	</message>
+	<message name="RecordTagRequest">
+		<part name="jobid" type="xsd:string"/>
+		<part name="tag" type="jp:TagValue"/>
+	</message>
+	<message name="FeedIndexRequest">
+		<part name="destination" type="xsd:string"/>
+		<part name="attributes" type="jp:Attributes"/>
+		<part name="conditions" type="jp:PrimaryQuery"/>
+		<part name="continuous" type="xsd:boolean"/>
+	</message>
+	<message name="FeedIndexResponse">
+		<part name="feedId" type="xsd:string"/>
+		<part name="expires" type="xsd:dateTime"/>
+	</message>
+	<message name="FeedIndexRefreshRequest">
+		<part name="feedId" type="xsd:string"/>
+	</message>
+	<message name="GetJobRequest">
+		<part name="jobid" type="xsd:string"/>
+	</message>
+	<message name="GetJobResponse">
+		<part name="jobLog" type="xsd:string"/>
+		<part name="inputSandbox" type="xsd:string"/>
+		<part name="outputSandbox" type="xsd:string"/>
+		<part name="tags" type="xsd:string"/>
+	</message>
+	<message name="GenericJPFault">
+		<part name="fault" element="jp:GenericJPFault"/>
+	</message>
+	<message name="EmptyResponse"/>
+	<portType name="JobProvenancePS_PortType">
+		<operation name="RegisterJob">
+			<documentation>Register job with JP primary storage.
+Job registration in LB is propagated to JP immediately so that JP is aware of the job,
+despite no furhter information is available in it.
+
+Input: JobId
+
+Output: N/A
+
+Faults: GenericJPFault
+			</documentation>
+			<input message="tns:RegisterJobRequest"/>
+			<output message="tns:EmptyResponse"/>
+			<fault name="f" message="tns:GenericJPFault"/>
+		</operation>
+		<operation name="StartUpload">
+			<documentation>Initiate upload of of sandbox/dump of job life log from LB.
+WM component responsible for job sandbox management and LB server call JP to declare
+intention to upload intput/output sandbox and job life log.
+
+Input:
+
+uclass: type of the upload - INPUT_SANDBOX, OUTPUT_SANDBOX, JOB_LOG
+
+commitTimeout: upper limit on time for which JP waits for committing this upload transaction
+
+contentType: MIME type of the uploaded file
+
+Output:
+
+destination: URL where the client should upload the file
+
+commitBefore: acutual time when the upload transaction times out
+
+Faults: GenericJPFault
+
+
+Initiate upload of of sandbox/dump of job life log from LB.</documentation>
+			<input message="tns:StartUploadRequest"/>
+			<output message="tns:StartUploadResponse"/>
+			<fault name="f" message="tns:GenericJPFault"/>
+		</operation>
+		<operation name="CommitUpload">
+			<documentation>Confirm upload.
+Should be called after a file upload initiaded with StartUpload is finished.
+
+Input:
+
+destination: Upload destination URL (to match with the original request)
+
+Output:
+
+Faults: GenericJPFault
+			</documentation>
+			<input message="tns:CommitUploadRequest"/>
+			<output message="tns:EmptyResponse"/>
+			<fault name="f" message="tns:GenericJPFault"/>
+		</operation>
+		<operation name="RecordTag">
+			<documentation>Record a value of user tag.
+JP tags are either standalone or override values of their LB counterparts.
+However, JP tag values are still distinguishable those inherited from LB.
+JP tags may be either strings or blobs.
+
+Input:
+
+jobid:
+
+tag: structure containing name, timestamp, optional sequence number to order tag values
+without relying on timestamps, and string or blob value.
+
+Output: N/A
+
+Faults: GenericJPFault
+			</documentation>
+			<input message="tns:RecordTagRequest"/>
+			<output message="tns:EmptyResponse"/>
+			<fault name="f" message="tns:GenericJPFault"/>
+		</operation>
+		<operation name="FeedIndex">
+			<documentation>Start feeding JP index server.
+Called by the index server to start batch feed, and optionally also subscribe for incremental feed.
+
+JP index server subscribes with JP primary storage using a query
+containing conditions on primary metadata and a list of queryable attributes
+of the index server (i.e. data which should be sent to the index server).
+
+When a matching job record is created or modified within the primary storage
+the job record data are sent to the subscribed index server.
+
+The subscription is soft-state, it expires after certain time unless refreshed by the client explicitely.
+
+In the batch mode the query has the same form
+with additional flag asking for all matching records (i.e.\ not only
+arriving afterwards).
+
+Input:
+
+destination: where to send the job record data
+
+attributes: which job record attributes should be sent to the requesting index server
+
+conditions: list of query conditions. Each conditions has the form Attribute Operator Value,
+where Attribute is any of job record attributes and Operator is one of EQUAL, UNEQUAL, LESS, GREATER, WITHIN.
+
+continuous: flag determining that the query is incremental (not batch) 
+
+Output:
+
+feedId: unique Id of the feed request, to be used in refresh, cancelation etc.
+
+expires: when the feed times out. Must be refreshed before this time.
+
+Faults: GenericJPFault
+			</documentation>
+			<input message="tns:FeedIndexRequest"/>
+			<output message="tns:FeedIndexResponse"/>
+			<fault name="f" message="tns:GenericJPFault"/>
+		</operation>
+		<operation name="FeedIndexRefresh">
+			<documentation>Extend batch feed subscription (used by index server)
+
+Input: feedId returned previously by FeedIndex
+
+Output: the same as for FeedIndex
+
+Faults: GenericJPFault
+			</documentation>
+			<input message="tns:FeedIndexRefreshRequest"/>
+			<output message="tns:FeedIndexResponse"/>
+			<fault name="f" message="tns:GenericJPFault"/>
+		</operation>
+		<operation name="GetJob">
+			<documentation>Retrieve job record URL's when jobid is known
+Used either to bypass JP index server query for this specific case, or after the index server query to
+retrieve actual job record.
+
+Input: jobid
+
+Output:
+
+jobLog, inputSandbox, outputSandbox, tags: URL's to components of the job record.
+
+Faults: GenericJPFault
+			</documentation>
+			<input message="tns:GetJobRequest"/>
+			<output message="tns:GetJobResponse"/>
+			<fault name="f" message="tns:GenericJPFault"/>
+		</operation>
+	</portType>
+	<binding name="JobProvenancePS" type="tns:JobProvenancePS_PortType">
+		<SOAP:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+		<operation name="RegisterJob">
+			<SOAP:operation style="rpc"/>
+			<input>
+				<SOAP:body use="literal" namespace="http://glite.org/wsdl/services/jp"/>
+			</input>
+			<output>
+				<SOAP:body use="literal" namespace="http://glite.org/wsdl/services/jp"/>
+			</output>
+			<fault name="f">
+				<SOAP:fault name="f" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="StartUpload">
+			<SOAP:operation style="rpc"/>
+			<input>
+				<SOAP:body use="literal" namespace="http://glite.org/wsdl/services/jp"/>
+			</input>
+			<output>
+				<SOAP:body use="literal" namespace="http://glite.org/wsdl/services/jp"/>
+			</output>
+			<fault name="f">
+				<SOAP:fault name="f" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="CommitUpload">
+			<SOAP:operation style="rpc"/>
+			<input>
+				<SOAP:body use="literal" namespace="http://glite.org/wsdl/services/jp"/>
+			</input>
+			<output>
+				<SOAP:body use="literal" namespace="http://glite.org/wsdl/services/jp"/>
+			</output>
+			<fault name="f">
+				<SOAP:fault name="f" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="RecordTag">
+			<SOAP:operation style="rpc"/>
+			<input>
+				<SOAP:body use="literal" namespace="http://glite.org/wsdl/services/jp"/>
+			</input>
+			<output>
+				<SOAP:body use="literal" namespace="http://glite.org/wsdl/services/jp"/>
+			</output>
+			<fault name="f">
+				<SOAP:fault name="f" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="FeedIndex">
+			<SOAP:operation style="rpc"/>
+			<input>
+				<SOAP:body use="literal" namespace="http://glite.org/wsdl/services/jp"/>
+			</input>
+			<output>
+				<SOAP:body use="literal" namespace="http://glite.org/wsdl/services/jp"/>
+			</output>
+			<fault name="f">
+				<SOAP:fault name="f" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="FeedIndexRefresh">
+			<SOAP:operation style="rpc"/>
+			<input>
+				<SOAP:body use="literal" namespace="http://glite.org/wsdl/services/jp"/>
+			</input>
+			<output>
+				<SOAP:body use="literal" namespace="http://glite.org/wsdl/services/jp"/>
+			</output>
+			<fault name="f">
+				<SOAP:fault name="f" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="GetJob">
+			<SOAP:operation style="rpc"/>
+			<input>
+				<SOAP:body use="literal" namespace="http://glite.org/wsdl/services/jp"/>
+			</input>
+			<output>
+				<SOAP:body use="literal" namespace="http://glite.org/wsdl/services/jp"/>
+			</output>
+			<fault name="f">
+				<SOAP:fault name="f" use="literal"/>
+			</fault>
+		</operation>
+	</binding>
+	<service name="JobProvenancePS">
+		<documentation>Job Provenance Primary Storage service</documentation>
+		<port name="JobProvenancePS" binding="tns:JobProvenancePS">
+			<SOAP:address location="http://localhost:10001"/>
+		</port>
+	</service>
+
+	<message name="QueryJobsRequest">
+		<part name="conditions" type="jp:IndexQuery"/>
+	</message>
+
+	<message name="QueryJobsResponse">
+		<part name="jobs" type="jp:JobRecords"/>
+	</message>
+		
+	<message name="UpdateJobsRequest">
+		<part name="feedId" type="xsd:string"/>
+		<part name="data" type="jp:UpdateJobsData"/>
+		<part name="feedDone" type="xsd:boolean"/>
+	</message>
+	
+	<portType name="JobProvenanceIS_PortType">
+		<operation name="UpdateJobs">
+			<documentation>Store or update information on jobs within the JP index server.
+Called directly by the primary storage, used for both batch and incremental feed.
+
+Input:
+
+data: list of job record updates. Each contains jobid, list of JP attribute values and user tag values.
+
+feedDone: flag indicating end of batch feed. (In order to avoid potential problems with buffer allocation
+the huge dataset of batch feed is split into reasonable chunks and delivered with more UpdateJobs calls.)
+
+Output: N/A
+
+Faults: GenericJPFault
+
+
+			</documentation>
+			<input message="tns:UpdateJobsRequest"/>
+			<output message="tns:EmptyResponse"/>
+			<fault name="f" message="tns:GenericJPFault"/>
+		</operation>
+		<operation name="QueryJobs">
+			<documentation>Retrieve pointers to job records of jobs matching a query.
+Input: conditions - list of lists of query conditions.
+	Elements of the inner lists refer to a single job attribute, the conditions are or-ed.
+	Elements of the outer list may refer to different job attributes, they are and-ed.
+
+Output:
+
+jobs: list of JobId, PSContact (URL of the primary storage which manges this job) pairs
+
+Faults: GenericJPFault
+			</documentation>
+			<input message="tns:QueryJobsRequest"/>
+			<output message="tns:QueryJobsResponse"/>
+			<fault name="f" message="tns:GenericJPFault"/>
+		</operation>
+	</portType>
+
+	<binding name="JobProvenanceIS" type="tns:JobProvenanceIS_PortType">
+		<SOAP:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+		<operation name="UpdateJobs">
+			<SOAP:operation style="rpc"/>
+			<input>
+				<SOAP:body use="literal" namespace="http://glite.org/wsdl/services/jp"/>
+			</input>
+			<output>
+				<SOAP:body use="literal" namespace="http://glite.org/wsdl/services/jp"/>
+			</output>
+			<fault name="f">
+				<SOAP:fault name="f" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="QueryJobs">
+			<SOAP:operation style="rpc"/>
+			<input>
+				<SOAP:body use="literal" namespace="http://glite.org/wsdl/services/jp"/>
+			</input>
+			<output>
+				<SOAP:body use="literal" namespace="http://glite.org/wsdl/services/jp"/>
+			</output>
+			<fault name="f">
+				<SOAP:fault name="f" use="literal"/>
+			</fault>
+		</operation>
+	</binding>
+
+	<service name="JobProvenanceIS">
+		<documentation>Job Provenance Index service</documentation>
+		<port name="JobProvenanceIS" binding="tns:JobProvenanceIS">
+			<SOAP:address location="http://localhost:10001"/>
+		</port>
+	</service>
+		
+
+</WSDL:definitions>
