@@ -66,7 +66,8 @@ int glite_jppsbe_pread(
 	void *handle,
 	void *buf,
 	size_t nbytes,
-	off_t offset
+	off_t offset,
+	ssize_t *nbytes_ret
 );
 
 int glite_jppsbe_pwrite(
