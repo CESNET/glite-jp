@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+	Copyright (c) Members of the EGEE Collaboration. 2004 
+	See http://eu-egee.org/partners/ for details on the copyright holders
+	For license conditions see the license file or http://eu-egee.org/license.html
+
+	Build file for the GLite Middleware Job Provenance Subsystem
+	
+	Authors: Ales Krenek <ljocha@ics.muni.cz>
+	Version info: $Id$
+	Release: $Name$
+
+	Revision history:
+	$Log$
+-->
+
+<project name="jp" default="dist">
+
+	<description>
+		Ant build file to build the GLite Job Provenance Subsystem
+	</description>
+		
+	<!-- =========================================
+		 Builds the GLite JP subsystem
+	     ========================================= -->
+
+	<!-- Import baseline & user properties -->
+	<import file="../org.glite/project/baseline.properties.xml" />
+
+	<!-- Import subsystem build properties, 
+	                      subsystem properties & 
+	                      subsystem common properties -->
+	<import file="./project/properties.xml" />
+
+	<!-- Import global build properties and global properties -->
+	<import file="${global.properties.file}" />
+				
+	<!-- =========================================
+		 Load dependencies properties files (order is important) 
+	     ========================================= -->
+	<property file="${user.dependencies.file}"/>
+	<property file="${subsystem.dependencies.file}"/>
+	<property file="${global.dependencies.file}"/>	
+
+	<!-- =========================================
+                 Load configure options
+             ========================================= -->
+        <import file="${global.configure.options.file}"/>
+			
+	<!-- =========================================
+		 Import global task definitions
+	     ========================================= -->
+	<import file="${global.taskdefs.file}" />
+	
+	<!-- =========================================
+	     Import global compiler definitions
+  	     ========================================= -->
+	<import file="${global.compilerdefs.file}" />
+		
+	<!-- =========================================
+		 Import targets 
+	     ========================================= -->
+	<import file="${global.targets-common.file}"/>
+	
+	<!-- =========================================
+		 Load version file 
+	     ========================================= -->
+	<property file="${module.version.file}"/>
+			
+	<!-- ===============================================
+		  Public common targets
+	     =============================================== -->
+
+	<target name="localinit" depends="envcheck">
+
+		<echo> Preparing directories ... </echo>
+		
+		<mkdir dir="${stage.bin.dir}" />
+		<mkdir dir="${stage.lib.dir}" />
+		<mkdir dir="${stage.java.dir}" />
+		<mkdir dir="${stage.inc.dir}" />
+		<mkdir dir="${stage.int.dir}" />
+
+		<mkdir dir="${dist.dir}" />
+
+	</target>
+
+	<target name="init" depends="localinit">
+		<antcall target="buildmodules">
+			<param name="target" value="init"/>
+		</antcall>
+	</target>
+
+	<target name="checkstyle" depends="localinit">
+		<antcall target="buildmodules">
+			<param name="target" value="checkstyle"/>
+		</antcall>
+	</target>
+
+	<target name="compile" depends="localinit">
+		<antcall target="buildmodules">
+			<param name="target" value="compile"/>
+		</antcall>
+	</target>
+
+	<target name="compiletest" depends="localinit">
+		<antcall target="buildmodules">
+			<param name="target" value="compiletest"/>
+		</antcall>
+	</target>
+
+	<target name="unittest" depends="localinit">
+		<antcall target="buildmodules">
+			<param name="target" value="unittest"/>
+		</antcall>
+	</target>
+
+	<target name="unitcoverage" depends="localinit">
+		<antcall target="buildmodules">
+			<param name="target" value="unitcoverage"/>
+		</antcall>
+	</target>
+
+	<target name="stage" depends="localinit">
+		<antcall target="buildmodules">
+			<param name="target" value="stage"/>
+		</antcall>
+	</target>
+
+	<target name="dist" depends="localinit">
+		<antcall target="buildmodules">
+			<param name="target" value="dist"/>
+		</antcall>
+	</target>
+
+	<target name="install" depends="localinit">
+		<antcall target="buildmodules">
+			<param name="target" value="install"/>
+		</antcall>
+	</target>
+
+	<target name="doc" depends="localinit">
+		<antcall target="buildmodules">
+			<param name="target" value="doc"/>
+		</antcall>
+	</target>
+
+	<target name="all" depends="localinit">
+		<antcall target="buildmodules">
+			<param name="target" value="all"/>
+		</antcall>
+	</target>
+
+	<target name="clean" depends="envcheck">
+
+		<property name="offline.repository" value="true" />
+		<antcall target="buildmodules">
+			<param name="target" value="clean"/>
+		</antcall>
+
+		<delete dir="${module.bin.dir}" />
+		<delete dir="${module.lib.dir}" />
+		<delete dir="${module.autosrc.dir}" />
+		<delete dir="${module.autodoc.dir}" />
+		<delete dir="${module.test.reports.dir}" />
+
+	</target>
+
+	<target name="cleanAll" depends="clean"/>
+
+	<!-- ===============================================
+		 Private targets
+	     =============================================== -->
+
+	<!-- ===============================================
+		 Modules proxy targets
+	     =============================================== -->
+
+	<!-- component targets definitions tag = do not remove = -->
+
+	<!-- Main proxy -->
+	<target name="buildmodules" depends="envset">
+		<echo append="true" file="${global.project.dir}/cruisecontrol-stub.xml">
+	&lt;project name="${subsystem.name}" type="post-subsystem" packageName="${global.prefix}-${subsystem.prefix}"/&gt;
+		</echo>
+	</target>
+
+</project>

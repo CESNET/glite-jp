@@ -1,18 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-	Copyright (c) 2004 on behalf of the EU EGEE Project: 
-	The European Organization for Nuclear Research (CERN), 
-	Istituto Nazionale di Fisica Nucleare (INFN), Italy
-	Datamat Spa, Italy
-	Centre National de la Recherche Scientifique (CNRS), France
-	CS Systeme d'Information (CSSI), France
-	Royal Institute of Technology, Center for Parallel Computers (KTH-PDC), Sweden
-	Universiteit van Amsterdam (UvA), Netherlands
-	University of Helsinki (UH.HIP), Finland
-	University of Bergen (UiB), Norway
-	Council for the Central Laboratory of the Research Councils (CCLRC), United Kingdom
+	Copyright (c) Members of the EGEE Collaboration. 2004 
+	See http://eu-egee.org/partners/ for details on the copyright holders
+	For license conditions see the license file or http://eu-egee.org/license.html
 
-	Common Ant task definition file for the gLite Logging and Bookeeping modules
+	Common Ant task definition file for the gLite Job Provenance modules
 	
 	Authors: Ales Krenek <ljocha@ics.muni.cz>
 			 Alberto Di Meglio <alberto.di.meglio@cern.ch>		
@@ -21,10 +13,9 @@
 
 	Revision history:
 	$Log$
-	Revision 1.1.1.1  2004/10/15 09:48:07  akrenek
 -->
 
-<project name="Logging and Bookeeping subsystem common tasks and types definitions">
+<project name="Job Provenance subsystem common tasks and types definitions">
 	
 	<!-- ======================================================
 		 Subsystem task definitions

@@ -1,18 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-	Copyright (c) 2004 on behalf of the EU EGEE Project: 
-	The European Organization for Nuclear Research (CERN), 
-	Istituto Nazionale di Fisica Nucleare (INFN), Italy
-	Datamat Spa, Italy
-	Centre National de la Recherche Scientifique (CNRS), France
-	CS Systeme d'Information (CSSI), France
-	Royal Institute of Technology, Center for Parallel Computers (KTH-PDC), Sweden
-	Universiteit van Amsterdam (UvA), Netherlands
-	University of Helsinki (UH.HIP), Finland
-	University of Bergen (UiB), Norway
-	Council for the Central Laboratory of the Research Councils (CCLRC), United Kingdom
+	Copyright (c) Members of the EGEE Collaboration. 2004 
+	See http://eu-egee.org/partners/ for details on the copyright holders
+	For license conditions see the license file or http://eu-egee.org/license.html
 
-	Common build properties file for the gLite LB modules
+	Common build properties file for the gLite JP modules
 	
 	Authors: Ales Krenek <ljocha@ics.muni.cz>
 			 Alberto Di Meglio <alberto.di.meglio@cern.ch>		
@@ -21,12 +13,6 @@
 
 	Revision history:
 	$Log$
-	Revision 1.1  2004/09/14 12:32:26  ljocha
-	*** empty log message ***
-	
-	Revision 1.2  2004/06/18 23:05:53  dimeglio
-	Added/upgraded default build scripts
-	
 -->
 
 <project name="Job Provenance subsystem common properties">
@@ -41,10 +27,10 @@
 		 ====================================================== -->
 	
 	<!-- Subsystem name -->
-	<property name="subsystem.name" value="org.glite.jp"/>
+	<property name="subsystem.name" value="${jp.subsystem.name}"/>
 	
 	<!-- Subsystem prefix -->
-	<property name="subsystem.prefix" value="jp"/>
+	<property name="subsystem.prefix" value="${jp.subsystem.prefix}"/>
 	
 	<!-- ======================================================
           Define general subsystem properties

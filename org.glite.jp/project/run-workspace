@@ -1,0 +1,10 @@
+#!/bin/sh
+
+cd ../..
+
+cvs co org.glite
+cvs co org.glite.jp
+                                                                                                                                                             
+cd org.glite.jp/project
+ant -f glite.jp.csf.xml
+
