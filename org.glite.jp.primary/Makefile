@@ -5,8 +5,8 @@ top_builddir=${top_srcdir}/${builddir}
 stagedir=.
 distdir=.
 globalprefix=glite
-lbprefix=lb
-package=glite-lb-server
+jpprefix=jp
+package=glite-jp-primary
 version=0.0.0
 PREFIX=/opt/glite
 
@@ -23,7 +23,7 @@ CC=gcc
 -include Makefile.inc
 
 
-VPATH=${top_srcdir}/src:${top_srcdir}/examples:${top_srcdir}/test:${top_srcdir}/project:${jpproject}
+VPATH=${top_srcdir}/src:${top_srcdir}/examples:${top_srcdir}/test:${top_srcdir}/project:${stagedir}/interface
 
 GLOBUS_LIBS:=-L${globus_prefix}/lib \
 	-lglobus_common_${nothrflavour} \
@@ -77,7 +77,7 @@ ${example}: ${EXA_OBJS}
 	${LINK} -o $@ ${EXA_OBJS} ${GSOAPLIB}  
 
 JobProvenanceIS.xh JobProvenancePS.xh: %.xh: %.wsdl JobProvenanceTypes.wsdl typemap.dat
-	cp  ${jpproject}/JobProvenanceTypes.wsdl .
+	cp  ${stagedir}/interface/JobProvenanceTypes.wsdl .
 	${gsoap_prefix}/bin/wsdl2h  -t ${top_srcdir}/src/typemap.dat -c -o $@ $<
 	rm -f JobProvenanceTypes.wsdl
 
@@ -113,11 +113,10 @@ check:
 doc:
 
 stage: compile
-	${INSTALL} -m 755 ${daemon} ${stagedir}/bin
+	${MAKE} PREFIX=${stagedir} DOSTAGE=yes install
 
 dist: distsrc distbin
 
-# FIXME: just copied from LB
 distsrc:
 	mkdir -p ${top_srcdir}/${package}-${version}
 	cd ${top_srcdir} && GLOBIGNORE="${package}-${version}" && cp -Rf * ${package}-${version}
@@ -130,16 +129,10 @@ distbin:
 	rm -rf tmpbuilddir
         
 install:
-	-mkdir -p ${PREFIX}/bin ${PREFIX}/etc ${PREFIX}/etc/init.d
-	for p in bkserverd bkindex; do \
-		${INSTALL} -m 755 "glite_lb_$$p" "${PREFIX}/bin/glite-lb-$$p"; \
-	done
+	-mkdir -p ${PREFIX}/bin ${PREFIX}/etc ${PREFIX}/examples ${PREFIX}/etc/init.d
+	${INSTALL} -m 755 ${daemon} ${PREFIX}/bin
+	${INSTALL} -m 755 jpps-test ${PREFIX}/examples/glite-jp-primary-test
 
-	for f in dbsetup.sql index.conf.template; do \
-		${INSTALL} -m 644 ${top_srcdir}/config/"glite-lb-$$f" ${PREFIX}/etc; \
-	done
-
-	${INSTALL} -m 755 ${top_srcdir}/config/startup ${PREFIX}/etc/init.d/glite-lb-bkserverd
 
 clean:
 
