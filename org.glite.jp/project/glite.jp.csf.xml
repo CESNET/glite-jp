@@ -12,6 +12,9 @@
 
 	Revision history:
 	$Log$
+	Revision 1.2  2004/12/01 18:24:25  zsalvet
+	common, index, and primary components defined
+	
 	Revision 1.1  2004/11/22 13:21:49  dimeglio
 	First version of this file
 	
@@ -116,6 +119,10 @@
 			<equals arg1="${org.glite.jp.common.version}" arg2="HEAD" />
 		</condition>
 
+		<condition property="ws-interface.head">
+			<equals arg1="${org.glite.jp.ws-interface.version}" arg2="HEAD" />
+		</condition>
+
 		<condition property="index.head">
 			<equals arg1="${org.glite.jp.index.version}" arg2="HEAD" />
 		</condition>
@@ -191,6 +198,16 @@
 	
 	<!-- component targets tag = do not remove = -->
 
+	<!-- ws-interface -->
+	<target name="ws-interface" depends="evaluate.cvs.tags, get.ws-interface.head, get.ws-interface.tag"/>
+	<target name="get.ws-interface.head" if="ws-interface.head">
+		<cvs-co package="org.glite.jp.ws-interface" />
+	</target>
+	<target name="get.ws-interface.tag" unless="ws-interface.head">
+		<cvs-co package="org.glite.jp.ws-interface"
+			tag="${org.glite.jp.ws-interface.version}" />
+	</target>
+
 	<!-- common -->
 	<target name="common" depends="evaluate.cvs.tags, get.common.head, get.common.tag"/>
 	<target name="get.common.head" if="common.head">
@@ -222,7 +239,8 @@
 	</target>
 
 	<!-- All project modules -->
- 	<target name="project" depends="common,
+ 	<target name="project" depends="ws-interface,
+					common,
 					index,
 					primary" />
     

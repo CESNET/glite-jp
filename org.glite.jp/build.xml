@@ -12,6 +12,9 @@
 
 	Revision history:
 	$Log$
+	Revision 1.2  2004/12/01 18:36:00  zsalvet
+	Add component targets.
+	
 	Revision 1.1  2004/11/22 13:21:49  dimeglio
 	First version of this file
 	
@@ -181,6 +184,22 @@
 
 	<!-- component targets definitions tag = do not remove = -->
 
+	<target name="ws-interface" unless="setenvonly" depends="envset" >
+		<if>
+			<isset property="small.memory" />
+			<then>
+				<exec dir="${jp.subsystem.dir}.ws-interface" executable="${antExec}" failonerror="${failonerror}">
+					<arg line="${target} &quot;-Dsmall.memory=true&quot; &quot;-Dbootstrap=${bootstrap}&quot; &quot;-Dfailonerror=${failonerror}&quot; &quot;-Ddo.cvs.tag=${do.cvs.tag}&quot;"/>
+				</exec>
+			</then>
+			<else>
+				<ant dir="${jp.subsystem.dir}.ws-interface"
+					target="${target}"
+					inheritall="false" />
+			</else>
+		</if>
+	</target>
+
 	<target name="common" unless="setenvonly" depends="envset" >
 		<if>
 			<isset property="small.memory" />
@@ -213,7 +232,7 @@
 		</if>
 	</target>
 
-	<target name="primary" unless="setenvonly" depends="envset, common" >
+	<target name="primary" unless="setenvonly" depends="envset, ws-interface, common" >
 		<if>
 			<isset property="small.memory" />
 			<then>
@@ -231,6 +250,7 @@
 
 	<!-- Main proxy -->
 	<target name="buildmodules" depends="envset,
+						ws-interface,
 						common,
 						index,
 						primary">
