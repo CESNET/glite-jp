@@ -29,6 +29,7 @@
 		<part name="data" type="jp:UpdateJobsData"/>
 		<part name="feedDone" type="xsd:boolean"/>
 	</message>
+	<message name="EmptyResponse"/>
 	
 	<portType name="JobProvenanceIS_PortType">
 		<operation name="UpdateJobs">
@@ -49,6 +50,7 @@ Faults: GenericJPFault
 
 			</documentation>
 			<input message="tns:UpdateJobsRequest"/>
+			<output message="tns:EmptyResponse"/>
 			<fault name="f" message="tns:GenericJPFault"/>
 		</operation>
 		<operation name="QueryJobs">
