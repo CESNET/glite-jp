@@ -14,10 +14,11 @@ static void usage(const char *me)
 			"	operations are:\n"
 			"		RegisterJob jobid\n"
 			"		StartUpload jobid class(0,1,2) commit_before mimetype\n"
-			"		CommitUpload\n"
-			"		RecordTag\n"
+			"		CommitUpload destination\n"
+			"		RecordTag jobid tagname sequence stringvalue\n"
 			"		GetJob jobid\n"
 			"		FeedIndex destination query_number history continuous\n"
+			"		FeedIndexRefresh feedid\n"
 		,me);
 
 	exit (EX_USAGE);
@@ -109,7 +110,33 @@ int main(int argc,char *argv[])
 		if (!check_fault(soap,
 				soap_call_jpsrv__StartUpload(soap, server, "",
 					argv[2], atoi(argv[3]), atoi(argv[4]), argv[5], &r))) {
-			printf("Destination: %s\nCommit before: %ld\n", r.destination, (long)r.commitBefore);
+			printf("Destination: %s\nCommit before: %s\n", r.destination, ctime(&r.commitBefore));
+		}
+	} else if (!strcasecmp(argv[1], "CommitUpload")) {
+		struct jpsrv__CommitUploadResponse r;
+
+		if (argc != 3) usage(argv[0]);
+		if (!check_fault(soap,
+				soap_call_jpsrv__CommitUpload(soap, server, "",
+					argv[2], &r))) {
+			/* OK */
+		}
+	} else if (!strcasecmp(argv[1], "RecordTag")) {
+		struct jpsrv__RecordTagResponse r;
+		struct jptype__TagValue tagval;
+		
+		if (argc != 6) usage(argv[0]);
+		
+		tagval.name = argv[3];
+		tagval.sequence = NULL;
+		tagval.timestamp = NULL;
+		tagval.stringValue = argv[5];
+		tagval.blobValue = NULL;
+		
+		if (!check_fault(soap,
+				soap_call_jpsrv__RecordTag(soap, server, "",
+					argv[2], &tagval, &r))) {
+			/* OK */
 		}
 	} else if (!strcasecmp(argv[1],"FeedIndex")) {
 		struct jpsrv__FeedIndexResponse	r;
@@ -133,6 +160,15 @@ int main(int argc,char *argv[])
 					!strcasecmp(argv[5],"true"),
 					&r)))
 		{
+			printf("FeedId: %s\nExpires: %s\n",r.feedId,ctime(&r.expires));
+		}
+	} else if (!strcasecmp(argv[1], "FeedIndexRefresh")) {
+		struct jpsrv__FeedIndexRefreshResponse r;
+
+		if (argc != 3) usage(argv[0]);
+		if (!check_fault(soap,
+				soap_call_jpsrv__FeedIndexRefresh(soap, server, "",
+					argv[2], &r))) {
 			printf("FeedId: %s\nExpires: %s\n",r.feedId,ctime(&r.expires));
 		}
 	} else if (!strcasecmp(argv[1],"GetJob")) {
