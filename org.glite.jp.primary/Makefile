@@ -38,7 +38,6 @@ LINK:=libtool --mode=link ${CC} ${LDFLAGS}
 LINKXX:=libtool --mode=link ${CXX} ${LDFLAGS} 
 INSTALL:=libtool --mode=install install
 
-GSOAP_LIB:=-L${gsoap_prefix}/lib -lgsoap${GSOAP_DEBUG}
 
 daemon:=glite-jp-primarystoraged
 example:=jpps-test
@@ -53,20 +52,16 @@ CFLAGS+=-DGSOAP_VERSION=${gsoap_version}
 SRCS:= simple_server.c soap_ops.c \
 	ftp_backend.c \
 	feed.c tags.c\
-	${ps_prefix}Server.c ${ps_prefix}C.c
-
-
-# not yet
-#	${ps_prefix}ServerLib.c \
-#	${is_prefix}ClientLib.c \
-#	is_client.c \
-#	env_C.c
+	is_client.c \
+	${ps_prefix}ServerLib.c \
+	${is_prefix}ClientLib.c \
+	env_C.c
 
 EXA_SRCS:=jpps-test.c ${ps_prefix}C.c ${ps_prefix}Client.c
 
 
-OBJS:=${SRCS:.c=.o}
-EXA_OBJS:=${EXA_SRCS:.c=.o}
+OBJS:=${SRCS:.c=.o} stdsoap2.o
+EXA_OBJS:=${EXA_SRCS:.c=.o} stdsoap2.o
 
 COMMONLIB:=-lglite_jp_common
 
@@ -75,10 +70,10 @@ default all: compile
 compile: ${daemon} ${example}
 
 ${daemon}: ${OBJS}
-	${LINK} -o $@ ${OBJS} ${COMMONLIB} ${GSOAP_LIB} ${GLOBUS_LIBS} 
+	${LINK} -o $@ ${OBJS} ${COMMONLIB} ${GLOBUS_LIBS} 
 
 ${example}: ${EXA_OBJS}
-	${LINK} -o $@ ${EXA_OBJS} ${GSOAP_LIB}
+	${LINK} -o $@ ${EXA_OBJS} 
 
 JobProvenanceIS.xh JobProvenancePS.xh: %.xh: %.wsdl JobProvenanceTypes.wsdl typemap.dat
 	cp  ${jpproject}/JobProvenanceTypes.wsdl .
@@ -88,8 +83,8 @@ JobProvenanceIS.xh JobProvenancePS.xh: %.xh: %.wsdl JobProvenanceTypes.wsdl type
 ${ps_prefix}ServerLib.c ${ps_prefix}H.h: JobProvenancePS.xh
 	${gsoap_prefix}/bin/soapcpp2 -n -w -c -p ${ps_prefix} JobProvenancePS.xh
 
-# ${is_prefix}ClientLib.c ${is_prefix}H.h: JobProvenanceIS.xh
-# 	${gsoap_prefix}/bin/soapcpp2 -n -w -c -p ${is_prefix} JobProvenanceIS.xh
+${is_prefix}ClientLib.c ${is_prefix}H.h: JobProvenanceIS.xh
+	${gsoap_prefix}/bin/soapcpp2 -n -w -c -p ${is_prefix} JobProvenanceIS.xh
 
 env_C.c env_Server.c:
 	touch env.xh
@@ -103,8 +98,7 @@ env_C.c env_Server.c:
 #
 
 
-# simple_server.o: ${is_prefix}H.h ${ps_prefix}H.h
-simple_server.o: ${ps_prefix}H.h
+simple_server.o: ${is_prefix}H.h ${ps_prefix}H.h
 
 check: 
 	-echo nothing yet
