@@ -223,6 +223,7 @@ int glite_jppsbe_register_job(
 	FILE *regfile = NULL;
 	struct timeval reg_tv;
 	long reg_tv_trunc;
+	struct stat statbuf;
 
 	glite_jp_clear_error(ctx);
 	memset(&err,0,sizeof err);
@@ -246,7 +247,8 @@ int glite_jppsbe_register_job(
 		return glite_jp_stack_error(ctx,&err);
 	}
 
-	if (mkdirpath(int_dir, strlen(config->internal_path)) < 0) {
+	if (mkdirpath(int_dir, strlen(config->internal_path)) < 0 &&
+			errno != EEXIST) {
 		free(int_dir);
 		err.code = errno;
 		err.desc = "Cannot mkdir jobs's reg directory";
@@ -256,9 +258,20 @@ int glite_jppsbe_register_job(
 
 	if (asprintf(&int_fname, "%s/regs/%s/%s.info",
 			config->internal_path, ju_path, ju) == -1) {
-		free(int_dir);
 		err.code = ENOMEM;
 		return glite_jp_stack_error(ctx,&err);
+	}
+
+	if (stat(int_fname, &statbuf) < 0) {
+		if (errno != ENOENT) {
+			err.code = errno;
+			err.desc = "Cannot stat jobs's reg info file";
+			goto error_out;
+		}
+	} else {
+		err.code = EEXIST;
+		err.desc = "Job already registered";
+		goto error_out;
 	}
 
 	regfile = fopen(int_fname, "w");
@@ -293,7 +306,8 @@ int glite_jppsbe_register_job(
 		err.code = ENOMEM;
 		goto error_out;
 	}
-	if (mkdirpath(data_dir, strlen(config->internal_path)) < 0) {
+	if (mkdirpath(data_dir, strlen(config->internal_path)) < 0 &&
+			errno != EEXIST) {
 		err.code = errno;
 		err.desc = "Cannot mkdir jobs's data directory";
 		goto error_out;
@@ -306,10 +320,7 @@ int glite_jppsbe_register_job(
 	}
 
 error_out:
-	free(int_dir);
-	if (err.code && int_fname) unlink(int_fname);
 	free(int_fname);
-	if (err.code && data_fname) unlink(data_fname);
 	free(data_fname);
 	if (err.code && data_dir) rmdir(data_dir);
 	free(data_dir);
