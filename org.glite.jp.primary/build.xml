@@ -1,16 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!--
-	Copyright (c) 2004 on behalf of the EU EGEE Project: 
-	The European Organization for Nuclear Research (CERN), 
-	Istituto Nazionale di Fisica Nucleare (INFN), Italy
-	Datamat Spa, Italy
-	Centre National de la Recherche Scientifique (CNRS), France
-	CS Systeme d'Information (CSSI), France
-	Royal Institute of Technology, Center for Parallel Computers (KTH-PDC), Sweden
-	Universiteit van Amsterdam (UvA), Netherlands
-	University of Helsinki (UH.HIP), Finland
-	University of Bergen (UiB), Norway
-	Council for the Central Laboratory of the Research Councils (CCLRC), United Kingdom
+	Copyright (c) Members of the EGEE Collaboration. 2004 
+	See http://eu-egee.org/partners/ for details on the copyright holders
+	For license conditions see the license file or http://eu-egee.org/license.html
 
 	Build file for the GLite JP Primary module
 	
@@ -20,21 +12,7 @@
 
 	Revision history:
 	$Log$
-	Revision 1.1  2004/09/14 12:33:31  ljocha
-	*** empty log message ***
-	
-	Revision 1.5  2004/07/28 12:27:00  dimeglio
-	Changed default target from compile to dist
-	
-	Revision 1.4  2004/07/06 17:51:37  flammer
-	Update of classpath definitions, targets & configure file.
-	
-	Revision 1.3  2004/06/22 22:49:46  dimeglio
-	Removed debug comments
-	
-	Revision 1.2  2004/06/22 22:06:52  dimeglio
-	Added standard comments
-	
+	Revision 1.1.1.1  2004/10/15 09:49:24  akrenek
 -->
 
 <project name="common" default="dist">
