@@ -12,6 +12,9 @@
 
 	Revision history:
 	$Log$
+	Revision 1.3.2.1  2004/12/14 17:07:32  zurek
+	index component desactivated
+	
 	Revision 1.3  2004/12/10 09:46:41  akrenek
 	included ws-interface
 	
@@ -75,6 +78,8 @@
 		 Load version file 
 	     ========================================= -->
 	<property file="${module.version.file}"/>
+		<property file="${module.build.file}"/>
+	<property file="${module.build.file}" />
 			
 	<!-- ===============================================
 		  Public common targets
