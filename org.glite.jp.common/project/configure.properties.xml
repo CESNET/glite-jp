@@ -12,6 +12,9 @@
 
 	Revision history:
 	$Log$
+	Revision 1.2  2004/11/22 13:36:42  dimeglio
+	First version of this file
+	
 	Revision 1.1.1.1  2004/10/15 09:49:02  akrenek
 -->
 
@@ -37,6 +40,7 @@ version=${module.version}
 glite_location=${with.glite.location}
 globus_prefix=${with.globus.prefix}
 expat_prefix=${with.expat.prefix}
+gsoap_prefix=${with.gsoap.prefix}
 ares_prefix=${with.ares.prefix}
 thrflavour=${with.globus.thr.flavor}
 nothrflavour=${with.globus.nothr.flavor}
