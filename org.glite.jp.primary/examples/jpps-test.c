@@ -3,6 +3,8 @@
 #include <string.h>
 #include <assert.h>
 
+#include "glite/security/glite_gsplugin.h"
+
 #include "jpps_H.h"
 #include "jpps_.nsmap"
 
@@ -13,7 +15,7 @@ static void usage(const char *me)
 	fprintf(stderr,"%s: [-s server-url] operation args \n\n"
 			"	operations are:\n"
 			"		RegisterJob jobid\n"
-			"		StartUpload jobid class(0,1,2) commit_before mimetype\n"
+			"		StartUpload jobid class commit_before mimetype\n"
 			"		CommitUpload destination\n"
 			"		RecordTag jobid tagname sequence stringvalue\n"
 			"		GetJob jobid\n"
@@ -90,6 +92,8 @@ int main(int argc,char *argv[])
 	soap_init(soap);
 	soap_set_namespaces(soap, jpps__namespaces);
 
+	soap_register_plugin(soap,glite_gsplugin);
+
 	while ((opt = getopt(argc,argv,"s:")) >= 0) switch (opt) {
 		case 's': server = optarg;
 			  argv += 2;
@@ -109,7 +113,7 @@ int main(int argc,char *argv[])
 		if (argc != 6) usage(argv[0]);
 		if (!check_fault(soap,
 				soap_call_jpsrv__StartUpload(soap, server, "",
-					argv[2], atoi(argv[3]), atoi(argv[4]), argv[5], &r))) {
+					argv[2], argv[3], "", atoi(argv[4]), argv[5], &r))) {
 			printf("Destination: %s\nCommit before: %s\n", r.destination, ctime(&r.commitBefore));
 		}
 	} else if (!strcasecmp(argv[1], "CommitUpload")) {

@@ -23,7 +23,8 @@ int glite_jppsbe_register_job(
 int glite_jppsbe_start_upload(
 	glite_jp_context_t ctx,
 	const char *job,
-	glite_jp_fileclass_t class,
+	const char *class,	/* must be filesystem-friendly */
+	const char *name,	/* optional name within the class */
 	const char *content_type,
 	char **destination_out,
 	time_t *commit_before_inout
@@ -38,20 +39,22 @@ int glite_jppsbe_destination_info(
 	glite_jp_context_t ctx,
 	const char *destination,
 	char **job_out,
-	glite_jp_fileclass_t *class_out
+	char **class_out
 );
 
 int glite_jppsbe_get_job_url(
 	glite_jp_context_t ctx,
 	const char *job,
-	glite_jp_fileclass_t class,
+	const char *class,
+	const char *name,	/* optional within class */
 	char **url_out
 );
 
 int glite_jppsbe_open_file(
 	glite_jp_context_t ctx,
 	const char *job,
-	glite_jp_fileclass_t class,
+	const char *class,
+	const char *name,	/* optional within class */
 	int mode,
 	void **handle_out
 );

@@ -50,6 +50,7 @@ static void err2fault(const glite_jp_context_t ctx,struct soap *soap)
 	else soap->fault->detail = detail;
 }
 
+/* deprecated 
 static glite_jp_fileclass_t s2jp_fileclass(enum jptype__UploadClass class)
 {
 	switch (class) {
@@ -59,6 +60,7 @@ static glite_jp_fileclass_t s2jp_fileclass(enum jptype__UploadClass class)
 		default: return GLITE_JP_FILECLASS_UNDEF;
 	}
 }
+*/
 
 static void s2jp_tag(const struct jptype__TagValue *stag,glite_jp_tagval_t *jptag)
 {
@@ -106,16 +108,16 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__RegisterJob(
 SOAP_FMAC5 int SOAP_FMAC6 jpsrv__StartUpload(
 		struct soap *soap,
 		char *job,
-		enum jptype__UploadClass class,
+		char *class,
+		char *name,
 		time_t commit_before,
 		char *content_type,
 		struct jpsrv__StartUploadResponse *response)
 {
 	CONTEXT_FROM_SOAP(soap,ctx);
-	glite_jp_fileclass_t	jclass = s2jp_fileclass(class);
 	char	*destination;
 
-	if (glite_jppsbe_start_upload(ctx,job,jclass,content_type,&destination,&commit_before)) {
+	if (glite_jppsbe_start_upload(ctx,job,class,name,content_type,&destination,&commit_before)) {
 		err2fault(ctx,soap);
 		return SOAP_FAULT;
 	}

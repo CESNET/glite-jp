@@ -29,9 +29,11 @@ GLOBUS_LIBS:=-L${globus_prefix}/lib \
 	-lglobus_common_${nothrflavour} \
 	-lglobus_gssapi_gsi_${nothrflavour}
 
+GLOBUS_CFLAGS:=-I${globus_prefix}/include/${nothrflavour}
+
 DEBUG:=-g -O0  -DDEBUG
 
-CFLAGS:=${DEBUG} -I. -I${top_srcdir}/src -I${gsoap_prefix}/include -I${stagedir}/include
+CFLAGS:=${DEBUG} -I. -I${top_srcdir}/src -I${gsoap_prefix}/include -I${stagedir}/include ${GLOBUS_CFLAGS}
 LDFLAGS:=-L${stagedir}/lib
 
 LINK:=libtool --mode=link ${CC} ${LDFLAGS} 
@@ -49,7 +51,7 @@ gsoap_version=`${gsoap_prefix}/bin/soapcpp2 -version 2>&1 | cut -d' ' -f4 | perl
 CFLAGS+=-DGSOAP_VERSION=${gsoap_version}
 
 
-SRCS:= simple_server.c soap_ops.c \
+SRCS:= bones_server.c soap_ops.c \
 	ftp_backend.c \
 	feed.c tags.c\
 	is_client.c \
@@ -64,17 +66,19 @@ OBJS:=${SRCS:.c=.o}
 EXA_OBJS:=${EXA_SRCS:.c=.o}
 
 COMMONLIB:=-lglite_jp_common
-GSOAPLIB:=-L${gsoap_prefix}/lib -lgsoap${GSOAP_DEBUG}
+BONESLIB:=-lglite_lb_server_bones
+GSOAPLIB:=-lglite_security_gsoap_plugin_${nothrflavour} -lglite_security_gss_${nothrflavour} \
+	-L${gsoap_prefix}/lib -lgsoap${GSOAP_DEBUG} -L${ares_prefix}/lib -lares
 
 default all: compile
 
 compile: ${daemon} ${example}
 
 ${daemon}: ${OBJS}
-	${LINK} -o $@ ${OBJS} ${COMMONLIB} ${GSOAPLIB} ${GLOBUS_LIBS} 
+	${LINK} -o $@ ${OBJS} ${BONESLIB} ${COMMONLIB} ${GSOAPLIB} ${GLOBUS_LIBS} 
 
 ${example}: ${EXA_OBJS}
-	${LINK} -o $@ ${EXA_OBJS} ${GSOAPLIB}  
+	${LINK} -o $@ ${EXA_OBJS} ${GSOAPLIB} ${GLOBUS_LIBS}
 
 JobProvenanceIS.xh JobProvenancePS.xh: %.xh: %.wsdl JobProvenanceTypes.wsdl typemap.dat
 	cp  ${stagedir}/interface/JobProvenanceTypes.wsdl .
@@ -105,7 +109,7 @@ env_C.c env_Server.c:
 #
 
 
-simple_server.o: ${is_prefix}H.h ${ps_prefix}H.h
+bones_server.o simple_server.o: ${is_prefix}H.h ${ps_prefix}H.h
 
 check: 
 	-echo nothing yet

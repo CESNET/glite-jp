@@ -45,6 +45,8 @@ static struct option ftpbe_opts[] = {
 	{ NULL,                0, NULL,  0  }
 };
 
+/* obsolete */
+#if 0
 static struct {
 	glite_jp_fileclass_t	type;
 	char *			fname;
@@ -77,6 +79,7 @@ static glite_jp_fileclass_t fname_to_class(char* fname)
 
 	return GLITE_JP_FILECLASS_UNDEF;
 }
+#endif
 
 static int config_check(
 	glite_jp_context_t ctx,
@@ -375,7 +378,8 @@ static int remove_from_gridmap(glite_jp_context_t ctx, const char *dn)
 int glite_jppsbe_start_upload(
 	glite_jp_context_t ctx,
 	const char *job,
-	glite_jp_fileclass_t class,
+	const char *class,
+	const char *name, 	/* TODO */
 	const char *content_type,
 	char **destination_out,
 	time_t *commit_before_inout
@@ -385,7 +389,6 @@ int glite_jppsbe_start_upload(
 	char *lock_fname = NULL;
 	FILE *lockfile = NULL;
 	FILE *regfile = NULL;
-	char *fname = NULL;
 	char *data_dir = NULL;
 	char *data_lock = NULL;
 	char *ju = NULL;
@@ -403,8 +406,7 @@ int glite_jppsbe_start_upload(
 	assert(job!=NULL);
 	assert(destination_out!=NULL);
 
-	fname = class_to_fname(class);
-	assert(fname!=NULL);
+	assert(class!=NULL);
 
 	if (jobid_unique_pathname(ctx, job, &ju, &ju_path, 1) != 0) {
 		err.code = ctx->error->code;
@@ -446,7 +448,7 @@ int glite_jppsbe_start_upload(
 	}
 
 	if (asprintf(&lock_fname, "%s/%s" LOCK_SUFFIX,
-			data_dir, fname) == -1) {
+			data_dir, class) == -1) {
 		err.code = ENOMEM;
 		goto error_out;
 	}
@@ -476,7 +478,7 @@ int glite_jppsbe_start_upload(
 	}
 
 	if (asprintf(destination_out, "%s/data/%s/%d/%s/%s" UPLOAD_SUFFIX,
-			config->external_path, ownerhash, regtime_trunc(reg_time), ju, fname) == -1) {
+			config->external_path, ownerhash, regtime_trunc(reg_time), ju, class) == -1) {
 		err.code = ENOMEM;
 		goto error_out;
 	}
@@ -616,7 +618,7 @@ int glite_jppsbe_destination_info(
 	glite_jp_context_t ctx,
 	const char *destination,
 	char **job,
-	glite_jp_fileclass_t *class
+	char **class
 )
 {
 	size_t dest_len;
@@ -669,12 +671,15 @@ int glite_jppsbe_destination_info(
 		goto error_out;
 	}
 	*classname++ ='\0';
-	*class = fname_to_class(classname);
+	*class = strdup(classname);
+
+/* XXX: do we need similar check? 
 	if (!class == GLITE_JP_FILECLASS_UNDEF) {
 		err.code = EINVAL;
 		err.desc = "Forged destination path";
 		goto error_out;
 	}
+*/
 
 	if (asprintf(&dest_rw_info, "%s/_info", dest_rw) == -1) {
 		err.code = ENOMEM;
@@ -711,13 +716,13 @@ error_out:
 int glite_jppsbe_get_job_url(
 	glite_jp_context_t ctx,
 	const char *job,
-	glite_jp_fileclass_t class,
+	const char *class,
+	const char *name, 	/* TODO */
 	char **url_out
 )
 {
 	FILE *regfile = NULL;
 	char *int_fname = NULL;
-	char *fname = NULL;
 	char *ju = NULL;
 	char *ju_path = NULL;
 	int info_version;
@@ -730,11 +735,9 @@ int glite_jppsbe_get_job_url(
 	err.source = __FUNCTION__;
 
 	assert(job!=NULL);
-	assert(class != GLITE_JP_FILECLASS_UNDEF);
 	assert(url_out != NULL);
 
-	fname = class_to_fname(class);
-	assert(fname!=NULL);
+	assert(class!=NULL);
 
 	if (jobid_unique_pathname(ctx, job, &ju, &ju_path, 1) != 0) {
 		err.code = ctx->error->code;
@@ -766,7 +769,7 @@ int glite_jppsbe_get_job_url(
 	fclose(regfile);
 
 	if (asprintf(url_out, "%s/data/%s/%d/%s/%s",
-			config->external_path, ownerhash, regtime_trunc(reg_time), ju, fname) == -1) {
+			config->external_path, ownerhash, regtime_trunc(reg_time), ju, class) == -1) {
 		err.code = ENOMEM;
 		goto error_out;
 	}
@@ -784,12 +787,12 @@ error_out:
 static int get_job_fname(
 	glite_jp_context_t ctx,
 	const char *job,
-	glite_jp_fileclass_t class,
+	const char *class,
+	const char *name,	/* TODO */
 	char **fname_out
 )
 {
 	FILE *regfile = NULL;
-	char *fname = NULL;
 	char *int_fname = NULL;
 	char *ju = NULL;
 	char *ju_path = NULL;
@@ -803,11 +806,9 @@ static int get_job_fname(
 	err.source = __FUNCTION__;
 
 	assert(job!=NULL);
-	assert(class != GLITE_JP_FILECLASS_UNDEF);
 	assert(fname_out != NULL);
 
-	fname = class_to_fname(class);
-	assert(fname!=NULL);
+	assert(class!=NULL);
 
 	if (jobid_unique_pathname(ctx, job, &ju, &ju_path, 1) != 0) {
 		err.code = ctx->error->code;
@@ -839,7 +840,7 @@ static int get_job_fname(
 	fclose(regfile);
 
 	if (asprintf(fname_out, "%s/data/%s/%d/%s/%s",
-			config->internal_path, ownerhash, regtime_trunc(reg_time), ju, fname) == -1) {
+			config->internal_path, ownerhash, regtime_trunc(reg_time), ju, class) == -1) {
 		err.code = ENOMEM;
 		goto error_out;
 	}
@@ -857,7 +858,8 @@ error_out:
 int glite_jppsbe_open_file(
 	glite_jp_context_t ctx,
 	const char *job,
-	glite_jp_fileclass_t class,
+	const char *class,
+	const char *name,	/* TODO */
 	int mode,
 	void **handle_out
 )
@@ -872,7 +874,7 @@ int glite_jppsbe_open_file(
 	memset(&err,0,sizeof err);
 	err.source = __FUNCTION__;
 
-	if (get_job_fname(ctx, job, class, &fname)) {
+	if (get_job_fname(ctx, job, class, name, &fname)) {
 		err.code = ctx->error->code;
 		err.desc = "Cannot construct internal filename";
 		return glite_jp_stack_error(ctx,&err);
@@ -1187,7 +1189,10 @@ int glite_jppsbe_get_job_metadata(
 	for (i = 0; attrs_inout[i].attr.type != GLITE_JP_ATTR_UNDEF; i++) {
 		switch (attrs_inout[i].attr.type) {
 		case GLITE_JP_ATTR_OWNER:
+
+/* must be implemented via filetype plugin
 		case GLITE_JP_ATTR_TIME:
+*/
 			if (!got_info) {
 				if (get_job_info(ctx, job, &owner, &tv_reg)) {
 					err.code = ctx->error->code;
@@ -1197,6 +1202,8 @@ int glite_jppsbe_get_job_metadata(
 				got_info = 1;
 			}
 			break;
+
+/* must be implemented via filetype plugin
 		case GLITE_JP_ATTR_TAG:
 			if (!got_tags) {
 				if (glite_jppsbe_open_file(ctx, job, GLITE_JP_FILECLASS_TAGS,
@@ -1215,6 +1222,7 @@ int glite_jppsbe_get_job_metadata(
 				got_tags = 1;
 			}
 			break;
+*/
 		default:
 			err.code = EINVAL;
 			err.desc = "Invalid attribute type";
@@ -1234,6 +1242,8 @@ int glite_jppsbe_get_job_metadata(
 		case GLITE_JP_ATTR_TIME:
 			attrs_inout[i].value.time = tv_reg;
 			break;
+
+/* must be implemented via filetype plugin
 		case GLITE_JP_ATTR_TAG:
 			for (j = 0; tags[j].name != NULL; j++) {
 				if (!strcmp(tags[j].name, attrs_inout[i].attr.name)) {
@@ -1248,6 +1258,7 @@ int glite_jppsbe_get_job_metadata(
 			}
 			if (!tags[j].name) attrs_inout[i].value.tag.name = NULL;
 			break;
+*/
 		default:
 			break;
 		}
@@ -1288,6 +1299,11 @@ static int compare_timeval(struct timeval a, struct timeval b)
 	if (a.tv_usec > b.tv_usec) return 1;
 	return 0;
 }
+
+
+/* FIXME: disabled -- clarification wrt. filetype plugin needed */
+
+#if 0
 
 static int query_phase2(
 	glite_jp_context_t ctx,
@@ -1691,6 +1707,28 @@ error_out:
 	free(metadata_templ);
 	return glite_jp_stack_error(ctx,&err);
 }
+
+#else 
+
+/* placeholder instead */
+int glite_jppsbe_query(
+	glite_jp_context_t ctx,
+	const glite_jp_query_rec_t query[],
+	const glite_jp_attrval_t metadata[],
+	int (*callback)(
+		glite_jp_context_t ctx,
+		const char *job,
+		const glite_jp_attrval_t metadata[]
+	)
+)
+{
+	glite_jp_error_t	err;
+	err.code = ENOSYS;
+	err.desc = "not implemented";
+	return glite_jp_stack_error(ctx,&err);
+}
+
+#endif
 
 /* XXX:
 - no primary authorization yet
