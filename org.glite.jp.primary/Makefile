@@ -80,10 +80,13 @@ JobProvenanceIS.xh JobProvenancePS.xh: %.xh: %.wsdl JobProvenanceTypes.wsdl type
 	${gsoap_prefix}/bin/wsdl2h  -t ${top_srcdir}/src/typemap.dat -c -o $@ $<
 	rm -f JobProvenanceTypes.wsdl
 
-${ps_prefix}ServerLib.c ${ps_prefix}H.h: JobProvenancePS.xh
+${ps_prefix}Client.c ${ps_prefix}ClientLib.c  \
+${ps_prefix}Server.c ${ps_prefix}ServerLib.c  \
+${ps_prefix}C.c ${ps_prefix}H.h: JobProvenancePS.xh
 	${gsoap_prefix}/bin/soapcpp2 -n -w -c -p ${ps_prefix} JobProvenancePS.xh
 
-${is_prefix}ClientLib.c ${is_prefix}H.h: JobProvenanceIS.xh
+${is_prefix}ClientLib.c ${is_prefix}Client.c \
+${is_prefix}C.c ${is_prefix}H.h: JobProvenanceIS.xh
 	${gsoap_prefix}/bin/soapcpp2 -n -w -c -p ${is_prefix} JobProvenanceIS.xh
 
 env_C.c env_Server.c:
