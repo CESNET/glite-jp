@@ -24,13 +24,6 @@
 			<enumeration value="TAG"/>
 		</restriction>
 	</simpleType>
-	<simpleType name="UploadClass">
-		<restriction base="xsd:string">
-			<enumeration value="INPUT-SANDBOX"/>
-			<enumeration value="OUTPUT-SANDBOX"/>
-			<enumeration value="JOB-LOG"/>
-		</restriction>
-	</simpleType>
 	<simpleType name="QueryOp">
 		<restriction base="xsd:string">
 			<enumeration value="EQUAL"/>
@@ -153,6 +146,18 @@
 		<sequence>
 			<element name="destination" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="true"/>
 			<element name="commitBefore" type="xsd:dateTime" minOccurs="0" maxOccurs="1" nillable="true"/>
+		</sequence>
+	</complexType>
+	<complexType name="File">
+		<sequence>
+			<element name="class" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false"/>
+			<element name="name" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="true"/>
+			<element name="url" type="xsd:string" minOccurs="1" maxOccurs="1" nillable="false"/>
+		</sequence>
+	</complexType>
+	<complexType name="Files">
+		<sequence>
+			<element name="file" type="jp:File" minOccurs="0" maxOccurs="1"/>
 		</sequence>
 	</complexType>
 	<element name="GenericJPFault" type="jp:GenericJPFaultType"/>

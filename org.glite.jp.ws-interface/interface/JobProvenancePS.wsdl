@@ -17,7 +17,8 @@
 	</message>
 	<message name="StartUploadRequest">
 		<part name="job" type="xsd:string"/>
-		<part name="uclass" type="jp:UploadClass"/>
+		<part name="class" type="xsd:string"/>
+		<part name="name" type="xsd:string"/>
 		<part name="commitBefore" type="xsd:dateTime"/>
 		<part name="contentType" type="xsd:string"/>
 	</message>
@@ -50,10 +51,7 @@
 		<part name="jobid" type="xsd:string"/>
 	</message>
 	<message name="GetJobResponse">
-		<part name="jobLog" type="xsd:string"/>
-		<part name="inputSandbox" type="xsd:string"/>
-		<part name="outputSandbox" type="xsd:string"/>
-		<part name="tags" type="xsd:string"/>
+		<part name="files" type="jp:Files"/>
 	</message>
 	<message name="GenericJPFault">
 		<part name="fault" element="jp:GenericJPFault"/>
