@@ -335,7 +335,7 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__GetJob(
 		{ GLITE_JP_FILECLASS_UNDEF, NULL, NULL }
 	};
 
-	int	i;
+	int	i,gotone = 0;
 	glite_jp_error_t	err;
 		
 	for (i=0; tab[i].type; i++) {
@@ -343,6 +343,7 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__GetJob(
 		switch (glite_jppsbe_get_job_url(ctx,job,tab[i].type,&url)) {
 			case 0: *tab[i].url = soap_strdup(soap,url);
 				free(url);
+				gotone = 1;
 				break;
 			case ENOENT:
 				*tab[i].url = NULL;
@@ -356,6 +357,17 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__GetJob(
 				glite_jp_clear_error(ctx);
 				return SOAP_FAULT;
 		}
+	}
+
+	if (!gotone) {
+		glite_jp_clear_error(ctx);
+		err.code = ENOENT;
+		err.source = __FUNCTION__;
+		err.desc = "No file found for this job";
+		glite_jp_stack_error(ctx,&err);
+		err2fault(ctx,soap);
+		glite_jp_clear_error(ctx);
+		return SOAP_FAULT;
 	}
 	return SOAP_OK;
 }

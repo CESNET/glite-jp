@@ -21,9 +21,13 @@ int glite_jpps_single_feed(
 	/* TODO: really call JP Index server (via interlogger) */
 	printf("feed to %s, job %s\n",destination,job);
 
-	/* FIXME: check fault */
-	// soap_call_jpsrv__UpdateJobs(ctx->other_soap,destination,"",
-
+	if (soap_call_jpsrv__UpdateJobs(ctx->other_soap,destination,"",
+		/* FIXME: feedId */ "",
+		/* FIXME: UpdateJobsData */ NULL,
+		0,
+		NULL
+	)) fprintf(stderr,"UpdateJobs: %s %s\n",ctx->other_soap->fault->faultcode,
+		ctx->other_soap->fault->faultstring);
 
 	return 0;
 }

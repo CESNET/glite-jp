@@ -126,8 +126,7 @@ static int match_feed(
 	}
 
 	/* matched completely */
-	/* FIXME: dont' call it yet 
-	return glite_jpps_single_feed(ctx,feed->destination,job,attrs); */
+	return glite_jpps_single_feed(ctx,feed->destination,job,attrs);
 	return 0;
 }
 

@@ -60,20 +60,21 @@ SRCS:= simple_server.c soap_ops.c \
 EXA_SRCS:=jpps-test.c ${ps_prefix}C.c ${ps_prefix}Client.c
 
 
-OBJS:=${SRCS:.c=.o} stdsoap2.o
-EXA_OBJS:=${EXA_SRCS:.c=.o} stdsoap2.o
+OBJS:=${SRCS:.c=.o}
+EXA_OBJS:=${EXA_SRCS:.c=.o}
 
 COMMONLIB:=-lglite_jp_common
+GSOAPLIB:=-L${gsoap_prefix}/lib -lgsoap${GSOAP_DEBUG}
 
 default all: compile
 
 compile: ${daemon} ${example}
 
 ${daemon}: ${OBJS}
-	${LINK} -o $@ ${OBJS} ${COMMONLIB} ${GLOBUS_LIBS} 
+	${LINK} -o $@ ${OBJS} ${COMMONLIB} ${GSOAPLIB} ${GLOBUS_LIBS} 
 
 ${example}: ${EXA_OBJS}
-	${LINK} -o $@ ${EXA_OBJS} 
+	${LINK} -o $@ ${EXA_OBJS} ${GSOAPLIB}  
 
 JobProvenanceIS.xh JobProvenancePS.xh: %.xh: %.wsdl JobProvenanceTypes.wsdl typemap.dat
 	cp  ${jpproject}/JobProvenanceTypes.wsdl .

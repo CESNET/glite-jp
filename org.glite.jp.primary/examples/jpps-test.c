@@ -16,7 +16,7 @@ static void usage(const char *me)
 			"		StartUpload jobid class(0,1,2) commit_before mimetype\n"
 			"		CommitUpload\n"
 			"		RecordTag\n"
-			"		GetJob\n"
+			"		GetJob jobid\n"
 			"		FeedIndex destination query_number history continuous\n"
 		,me);
 
@@ -135,6 +135,18 @@ int main(int argc,char *argv[])
 		{
 			printf("FeedId: %s\nExpires: %s\n",r.feedId,ctime(&r.expires));
 		}
+	} else if (!strcasecmp(argv[1],"GetJob")) {
+		struct jpsrv__GetJobResponse	r;
+
+		if (argc != 3) usage(argv[0]);
+		
+		if (!check_fault(soap,soap_call_jpsrv__GetJob(soap,server,"",
+						argv[2],&r)))
+		{
+			printf("JobLog:\t%s\nInput:\t%s\nOutput:\t%s\nTags:\t%s\n",
+					r.jobLog,r.inputSandbox,r.outputSandbox,r.tags);
+		}
+
 	}
 	else usage(argv[0]);
 
