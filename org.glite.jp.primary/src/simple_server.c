@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include "glite/jp/types.h"
 #include "glite/jp/context.h"
 
@@ -5,7 +7,7 @@
 
 extern SOAP_NMAC struct Namespace jpis__namespaces[],jpps__namespaces[];
 
-int main() {
+int main(int argc, char *argv[]) {
    struct soap soap;
    int i, m, s; // master and slave sockets
 
@@ -15,6 +17,13 @@ int main() {
    soap_set_namespaces(&soap, jpps__namespaces);
 
    glite_jp_init_context(&ctx);
+
+   if (glite_jppsbe_init(ctx, &argc, argv)) {
+	   /* XXX log */
+	   fputs(glite_jp_error_chain(ctx), stderr);
+	   exit(1);
+   }
+
    soap.user = (void *) ctx;
    ctx->other_soap = soap_new();
    soap_init(ctx->other_soap);
