@@ -20,6 +20,9 @@
 
 	Revision history:
 	$Log$
+	Revision 1.1.1.1  2004/12/10 09:32:29  akrenek
+	
+	
 	Revision 1.5  2004/07/20 16:08:30  flammer
 	Changed incorrect my_... instead of .._template entries for subsystem and component.
 	
@@ -95,6 +98,7 @@
 		 Load version file 
 	     ========================================= -->
 	<property file="${module.version.file}"/>
+		<property file="${module.build.file}"/>
 	
 	<!-- ==============================================
 		 Local private targets
