@@ -2,8 +2,8 @@
 #include "glite/jp/context.h"
 
 #include "jpps_H.h"
-#include "jpps_.nsmap"
-#include "jpis_.nsmap"
+
+extern SOAP_NMAC struct Namespace jpis__namespaces[],jpps__namespaces[];
 
 int main() {
    struct soap soap;

@@ -7,6 +7,9 @@
 #include "feed.h"
 
 #include "jpps_H.h"
+#include "jpps_.nsmap"
+
+#include "jptype_map.h"
 
 static struct jptype__GenericJPFaultType *jp2s_error(struct soap *soap,
 		const glite_jp_error_t *err)
@@ -34,7 +37,11 @@ static void err2fault(const glite_jp_context_t ctx,struct soap *soap)
 	f->jptype__GenericJPFault = jp2s_error(soap,ctx->error);
 
 	detail->__type = SOAP_TYPE__GenericJPFault;
+#if GSOAP_VERSION >= 20700
+	detail->fault = f;
+#else
 	detail->value = f;
+#endif
 	detail->__any = NULL;
 
 	soap_receiver_fault(soap,"Oh, shit!",NULL);

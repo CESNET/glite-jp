@@ -9,6 +9,7 @@
 
 #include "feed.h"
 #include "jpis_H.h"
+#include "jpis_.nsmap"
 
 int glite_jpps_single_feed(
 		glite_jp_context_t ctx,
@@ -21,7 +22,7 @@ int glite_jpps_single_feed(
 	printf("feed to %s, job %s\n",destination,job);
 
 	/* FIXME: check fault */
-	soap_call_jpsrv__UpdateJobs(ctx->other_soap,destination,"",
+	// soap_call_jpsrv__UpdateJobs(ctx->other_soap,destination,"",
 
 
 	return 0;

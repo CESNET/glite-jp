@@ -31,7 +31,7 @@ GLOBUS_LIBS:=-L${globus_prefix}/lib \
 
 DEBUG:=-g -O0  -DDEBUG
 
-CFLAGS:=${DEBUG} -I. -I${gsoap_prefix}/include -I${stagedir}/include
+CFLAGS:=${DEBUG} -I. -I${top_srcdir}/src -I${gsoap_prefix}/include -I${stagedir}/include
 LDFLAGS:=-L${stagedir}/lib
 
 LINK:=libtool --mode=link ${CC} ${LDFLAGS} 
@@ -44,9 +44,15 @@ example:=jpps-test
 ps_prefix:=jpps_
 is_prefix:=jpis_
 
+gsoap_version=`${gsoap_prefix}/bin/soapcpp2 -version 2>&1 | cut -d' ' -f4 | perl -F\\\\. -nae '$$F[2] =~ s/\D*$$//; print $$F[2]+100*$$F[1]+10000*$$F[0]'`
+
+CFLAGS+=-DGSOAP_VERSION=${gsoap_version}
+
+
 SRCS:= simple_server.c soap_ops.c \
 	ftp_backend.c \
 	feed.c tags.c\
+	is_client.c \
 	${ps_prefix}ServerLib.c \
 	${is_prefix}ClientLib.c \
 	env_C.c
@@ -64,10 +70,10 @@ default all: compile
 compile: ${daemon} ${example}
 
 ${daemon}: ${OBJS}
-	${LINK} -o $@ ${OBJS} ${COMMONLIB} ${GLOBUS_LIBS}
+	${LINK} -o $@ ${OBJS} ${COMMONLIB} ${GLOBUS_LIBS} 
 
 ${example}: ${EXA_OBJS}
-	${LINK} -o $@ ${EXA_OBJS}
+	${LINK} -o $@ ${EXA_OBJS} 
 
 JobProvenanceIS.xh JobProvenancePS.xh: %.xh: %.wsdl JobProvenanceTypes.wsdl typemap.dat
 	cp  ${jpproject}/JobProvenanceTypes.wsdl .
@@ -92,6 +98,7 @@ env_C.c env_Server.c:
 #
 
 
+simple_server.o: ${is_prefix}H.h ${ps_prefix}H.h
 
 check: 
 	-echo nothing yet

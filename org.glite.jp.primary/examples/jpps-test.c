@@ -6,6 +6,8 @@
 #include "jpps_H.h"
 #include "jpps_.nsmap"
 
+#include "jptype_map.h"
+
 static void usage(const char *me)
 {
 	fprintf(stderr,"%s: [-s server-url] operation args \n\n"
@@ -42,7 +44,11 @@ static int check_fault(struct soap *soap,int err) {
 			fputs(reason,stderr);
 			putc(10,stderr);
 			assert(detail->__type == SOAP_TYPE__GenericJPFault);
+#if GSOAP_VERSION >=20700
+			f = ((struct _GenericJPFault *) detail->fault)
+#else
 			f = ((struct _GenericJPFault *) detail->value)
+#endif
 				-> jptype__GenericJPFault;
 
 			while (f) {
