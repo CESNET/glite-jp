@@ -12,6 +12,9 @@
 
 	Revision history:
 	$Log$
+	Revision 1.3  2004/12/10 09:46:41  akrenek
+	included ws-interface
+	
 	Revision 1.2  2004/12/01 18:36:00  zsalvet
 	Add component targets.
 	
@@ -252,7 +255,6 @@
 	<target name="buildmodules" depends="envset,
 						ws-interface,
 						common,
-						index,
 						primary">
 		<echo append="true" file="${global.project.dir}/cruisecontrol-stub.xml">
 	&lt;project name="${subsystem.name}" type="post-subsystem" packageName="${global.prefix}-${subsystem.prefix}"/&gt;
