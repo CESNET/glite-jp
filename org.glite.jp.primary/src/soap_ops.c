@@ -7,7 +7,8 @@
 #include "feed.h"
 
 #include "jpps_H.h"
-#include "jpps_.nsmap"
+/* #include "JobProvenancePS.nsmap" */
+#include "jpps_.nsmap" 
 
 #include "jptype_map.h"
 

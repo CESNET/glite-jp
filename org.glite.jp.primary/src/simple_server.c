@@ -25,9 +25,12 @@ int main(int argc, char *argv[]) {
    }
 
    soap.user = (void *) ctx;
+
+/* not yet client of JPIS 
    ctx->other_soap = soap_new();
    soap_init(ctx->other_soap);
    soap_set_namespaces(ctx->other_soap,jpis__namespaces);
+*/
 
    srand48(time(NULL)); /* feed id generation */
 
@@ -53,3 +56,6 @@ int main(int argc, char *argv[]) {
 
    return 0;
 }
+
+/* XXX: we don't use it */
+SOAP_NMAC struct Namespace namespaces[] = { {NULL,NULL} };

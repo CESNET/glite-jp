@@ -13,7 +13,7 @@ static void usage(const char *me)
 	fprintf(stderr,"%s: [-s server-url] operation args \n\n"
 			"	operations are:\n"
 			"		RegisterJob jobid\n"
-			"		StartUpload\n"
+			"		StartUpload jobi jobidd\n"
 			"		CommitUpload\n"
 			"		RecordTag\n"
 			"		GetJob\n"
@@ -128,9 +128,24 @@ int main(int argc,char *argv[])
 			printf("FeedId: %s\nExpires: %s\n",r.feedId,ctime(&r.expires));
 		}
 	}
+	else if ((!strcasecmp(argv[1],"StartUpload"))) {
+		struct jpsrv__StartUploadResponse	r;
+		time_t now = time(NULL) + 120;
+
+		if (argc != 3) usage(argv[0]);
+
+		if (!check_fault(soap,soap_call_jpsrv__StartUpload(soap,server,"",
+				argv[2],JOB_LOG,now,"text/plain",&r)))
+		{
+			printf("Destination: %s\nCommitBefore: %s\n",
+					r.destination,ctime(&r.commitBefore));
+		}
+	}
 	else usage(argv[0]);
 
 	return 0;
 }
 
 
+/* XXX: we don't use it */
+SOAP_NMAC struct Namespace namespaces[] = { {NULL,NULL} };

@@ -146,7 +146,7 @@ static int mkdirpath(const char* path, int prefixlen)
 		*p = '/';
 	}
 	free(wpath);
-	return ret;
+	return goout ? 0 : ret;
 }
 
 static long regtime_trunc(long tv_sec)
