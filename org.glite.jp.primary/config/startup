@@ -1,0 +1,90 @@
+#!/bin/sh
+
+GLITE_LOCATION=${GLITE_LOCATION:-/opt/glite}
+GLITE_LOCATION_VAR=${GLITE_LOCATION_VAR:-${GLITE_LOCATION}/var}
+
+[ -f /etc/glite.conf ] && . /etc/glite.conf
+[ -f $GLITE_LOCATION/etc/glite-wms.conf ] && . $GLITE_LOCATION/etc/glite-wms.conf
+
+[ -f $GLITE_LOCATION/etc/jp.conf ] && . $GLITE_LOCATION/etc/jp.conf
+[ -f $GLITE_LOCATION_VAR/etc/jp.conf ] && . $GLITE_LOCATION_VAR/etc/jp.conf
+
+[ -f $HOME/.glite.conf ] && . $HOME/.glite.conf
+
+unset creds ftp_port
+ftp_port=${GLITE_JP_FTP_PORT:-8902}
+
+
+start()
+{
+	if test -z "$GLITE_USER" ;then
+		echo 'Error: GLITE_USER is not set'
+		echo FAILED
+		return 1
+	fi
+	if test -z "$GLITE_JP_PRIMARY_INTERNAL" -o -z "$GLITE_JP_PRIMARY_URL" -o -z "$GLITE_JP_PRIMARY_GRIDMAP";then
+		echo 'Error: Glite JP parameter is not set'
+		echo FAILED
+		return 1
+	fi
+
+	[ -n "$GLITE_HOST_CERT" -a -n "$GLITE_HOST_KEY" ] &&
+		creds="$GLITE_HOST_CERT -k $GLITE_HOST_KEY"
+
+	if test -z "$creds"; then
+		if su - $GLITE_USER -c "test -r /etc/grid-security/hostkey.pem -a -r /etc/grid-security/hostcert.pem"; then
+			echo "$0: WARNING: /etc/grid-security/hostkey.pem readable by $GLITE_USER"
+			#creds="-c /etc/grid-security/hostcert.pem -k /etc/grid-security/hostkey.pem"
+			X509_USER_CERT=/etc/grid-security/hostcert.pem
+			X509_USER_KEY=/etc/grid-security/hostkey.pem
+		fi
+	fi
+
+	[ -z "$creds" ] && echo $0: WARNING: No credentials specified. Using default lookup which is dangerous. >&2
+
+	echo -n Starting in.ftpd ...
+	su - $GLITE_USER -c "X509_USER_CERT=\"$X509_USER_CERT\" X509_USER_KEY=\"$X509_USER_KEY\" \
+		\$GLOBUS_LOCATION/sbin/in.ftpd -a -S -p $ftp_port" && echo " done" || echo " FAILED"
+	
+	echo -n Starting glite-jp-primarystoraged ...
+	su - $GLITE_USER -c "X509_USER_CERT=\"$X509_USER_CERT\" X509_USER_KEY=\"$X509_USER_KEY\" \
+		$GLITE_LOCATION/bin/glite-jp-primarystoraged \
+		-I \"$GLITE_JP_PRIMARY_INTERNAL\" -E \"$GLITE_JP_PRIMARY_URL\" -G \"$GLITE_JP_PRIMARY_GRIDMAP\"
+		" && echo " done" || echo " FAILED"
+
+}
+
+stop()
+{
+	echo -n Stopping glite-jp-primarystoraged ...
+	killall glite-jp-primarystoraged
+	echo done
+}
+
+status()
+{
+	retcode=0
+        if netstat -an --inet | grep "^tcp .* 0.0.0.0:${ftp_port} .*LISTEN" >/dev/null 2>&1 ;then
+		echo in.ftpd running
+	else
+		echo in.ftpd not running
+		retcode=1
+	fi
+
+        if netstat -an --inet | grep "^tcp .* 0.0.0.0:${GLITE_JP_PRIMARY_PORT:-8901} .*LISTEN" >/dev/null 2>&1 ;then
+		echo glite-jp-primarystoraged running
+	else
+		echo glite-jp-primarystoraged not running
+		retcode=1
+	fi
+	return $retcode
+}
+
+case x$1 in
+	xstart)	start;;
+	xstop)	stop;;
+	xrestart) stop; start;;
+	xstatus) status;;
+	x*)	echo usage: $0 start,stop,restart,status >&2
+		exit 1;;
+esac

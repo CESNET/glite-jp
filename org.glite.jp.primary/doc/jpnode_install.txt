@@ -1,0 +1,72 @@
+
+
+  Job Provenance primary storage quick installation guide
+
+
+0) Start from a fresh install of Scientific Linux CERN release 3.
+
+1) Create non-privileged user 'glite', group 'glite'.
+
+	groupadd glite
+	adduser -g glite glite
+	
+   and make sure NTPD is running on the machine and synchronise with
+   a trusted NTP hierarchy...
+	
+2) _Install globus_ 
+   
+   Use these rpms from the EGEE external repository: 
+   http://glite.web.cern.ch/glite/packages/externals/bin/rhel30/RPMS/)
+	
+	gpt-VDT1.2.0rh9-1
+	vdt_globus_essentials-VDT1.2.0rh9-1
+	vdt_globus_info_essentials-VDT1.2.0rh9-1
+	vdt_globus_sdk-VDT1.2.0rh9-1
+	vdt_globus_data_server-VDT1.2.0rh9-1.i386.rpm
+
+3) Install a copy of host key and certificate under ~glite/.cert/host{cert,key}.pem 
+   and make sure glite.glite is the owner of both the .cert subdir and
+   the certificates inside it.
+   (Make sure that the original ones are put under /etc/grid-security
+   and that as usual are owned by root).
+
+   Install the rpms of the CA certificates that you need 
+   (http://glite.web.cern.ch/glite/packages/externals/bin/rhel30/RPMS/ca_*)
+   
+   Set these variables in the 'glite' and root login scripts:
+       GLITE_HOST_CERT=/home/glite/.cert/hostcert.pem
+       GLITE_HOST_KEY=/home/glite/.cert/hostkey.pem
+       GLITE_CERT_DIR=/etc/grid-security/certificates   
+
+
+3b) Install CRL update script (take the rpm as usual from
+   http://glite.web.cern.ch/glite/packages/externals/bin/rhel30/RPMS/)
+   
+   edg-fetch-crl
+
+	
+4) INSTALL and configure JP servers
+   Create the following directories:
+
+   Install the following rpm:
+
+   glite-jp-primary
+
+   Configure properly /opt/glite/etc/jp.conf
+   (e.g. 
+	GLITE_JP_FTP_PORT=8902
+	GLITE_JP_PRIMARY_INTERNAL=/home/glite/jp
+	GLITE_JP_PRIMARY_GRIDMAP=/home/glite
+	GLITE_JP_PRIMARY_URL=ftp://jpnode.somewhere.org:$GLITE_JP_FTP_PORT/jp
+
+   Create the $GLITE_JP_PRIMARY_INTERNAL dir if it doesn't exist (it must be
+   owned by glite.glite and writable by the glite user).      
+
+All the JP services should now be startable with:
+
+/opt/glite/etc/init.d/glite-jp-primary start
+
+Services are stopped with:
+
+/opt/glite/etc/init.d/glite-jp-primary stop
+
