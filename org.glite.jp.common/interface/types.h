@@ -16,6 +16,8 @@ typedef struct _glite_jp_context {
 	void	**deferred_arg;
 	void	*feeds;
 	struct soap	*other_soap;
+	char	*peer;
+	void	**plugins;
 } *glite_jp_context_t;
 
 typedef enum {
