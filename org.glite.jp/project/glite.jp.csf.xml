@@ -12,6 +12,9 @@
 
 	Revision history:
 	$Log$
+	Revision 1.1  2004/11/22 13:21:49  dimeglio
+	First version of this file
+	
 -->
 
 
@@ -109,6 +112,18 @@
 
 		<!-- condition property tag = do not remove = -->
 
+		<condition property="common.head">
+			<equals arg1="${org.glite.jp.common.version}" arg2="HEAD" />
+		</condition>
+
+		<condition property="index.head">
+			<equals arg1="${org.glite.jp.index.version}" arg2="HEAD" />
+		</condition>
+
+		<condition property="primary.head">
+			<equals arg1="${org.glite.jp.primary.version}" arg2="HEAD" />
+		</condition>
+
 	</target>
 
     	<presetdef name="cvs-co">
@@ -176,8 +191,40 @@
 	
 	<!-- component targets tag = do not remove = -->
 
+	<!-- common -->
+	<target name="common" depends="evaluate.cvs.tags, get.common.head, get.common.tag"/>
+	<target name="get.common.head" if="common.head">
+		<cvs-co package="org.glite.jp.common" />
+	</target>
+	<target name="get.common.tag" unless="common.head">
+		<cvs-co package="org.glite.jp.common"
+			tag="${org.glite.jp.common.version}" />
+	</target>
+
+	<!-- index -->
+	<target name="index" depends="evaluate.cvs.tags, get.index.head, get.index.tag"/>
+	<target name="get.index.head" if="index.head">
+		<cvs-co package="org.glite.jp.index" />
+	</target>
+	<target name="get.index.tag" unless="index.head">
+		<cvs-co package="org.glite.jp.index"
+			tag="${org.glite.jp.index.version}" />
+	</target>
+	
+	<!-- primary -->
+	<target name="primary" depends="evaluate.cvs.tags, get.primary.head, get.primary.tag"/>
+	<target name="get.primary.head" if="primary.head">
+		<cvs-co package="org.glite.jp.primary" />
+	</target>
+	<target name="get.primary.tag" unless="primary.head">
+		<cvs-co package="org.glite.jp.primary"
+			tag="${org.glite.jp.primary.version}" />
+	</target>
+
 	<!-- All project modules -->
- 	<target name="project" depends="" />
+ 	<target name="project" depends="common,
+					index,
+					primary" />
     
 	<!-- ====================================================
 		 Checkout all
