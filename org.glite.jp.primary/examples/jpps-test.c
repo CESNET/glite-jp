@@ -13,7 +13,7 @@ static void usage(const char *me)
 	fprintf(stderr,"%s: [-s server-url] operation args \n\n"
 			"	operations are:\n"
 			"		RegisterJob jobid\n"
-			"		StartUpload jobi jobidd\n"
+			"		StartUpload jobid class(0,1,2) commit_before mimetype\n"
 			"		CommitUpload\n"
 			"		RecordTag\n"
 			"		GetJob\n"
@@ -42,7 +42,7 @@ static int check_fault(struct soap *soap,int err) {
 				reason = soap->fault->faultstring;
 			}
 			fputs(reason,stderr);
-			putc(10,stderr);
+			putc('\n',stderr);
 			assert(detail->__type == SOAP_TYPE__GenericJPFault);
 #if GSOAP_VERSION >=20700
 			f = ((struct _GenericJPFault *) detail->fault)
@@ -102,8 +102,16 @@ int main(int argc,char *argv[])
 		if (argc != 3) usage(argv[0]);
 		check_fault(soap,
 			soap_call_jpsrv__RegisterJob(soap,server,"",argv[2],&r));
-	}
-	else if (!strcasecmp(argv[1],"FeedIndex")) {
+	} else if (!strcasecmp(argv[1], "StartUpload")) {
+		struct jpsrv__StartUploadResponse r;
+
+		if (argc != 6) usage(argv[0]);
+		if (!check_fault(soap,
+				soap_call_jpsrv__StartUpload(soap, server, "",
+					argv[2], atoi(argv[3]), atoi(argv[4]), argv[5], &r))) {
+			printf("Destination: %s\nCommit before: %ld\n", r.destination, (long)r.commitBefore);
+		}
+	} else if (!strcasecmp(argv[1],"FeedIndex")) {
 		struct jpsrv__FeedIndexResponse	r;
 		struct jptype__Attribute	*ap[2];
 		struct jptype__Attributes	attr = { 2, ap };
@@ -126,19 +134,6 @@ int main(int argc,char *argv[])
 					&r)))
 		{
 			printf("FeedId: %s\nExpires: %s\n",r.feedId,ctime(&r.expires));
-		}
-	}
-	else if ((!strcasecmp(argv[1],"StartUpload"))) {
-		struct jpsrv__StartUploadResponse	r;
-		time_t now = time(NULL) + 120;
-
-		if (argc != 3) usage(argv[0]);
-
-		if (!check_fault(soap,soap_call_jpsrv__StartUpload(soap,server,"",
-				argv[2],JOB_LOG,now,"text/plain",&r)))
-		{
-			printf("Destination: %s\nCommitBefore: %s\n",
-					r.destination,ctime(&r.commitBefore));
 		}
 	}
 	else usage(argv[0]);
