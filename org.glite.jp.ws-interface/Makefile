@@ -14,7 +14,7 @@ PREFIX=/opt/glite
 VPATH=${top_srcdir}/interface
 STAGETO=interface
 
-WSDL=JobProvenancePS.wsdl JobProvenanceTypes.wsdl 
+WSDL=JobProvenancePS.wsdl JobProvenanceIS.wsdl JobProvenanceTypes.wsdl 
 
 all compile:
 
