@@ -12,13 +12,17 @@
 
 	Revision history:
 	$Log$
+	Revision 1.2  2004/11/22 13:55:30  dimeglio
+	First version of this file
+	Use central subsystem definition
+	
 	Revision 1.1.1.1  2004/10/15 09:49:24  akrenek
 -->
 
-<project name="common" default="dist">
+<project name="primary" default="dist">
 	
 	<!-- =========================================
-		 Builds the GLite JP Primary Module
+		 Builds the gLite JP Primary Module
 	     ========================================= -->
 	
 	<!-- =========================================
