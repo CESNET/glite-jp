@@ -16,8 +16,10 @@ typedef struct _glite_jp_context {
 	void	**deferred_arg;
 	void	*feeds;
 	struct soap	*other_soap;
+	char	*peer;
 } *glite_jp_context_t;
-
+ 
+/* deprecated with file plugin uri
 typedef enum {
 	GLITE_JP_FILECLASS_UNDEF,
 	GLITE_JP_FILECLASS_INPUT,
@@ -26,6 +28,7 @@ typedef enum {
 	GLITE_JP_FILECLASS_TAGS,
 	GLITE_JP_FILECLASS__LAST
 } glite_jp_fileclass_t;
+*/
 
 typedef struct {
 	char	*name;
