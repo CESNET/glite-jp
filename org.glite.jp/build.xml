@@ -12,6 +12,9 @@
 
 	Revision history:
 	$Log$
+	Revision 1.1  2004/11/22 13:21:49  dimeglio
+	First version of this file
+	
 -->
 
 <project name="jp" default="dist">
@@ -178,8 +181,59 @@
 
 	<!-- component targets definitions tag = do not remove = -->
 
+	<target name="common" unless="setenvonly" depends="envset" >
+		<if>
+			<isset property="small.memory" />
+			<then>
+				<exec dir="${jp.subsystem.dir}.common" executable="${antExec}" failonerror="${failonerror}">
+					<arg line="${target} &quot;-Dsmall.memory=true&quot; &quot;-Dbootstrap=${bootstrap}&quot; &quot;-Dfailonerror=${failonerror}&quot; &quot;-Ddo.cvs.tag=${do.cvs.tag}&quot;"/>
+				</exec>
+			</then>
+			<else>
+				<ant dir="${jp.subsystem.dir}.common"
+					target="${target}"
+					inheritall="false" />
+			</else>
+		</if>
+	</target>
+
+	<target name="index" unless="setenvonly" depends="envset, common" >
+		<if>
+			<isset property="small.memory" />
+			<then>
+				<exec dir="${jp.subsystem.dir}.index" executable="${antExec}" failonerror="${failonerror}">
+					<arg line="${target} &quot;-Dsmall.memory=true&quot; &quot;-Dbootstrap=${bootstrap}&quot; &quot;-Dfailonerror=${failonerror}&quot; &quot;-Ddo.cvs.tag=${do.cvs.tag}&quot;"/>
+				</exec>
+			</then>
+			<else>
+				<ant dir="${jp.subsystem.dir}.index"
+					target="${target}"
+					inheritall="false" />
+			</else>
+		</if>
+	</target>
+
+	<target name="primary" unless="setenvonly" depends="envset, common" >
+		<if>
+			<isset property="small.memory" />
+			<then>
+				<exec dir="${jp.subsystem.dir}.primary" executable="${antExec}" failonerror="${failonerror}">
+					<arg line="${target} &quot;-Dsmall.memory=true&quot; &quot;-Dbootstrap=${bootstrap}&quot; &quot;-Dfailonerror=${failonerror}&quot; &quot;-Ddo.cvs.tag=${do.cvs.tag}&quot;"/>
+				</exec>
+			</then>
+			<else>
+				<ant dir="${jp.subsystem.dir}.primary"
+					target="${target}"
+					inheritall="false" />
+			</else>
+		</if>
+	</target>
+
 	<!-- Main proxy -->
-	<target name="buildmodules" depends="envset">
+	<target name="buildmodules" depends="envset,
+						common,
+						index,
+						primary">
 		<echo append="true" file="${global.project.dir}/cruisecontrol-stub.xml">
 	&lt;project name="${subsystem.name}" type="post-subsystem" packageName="${global.prefix}-${subsystem.prefix}"/&gt;
 		</echo>
