@@ -129,10 +129,11 @@ distbin:
 	rm -rf tmpbuilddir
         
 install:
-	-mkdir -p ${PREFIX}/bin ${PREFIX}/etc ${PREFIX}/examples ${PREFIX}/etc/init.d
+	-mkdir -p ${PREFIX}/bin ${PREFIX}/etc ${PREFIX}/examples ${PREFIX}/etc/init.d ${PREFIX}/share/doc/${package}-${version}
+	
 	${INSTALL} -m 755 ${daemon} ${PREFIX}/bin
 	${INSTALL} -m 755 jpps-test ${PREFIX}/examples/glite-jp-primary-test
-
+	${INSTALL} ${top_srcdir}/doc/USAGE ${PREFIX}/share/doc/${package}-${version}
 
 clean:
 

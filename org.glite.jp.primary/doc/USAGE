@@ -1,0 +1,100 @@
+PURPOSE, EXPECTED USAGE, AND LIMITATIONS
+
+The purpose of the Job Provenance service (JP) is keeping track of the
+definition of submitted jobs, execution conditions and environment, and
+important points of the job life cycle for a long period (months to years).
+Those data can be used for debugging, post-mortem analysis, comparison of job
+execution within an evolving environment, as well as assisted re-execution of
+jobs. Only data of completed (either successful or failed) jobs are handled;
+tracking jobs during their active life is the task of L&B and Job Monitoring
+services.
+
+In general, gathered data are stored (i.e. copied) within the JP storage in
+order to really conserve a partial snapshot of the Grid environment when the
+job was executed, independently of changes of other Grid services. Obviously
+there are practical limitations of the extent to which it is feasible to record
+the entire job execution environment. (In the ideal case this would encompass a
+snapshot of the entire Grid!) We restrict the recorded data to those that are
+processed or somehow affect processing of the Workload Management and Computing
+Element services. On the other hand, snapshots of the state of other Grid
+services are not done, namely queries to the Data Catalog and their results are
+not stored, as well as contents of data files downloaded from and uploaded to
+Storage Elementsonly references to those are recorded if required.
+
+The JP Primary Storage, as the name suggests, is the primary interface for
+raw data storage. It is complemented with JP Index service, designed to
+provide indexing and execute various queries on these data.
+
+
+ENCOMPASSED DATA
+
+Currently, JP is designed to gather the following data:
+
+- JOB LIFE LOG is taken over from the L&B database (see Sect. 8.3.5) after job
+  completion. Among other information useful mainly for debugging and detailed
+  analysis of job execution it contains the complete definition of the job (in
+  terms of the submitted JDL), various timestamps (e.g. when the job was
+  submitted, matched for a particular CE, started and finished execution),
+  information on the chosen CE (or more of them, if the job was resubmitted),
+  various IDs assigned to the job (Condor, Globus, LRMS, ...), and the
+  result of execution including the return code.  Another important information
+  available in L&B are the user-defined annotations (tags) which can be
+  specified either statically upon job submission, during its execution, or even
+  overridden after the job terminates.
+
+- INPUT/OUTPUT SANDBOX. The input sandbox of a job contains miscellaneous files
+  required for execution, and the output sandbox may contain various output
+  files, e.g. debug logs, or even a core file in the case of crash.
+
+- JP TAGS. JP tags are arbitrary "name=value" pairs attached to a singl job. 
+  They are either standalone or override values of their LB counterparts.
+  However, JP tag values are still distinguishable those inherited from LB.
+  JP tags may be either strings or blobs.
+
+
+JP PRIMARY STORAGE INTERFACES AND OPERATIONS
+
+JP primary storage service exposes two interfaces:
+- WS control and query interface,
+- bulk file transfer interface (currently gsiftp).
+
+WS interface operations (see JobProvenancePS.wsdl for details):
+
+- RegisterJob - create the basic job record with JP primary.
+
+	Normally called by L&B upon job registration wigh L&B.
+
+- StartUpload - initiates upload of input/output sandbox or job log.
+	JP responds with upload destination URL, which points to its
+	bulk file transfer interface, and a time limit for the upload.
+
+	Normally called by L&B (job log) and WMS NS (sandboxes).
+
+- CommitUpload - confirm upload operation. This must be called after the
+	upload is done, and within the given time limit. If not done so,
+	the destination URL becomes invalid and any (partially) uploaded
+	file is discarded.
+
+	Normally called by L&B (job log) and WMS NS (sandboxes).
+
+- RecordTag - Record a value of JP user tag. 
+
+	Called by any component which needs it.
+
+- FeedIndex - start feeding data into JP index server.
+
+	Called internally by JP index.
+
+- GetJob - Based on known JobId retrieve URL's of the job record (i.e. job log,
+	input/output sandboxes, and JP tags).
+
+	Mainly called by the user, either standalone, or after querying
+	index server.
+	
+
+
+EXAMPLE PROGRAM
+
+The installed example program glite-jp-primary-test is a simple client
+calling all the service WS operations. Run "glite-jp-primary-test -?"
+for its current usage help.
