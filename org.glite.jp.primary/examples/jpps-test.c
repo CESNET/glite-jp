@@ -91,6 +91,7 @@ int main(int argc,char *argv[])
 
 	while ((opt = getopt(argc,argv,"s:")) >= 0) switch (opt) {
 		case 's': server = optarg;
+			  argv += 2;
 			break;
 		case '?': usage(argv[0]);
 	}
