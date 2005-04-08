@@ -618,7 +618,8 @@ int glite_jppsbe_destination_info(
 	glite_jp_context_t ctx,
 	const char *destination,
 	char **job,
-	char **class
+	char **class,
+	char **name
 )
 {
 	size_t dest_len;
@@ -635,6 +636,7 @@ int glite_jppsbe_destination_info(
 	assert(destination != NULL);
 	assert(job != NULL);
 	assert(class != NULL);
+	assert(name != NULL);
 
 	glite_jp_clear_error(ctx);
 	memset(&err,0,sizeof err);
@@ -680,6 +682,9 @@ int glite_jppsbe_destination_info(
 		goto error_out;
 	}
 */
+
+	/* TODO: */
+	*name = NULL;
 
 	if (asprintf(&dest_rw_info, "%s/_info", dest_rw) == -1) {
 		err.code = ENOMEM;

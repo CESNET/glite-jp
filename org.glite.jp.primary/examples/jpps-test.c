@@ -183,8 +183,16 @@ int main(int argc,char *argv[])
 		if (!check_fault(soap,soap_call_jpsrv__GetJob(soap,server,"",
 						argv[2],&r)))
 		{
-			printf("JobLog:\t%s\nInput:\t%s\nOutput:\t%s\nTags:\t%s\n",
-					r.jobLog,r.inputSandbox,r.outputSandbox,r.tags);
+			int	i;
+
+			printf("JobLog:\n");
+
+			for (i=0; i<r.files->__sizefile;i++) {
+				printf("\tclass = %s, name = %s, url = %s\n",
+						r.files->file[i]->class_,
+						r.files->file[i]->name,
+						r.files->file[i]->url);
+			}
 		}
 
 	}

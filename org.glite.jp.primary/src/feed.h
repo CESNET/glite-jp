@@ -12,7 +12,7 @@ struct jpfeed {
 
 
 int glite_jpps_match_attr(glite_jp_context_t,const char *,const glite_jp_attrval_t[]);
-int glite_jpps_match_file(glite_jp_context_t,const char *,glite_jp_fileclass_t);
+int glite_jpps_match_file(glite_jp_context_t,const char *,const char *,const char *);
 int glite_jpps_match_tag(glite_jp_context_t,const char *,const glite_jp_tagval_t *);
 int glite_jpps_run_feed(glite_jp_context_t,const char *,const glite_jp_attr_t *,const glite_jp_query_rec_t *,char **);
 int glite_jpps_register_feed(glite_jp_context_t,const char *,const glite_jp_attr_t *,const glite_jp_query_rec_t *,char **,time_t *);

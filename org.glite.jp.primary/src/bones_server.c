@@ -56,6 +56,12 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
+	if (glite_jpps_fplug_load(ctx, &argc, argv)) {
+		/* XXX log */
+		fputs(glite_jp_error_chain(ctx), stderr);
+		exit(1);
+	}
+
 	srand48(time(NULL)); /* feed id generation */
 
 	stab.conn = socket(PF_INET, SOCK_STREAM, 0);

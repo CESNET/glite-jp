@@ -12,6 +12,9 @@
 
 #include "jptype_map.h"
 
+#include "file_plugin.h"
+#include "builtin_plugins.h"
+
 static struct jptype__GenericJPFaultType *jp2s_error(struct soap *soap,
 		const glite_jp_error_t *err)
 {
@@ -135,19 +138,22 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__CommitUpload(
 		struct jpsrv__CommitUploadResponse *response)
 {
 	CONTEXT_FROM_SOAP(soap,ctx);
-	char	*job = NULL;
-	glite_jp_fileclass_t	class;
+	char	*job,*class,*name;
 
+	job = class = name = NULL;
+	
 	if (glite_jppsbe_commit_upload(ctx,destination)) {
 		err2fault(ctx,soap);
 		return SOAP_FAULT;
 	}
 
 	/* XXX: should not fail when commit_upload was OK */
-	glite_jppsbe_destination_info(ctx,destination,&job,&class);
+	glite_jppsbe_destination_info(ctx,destination,&job,&class,&name);
 
 	/* XXX: ignore errors but don't fail silenty */
-	glite_jpps_match_file(ctx,job,class);
+	glite_jpps_match_file(ctx,job,class,name);
+
+	free(job); free(class); free(name);
 
 	return SOAP_OK;
 }
@@ -159,31 +165,41 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__RecordTag(
 		struct jpsrv__RecordTagResponse *response)
 {
 	CONTEXT_FROM_SOAP(soap,ctx);
-	void	*tagfile;
+	void	*file_be,*file_p;
+	glite_jpps_fplug_data_t	pd;
 
 	glite_jp_tagval_t	mytag;
 
-	if (glite_jppsbe_open_file(ctx,job,GLITE_JP_FILECLASS_TAGS,
-					O_WRONLY|O_CREAT,&tagfile))
+	file_be = file_p = NULL;
+
+	/* XXX: we assume that TAGS plugin handles just one uri/class */
+	if (glite_jpps_fplug_lookup(ctx,GLITE_JP_FILETYPE_TAGS,&pd)
+		|| glite_jppsbe_open_file(ctx,job,pd.classes[0],NULL,
+						O_WRONLY|O_CREAT,&file_be)
+	) {
+		err2fault(ctx,soap);
+		return SOAP_FAULT;
+	}
+
+	s2jp_tag(tag,&mytag);
+
+	if (pd.ops.open(pd.fpctx,file_be,&file_p)
+		|| pd.ops.generic(pd.fpctx,file_p,GLITE_JP_FPLUG_TAGS_APPEND,&mytag))
+	{
+		err2fault(ctx,soap);
+		if (file_p) pd.ops.close(pd.fpctx,file_p);
+		glite_jppsbe_close_file(ctx,file_be);
+		return SOAP_FAULT;
+	}
+
+	if (pd.ops.close(pd.fpctx,file_p)
+		|| glite_jppsbe_close_file(ctx,file_be))
 	{
 		err2fault(ctx,soap);
 		return SOAP_FAULT;
 	}
 
-	if (glite_jpps_tag_append(ctx,tagfile,&mytag)) {
-		err2fault(ctx,soap);
-		glite_jppsbe_close_file(ctx,tagfile);
-		return SOAP_FAULT;
-	}
-
-	if (glite_jppsbe_close_file(ctx,tagfile)) {
-		err2fault(ctx,soap);
-		return SOAP_FAULT;
-	}
-
 	/* XXX: ignore errors but don't fail silenty */
-
-	s2jp_tag(tag,&mytag);
 	glite_jpps_match_tag(ctx,job,&mytag);
 
 	return SOAP_OK;
@@ -325,43 +341,44 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__GetJob(
 	CONTEXT_FROM_SOAP(soap,ctx);
 	char	*url;
 
-	struct {
-		glite_jp_fileclass_t	type;
-		char	**url;
-		char	*name;
-	} tab[] = {
-		{ GLITE_JP_FILECLASS_INPUT, &response->inputSandbox, "input sandbox" },
-		{ GLITE_JP_FILECLASS_OUTPUT, &response->outputSandbox, "output sandbox" },
-		{ GLITE_JP_FILECLASS_LBLOG, &response->jobLog, "L&B log" },
-		{ GLITE_JP_FILECLASS_TAGS, &response->tags, "JP tags" },
-		{ GLITE_JP_FILECLASS_UNDEF, NULL, NULL }
-	};
-
-	int	i,gotone = 0;
+	int	i,n;
 	glite_jp_error_t	err;
-		
-	for (i=0; tab[i].type; i++) {
-		glite_jp_clear_error(ctx);
-		switch (glite_jppsbe_get_job_url(ctx,job,tab[i].type,&url)) {
-			case 0: *tab[i].url = soap_strdup(soap,url);
-				free(url);
-				gotone = 1;
-				break;
-			case ENOENT:
-				*tab[i].url = NULL;
-				break;
-			default: 
-				err.code = ctx->error->code;
-				err.source = "jpsrv__GetJob()";
-				err.desc = tab[i].name;
-				glite_jp_stack_error(ctx,&err);
-				err2fault(ctx,soap);
-				glite_jp_clear_error(ctx);
-				return SOAP_FAULT;
+	void	**pd;
+	struct jptype__Files	*files;
+	struct jptype__File 	**f = NULL;
+
+	files = response->files = soap_malloc(soap,sizeof *response->files);
+	files->__sizefile = 0;
+
+	for (pd = ctx->plugins; *pd; pd++) {
+		glite_jpps_fplug_data_t	*plugin = *pd;
+
+		for (i=0; plugin->uris[i]; i++) {
+			glite_jp_clear_error(ctx);
+			switch (glite_jppsbe_get_job_url(ctx,job,plugin->classes[i],NULL,&url)) {
+				case 0: n = files->__sizefile++;
+					f = realloc(f,files->__sizefile * sizeof *f);
+					f[n] = soap_malloc(soap, sizeof **f);
+					f[n]->class_ = soap_strdup(soap,plugin->uris[i]);
+					f[n]->name = NULL;
+					f[n]->url = soap_strdup(soap,url);
+					free(url);
+					break;
+				case ENOENT:
+					break;
+				default: 
+					err.code = ctx->error->code;
+					err.source = "jpsrv__GetJob()";
+					err.desc = plugin->uris[i];
+					glite_jp_stack_error(ctx,&err);
+					err2fault(ctx,soap);
+					glite_jp_clear_error(ctx);
+					return SOAP_FAULT;
+			}
 		}
 	}
 
-	if (!gotone) {
+	if (!files->__sizefile) {
 		glite_jp_clear_error(ctx);
 		err.code = ENOENT;
 		err.source = __FUNCTION__;
@@ -371,6 +388,10 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__GetJob(
 		glite_jp_clear_error(ctx);
 		return SOAP_FAULT;
 	}
+
+	files->file = soap_malloc(soap,files->__sizefile * sizeof *f);
+	memcpy(files->file,f,files->__sizefile * sizeof *f);
+
 	return SOAP_OK;
 }
 

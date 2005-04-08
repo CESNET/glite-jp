@@ -33,7 +33,7 @@ GLOBUS_CFLAGS:=-I${globus_prefix}/include/${nothrflavour}
 
 DEBUG:=-g -O0  -DDEBUG
 
-CFLAGS:=${DEBUG} -I. -I${top_srcdir}/src -I${gsoap_prefix}/include -I${stagedir}/include ${GLOBUS_CFLAGS}
+CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${stagedir}/include ${GLOBUS_CFLAGS}
 LDFLAGS:=-L${stagedir}/lib
 
 LINK:=libtool --mode=link ${CC} ${LDFLAGS} 
@@ -52,7 +52,7 @@ CFLAGS+=-DGSOAP_VERSION=${gsoap_version}
 
 
 SRCS:= bones_server.c soap_ops.c \
-	ftp_backend.c \
+	ftp_backend.c file_plugin.c \
 	feed.c tags.c\
 	is_client.c \
 	${ps_prefix}ServerLib.c \

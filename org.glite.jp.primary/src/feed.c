@@ -176,7 +176,8 @@ int glite_jpps_match_attr(
 int glite_jpps_match_file(
 	glite_jp_context_t ctx,
 	const char *job,
-	glite_jp_fileclass_t class
+	const char *class,
+	const char *name
 )
 {
 	fprintf(stderr,"%s: \n",__FUNCTION__);

@@ -35,11 +35,19 @@ int glite_jppsbe_commit_upload(
 	const char *destination
 );
 
+int glite_jppsbe_get_names(
+	glite_jp_context_t ctx,
+	const char *job,
+	const char *class,
+	char	***names_out
+);
+
 int glite_jppsbe_destination_info(
 	glite_jp_context_t ctx,
 	const char *destination,
 	char **job_out,
-	char **class_out
+	char **class_out,
+	char **name_out
 );
 
 int glite_jppsbe_get_job_url(
