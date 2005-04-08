@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <getopt.h>
 #include <dlfcn.h>
 #include <errno.h>
@@ -11,11 +12,15 @@ static struct option opts[] = {
 	{ NULL }
 };
 
-static void *loadit(glite_jp_context_t ctx,const char *so)
+static int loadit(glite_jp_context_t ctx,const char *so)
 {
+/* XXX: not stored but we never dlclose() yet */
 	void	*dl_handle = dlopen(so,RTLD_NOW);
+
 	glite_jp_error_t	err;
 	char	*e;
+	glite_jpps_fplug_data_t	*data,*dp;
+	int	i;
 
 	glite_jpps_fplug_init_t	init;
 
@@ -23,8 +28,7 @@ static void *loadit(glite_jp_context_t ctx,const char *so)
 		err.source = "dlopen()";
 		err.code = EINVAL;
 		err.desc = dlerror();
-		glite_jp_stack_error(ctx,&err);
-		return NULL;
+		return glite_jp_stack_error(ctx,&err);
 	}
 
 	dlerror();
@@ -37,29 +41,69 @@ static void *loadit(glite_jp_context_t ctx,const char *so)
 		err.source = buf;
 		err.code = ENOENT;
 		err.desc = e;
+		return glite_jp_stack_error(ctx,&err);
 	}
 
-	/* FIXME: zavolat init */
+	data = calloc(1,sizeof *data);
 
+	if (init(ctx,data)) return -1;
+
+	i = 0;
+	if (ctx->plugins) for (i=0; ctx->plugins[i]; i++);
+	ctx->plugins = realloc(ctx->plugins, (i+2) * sizeof *ctx->plugins);
+	ctx->plugins[i] = data;
+	ctx->plugins[i+1] = NULL;
+	
+	return 0;
 }
 
 int glite_jpps_fplug_load(glite_jp_context_t ctx,int *argc,char **argv)
 {
-	int	opt;
-	void	*fctx;
+	int	opt,ret;
 
 	while ((opt = getopt_long(*argc,argv,"p:",opts,NULL)) != EOF) switch (opt) {
-		case 'p': fctx = loadit(ctx,optarg);
-			if (!fctx) return -1;
+		case 'p':
+			glite_jp_clear_error(ctx);
+
+			if (loadit(ctx,optarg)) {
+				glite_jp_error_t	err;
+				err.source = __FUNCTION__;
+				err.code = EINVAL;
+				err.desc = optarg;
+				return glite_jp_stack_error(ctx,&err);
+			}
+			break;
 		default: break;
 	}
 
 	return 0;
 }
 
-int glite_jpps_fplug_lookup(glite_jp_context_t ctx,const char *uri, glite_jpps_fplug_data_t *plugin_data)
+int glite_jpps_fplug_lookup(glite_jp_context_t ctx,const char *uri, glite_jpps_fplug_data_t **plugin_data)
 {
-	/* TODO */
-	return 0;
+	int	i;
+
+	glite_jp_error_t	err;
+	err.source = __FUNCTION__;
+	err.code = ENOENT;
+	err.desc = (char *) uri;	/* XXX: we don't modify it, believe me, gcc! */
+
+	glite_jp_clear_error(ctx);
+	if (!ctx->plugins) {
+		return glite_jp_stack_error(ctx,&err);
+	}
+
+	for (i = 0; ctx->plugins[i]; i++) {
+		int	j;
+		glite_jpps_fplug_data_t	*p = ctx->plugins[i];
+
+		for (j=0; p->uris && p->uris[j]; j++)
+			if (!strcmp(p->uris[j],uri)) {
+				*plugin_data = p;
+				return 0;
+			}
+	}
+
+	return glite_jp_stack_error(ctx,&err);
 }
 

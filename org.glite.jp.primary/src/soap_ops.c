@@ -166,7 +166,7 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__RecordTag(
 {
 	CONTEXT_FROM_SOAP(soap,ctx);
 	void	*file_be,*file_p;
-	glite_jpps_fplug_data_t	pd;
+	glite_jpps_fplug_data_t	*pd;
 
 	glite_jp_tagval_t	mytag;
 
@@ -174,7 +174,7 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__RecordTag(
 
 	/* XXX: we assume that TAGS plugin handles just one uri/class */
 	if (glite_jpps_fplug_lookup(ctx,GLITE_JP_FILETYPE_TAGS,&pd)
-		|| glite_jppsbe_open_file(ctx,job,pd.classes[0],NULL,
+		|| glite_jppsbe_open_file(ctx,job,pd->classes[0],NULL,
 						O_WRONLY|O_CREAT,&file_be)
 	) {
 		err2fault(ctx,soap);
@@ -183,16 +183,16 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__RecordTag(
 
 	s2jp_tag(tag,&mytag);
 
-	if (pd.ops.open(pd.fpctx,file_be,&file_p)
-		|| pd.ops.generic(pd.fpctx,file_p,GLITE_JP_FPLUG_TAGS_APPEND,&mytag))
+	if (pd->ops.open(pd->fpctx,file_be,&file_p)
+		|| pd->ops.generic(pd->fpctx,file_p,GLITE_JP_FPLUG_TAGS_APPEND,&mytag))
 	{
 		err2fault(ctx,soap);
-		if (file_p) pd.ops.close(pd.fpctx,file_p);
+		if (file_p) pd->ops.close(pd->fpctx,file_p);
 		glite_jppsbe_close_file(ctx,file_be);
 		return SOAP_FAULT;
 	}
 
-	if (pd.ops.close(pd.fpctx,file_p)
+	if (pd->ops.close(pd->fpctx,file_p)
 		|| glite_jppsbe_close_file(ctx,file_be))
 	{
 		err2fault(ctx,soap);
