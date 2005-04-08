@@ -157,7 +157,7 @@
 	</complexType>
 	<complexType name="Files">
 		<sequence>
-			<element name="file" type="jp:File" minOccurs="0" maxOccurs="1"/>
+			<element name="file" type="jp:File" minOccurs="0" maxOccurs="unlimited"/>
 		</sequence>
 	</complexType>
 	<element name="GenericJPFault" type="jp:GenericJPFaultType"/>
