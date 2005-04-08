@@ -3,7 +3,7 @@
 
 /** Methods of the file plugin. */
 
-typedef struct _glite_jp_fplug_op_t {
+typedef struct _glite_jpps_fplug_op_t {
 
 /** Open a file.
 \param[in] fpctx	Context of the plugin, returned by its init.
@@ -33,19 +33,39 @@ typedef struct _glite_jp_fplug_op_t {
 \param[in] handle	Handle of the opened file.
 \param[in] oper		Code of the operation, specific for a concrete plugin.
 */
-	int	(*op)(void *fpctx,void *handle,int oper,...);
+	int	(*generic)(void *fpctx,void *handle,int oper,...);
 	
-} glite_jp_fplug_op_t;
+} glite_jpps_fplug_op_t;
 
+/** Data describing a plugin. */
+typedef struct _glite_jpps_fplug_data_t {
+	void	*fpctx;		/**< Context passed to plugin operations. */
+	char	**uris;		/**< NULL-terminated list of file types (URIs)
+					handled by the plugin. */
+	char	**classes;	/**< The same as uris but filesystem-friendly
+					(can be used to construct file names).*/
+
+	glite_jpps_fplug_op_t ops; 	/**< Plugin operations. */
+} glite_jpps_fplug_data_t;
+	
 /** Initialisation function of the plugin. 
   Called after dlopen(), must be named "init".
 \param[in] ctx		JPPS context
-\param[out] uris	NULL-terminated list of file types (URIs) handled by the plugin
-\param[out] ops		Plugin methods.
-\param[out] fpctx	Initialised plugin context, to be passed to the methods.
+\param[out] data	filled-in plugin data
 */
   
-typedef int (*glite_jp_fplug_init_t)(glite_jp_context_t ctx,char ***uris,glite_jp_fplug_op_t *ops,void **fpctx);
+typedef int (*glite_jpps_fplug_init_t)(
+	glite_jp_context_t ctx,
+	glite_jpps_fplug_data_t *plugin_data
+);
 
+
+/** Lookup file plugin according to given file-type.
+\param[in] ctx		JPPS context
+\param[in] uri		Requested file-type.
+\param[out] data	Context of the plugin
+*/
+
+int glite_jpps_fplug_lookup(glite_jp_context_t ctx,const char *uri, glite_jpps_fplug_data_t *plugin_data);
 
 #endif
