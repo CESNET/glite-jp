@@ -165,7 +165,7 @@ static long regtime_ceil(long tv_sec)
 /********************************************************************************/
 int glite_jppsbe_init(
 	glite_jp_context_t ctx,
-	int *argc,
+	int argc,
 	char *argv[]
 )
 {
@@ -184,7 +184,7 @@ int glite_jppsbe_init(
 
 	config->logname = getlogin();
 
-	while ((opt = getopt_long(*argc, argv, "I:E:G:", ftpbe_opts, NULL)) != EOF) {
+	while ((opt = getopt_long(argc, argv, "I:E:G:", ftpbe_opts, NULL)) != EOF) {
 		switch (opt) {
 			case 'I': config->internal_path = optarg; break;
 			case 'E': config->external_path = optarg; break;

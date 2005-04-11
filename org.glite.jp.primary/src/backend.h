@@ -6,7 +6,7 @@
 
 int glite_jppsbe_init(
 	glite_jp_context_t ctx,
-	int *argc,
+	int argc,
 	char *argv[]
 );
 

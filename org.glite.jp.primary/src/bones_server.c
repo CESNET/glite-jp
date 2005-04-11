@@ -12,6 +12,8 @@
 #include <stdsoap2.h>
 #include "glite/security/glite_gsplugin.h"
 
+#include "backend.h"
+#include "file_plugin.h"
 
 
 #include "jpps_H.h"
@@ -40,9 +42,11 @@ static int debug = 1;
 
 static glite_jp_context_t	ctx;
 
+static int call_opts(glite_jp_context_t,char *,char *,int (*)(glite_jp_context_t,int,char **));
+
 int main(int argc, char *argv[])
 {
-	int	one = 1;
+	int	one = 1,opt,bend = 0;
 	edg_wll_GssStatus	gss_code;
 	struct sockaddr_in	a;
 
@@ -50,16 +54,26 @@ int main(int argc, char *argv[])
 
 	glite_jp_init_context(&ctx);
 
-	if (glite_jppsbe_init(ctx, &argc, argv)) {
-		/* XXX log */
-		fputs(glite_jp_error_chain(ctx), stderr);
-		exit(1);
+	while ((opt = getopt(argc,argv,"B:P:")) != EOF) switch (opt) {
+		case 'B':
+			if (call_opts(ctx,optarg,"backend",glite_jppsbe_init)) {
+				/* XXX log */
+				fputs(glite_jp_error_chain(ctx), stderr);
+				exit(1);
+			}
+			bend = 1;
+			break;
+		case 'P':
+			if (call_opts(ctx,optarg,"plugins",glite_jpps_fplug_load)) {
+				/* XXX log */
+				fputs(glite_jp_error_chain(ctx), stderr);
+				exit(1);
+			}
 	}
 
-	if (glite_jpps_fplug_load(ctx, &argc, argv)) {
-		/* XXX log */
-		fputs(glite_jp_error_chain(ctx), stderr);
-		exit(1);
+	if (!bend) {
+		fputs("-B required\n",stderr);
+		exit (1);
 	}
 
 	srand48(time(NULL)); /* feed id generation */
@@ -89,7 +103,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (!server_cert || !server_key)
-		fprintf(stderr, "%s: WARNING: key or certificate file not specified,"
+		fprintf(stderr, "%s: WARNING: key or certificate file not specified, "
 				"can't watch them for changes\n",
 				argv[0]);
 
@@ -250,6 +264,27 @@ static int disconn(int conn,struct timeval *to,void *data)
 	soap_end(soap); // clean up everything and close socket
 
 	return 0;
+}
+
+#define WSPACE "\t\n "
+
+static int call_opts(glite_jp_context_t ctx,char *opt,char *name,int (*f)(glite_jp_context_t,int,char **))
+{
+	int	ac = 1,ret,my_optind; 
+	char	**av = malloc(sizeof *av),*ap;
+
+	*av = name;
+	for (ap = strtok(opt,WSPACE); ap; ap = strtok(NULL,WSPACE)) {
+		av = realloc(av,(ac+1) * sizeof *av);
+		av[ac++] = ap;
+	}
+
+	my_optind = optind;
+	optind = 0;
+	ret = f(ctx,ac,av);
+	optind = my_optind;
+	free(av);
+	return ret;
 }
 
 

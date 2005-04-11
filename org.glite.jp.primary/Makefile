@@ -37,14 +37,17 @@ CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_pre
 LDFLAGS:=-L${stagedir}/lib
 
 LINK:=libtool --mode=link ${CC} ${LDFLAGS} 
+LTCOMPILE:=libtool --mode=compile ${CC} ${CFLAGS}
+SOLINK:=libtool --mode=link ${CC} -module ${LDFLAGS} -rpath ${stagedir}/lib
 LINKXX:=libtool --mode=link ${CXX} ${LDFLAGS} 
 INSTALL:=libtool --mode=install install
-
 
 daemon:=glite-jp-primarystoraged
 example:=jpps-test
 ps_prefix:=jpps_
 is_prefix:=jpis_
+
+plugins:=glite-jp-tags.la
 
 gsoap_version=`${gsoap_prefix}/bin/soapcpp2 -version 2>&1 | cut -d' ' -f4 | perl -F\\\\. -nae '$$F[2] =~ s/\D*$$//; print $$F[2]+100*$$F[1]+10000*$$F[0]'`
 
@@ -72,7 +75,7 @@ GSOAPLIB:=-lglite_security_gsoap_plugin_${nothrflavour} -lglite_security_gss_${n
 
 default all: compile
 
-compile: ${daemon} ${example}
+compile: ${daemon} ${example} ${plugins}
 
 ${daemon}: ${OBJS}
 	${LINK} -o $@ ${OBJS} ${BONESLIB} ${COMMONLIB} ${GSOAPLIB} ${GLOBUS_LIBS} 
@@ -150,3 +153,9 @@ stdsoap2.o: ${gsoap_prefix}/devel/stdsoap2.c
 	@echo 'The following warning "time_t (de)serialization is not MT safe on this platform" is harmless'
 	${CC} -o $@ -c -DWITH_NONAMESPACES -DHAVE_CONFIG_H ${CFLAGS} ${gsoap_prefix}/devel/stdsoap2.c
 
+
+glite-jp-tags.la: tags_plugin.lo
+	${SOLINK} -o $@ tags_plugin.lo
+
+%.lo: %.c
+	${LTCOMPILE} -o $@ -c $<

@@ -60,12 +60,11 @@ typedef int (*glite_jpps_fplug_init_t)(
 );
 
 
-/** Lookup file plugin according to given file-type.
-\param[in] ctx		JPPS context
-\param[in] uri		Requested file-type.
-\param[out] data	Context of the plugin
-*/
 
+
+/* XXX: not really public interface follows */
+
+int glite_jpps_fplug_load(glite_jp_context_t ctx,int argc,char **argv);
 int glite_jpps_fplug_lookup(glite_jp_context_t ctx,const char *uri, glite_jpps_fplug_data_t **plugin_data);
 
 #endif

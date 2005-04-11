@@ -57,23 +57,16 @@ static int loadit(glite_jp_context_t ctx,const char *so)
 	return 0;
 }
 
-int glite_jpps_fplug_load(glite_jp_context_t ctx,int *argc,char **argv)
+int glite_jpps_fplug_load(glite_jp_context_t ctx,int argc,char **argv)
 {
-	int	opt,ret;
+	int	i;
 
-	while ((opt = getopt_long(*argc,argv,"p:",opts,NULL)) != EOF) switch (opt) {
-		case 'p':
-			glite_jp_clear_error(ctx);
-
-			if (loadit(ctx,optarg)) {
-				glite_jp_error_t	err;
-				err.source = __FUNCTION__;
-				err.code = EINVAL;
-				err.desc = optarg;
-				return glite_jp_stack_error(ctx,&err);
-			}
-			break;
-		default: break;
+	for (i=1; i<argc; i++) if (loadit(ctx,argv[i])) {
+		glite_jp_error_t	err;
+		err.source = __FUNCTION__;
+		err.code = EINVAL;
+		err.desc = argv[i];
+		return glite_jp_stack_error(ctx,&err);
 	}
 
 	return 0;
