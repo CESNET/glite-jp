@@ -53,6 +53,8 @@ gsoap_version=`${gsoap_prefix}/bin/soapcpp2 -version 2>&1 | cut -d' ' -f4 | perl
 
 CFLAGS+=-DGSOAP_VERSION=${gsoap_version}
 
+HDRS_I=file_plugin.h
+HDRS_S=builtin_plugins.h
 
 SRCS:= bones_server.c soap_ops.c \
 	ftp_backend.c file_plugin.c \
@@ -139,6 +141,11 @@ install:
 	-mkdir -p ${PREFIX}/bin ${PREFIX}/etc ${PREFIX}/examples ${PREFIX}/etc/init.d
 	${INSTALL} -m 755 ${daemon} ${PREFIX}/bin
 	${INSTALL} -m 755 jpps-test ${PREFIX}/examples/glite-jp-primary-test
+	if [ x${DOSTAGE} = xyes ]; then \
+		mkdir -p ${PREFIX}/include/${globalprefix}/${jpprefix} ; \
+		(cd ${top_srcdir}/interface && install -m 644 ${HDRS_I} ${PREFIX}/include/${globalprefix}/${jpprefix}) ; \
+		(cd ${top_srcdir}/src && install -m 644 ${HDRS_S} ${PREFIX}/include/${globalprefix}/${jpprefix}) ; \
+	fi
 
 
 clean:
