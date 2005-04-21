@@ -54,7 +54,7 @@ gsoap_version=`${gsoap_prefix}/bin/soapcpp2 -version 2>&1 | cut -d' ' -f4 | perl
 CFLAGS+=-DGSOAP_VERSION=${gsoap_version}
 
 HDRS_I=file_plugin.h
-HDRS_S=builtin_plugins.h
+HDRS_S=builtin_plugins.h backend.h
 
 SRCS:= bones_server.c soap_ops.c \
 	ftp_backend.c file_plugin.c \
