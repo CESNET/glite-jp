@@ -15,7 +15,7 @@
 #include "backend.h"
 #include "file_plugin.h"
 
-
+#include "soap_version.h"
 #include "jpps_H.h"
 
 #define CONN_QUEUE	20
@@ -246,6 +246,7 @@ static int request(int conn,struct timeval *to,void *data)
 	}
 
 	glite_jp_run_deferred(ctx);
+	return 0;
 }
 
 static int reject(int conn)

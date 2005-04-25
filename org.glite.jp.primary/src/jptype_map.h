@@ -1,3 +1,5 @@
+#include "soap_version.h"
+
 #if GSOAP_VERSION >= 20700
 #define INPUT_SANDBOX	jptype__UploadClass__INPUT_SANDBOX
 #define OUTPUT_SANDBOX	jptype__UploadClass__OUTPUT_SANDBOX

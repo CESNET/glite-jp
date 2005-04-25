@@ -49,10 +49,6 @@ is_prefix:=jpis_
 
 plugins:=glite-jp-tags.la
 
-gsoap_version=`${gsoap_prefix}/bin/soapcpp2 -version 2>&1 | cut -d' ' -f4 | perl -F\\\\. -nae '$$F[2] =~ s/\D*$$//; print $$F[2]+100*$$F[1]+10000*$$F[0]'`
-
-CFLAGS+=-DGSOAP_VERSION=${gsoap_version}
-
 HDRS_I=file_plugin.h
 HDRS_S=builtin_plugins.h backend.h
 
@@ -166,3 +162,10 @@ glite-jp-tags.la: tags_plugin.lo
 
 %.lo: %.c
 	${LTCOMPILE} -o $@ -c $<
+
+soap_ops.o: soap_version.h
+
+soap_version.h:
+	${gsoap_prefix}/bin/soapcpp2 /dev/null
+	perl -ne '$$. == 2 && /.*([0-9])\.([0-9])\.([0-9]).*/ && printf "#define GSOAP_VERSION %d%02d%02d\n",$$1,$$2,$$3' soapH.h >$@
+	-rm soapC.cpp soapH.h soapStub.h soapClient.cpp soapServer.cpp soapClientLib.cpp soapServerLib.cpp 
