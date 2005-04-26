@@ -39,7 +39,7 @@ COMPILE:=libtool --mode=compile ${CC} ${CFLAGS}
 
 HDRS:=types.h context.h strmd5.h
 
-SRCS:=context.c strmd5.c
+SRCS:=context.c strmd5.c attr.c
 OBJS:=${SRCS:.c=.lo}
 
 commonlib:= libglite_jp_common.la

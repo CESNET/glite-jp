@@ -5,8 +5,8 @@
 
 typedef struct _glite_jp_error_t {
 	int	code;
-	char	*desc;
-	char	*source;
+	const char	*desc;
+	const char	*source;
 	struct _glite_jp_error_t *reason;
 } glite_jp_error_t;
 
@@ -81,5 +81,7 @@ typedef struct {
 		struct timeval time;
 	} value,value2;
 } glite_jp_query_rec_t;
+
+void glite_jp_attrval_free(glite_jp_attrval_t *,int);
 
 #endif
