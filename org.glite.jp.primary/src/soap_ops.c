@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <fcntl.h>
+#include <assert.h>
 
 #include "glite/jp/types.h"
 #include "glite/jp/context.h"
@@ -119,9 +120,35 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__StartUpload(
 {
 	CONTEXT_FROM_SOAP(soap,ctx);
 	char	*destination;
+	glite_jp_error_t	err;
+	glite_jpps_fplug_data_t	**pd = NULL;
+	int	i;
 
-	if (glite_jppsbe_start_upload(ctx,job,class,name,content_type,&destination,&commit_before)) {
+	glite_jp_clear_error(ctx);
+	memset(&err,0,sizeof err);
+
+	switch (glite_jpps_fplug_lookup(ctx,class,&pd)) {
+		case ENOENT:
+			err.code = ENOENT;
+			err.source = __FUNCTION__;
+			err.desc = "unknown file class";
+			glite_jp_stack_error(ctx,&err);
+			err2fault(ctx,soap);
+			return SOAP_FAULT;
+		case 0: break;
+		default:
+			err2fault(ctx,soap);
+			return SOAP_FAULT;
+	}
+
+	for (i=0; pd[0]->uris[i] && strcmp(pd[0]->uris[i],class); i++);
+	assert(pd[0]->uris[i]);
+
+	if (glite_jppsbe_start_upload(ctx,job,pd[0]->classes[i],name,content_type,
+				&destination,&commit_before))
+	{
 		err2fault(ctx,soap);
+		free(pd);
 		return SOAP_FAULT;
 	}
 
@@ -129,6 +156,7 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__StartUpload(
 	free(destination);
 	response->commitBefore = commit_before;
 
+	free(pd);
 	return SOAP_OK;
 }
 
@@ -166,42 +194,49 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__RecordTag(
 {
 	CONTEXT_FROM_SOAP(soap,ctx);
 	void	*file_be,*file_p;
-	glite_jpps_fplug_data_t	*pd;
+	glite_jpps_fplug_data_t	**pd = NULL;
 
 	glite_jp_tagval_t	mytag;
 
 	file_be = file_p = NULL;
 
-	/* XXX: we assume that TAGS plugin handles just one uri/class */
+	/* XXX: we assume just one plugin and also that TAGS plugin handles
+	 * just one uri/class */
+
 	if (glite_jpps_fplug_lookup(ctx,GLITE_JP_FILETYPE_TAGS,&pd)
-		|| glite_jppsbe_open_file(ctx,job,pd->classes[0],NULL,
+		|| glite_jppsbe_open_file(ctx,job,pd[0]->classes[0],NULL,
 						O_WRONLY|O_CREAT,&file_be)
 	) {
+		free(pd);
 		err2fault(ctx,soap);
 		return SOAP_FAULT;
 	}
 
 	s2jp_tag(tag,&mytag);
 
-	if (pd->ops.open(pd->fpctx,file_be,&file_p)
-		|| pd->ops.generic(pd->fpctx,file_p,GLITE_JP_FPLUG_TAGS_APPEND,&mytag))
+	/* XXX: assuming tag plugin handles just one type */
+	if (pd[0]->ops.open(pd[0]->fpctx,file_be,0,&file_p)
+		|| pd[0]->ops.generic(pd[0]->fpctx,file_p,GLITE_JP_FPLUG_TAGS_APPEND,&mytag))
 	{
 		err2fault(ctx,soap);
-		if (file_p) pd->ops.close(pd->fpctx,file_p);
+		if (file_p) pd[0]->ops.close(pd[0]->fpctx,file_p);
 		glite_jppsbe_close_file(ctx,file_be);
+		free(pd);
 		return SOAP_FAULT;
 	}
 
-	if (pd->ops.close(pd->fpctx,file_p)
+	if (pd[0]->ops.close(pd[0]->fpctx,file_p)
 		|| glite_jppsbe_close_file(ctx,file_be))
 	{
 		err2fault(ctx,soap);
+		free(pd);
 		return SOAP_FAULT;
 	}
 
 	/* XXX: ignore errors but don't fail silenty */
 	glite_jpps_match_tag(ctx,job,&mytag);
 
+	free(pd);
 	return SOAP_OK;
 }
 
@@ -302,6 +337,7 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__FeedIndex(
 
 	if (!history && !continuous) {
 		glite_jp_error_t	err;
+		memset(&err,0,sizeof err);
 		err.code = EINVAL;
 		err.source = __FUNCTION__;
 		err.desc = "at least one of <history> and <continous> must be true";
@@ -347,6 +383,7 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__GetJob(
 	struct jptype__Files	*files;
 	struct jptype__File 	**f = NULL;
 
+	memset(&err,0,sizeof err);
 	files = response->files = soap_malloc(soap,sizeof *response->files);
 	files->__sizefile = 0;
 

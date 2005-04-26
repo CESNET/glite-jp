@@ -4,10 +4,13 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
+#include <fcntl.h>
 
 #include "glite/jp/types.h"
 #include "glite/jp/strmd5.h"
 #include "feed.h"
+#include "file_plugin.h"
+#include "builtin_plugins.h"
 
 
 /* 
@@ -113,6 +116,7 @@ static int match_feed(
 
 			if (glite_jppsbe_get_job_metadata(ctx,job,meta)) {
 				glite_jp_error_t	err;
+				memset(&err,0,sizeof err);
 				err.code = EIO;
 				err.source = __FUNCTION__;
 				err.desc = "complete query";
@@ -148,6 +152,7 @@ int glite_jpps_match_attr(
 				attrs[i].attr.type <= 0)
 		{
 			glite_jp_error_t	err;
+			memset(&err,0,sizeof err);
 			err.code = EINVAL;
 			err.source = __FUNCTION__;
 			err.desc = "unknown attribute";
@@ -155,6 +160,7 @@ int glite_jpps_match_attr(
 		}
 		if (attri[attrs[i].attr.type] >= 0) {
 			glite_jp_error_t	err;
+			memset(&err,0,sizeof err);
 			err.code = EINVAL;
 			err.source = __FUNCTION__;
 			err.desc = "double attribute change";
@@ -180,7 +186,63 @@ int glite_jpps_match_file(
 	const char *name
 )
 {
-	fprintf(stderr,"%s: \n",__FUNCTION__);
+	glite_jpps_fplug_data_t	**pd = NULL;
+	int	pi;
+	void	*bh = NULL;
+	int	ret;
+
+	fprintf(stderr,"%s: %s %s %s\n",__FUNCTION__,job,class,name);
+
+	switch (glite_jpps_fplug_lookup(ctx,class,&pd)) {
+		case ENOENT: return 0;	/* XXX: shall we complain? */
+		case 0: break;
+		default: return -1;
+	}
+
+	for (pi=0; pd[pi]; pi++) {
+		int	ci;
+		for (ci=0; pd[pi]->uris[ci]; ci++) if (!strcmp(pd[pi]->uris[ci],class)) {
+				void	*ph;
+
+				if (!bh && (ret = glite_jppsbe_open_file(ctx,job,pd[pi]->classes[ci],name,O_RDONLY,&bh))) {
+					free(pd);
+					return ret;
+				}
+
+				if (pd[pi]->ops.open(pd[pi]->fpctx,bh,ci,&ph)) {
+					/* XXX: complain more visibly */
+					fputs("plugin open failed\n",stderr);
+					continue;
+				}
+
+				/* XXX: does not belong here but I'd like to avoid opening the file twice */
+				if (!strcmp(class,GLITE_JP_FILETYPE_LB)) {
+					glite_jp_attr_t		owner = { GLITE_JP_ATTR_OWNER, NULL };
+					glite_jp_attrval_t	*val;
+
+					switch (pd[pi]->ops.attr(pd[pi]->fpctx,ph,owner,&val)) {
+						case ENOENT:
+						case ENOSYS: abort();
+						case 0: printf("LB plugin: owner = %s\n",val[0].value.s);
+							/* TODO: store it in backend */
+
+							glite_jp_attrval_free(val,1);
+							break;
+
+						default: /* TODO: complain */; break;
+					}
+				}
+
+				/* TODO: extract attributes for the feeds */
+
+
+				pd[pi]->ops.close(pd[pi]->fpctx,ph);
+			}
+	}
+
+	if (bh) glite_jppsbe_close_file(ctx,bh);
+	free(pd);
+
 	return 0;
 }
 

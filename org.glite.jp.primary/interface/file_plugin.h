@@ -8,9 +8,10 @@ typedef struct _glite_jpps_fplug_op_t {
 /** Open a file.
 \param[in] fpctx	Context of the plugin, returned by its init.
 \param[in] bhandle	Handle of the file via JPPS backend.
+\param[in] type		Index of the type in this plugin's uri's.
 \param[out] handle	Handle to the opened file structure, to be passed to other plugin functions.
 */
-	int	(*open)(void *fpctx,void *bhandle,void **handle);
+	int	(*open)(void *fpctx,void *bhandle,int type,void **handle);
 
 /** Close the file. Free data associated to a handle */
 	int	(*close)(void *fpctx,void *handle);
@@ -65,6 +66,6 @@ typedef int (*glite_jpps_fplug_init_t)(
 /* XXX: not really public interface follows */
 
 int glite_jpps_fplug_load(glite_jp_context_t ctx,int argc,char **argv);
-int glite_jpps_fplug_lookup(glite_jp_context_t ctx,const char *uri, glite_jpps_fplug_data_t **plugin_data);
+int glite_jpps_fplug_lookup(glite_jp_context_t ctx,const char *uri, glite_jpps_fplug_data_t ***plugin_data);
 
 #endif

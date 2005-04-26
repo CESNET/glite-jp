@@ -46,34 +46,51 @@ static int call_opts(glite_jp_context_t,char *,char *,int (*)(glite_jp_context_t
 
 int main(int argc, char *argv[])
 {
-	int	one = 1,opt,bend = 0;
+	int	one = 1,opt;
 	edg_wll_GssStatus	gss_code;
 	struct sockaddr_in	a;
-
-	/* XXX: read options */
+	char	*b_argv[20] = { "backend" },*p_argv[20] = { "plugins" },*com;
+	int	b_argc,p_argc;
 
 	glite_jp_init_context(&ctx);
 
+	b_argc = p_argc = 1;
+
 	while ((opt = getopt(argc,argv,"B:P:")) != EOF) switch (opt) {
 		case 'B':
-			if (call_opts(ctx,optarg,"backend",glite_jppsbe_init)) {
-				/* XXX log */
-				fputs(glite_jp_error_chain(ctx), stderr);
-				exit(1);
-			}
-			bend = 1;
+			assert(b_argc < 20);
+			if (com = strchr(optarg,',')) *com = 0;
+			
+			/* XXX: memleak -- who cares for once */
+			asprintf(&b_argv[b_argc++],"-%s",optarg);
+			if (com) b_argv[b_argc++] = com+1;
+
 			break;
 		case 'P':
-			if (call_opts(ctx,optarg,"plugins",glite_jpps_fplug_load)) {
-				/* XXX log */
-				fputs(glite_jp_error_chain(ctx), stderr);
-				exit(1);
-			}
+			assert(p_argc < 20);
+			p_argv[p_argc++] = optarg;
+
+			break;
+		case '?': fprintf(stderr,"usage: %s: -Bb,val ... -Pplugin.so ...\n"
+					  "b is backend option\n",argv[0]);
+			  exit (1);
 	}
 
-	if (!bend) {
+	if (b_argc == 1) {
 		fputs("-B required\n",stderr);
 		exit (1);
+	}
+	
+	optind = 0; /* XXX: getopt used internally */
+	if (glite_jppsbe_init(ctx,b_argc,b_argv)) {
+		fputs(glite_jp_error_chain(ctx), stderr);
+		exit(1);
+	}
+
+	optind = 0; /* XXX: getopt used internally */
+	if (b_argc > 1 && glite_jpps_fplug_load(ctx,p_argc,p_argv)) {
+		fputs(glite_jp_error_chain(ctx), stderr);
+		exit(1);
 	}
 
 	srand48(time(NULL)); /* feed id generation */
