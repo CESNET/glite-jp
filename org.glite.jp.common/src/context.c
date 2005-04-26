@@ -11,7 +11,7 @@ int glite_jp_init_context(glite_jp_context_t *ctx)
 
 char *glite_jp_peer_name(glite_jp_context_t ctx)
 {
-	return strdup("unknown");
+	return strdup(ctx->peer ? ctx->peer : "unknown");
 }
 
 char *glite_jp_error_chain(glite_jp_context_t ctx)
