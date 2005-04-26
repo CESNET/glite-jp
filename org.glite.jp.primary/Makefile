@@ -163,7 +163,7 @@ glite-jp-tags.la: tags_plugin.lo
 %.lo: %.c
 	${LTCOMPILE} -o $@ -c $<
 
-soap_ops.o: soap_version.h
+soap_ops.o bones_server.o: soap_version.h
 
 soap_version.h:
 	${gsoap_prefix}/bin/soapcpp2 /dev/null
