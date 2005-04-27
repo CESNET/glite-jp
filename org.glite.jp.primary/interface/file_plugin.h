@@ -11,7 +11,7 @@ typedef struct _glite_jpps_fplug_op_t {
 \param[in] type		Index of the type in this plugin's uri's.
 \param[out] handle	Handle to the opened file structure, to be passed to other plugin functions.
 */
-	int	(*open)(void *fpctx,void *bhandle,int type,void **handle);
+	int	(*open)(void *fpctx,void *bhandle,const char *uri,void **handle);
 
 /** Close the file. Free data associated to a handle */
 	int	(*close)(void *fpctx,void *handle);

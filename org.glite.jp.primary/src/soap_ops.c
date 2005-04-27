@@ -215,7 +215,7 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__RecordTag(
 	s2jp_tag(tag,&mytag);
 
 	/* XXX: assuming tag plugin handles just one type */
-	if (pd[0]->ops.open(pd[0]->fpctx,file_be,0,&file_p)
+	if (pd[0]->ops.open(pd[0]->fpctx,file_be,GLITE_JP_FILETYPE_TAGS,&file_p)
 		|| pd[0]->ops.generic(pd[0]->fpctx,file_p,GLITE_JP_FPLUG_TAGS_APPEND,&mytag))
 	{
 		err2fault(ctx,soap);

@@ -209,7 +209,7 @@ int glite_jpps_match_file(
 					return ret;
 				}
 
-				if (pd[pi]->ops.open(pd[pi]->fpctx,bh,ci,&ph)) {
+				if (pd[pi]->ops.open(pd[pi]->fpctx,bh,class,&ph)) {
 					/* XXX: complain more visibly */
 					fputs("plugin open failed\n",stderr);
 					continue;
