@@ -1,2 +1,3 @@
 jpsrv = http://glite.org/wsdl/services/jp
 jptype = http://glite.org/wsdl/types/jp
+jpelem = http://glite.org/wsdl/elements/jp
