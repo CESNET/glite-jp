@@ -50,6 +50,5 @@ install:
 clean:
 	rm -f *.h
 	
-
 %.wsdl: %.xml
 	${XSLTPROC} ../src/puke-wsdl.xsl $< >$@

@@ -54,7 +54,6 @@
 	</xsd:complexType>
 	<xsd:element name="{@name}List" type="{/service/@typePrefix}:{@name}List"/>
 </xsl:template>
--->
 
 <xsl:template match="list">
 	<xsd:complexType name="{@name}List">
@@ -63,7 +62,7 @@
 		</xsd:sequence>
 	</xsd:complexType>
 </xsl:template>
-
+-->
 
 <xsl:template match="enum">
 	<xsd:simpleType name="{@name}">
@@ -71,7 +70,7 @@
 			<xsl:for-each select="val"><xsd:enumeration value="{@name}"/></xsl:for-each>
 		</xsd:restriction>
 	</xsd:simpleType>
-	<xsd:element name="{@name}" type="{/service/@typePrefix}:{@name}"/>
+<!--	<xsd:element name="{@name}" type="{/service/@typePrefix}:{@name}"/> -->
 </xsl:template>
 
 <xsl:template match="flags">
@@ -85,7 +84,7 @@
 			<xsd:element name="flag" type="{/service/@typePrefix}:{@name}Value" minOccurs="0" maxOccurs="unbounded"/>
 		</xsd:sequence>
 	</xsd:complexType>
-	<xsd:element name="{@name}" type="{/service/@typePrefix}:{@name}"/>
+<!--	<xsd:element name="{@name}" type="{/service/@typePrefix}:{@name}"/> -->
 </xsl:template>
 
 <xsl:template match="struct">
@@ -118,6 +117,7 @@
 			</xsl:for-each>
 		</xsd:sequence>
 	</xsd:complexType>
+<!--
 	<xsd:complexType name="{@name}List">
 		<xsd:sequence>
 			<xsd:element name="{@name}" type="{/service/@typePrefix}:{@name}" minOccurs="0" maxOccurs="unbounded"></xsd:element>
@@ -125,55 +125,67 @@
 	</xsd:complexType>
 	<xsd:element name="{@name}" type="{/service/@typePrefix}:{@name}"/>
 	<xsd:element name="{@name}List" type="{/service/@typePrefix}:{@name}List"/>
+-->
 </xsl:template>
 
 <xsl:template match="op" mode="message">
 	<wsdl:message name="{@name}Request">
-		<xsl:for-each select="input">
-<!--
-			<xsl:variable name="suffix">
-				<xsl:choose>
-					<xsl:when test="@list='yes'">List</xsl:when>
-				</xsl:choose>
-			</xsl:variable>
--->
-			<wsdl:part name="{@name}" element="{/service/@elemPrefix}:{@name}{../@name}">
-				<wsdl:documentation><xsl:value-of select="text()"/></wsdl:documentation>
-			</wsdl:part>
-		</xsl:for-each>
+		<wsdl:part name="input" element="{/service/@elemPrefix}:{@name}Input">
+			<wsdl:documentation><xsl:value-of select="text()"/></wsdl:documentation>
+		</wsdl:part>
 	</wsdl:message>
 	<wsdl:message name="{@name}Response">
-		<xsl:for-each select="output">
-<!--
-			<xsl:variable name="suffix">
-				<xsl:choose>
-					<xsl:when test="@list='yes'">List</xsl:when>
-				</xsl:choose>
-			</xsl:variable>
--->
-			<wsdl:part name="{@name}" element="{/service/@elemPrefix}:{@name}{../@name}">
-				<wsdl:documentation><xsl:value-of select="text()"/></wsdl:documentation>
-			</wsdl:part>
-		</xsl:for-each>
+		<wsdl:part name="output" element="{/service/@elemPrefix}:{@name}Output">
+			<wsdl:documentation><xsl:value-of select="text()"/></wsdl:documentation>
+		</wsdl:part>
 	</wsdl:message>
 </xsl:template>
 
 <xsl:template match="op" mode="element">
-			<xsl:for-each select="input|output">
-				<xsl:variable name="prefix">
-					<xsl:choose>
-						<xsl:when test="starts-with(@type,'xsd:')"/>
-						<xsl:otherwise><xsl:value-of select="/service/@typePrefix"/>:</xsl:otherwise>
-					</xsl:choose>
-				</xsl:variable>
-				<xsl:variable name="suffix">
-					<xsl:choose>
-						<xsl:when test="@list='yes'">List</xsl:when>
-					</xsl:choose>
-				</xsl:variable>
-				<xsd:element name="{@name}{../@name}" type="{$prefix}{@type}{$suffix}"/>
-			</xsl:for-each>
+	<xsd:element name="{@name}Input">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsl:for-each select="input">
+					<xsl:variable name="prefix">
+						<xsl:choose>
+							<xsl:when test="starts-with(@type,'xsd:')"/>
+							<xsl:otherwise><xsl:value-of select="/service/@typePrefix"/>:</xsl:otherwise>
+						</xsl:choose>
+					</xsl:variable>
+					<xsl:variable name="max">
+						<xsl:choose>
+							<xsl:when test="@list='yes'">unbounded</xsl:when>
+							<xsl:otherwise>1</xsl:otherwise>
+						</xsl:choose>
+					</xsl:variable>
+					<xsd:element name="{@name}" type="{$prefix}{@type}" minOccurs="1" maxOccurs="{$max}"/>
+				</xsl:for-each>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="{@name}Output">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsl:for-each select="output">
+					<xsl:variable name="prefix">
+						<xsl:choose>
+							<xsl:when test="starts-with(@type,'xsd:')"/>
+							<xsl:otherwise><xsl:value-of select="/service/@typePrefix"/>:</xsl:otherwise>
+						</xsl:choose>
+					</xsl:variable>
+					<xsl:variable name="max">
+						<xsl:choose>
+							<xsl:when test="@list='yes'">unbounded</xsl:when>
+							<xsl:otherwise>1</xsl:otherwise>
+						</xsl:choose>
+					</xsl:variable>
+					<xsd:element name="{@name}" type="{$prefix}{@type}" minOccurs="1" maxOccurs="{$max}"/>
+				</xsl:for-each>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
 </xsl:template>
+
 
 <xsl:template match="struct[@fault='yes']" mode="message">
 	<wsdl:message name="{@name}">
@@ -194,12 +206,12 @@
 
 <xsl:template match="op" mode="binding">
 	<wsdl:operation name="{@name}">
-		<soap:operation style="rpc"/>
+		<soap:operation style="document"/>
 		<wsdl:input name="i">
-			<soap:body use="literal" namespace="{/service/@ns}"/>
+			<soap:body use="literal"/>
 		</wsdl:input>
 		<wsdl:output name="o">
-			<soap:body use="literal" namespace="{/service/@ns}"/>
+			<soap:body use="literal"/>
 		</wsdl:output>
 		<wsdl:fault name="f">
 			<soap:fault use="literal"/>
@@ -219,6 +231,10 @@
 			attributeFormDefault="unqualified">
 
 			<xsl:apply-templates select="op" mode="element"/>
+
+			<xsl:for-each select="/service/fault">
+				<xsd:element name="{@name}" type="{/service/@typePrefix}:{@name}"/>
+			</xsl:for-each>
 		</schema>
 	</wsdl:types>
 
@@ -229,7 +245,7 @@
 		</wsdl:portType>
 
 		<binding name="{/service/@name}" type="{/service/@prefix}:{/service/@name}PortType">
-			<soap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+			<soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
 			<xsl:apply-templates select="op" mode="binding"/>
 		</binding>
 
@@ -245,7 +261,7 @@
 
 <xsl:template match="fault">
 	<wsdl:message name="{@name}">
-		<wsdl:part name="{@name}" element="{/service/@typePrefix}:{@name}" />
+		<wsdl:part name="{@name}" element="{/service/@elemPrefix}:{@name}" />
 	</wsdl:message>
 </xsl:template>
 

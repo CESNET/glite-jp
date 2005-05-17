@@ -42,7 +42,7 @@
 	
 		<op name="FeedIndex">
 			<input name="destination" type="xsd:string"></input>
-			<input name="attributes" type="stringList"></input>
+			<input name="attributes" type="xsd:string" list="yes"></input>
 			<input name="conditions" type="primaryQuery" list="yes"></input>
 			<input name="history" type="xsd:bool"></input>
 			<input name="continuous" type="xsd:bool"></input>
