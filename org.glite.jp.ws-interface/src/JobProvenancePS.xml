@@ -44,8 +44,8 @@
 			<input name="destination" type="xsd:string"></input>
 			<input name="attributes" type="xsd:string" list="yes"></input>
 			<input name="conditions" type="primaryQuery" list="yes"></input>
-			<input name="history" type="xsd:bool"></input>
-			<input name="continuous" type="xsd:bool"></input>
+			<input name="history" type="xsd:boolean"></input>
+			<input name="continuous" type="xsd:boolean"></input>
 			<output name="feedId" type="xsd:string"></output>
 			<output name="feedExpires" type="xsd:dateTime"></output>
 			<fault name="genericFault" type="genericFault"></fault>
