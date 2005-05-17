@@ -1,0 +1,67 @@
+<service name="JobProvenancePS"
+	ns="http://glite.org/wsdl/services/jp"
+	prefix="jp"
+	typeNs="http://glite.org/wsdl/types/jp"
+	typePrefix="jpt"
+	elemNs="http://glite.org/wsdl/elements/jp"
+	elemPrefix="jpe"
+	xmlns:jpt="http://glite.org/wsdl/types/jp">
+
+	<import namespace="http://glite.org/wsdl/services/jp" location="JobProvenanceTypes.wsdl"/>
+
+	<fault name="genericFault"/>
+
+	<operations>
+		<op name="RegisterJob">
+			<input name="job" type="xsd:string"></input>
+			<input name="owner" type="xsd:string"></input>
+			<fault name="genericFault" type="genericFault"></fault>
+		</op>
+	
+		<op name="StartUpload">
+			<input name="job" type="xsd:string"></input>
+			<input name="class" type="xsd:string"></input>
+			<input name="name" type="xsd:string"></input>
+			<input name="commitBefore" type="xsd:dateTime"></input>
+			<input name="contentType" type="xsd:string"></input>
+			<output name="destination" type="xsd:string"></output>
+			<output name="commitBefore" type="xsd:dateTime"></output>
+			<fault name="genericFault" type="genericFault"></fault>
+		</op>
+	
+		<op name="CommitUpload">
+			<input name="destination" type="xsd:string"></input>
+			<fault name="genericFault" type="genericFault"></fault>
+		</op>
+	
+		<op name="RecordTag">
+			<input name="jobid" type="xsd:string"></input>
+			<input name="tag" type="tagValue"></input>
+			<fault name="genericFault" type="genericFault"></fault>
+		</op>
+	
+		<op name="FeedIndex">
+			<input name="destination" type="xsd:string"></input>
+			<input name="attributes" type="stringList"></input>
+			<input name="conditions" type="primaryQuery" list="yes"></input>
+			<input name="history" type="xsd:bool"></input>
+			<input name="continuous" type="xsd:bool"></input>
+			<output name="feedId" type="xsd:string"></output>
+			<output name="feedExpires" type="xsd:dateTime"></output>
+			<fault name="genericFault" type="genericFault"></fault>
+		</op>
+	
+		<op name="FeedIndexRefresh">
+			<input name="feedId" type="xsd:string"></input>
+			<output name="feedExpires" type="xsd:dateTime"></output>
+			<fault name="genericFault" type="genericFault"></fault>
+		</op>
+	
+		<op name="GetJob">
+			<input name="jobid" type="xsd:string"></input>
+			<output name="files" type="jppsFile" list="yes" optional="yes"></output>
+			<fault name="genericFault" type="genericFault"></fault>
+		</op>
+	</operations>
+
+</service>

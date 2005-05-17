@@ -11,17 +11,20 @@ PREFIX=/opt/glite
 
 -include Makefile.inc
 
-VPATH=${top_srcdir}/interface
+VPATH=${top_srcdir}/interface:${top_srcdir}/src
 STAGETO=interface
 
-WSDL=JobProvenancePS.wsdl JobProvenanceIS.wsdl JobProvenanceTypes.wsdl 
+XSLTPROC=xsltproc
 
-all compile:
+#WSDL=JobProvenancePS.wsdl JobProvenanceIS.wsdl JobProvenanceTypes.wsdl 
+WSDL=JobProvenancePS.wsdl JobProvenanceTypes.wsdl 
+
+all compile: ${WSDL}
 
 check: 
 	@echo No unit test required for interface-only module.
 
-stage:
+stage: ${WSDL}
 	$(MAKE) install PREFIX=${stagedir}
 
 dist: distsrc distbin
@@ -41,8 +44,12 @@ install:
 	-mkdir -p ${PREFIX}/${STAGETO}
 	-mkdir -p ${PREFIX}/share/doc/${package}-${version}
 	install -m 644 ${top_srcdir}/LICENSE ${PREFIX}/share/doc/${package}-${version}
-	cd ${top_srcdir}/interface && install -m 644 ${WSDL} ${PREFIX}/${STAGETO}
+#	cd ${top_srcdir}/interface && install -m 644 ${WSDL} ${PREFIX}/${STAGETO}
+	install -m 644 ${WSDL} ${PREFIX}/${STAGETO}
 
 clean:
 	rm -f *.h
 	
+
+%.wsdl: %.xml
+	${XSLTPROC} ../src/puke-wsdl.xsl $< >$@

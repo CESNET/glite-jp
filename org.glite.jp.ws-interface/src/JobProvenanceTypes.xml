@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+
+<service name="JobProvenanceTypes"
+	ns="http://glite.org/wsdl/services/jp"
+	typePrefix="jpt">
+
+	<types ns="http://glite.org/wsdl/types/jp">
+
+		<enum name="queryOp">
+			<val name="EQUAL"></val>
+			<val name="UNEQUAL"></val>
+			<val name="LESS"></val>
+			<val name="GREATER"></val>
+			<val name="WITHIN"></val>
+		</enum>
+
+		<struct name="tagValue">
+			<elem name="name" type="xsd:string"></elem>
+			<elem name="sequence" type="xsd:int" optional="yes"></elem>
+			<elem name="timestamp" type="xsd:dateTime" optional="yes"></elem>
+			<elem name="stringValue" type="xsd:string" optional="yes"></elem>
+			<elem name="blobValue" type="xsd:base64Binary" optional="yes"></elem>
+		</struct>
+	
+		<struct name="genericFault" fault="yes">
+			<elem name="source" type="xsd:string"></elem>
+			<elem name="code" type="xsd:int"></elem>
+			<elem name="text" type="xsd:string"></elem>
+			<elem name="description" type="xsd:string" optional="yes"></elem>
+			<elem name="reason" type="jpt:genericFault" optional="yes"></elem>
+		</struct>
+	
+		<struct name="primaryQuery">
+			<elem name="attr" type="xsd:string"></elem>
+			<elem name="op" type="queryOp"></elem>
+			<elem name="value" type="xsd:string"></elem>
+			<elem name="value2" type="xsd:string" optional="yes"></elem>
+		</struct>
+
+		<struct name="jppsFile">
+			<elem name="class" type="xsd:string"></elem>
+			<elem name="name" type="xsd:string"></elem>
+			<elem name="url" type="xsd:string"></elem>
+		</struct>
+	
+		<list name="string"/>
+	</types>
+
+</service>
+
