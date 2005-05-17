@@ -4,6 +4,7 @@
 	xmlns="http://schemas.xmlsoap.org/wsdl/"
 	xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	xmlns:xs="http://www.w3.org/2001/XMLSchema"
 	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
 	xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
 
@@ -12,6 +13,7 @@
 	xmlns:jpt="http://glite.org/wsdl/types/jp">
 
 <xsl:output indent="yes"/>
+<xsl:namespace-alias stylesheet-prefix="xsd" result-prefix="xs"/>
 
 <xsl:template match="/service">
 	<definitions
@@ -24,7 +26,7 @@
 
 		<xsl:apply-templates select="types"/>
 		
-		<xsl:apply-templates select="fault"/>
+<!--		<xsl:apply-templates select="fault"/> -->
 
 		<xsl:apply-templates select="operations"/>
 		
@@ -33,13 +35,12 @@
 
 <xsl:template match="types">
 	<wsdl:types>
-		<schema targetNamespace="{@ns}"
-			xmlns="http://www.w3.org/2001/XMLSchema"
+		<xsd:schema targetNamespace="{@ns}"
 			elementFormDefault="unqualified"
 			attributeFormDefault="unqualified">
 
 			<xsl:apply-templates/>
-		</schema>
+		</xsd:schema>
 	</wsdl:types>
 	<!-- <xsl:apply-templates select="struct[@fault='yes']" mode="message"/> -->
 </xsl:template>
@@ -130,19 +131,19 @@
 
 <xsl:template match="op" mode="message">
 	<wsdl:message name="{@name}Request">
-		<wsdl:part name="input" element="{/service/@elemPrefix}:{@name}Input">
+		<wsdl:part name="input" element="{/service/@elemPrefix}:{@name}">
 			<wsdl:documentation><xsl:value-of select="text()"/></wsdl:documentation>
 		</wsdl:part>
 	</wsdl:message>
 	<wsdl:message name="{@name}Response">
-		<wsdl:part name="output" element="{/service/@elemPrefix}:{@name}Output">
+		<wsdl:part name="output" element="{/service/@elemPrefix}:{@name}Response">
 			<wsdl:documentation><xsl:value-of select="text()"/></wsdl:documentation>
 		</wsdl:part>
 	</wsdl:message>
 </xsl:template>
 
 <xsl:template match="op" mode="element">
-	<xsd:element name="{@name}Input">
+	<xsd:element name="{@name}">
 		<xsd:complexType>
 			<xsd:sequence>
 				<xsl:for-each select="input">
@@ -163,7 +164,7 @@
 			</xsd:sequence>
 		</xsd:complexType>
 	</xsd:element>
-	<xsd:element name="{@name}Output">
+	<xsd:element name="{@name}Response">
 		<xsd:complexType>
 			<xsd:sequence>
 				<xsl:for-each select="output">
@@ -214,19 +215,18 @@
 			<soap:body use="literal"/>
 		</wsdl:output>
 		<wsdl:fault name="f">
-			<soap:fault use="literal"/>
+			<soap:fault name="f" use="literal"/>
 		</wsdl:fault>
 	</wsdl:operation>
 </xsl:template>
 
 <xsl:template match="import">
-	<wsdl:import namepace="{@namespace}" location="{@location}"/>
+	<wsdl:import namespace="{@namespace}" location="{@location}"/>
 </xsl:template>
 
 <xsl:template match="operations">
 	<wsdl:types>
-		<schema targetNamespace="{/service/@elemNs}"
-			xmlns="http://www.w3.org/2001/XMLSchema"
+		<xsd:schema targetNamespace="{/service/@elemNs}"
 			elementFormDefault="unqualified"
 			attributeFormDefault="unqualified">
 
@@ -235,8 +235,10 @@
 			<xsl:for-each select="/service/fault">
 				<xsd:element name="{@name}" type="{/service/@typePrefix}:{@name}"/>
 			</xsl:for-each>
-		</schema>
+		</xsd:schema>
 	</wsdl:types>
+
+		<xsl:apply-templates select="/service/fault"/>
 
 		<xsl:apply-templates select="op" mode="message"/>
 
