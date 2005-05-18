@@ -44,12 +44,13 @@ typedef enum {
 	GLITE_JP_ATTR_OWNER,
 	GLITE_JP_ATTR_TIME,
 	GLITE_JP_ATTR_TAG,
+	GLITE_JP_ATTR_GENERIC,
 	GLITE_JP_ATTR__LAST
 } glite_jp_attrtype_t;
 
 typedef struct {
 	glite_jp_attrtype_t	type;
-	char	*name;
+	char	*name,*namespace;
 } glite_jp_attr_t;
 
 typedef struct {
