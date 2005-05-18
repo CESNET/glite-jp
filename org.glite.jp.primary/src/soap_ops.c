@@ -113,6 +113,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__StartUpload(
 {
 	CONTEXT_FROM_SOAP(soap,ctx);
 	char	*destination;
+	time_t	commit_before;
 	glite_jp_error_t	err;
 	glite_jpps_fplug_data_t	**pd = NULL;
 	int	i;
@@ -137,7 +138,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__StartUpload(
 	for (i=0; pd[0]->uris[i] && strcmp(pd[0]->uris[i],in->class_); i++);
 	assert(pd[0]->uris[i]);
 
-	if (glite_jppsbe_start_upload(ctx,job,pd[0]->classes[i],in->name,in->content_type,
+	if (glite_jppsbe_start_upload(ctx,in->job,pd[0]->classes[i],in->name,in->contentType,
 				&destination,&commit_before))
 	{
 		err2fault(ctx,soap);
@@ -163,7 +164,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__CommitUpload(
 
 	job = class = name = NULL;
 	
-	if (glite_jppsbe_commit_upload(ctx,destination)) {
+	if (glite_jppsbe_commit_upload(ctx,in->destination)) {
 		err2fault(ctx,soap);
 		return SOAP_FAULT;
 	}
@@ -196,7 +197,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RecordTag(
 	 * just one uri/class */
 
 	if (glite_jpps_fplug_lookup(ctx,GLITE_JP_FILETYPE_TAGS,&pd)
-		|| glite_jppsbe_open_file(ctx,in->job,pd[0]->classes[0],NULL,
+		|| glite_jppsbe_open_file(ctx,in->jobid,pd[0]->classes[0],NULL,
 						O_WRONLY|O_CREAT,&file_be)
 	) {
 		free(pd);
@@ -226,13 +227,16 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RecordTag(
 	}
 
 	/* XXX: ignore errors but don't fail silenty */
-	glite_jpps_match_tag(ctx,in->job,&mytag);
+	glite_jpps_match_tag(ctx,in->jobid,&mytag);
 
 	free(pd);
 	return SOAP_OK;
 }
 
 extern char *glite_jp_default_namespace;
+
+/* XXX: should be public */
+#define GLITE_JP_TAGS_NAMESPACE "http://glite.org/services/jp/tags"
 
 static void s2jp_attr(const char *in,glite_jp_attr_t *out)
 {
@@ -247,24 +251,20 @@ static void s2jp_attr(const char *in,glite_jp_attr_t *out)
 		ns = glite_jp_default_namespace;
 	}
 
-	if (strcmp(ns,glite_jp_default_namespace) {
-		out->type = GLITE_JP_ATTR_GENERIC;
-		out->name = strdup(name);
-		out->namespace = strdup(namespace);
-	} else if (!strcmp(name,"owner") out->type = GLITE_JP_ATTR_OWNER;
-	else if (!strcmp(name,"time") out->type = GLITE_JP_ATTR_OWNER;
-/* FIXME: tagy */
-	else if (!strcmp(name,"owner") out->type = GLITE_JP_ATTR_OWNER;
+	memset(out,0,sizeof *out);
 
-	switch (in->type) {
-		case OWNER: out->type = GLITE_JP_ATTR_OWNER; break;
-		case TIME: out->type = GLITE_JP_ATTR_TIME;
-			   out->name = strdup(in->name);
-			   break;
-		case TAG: out->type = GLITE_JP_ATTR_TAG;
-			  out->name = strdup(in->name);
-			  break;
-		default: break;
+	if (strcmp(ns,glite_jp_default_namespace))
+		out->type = strcmp(ns,GLITE_JP_TAGS_NAMESPACE) ?
+			GLITE_JP_ATTR_GENERIC : GLITE_JP_ATTR_TAG;
+	else {
+		if (!strcmp(name,"owner")) out->type = GLITE_JP_ATTR_OWNER;
+		else if (!strcmp(name,"time")) out->type = GLITE_JP_ATTR_OWNER;
+
+	}
+
+	if (out->type) {
+		out->name = strdup(name);
+		out->namespace = strdup(ns);
 	}
 }
 
@@ -276,6 +276,7 @@ static void s2jp_queryval(
 	switch (type) {
 		case GLITE_JP_ATTR_OWNER:
 		case GLITE_JP_ATTR_TAG:
+		case GLITE_JP_ATTR_GENERIC:
 			out->s = strdup(in);
 			break;
 		case GLITE_JP_ATTR_TIME:
@@ -284,7 +285,7 @@ static void s2jp_queryval(
 	}
 }
 
-static void s2jp_query(const struct jptype__PrimaryQueryElement *in, glite_jp_query_rec_t *out)
+static void s2jp_query(const struct jptype__primaryQuery *in, glite_jp_query_rec_t *out)
 {
 	s2jp_attr(in->attr,&out->attr);
 
@@ -302,7 +303,7 @@ static void s2jp_query(const struct jptype__PrimaryQueryElement *in, glite_jp_qu
 	s2jp_queryval(in->value,out->attr.type,&out->value);
 }
 
-SOAP_FMAC5 int SOAP_FMAC6 jpsrv__FeedIndex(
+SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__FeedIndex(
 		struct soap *soap,
 		struct _jpelem__FeedIndex *in,
 		struct _jpelem__FeedIndexResponse *out)
@@ -329,23 +330,23 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__FeedIndex(
 	for (i = 0; i<in->__sizeattributes; i++) s2jp_attr(in->attributes[i],attrs+i);
 	for (i = 0; i<in->__sizeconditions; i++) s2jp_query(in->conditions[i],qry+i);
 
-	if (history) {
-		if (glite_jpps_run_feed(ctx,destination,attrs,qry,&feed_id)) {
+	if (in->history) {
+		if (glite_jpps_run_feed(ctx,in->destination,attrs,qry,&feed_id)) {
 			err2fault(ctx,soap);
 			ret = SOAP_FAULT;
 			goto cleanup;
 		}
 	}
 
-	if (continuous) {
-		if (glite_jpps_register_feed(ctx,destination,attrs,qry,&feed_id,&expires)) {
+	if (in->continuous) {
+		if (glite_jpps_register_feed(ctx,in->destination,attrs,qry,&feed_id,&expires)) {
 			err2fault(ctx,soap);
 			ret = SOAP_FAULT;
 			goto cleanup;
 		}
 	}
 
-	if (!history && !continuous) {
+	if (!in->history && !in->continuous) {
 		glite_jp_error_t	err;
 		memset(&err,0,sizeof err);
 		err.code = EINVAL;
@@ -357,8 +358,8 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__FeedIndex(
 		goto cleanup;
 	}
 
-	response->expires = expires;
-	response->feedId = soap_strdup(soap,feed_id);
+	out->feedExpires = expires;
+	out->feedId = soap_strdup(soap,feed_id);
 
 cleanup:
 	free(feed_id);
@@ -370,19 +371,19 @@ cleanup:
 	return ret;
 }
 
-SOAP_FMAC5 int SOAP_FMAC6 jpsrv__FeedIndexRefresh(
+SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__FeedIndexRefresh(
 		struct soap *soap,
-		char *feed_id,
-		struct jpsrv__FeedIndexRefreshResponse *response)
+		struct _jpelem__FeedIndexRefresh *in,
+		struct _jpelem__FeedIndexRefreshResponse *out)
 {
 	fprintf(stderr,"%s: not implemented\n",__FUNCTION__);
 	abort();
 }
 
-SOAP_FMAC5 int SOAP_FMAC6 jpsrv__GetJob(
+SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__GetJob(
 		struct soap *soap,
-		char *job,
-		struct jpsrv__GetJobResponse *response)
+		struct _jpelem__GetJob *in,
+		struct _jpelem__GetJobResponse *out)
 {
 	CONTEXT_FROM_SOAP(soap,ctx);
 	char	*url;
@@ -390,21 +391,19 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__GetJob(
 	int	i,n;
 	glite_jp_error_t	err;
 	void	**pd;
-	struct jptype__Files	*files;
-	struct jptype__File 	**f = NULL;
+	struct jptype__jppsFile 	**f = NULL;
 
 	memset(&err,0,sizeof err);
-	files = response->files = soap_malloc(soap,sizeof *response->files);
-	files->__sizefile = 0;
+	out->__sizefiles = 0;
 
 	for (pd = ctx->plugins; *pd; pd++) {
 		glite_jpps_fplug_data_t	*plugin = *pd;
 
 		for (i=0; plugin->uris[i]; i++) {
 			glite_jp_clear_error(ctx);
-			switch (glite_jppsbe_get_job_url(ctx,job,plugin->classes[i],NULL,&url)) {
-				case 0: n = files->__sizefile++;
-					f = realloc(f,files->__sizefile * sizeof *f);
+			switch (glite_jppsbe_get_job_url(ctx,in->jobid,plugin->classes[i],NULL,&url)) {
+				case 0: n = out->__sizefiles++;
+					f = realloc(f,out->__sizefiles * sizeof *f);
 					f[n] = soap_malloc(soap, sizeof **f);
 					f[n]->class_ = soap_strdup(soap,plugin->uris[i]);
 					f[n]->name = NULL;
@@ -425,7 +424,7 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__GetJob(
 		}
 	}
 
-	if (!files->__sizefile) {
+	if (!out->__sizefiles) {
 		glite_jp_clear_error(ctx);
 		err.code = ENOENT;
 		err.source = __FUNCTION__;
@@ -436,8 +435,8 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__GetJob(
 		return SOAP_FAULT;
 	}
 
-	files->file = soap_malloc(soap,files->__sizefile * sizeof *f);
-	memcpy(files->file,f,files->__sizefile * sizeof *f);
+	out->files = soap_malloc(soap,out->__sizefiles * sizeof *f);
+	memcpy(out->files,f,out->__sizefiles * sizeof *f);
 
 	return SOAP_OK;
 }

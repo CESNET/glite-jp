@@ -9,10 +9,10 @@
 #define TIME jptype__AttributeType__TIME
 #define TAG jptype__AttributeType__TAG
 
-#define EQUAL jptype__QueryOp__EQUAL
-#define UNEQUAL jptype__QueryOp__UNEQUAL
-#define LESS jptype__QueryOp__LESS
-#define GREATER jptype__QueryOp__GREATER
-#define WITHIN jptype__QueryOp__WITHIN
+#define EQUAL jptype__queryOp__EQUAL
+#define UNEQUAL jptype__queryOp__UNEQUAL
+#define LESS jptype__queryOp__LESS
+#define GREATER jptype__queryOp__GREATER
+#define WITHIN jptype__queryOp__WITHIN
 #endif
 

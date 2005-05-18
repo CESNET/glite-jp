@@ -48,7 +48,7 @@ char *glite_jp_default_namespace;
 
 int main(int argc, char *argv[])
 {
-	int	one = 1,opt;
+	int	one = 1,opt,i;
 	edg_wll_GssStatus	gss_code;
 	struct sockaddr_in	a;
 	char	*b_argv[20] = { "backend" },*p_argv[20] = { "plugins" },*com;
@@ -97,9 +97,9 @@ int main(int argc, char *argv[])
 
 	srand48(time(NULL)); /* feed id generation */
 
-	for (i=0; jpps_namespaces[i].id && strcmp(jpps_namespaces[i].id,"jpsrv"); i++);
-	assert(jpps_namespaces[i].id);
-	glite_jp_default_namespace = jpps_namespaces[i].ns;
+	for (i=0; jpps__namespaces[i].id && strcmp(jpps__namespaces[i].id,"jpsrv"); i++);
+	assert(jpps__namespaces[i].id);
+	glite_jp_default_namespace = jpps__namespaces[i].ns;
 
 	stab.conn = socket(PF_INET, SOCK_STREAM, 0);
 	if (stab.conn < 0) {

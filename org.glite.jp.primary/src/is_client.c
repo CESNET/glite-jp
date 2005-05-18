@@ -8,8 +8,10 @@
 #include "glite/jp/types.h"
 
 #include "feed.h"
+/* FIXME
 #include "jpis_H.h"
 #include "jpis_.nsmap"
+*/
 
 int glite_jpps_single_feed(
 		glite_jp_context_t ctx,
@@ -21,6 +23,8 @@ int glite_jpps_single_feed(
 	/* TODO: really call JP Index server (via interlogger) */
 	printf("feed to %s, job %s\n",destination,job);
 
+/* FIXME */
+#if 0
 	if (soap_call_jpsrv__UpdateJobs(ctx->other_soap,destination,"",
 		/* FIXME: feedId */ "",
 		/* FIXME: UpdateJobsData */ NULL,
@@ -29,5 +33,6 @@ int glite_jpps_single_feed(
 	)) fprintf(stderr,"UpdateJobs: %s %s\n",ctx->other_soap->fault->faultcode,
 		ctx->other_soap->fault->faultstring);
 
+#endif
 	return 0;
 }
