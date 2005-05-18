@@ -16,10 +16,10 @@
 #include "file_plugin.h"
 #include "builtin_plugins.h"
 
-static struct jptype__GenericJPFaultType *jp2s_error(struct soap *soap,
+static struct jptype__genericFault *jp2s_error(struct soap *soap,
 		const glite_jp_error_t *err)
 {
-	struct jptype__GenericJPFaultType *ret = NULL;
+	struct jptype__genericFault *ret = NULL;
 	if (err) {
 		ret = soap_malloc(soap,sizeof *ret);
 		memset(ret,0,sizeof *ret);
@@ -36,12 +36,12 @@ static void err2fault(const glite_jp_context_t ctx,struct soap *soap)
 {
 	char	*et;
 	struct SOAP_ENV__Detail	*detail = soap_malloc(soap,sizeof *detail);
-	struct _GenericJPFault *f = soap_malloc(soap,sizeof *f);
+	struct _genericFault *f = soap_malloc(soap,sizeof *f);
 
 
-	f->jptype__GenericJPFault = jp2s_error(soap,ctx->error);
+	f->jpelem__genericFault = jp2s_error(soap,ctx->error);
 
-	detail->__type = SOAP_TYPE__GenericJPFault;
+	detail->__type = SOAP_TYPE__genericFault;
 #if GSOAP_VERSION >= 20700
 	detail->fault = f;
 #else
@@ -66,7 +66,7 @@ static glite_jp_fileclass_t s2jp_fileclass(enum jptype__UploadClass class)
 }
 */
 
-static void s2jp_tag(const struct jptype__TagValue *stag,glite_jp_tagval_t *jptag)
+static void s2jp_tag(const struct jptype__tagValue *stag,glite_jp_tagval_t *jptag)
 {
 	memset(jptag,0,sizeof *jptag);
 	jptag->name = strdup(stag->name);
@@ -82,41 +82,34 @@ static void s2jp_tag(const struct jptype__TagValue *stag,glite_jp_tagval_t *jpta
 
 #define CONTEXT_FROM_SOAP(soap,ctx) glite_jp_context_t	ctx = (glite_jp_context_t) ((soap)->user)
 
-SOAP_FMAC5 int SOAP_FMAC6 jpsrv__RegisterJob(
+SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RegisterJob(
 		struct soap *soap,
-		char *job,
-		struct jpsrv__RegisterJobResponse *response)
+		struct _jpelem__RegisterJob *in,
+		struct _jpelem__RegisterJobResponse *out)
 {
 	CONTEXT_FROM_SOAP(soap,ctx);
-	char	*owner = glite_jp_peer_name(ctx);
 	glite_jp_attrval_t owner_val[2];
 
-	if (glite_jppsbe_register_job(ctx,job,owner)) {
+	if (glite_jppsbe_register_job(ctx,in->job,in->owner)) {
 		err2fault(ctx,soap);
-		free(owner);
 		return SOAP_FAULT;
 	}
 
 	owner_val[0].attr.type = GLITE_JP_ATTR_OWNER;
-	owner_val[0].value.s = owner;
+	owner_val[0].value.s = in->owner;
 	owner_val[1].attr.type = GLITE_JP_ATTR_UNDEF;
 
 /* XXX: errrors should be ingored but not silently */
-	glite_jpps_match_attr(ctx,job,owner_val); 
-	free(owner);
+	glite_jpps_match_attr(ctx,in->job,owner_val); 
 
 	return SOAP_OK;
 }
 
 
-SOAP_FMAC5 int SOAP_FMAC6 jpsrv__StartUpload(
+SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__StartUpload(
 		struct soap *soap,
-		char *job,
-		char *class,
-		char *name,
-		time_t commit_before,
-		char *content_type,
-		struct jpsrv__StartUploadResponse *response)
+		struct _jpelem__StartUpload *in,
+		struct _jpelem__StartUploadResponse *out)
 {
 	CONTEXT_FROM_SOAP(soap,ctx);
 	char	*destination;
@@ -127,7 +120,7 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__StartUpload(
 	glite_jp_clear_error(ctx);
 	memset(&err,0,sizeof err);
 
-	switch (glite_jpps_fplug_lookup(ctx,class,&pd)) {
+	switch (glite_jpps_fplug_lookup(ctx,in->class_,&pd)) {
 		case ENOENT:
 			err.code = ENOENT;
 			err.source = __FUNCTION__;
@@ -141,10 +134,10 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__StartUpload(
 			return SOAP_FAULT;
 	}
 
-	for (i=0; pd[0]->uris[i] && strcmp(pd[0]->uris[i],class); i++);
+	for (i=0; pd[0]->uris[i] && strcmp(pd[0]->uris[i],in->class_); i++);
 	assert(pd[0]->uris[i]);
 
-	if (glite_jppsbe_start_upload(ctx,job,pd[0]->classes[i],name,content_type,
+	if (glite_jppsbe_start_upload(ctx,job,pd[0]->classes[i],in->name,in->content_type,
 				&destination,&commit_before))
 	{
 		err2fault(ctx,soap);
@@ -152,18 +145,18 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__StartUpload(
 		return SOAP_FAULT;
 	}
 
-	response->destination = soap_strdup(soap,destination);
+	out->destination = soap_strdup(soap,destination);
 	free(destination);
-	response->commitBefore = commit_before;
+	out->commitBefore = commit_before;
 
 	free(pd);
 	return SOAP_OK;
 }
 
-SOAP_FMAC5 int SOAP_FMAC6 jpsrv__CommitUpload(
+SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__CommitUpload(
 		struct soap *soap,
-		char *destination,
-		struct jpsrv__CommitUploadResponse *response)
+		struct _jpelem__CommitUpload *in,
+		struct _jpelem__CommitUploadResponse *out)
 {
 	CONTEXT_FROM_SOAP(soap,ctx);
 	char	*job,*class,*name;
@@ -176,7 +169,7 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__CommitUpload(
 	}
 
 	/* XXX: should not fail when commit_upload was OK */
-	glite_jppsbe_destination_info(ctx,destination,&job,&class,&name);
+	glite_jppsbe_destination_info(ctx,in->destination,&job,&class,&name);
 
 	/* XXX: ignore errors but don't fail silenty */
 	glite_jpps_match_file(ctx,job,class,name);
@@ -186,11 +179,10 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__CommitUpload(
 	return SOAP_OK;
 }
 
-SOAP_FMAC5 int SOAP_FMAC6 jpsrv__RecordTag(
+SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RecordTag(
 		struct soap *soap,
-		char *job,
-		struct jptype__TagValue *tag,
-		struct jpsrv__RecordTagResponse *response)
+		struct _jpelem__RecordTag *in,
+		struct _jpelem__RecordTagResponse *out)
 {
 	CONTEXT_FROM_SOAP(soap,ctx);
 	void	*file_be,*file_p;
@@ -204,7 +196,7 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__RecordTag(
 	 * just one uri/class */
 
 	if (glite_jpps_fplug_lookup(ctx,GLITE_JP_FILETYPE_TAGS,&pd)
-		|| glite_jppsbe_open_file(ctx,job,pd[0]->classes[0],NULL,
+		|| glite_jppsbe_open_file(ctx,in->job,pd[0]->classes[0],NULL,
 						O_WRONLY|O_CREAT,&file_be)
 	) {
 		free(pd);
@@ -212,7 +204,7 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__RecordTag(
 		return SOAP_FAULT;
 	}
 
-	s2jp_tag(tag,&mytag);
+	s2jp_tag(in->tag,&mytag);
 
 	/* XXX: assuming tag plugin handles just one type */
 	if (pd[0]->ops.open(pd[0]->fpctx,file_be,GLITE_JP_FILETYPE_TAGS,&file_p)
@@ -234,14 +226,36 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__RecordTag(
 	}
 
 	/* XXX: ignore errors but don't fail silenty */
-	glite_jpps_match_tag(ctx,job,&mytag);
+	glite_jpps_match_tag(ctx,in->job,&mytag);
 
 	free(pd);
 	return SOAP_OK;
 }
 
-static void s2jp_attr(const struct jptype__Attribute *in,glite_jp_attr_t *out)
+extern char *glite_jp_default_namespace;
+
+static void s2jp_attr(const char *in,glite_jp_attr_t *out)
 {
+	char	*buf = strdup(in),*name = strchr(buf,':'),*ns = NULL;
+
+	if (name) {
+		ns = buf; 
+		*name++ = 0;
+	}
+	else {
+		name = buf; 
+		ns = glite_jp_default_namespace;
+	}
+
+	if (strcmp(ns,glite_jp_default_namespace) {
+		out->type = GLITE_JP_ATTR_GENERIC;
+		out->name = strdup(name);
+		out->namespace = strdup(namespace);
+	} else if (!strcmp(name,"owner") out->type = GLITE_JP_ATTR_OWNER;
+	else if (!strcmp(name,"time") out->type = GLITE_JP_ATTR_OWNER;
+/* FIXME: tagy */
+	else if (!strcmp(name,"owner") out->type = GLITE_JP_ATTR_OWNER;
+
 	switch (in->type) {
 		case OWNER: out->type = GLITE_JP_ATTR_OWNER; break;
 		case TIME: out->type = GLITE_JP_ATTR_TIME;
@@ -290,12 +304,8 @@ static void s2jp_query(const struct jptype__PrimaryQueryElement *in, glite_jp_qu
 
 SOAP_FMAC5 int SOAP_FMAC6 jpsrv__FeedIndex(
 		struct soap *soap,
-		char *destination,
-		struct jptype__Attributes *attributes,
-		struct jptype__PrimaryQuery *query,
-		enum xsd__boolean history,
-		enum xsd__boolean continuous,
-	       	struct jpsrv__FeedIndexResponse *response)
+		struct _jpelem__FeedIndex *in,
+		struct _jpelem__FeedIndexResponse *out)
 {	
 
 /* deferred processing: return feed_id to the index server first,
@@ -310,14 +320,14 @@ SOAP_FMAC5 int SOAP_FMAC6 jpsrv__FeedIndex(
 	time_t	expires = 0;
 	int 	ret = SOAP_OK;
 
-	glite_jp_attr_t	*attrs = calloc(attributes->__sizeitem+1,sizeof *attrs);
-	glite_jp_query_rec_t	*qry = calloc(query->__sizeitem+1,sizeof *qry);
+	glite_jp_attr_t	*attrs = calloc(in->__sizeattributes+1,sizeof *attrs);
+	glite_jp_query_rec_t	*qry = calloc(in->__sizeconditions+1,sizeof *qry);
 	int	i;
 
 	glite_jp_clear_error(ctx);
 
-	for (i = 0; i<attributes->__sizeitem; i++) s2jp_attr(attributes->item[i],attrs+i);
-	for (i = 0; i<query->__sizeitem; i++) s2jp_query(query->item[i],qry+i);
+	for (i = 0; i<in->__sizeattributes; i++) s2jp_attr(in->attributes[i],attrs+i);
+	for (i = 0; i<in->__sizeconditions; i++) s2jp_query(in->conditions[i],qry+i);
 
 	if (history) {
 		if (glite_jpps_run_feed(ctx,destination,attrs,qry,&feed_id)) {

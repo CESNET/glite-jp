@@ -44,6 +44,8 @@ static glite_jp_context_t	ctx;
 
 static int call_opts(glite_jp_context_t,char *,char *,int (*)(glite_jp_context_t,int,char **));
 
+char *glite_jp_default_namespace;
+
 int main(int argc, char *argv[])
 {
 	int	one = 1,opt;
@@ -94,6 +96,10 @@ int main(int argc, char *argv[])
 	}
 
 	srand48(time(NULL)); /* feed id generation */
+
+	for (i=0; jpps_namespaces[i].id && strcmp(jpps_namespaces[i].id,"jpsrv"); i++);
+	assert(jpps_namespaces[i].id);
+	glite_jp_default_namespace = jpps_namespaces[i].ns;
 
 	stab.conn = socket(PF_INET, SOCK_STREAM, 0);
 	if (stab.conn < 0) {
