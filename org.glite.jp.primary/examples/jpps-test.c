@@ -14,7 +14,7 @@ static void usage(const char *me)
 {
 	fprintf(stderr,"%s: [-s server-url] operation args \n\n"
 			"	operations are:\n"
-			"		RegisterJob jobid\n"
+			"		RegisterJob jobid owner\n"
 			"		StartUpload jobid class commit_before mimetype\n"
 			"		CommitUpload destination\n"
 			"		RecordTag jobid tagname sequence stringvalue\n"
@@ -106,12 +106,13 @@ int main(int argc,char *argv[])
 
 	if (!strcasecmp(argv[1],"RegisterJob")) {
 		struct _jpelem__RegisterJob	in;
+		struct _jpelem__RegisterJobResponse	empty;
 
 		if (argc != 4) usage(argv[0]);
 		in.job = argv[2];
 		in.owner = argv[3];
 		check_fault(soap,
-			soap_call___jpsrv__RegisterJob(soap,server,"",&in,NULL));
+			soap_call___jpsrv__RegisterJob(soap,server,"",&in,&empty));
 	} else if (!strcasecmp(argv[1], "StartUpload")) {
 		struct _jpelem__StartUpload		in;
 		struct _jpelem__StartUploadResponse	out;
@@ -130,16 +131,18 @@ int main(int argc,char *argv[])
 		}
 	} else if (!strcasecmp(argv[1], "CommitUpload")) {
 		struct _jpelem__CommitUpload	in;
+		struct _jpelem__CommitUploadResponse	empty;
 
 		in.destination = argv[2];
 
 		if (argc != 3) usage(argv[0]);
 		if (!check_fault(soap,
-				soap_call___jpsrv__CommitUpload(soap, server, "",&in,NULL))) {
+				soap_call___jpsrv__CommitUpload(soap, server, "",&in,&empty))) {
 			/* OK */
 		}
 	} else if (!strcasecmp(argv[1], "RecordTag")) {
 		struct _jpelem__RecordTag	in;
+		struct _jpelem__RecordTagResponse	empty;
 		struct jptype__tagValue tagval;
 		
 		if (argc != 6) usage(argv[0]);
@@ -153,7 +156,7 @@ int main(int argc,char *argv[])
 		tagval.blobValue = NULL;
 		
 		if (!check_fault(soap,
-				soap_call___jpsrv__RecordTag(soap, server, "",&in, NULL))) {
+				soap_call___jpsrv__RecordTag(soap, server, "",&in, &empty))) {
 			/* OK */
 		}
 	} 
