@@ -28,7 +28,7 @@ static void usage(const char *me)
 	
 static int check_fault(struct soap *soap,int err) {
 	struct SOAP_ENV__Detail *detail;
-	struct jptype__GenericJPFaultType	*f;
+	struct jptype__genericFault	*f;
 	char	*reason,indent[200] = "  ";
 
 	switch(err) {
@@ -46,13 +46,13 @@ static int check_fault(struct soap *soap,int err) {
 			}
 			fputs(reason,stderr);
 			putc('\n',stderr);
-			assert(detail->__type == SOAP_TYPE__GenericJPFault);
+			assert(detail->__type == SOAP_TYPE__genericFault);
 #if GSOAP_VERSION >=20700
-			f = ((struct _GenericJPFault *) detail->fault)
+			f = ((struct _genericFault *) detail->fault)
 #else
-			f = ((struct _GenericJPFault *) detail->value)
+			f = ((struct _genericFault *) detail->value)
 #endif
-				-> jptype__GenericJPFault;
+				-> jpelem__genericFault;
 
 			while (f) {
 				fprintf(stderr,"%s%s: %s (%s)\n",indent,
@@ -68,6 +68,8 @@ static int check_fault(struct soap *soap,int err) {
 	return 0;
 }
 
+/* FIXME: new wsdl */
+#if 0
 static struct jptype__Attribute sample_attr[] = {
 			{ OWNER, NULL },
 			{ TIME, "submitted" },
@@ -80,6 +82,7 @@ static struct jptype__PrimaryQueryElement sample_query[][5] = {
 		{ NULL, 0, NULL, NULL }
 	},
 };
+#endif
 
 int main(int argc,char *argv[])
 {
@@ -102,35 +105,47 @@ int main(int argc,char *argv[])
 	}
 
 	if (!strcasecmp(argv[1],"RegisterJob")) {
-		struct jpsrv__RegisterJobResponse	r;
+		struct _jpelem__RegisterJob	in;
 
-		if (argc != 3) usage(argv[0]);
+		if (argc != 4) usage(argv[0]);
+		in.job = argv[2];
+		in.owner = argv[3];
 		check_fault(soap,
-			soap_call_jpsrv__RegisterJob(soap,server,"",argv[2],&r));
+			soap_call___jpsrv__RegisterJob(soap,server,"",&in,NULL));
 	} else if (!strcasecmp(argv[1], "StartUpload")) {
-		struct jpsrv__StartUploadResponse r;
+		struct _jpelem__StartUpload		in;
+		struct _jpelem__StartUploadResponse	out;
+
+		in.job = argv[2];
+		in.class_ = argv[3];
+		in.name = NULL;
+		in.commitBefore = atoi(argv[4]);
+		in.contentType = argv[5];
 
 		if (argc != 6) usage(argv[0]);
 		if (!check_fault(soap,
-				soap_call_jpsrv__StartUpload(soap, server, "",
-					argv[2], argv[3], "", atoi(argv[4]), argv[5], &r))) {
-			printf("Destination: %s\nCommit before: %s\n", r.destination, ctime(&r.commitBefore));
+				soap_call___jpsrv__StartUpload(soap, server, "",&in,&out)))
+		{
+			printf("Destination: %s\nCommit before: %s\n", out.destination, ctime(&out.commitBefore));
 		}
 	} else if (!strcasecmp(argv[1], "CommitUpload")) {
-		struct jpsrv__CommitUploadResponse r;
+		struct _jpelem__CommitUpload	in;
+
+		in.destination = argv[2];
 
 		if (argc != 3) usage(argv[0]);
 		if (!check_fault(soap,
-				soap_call_jpsrv__CommitUpload(soap, server, "",
-					argv[2], &r))) {
+				soap_call___jpsrv__CommitUpload(soap, server, "",&in,NULL))) {
 			/* OK */
 		}
 	} else if (!strcasecmp(argv[1], "RecordTag")) {
-		struct jpsrv__RecordTagResponse r;
-		struct jptype__TagValue tagval;
+		struct _jpelem__RecordTag	in;
+		struct jptype__tagValue tagval;
 		
 		if (argc != 6) usage(argv[0]);
 		
+		in.jobid = argv[2];
+		in.tag = &tagval;
 		tagval.name = argv[3];
 		tagval.sequence = NULL;
 		tagval.timestamp = NULL;
@@ -138,11 +153,13 @@ int main(int argc,char *argv[])
 		tagval.blobValue = NULL;
 		
 		if (!check_fault(soap,
-				soap_call_jpsrv__RecordTag(soap, server, "",
-					argv[2], &tagval, &r))) {
+				soap_call___jpsrv__RecordTag(soap, server, "",&in, NULL))) {
 			/* OK */
 		}
-	} else if (!strcasecmp(argv[1],"FeedIndex")) {
+	} 
+/* FIXME: new wsdl  */
+#if 0
+   	 else if (!strcasecmp(argv[1],"FeedIndex")) {
 		struct jpsrv__FeedIndexResponse	r;
 		struct jptype__Attribute	*ap[2];
 		struct jptype__Attributes	attr = { 2, ap };
@@ -196,6 +213,7 @@ int main(int argc,char *argv[])
 		}
 
 	}
+#endif
 	else usage(argv[0]);
 
 	return 0;

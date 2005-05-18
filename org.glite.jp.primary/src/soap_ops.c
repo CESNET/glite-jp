@@ -85,11 +85,13 @@ static void s2jp_tag(const struct jptype__tagValue *stag,glite_jp_tagval_t *jpta
 SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RegisterJob(
 		struct soap *soap,
 		struct _jpelem__RegisterJob *in,
-		struct _jpelem__RegisterJobResponse *out)
+		struct _jpelem__RegisterJobResponse *empty)
+//		struct __jpsrv__RegisterJobResponse *empty)
 {
 	CONTEXT_FROM_SOAP(soap,ctx);
 	glite_jp_attrval_t owner_val[2];
 
+	printf("%s %s %s\n",__FUNCTION__,in->job,in->owner);
 	if (glite_jppsbe_register_job(ctx,in->job,in->owner)) {
 		err2fault(ctx,soap);
 		return SOAP_FAULT;
