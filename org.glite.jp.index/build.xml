@@ -12,6 +12,10 @@
 
 	Revision history:
 	$Log$
+	Revision 1.2  2004/11/22 14:00:37  dimeglio
+	Updated to use standard files
+	Fixed names (was using common instead of real module name)
+	
 	Revision 1.1.1.1  2004/10/15 09:49:13  akrenek
 -->
 
@@ -71,6 +75,7 @@
 		 Load version file 
 	     ========================================= -->
 	<property file="${module.version.file}"/>
+	<property file="${module.build.file}"/>
 		
 	<!-- ==============================================
 		 Local private targets
