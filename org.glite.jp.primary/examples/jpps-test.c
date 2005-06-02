@@ -10,6 +10,18 @@
 
 #include "jptype_map.h"
 
+#include "soap_version.h"
+#if GSOAP_VERSION <= 20602
+#define soap_call___jpsrv__RegisterJob soap_call___ns1__RegisterJob
+#define soap_call___jpsrv__StartUpload soap_call___ns1__StartUpload
+#define soap_call___jpsrv__CommitUpload soap_call___ns1__CommitUpload
+#define soap_call___jpsrv__RecordTag soap_call___ns1__RecordTag
+#define soap_call___jpsrv__FeedIndex soap_call___ns1__FeedIndex
+#define soap_call___jpsrv__FeedIndexRefresh soap_call___ns1__FeedIndexRefresh
+#define soap_call___jpsrv__GetJob soap_call___ns1__GetJob
+#endif
+
+
 static void usage(const char *me)
 {
 	fprintf(stderr,"%s: [-s server-url] operation args \n\n"

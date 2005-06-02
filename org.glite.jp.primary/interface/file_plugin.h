@@ -8,7 +8,7 @@ typedef struct _glite_jpps_fplug_op_t {
 /** Open a file.
 \param[in] fpctx	Context of the plugin, returned by its init.
 \param[in] bhandle	Handle of the file via JPPS backend.
-\param[in] type		Index of the type in this plugin's uri's.
+\param[in] uri		URI (type) of the opened file.
 \param[out] handle	Handle to the opened file structure, to be passed to other plugin functions.
 */
 	int	(*open)(void *fpctx,void *bhandle,const char *uri,void **handle);

@@ -9,7 +9,7 @@
 #include "builtin_plugins.h"
 
 static int tagappend(void *,void *,int,...);
-static int tagopen(void *,void *,void **);
+static int tagopen(void *,void *,const char *uri,void **);
 static int tagclose(void *,void *);
 
 static int tagdummy()
@@ -37,7 +37,7 @@ int init(glite_jp_context_t ctx, glite_jpps_fplug_data_t *data)
 	return 0;
 }
 
-static int tagopen(void *fpctx,void *bhandle,void **handle)
+static int tagopen(void *fpctx,void *bhandle,const char *uri,void **handle)
 {
 	/* we don't need anything special yet, so just pass the backend handle */
 	*handle = bhandle;
