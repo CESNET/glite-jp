@@ -409,14 +409,14 @@ int glite_jppsbe_start_upload(
 	}
 
 	peername = glite_jp_peer_name(ctx);
-	if (peername = NULL) {
+	if (peername == NULL) {
 		err.code = EINVAL;
 		err.desc = "Cannot obtain client certificate info";
 		goto error_out;
 	}
 
 	trio_asprintf(&stmt, "select owner, reg_time from jobs"
-		"where jobid='%|Ss'", ju);
+		" where jobid='%|Ss'", ju);
 
 	if (!stmt) {
 		err.code = ENOMEM;
@@ -489,7 +489,7 @@ int glite_jppsbe_start_upload(
 
 	free(stmt); stmt = NULL;
 	trio_asprintf(&stmt,"insert into files"
-		"(jobid,filename,int_path,ext_path,state,deadline,ul_userid) "
+		"(jobid,filename,int_path,ext_url,state,deadline,ul_userid) "
 		"values ('%|Ss','%|Ss','%|Ss','%|Ss','%|Ss', '%|Ss', '%|Ss')",
 		ju, data_basename, data_fname, destination_out, "uploading", 
 		glite_jp_db_timetodb(*commit_before_inout), peerhash);

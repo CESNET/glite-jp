@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <time.h>
+#include <limits.h>
 
 #include "glite/jp/types.h"
 #include "glite/jp/context.h"
@@ -206,6 +207,9 @@ char *glite_jp_db_timetodb(time_t t)
 {
 	struct tm	*tm = gmtime(&t);
 	char	tbuf[256];
+
+	/* XXX: the very end of our days */
+	if (!tm && t == (time_t) LONG_MAX) return strdup("9999-12-31 23:59:59");
 
 	sprintf(tbuf,"'%4d-%02d-%02d %02d:%02d:%02d'",tm->tm_year+1900,tm->tm_mon+1,
 		tm->tm_mday,tm->tm_hour,tm->tm_min,tm->tm_sec);

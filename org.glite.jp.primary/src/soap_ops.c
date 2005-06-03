@@ -126,7 +126,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__StartUpload(
 {
 	CONTEXT_FROM_SOAP(soap,ctx);
 	char	*destination;
-	time_t	commit_before;
+	time_t	commit_before = in->commitBefore;
 	glite_jp_error_t	err;
 	glite_jpps_fplug_data_t	**pd = NULL;
 	int	i;

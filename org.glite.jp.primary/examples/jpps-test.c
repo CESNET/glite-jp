@@ -132,7 +132,7 @@ int main(int argc,char *argv[])
 		in.job = argv[2];
 		in.class_ = argv[3];
 		in.name = NULL;
-		in.commitBefore = atoi(argv[4]);
+		in.commitBefore = atoi(argv[4]) + time(NULL);
 		in.contentType = argv[5];
 
 		if (argc != 6) usage(argv[0]);
