@@ -97,7 +97,11 @@ int main(int argc, char *argv[])
 
 	srand48(time(NULL)); /* feed id generation */
 
+#if GSOAP_VERSION <= 20602
+	for (i=0; jpps__namespaces[i].id && strcmp(jpps__namespaces[i].id,"ns1"); i++);
+#else
 	for (i=0; jpps__namespaces[i].id && strcmp(jpps__namespaces[i].id,"jpsrv"); i++);
+#endif
 	assert(jpps__namespaces[i].id);
 	glite_jp_default_namespace = jpps__namespaces[i].ns;
 
@@ -150,6 +154,7 @@ static int data_init(void **data)
 	*data = (void *) soap_new();
 
 	printf("[%d] slave started\n",getpid());
+	glite_jppsbe_init_slave(ctx);	/* XXX: global but slave's */
 
 	return 0;
 }
