@@ -17,6 +17,7 @@
 #include "db.h"
 
 #define DEFAULTCS	"jpps/@localhost:jpps1"
+#define GLITE_JP_LB_MYSQL_VERSION 40018
 
 static int  my_err(glite_jp_context_t ctx, char *function)
 {	
@@ -66,7 +67,7 @@ int glite_jp_db_connect(glite_jp_context_t ctx,char *cs)
 	if (!slash || !at || !colon) {
 		free(buf);
 		err.code = EINVAL;
-		err.desc = "Invalid DB connect string");
+		err.desc = "Invalid DB connect string";
 		return glite_jp_stack_error(ctx,&err);
 	}
 
@@ -93,7 +94,7 @@ void glite_jp_db_close(glite_jp_context_t ctx)
 
 int glite_jp_db_execstmt(glite_jp_context_t ctx,char *txt,glite_jp_db_stmt_t *stmt)
 {
-	int	err;
+	int	merr;
 	int	retry_nr = 0;
 	int	do_reconnect = 0;
 
@@ -111,12 +112,12 @@ int glite_jp_db_execstmt(glite_jp_context_t ctx,char *txt,glite_jp_db_stmt_t *st
 		do_reconnect = 0;
 		if (mysql_query((MYSQL *) ctx->dbhandle,txt)) {
 			/* error occured */
-			switch (err = mysql_errno((MYSQL *) ctx->dbhandle)) {
+			switch (merr = mysql_errno((MYSQL *) ctx->dbhandle)) {
 				case 0:
 					break;
 				case ER_DUP_ENTRY: 
 					err.code = EEXIST;
-					err.desc = mysql_error((MYSQL *) ctx->dbhandle));
+					err.desc = mysql_error((MYSQL *) ctx->dbhandle);
 					glite_jp_stack_error(ctx,&err);
 					return -1;
 					break;

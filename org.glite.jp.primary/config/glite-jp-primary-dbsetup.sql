@@ -3,7 +3,7 @@ create table jobs (
 	dg_jobid	varchar(255)	binary not null,
 	owner		char(32)	binary not null,
 
-	reg_time	datetime	not null;
+	reg_time	datetime	not null,
 	
 	primary key (jobid),
 	unique (dg_jobid),
@@ -18,11 +18,11 @@ create table files (
 	ext_url		mediumblob	null,
 
 	state		char(32)	binary not null,
-	deadline	datetime	null;
+	deadline	datetime	null,
 	ul_userid	char(32)	binary not null,
 
 	primary key (jobid,filename),
-	index (ext_url)
+	index (ext_url(255))
 );
 
 create table attrs (

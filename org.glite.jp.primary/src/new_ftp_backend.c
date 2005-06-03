@@ -19,6 +19,7 @@
 
 #include "tags.h"
 #include "backend.h"
+#include "db.h"
 
 #define FTPBE_DEFAULT_DB_CS	"jpps/@localhost:jpps"
 
@@ -292,9 +293,10 @@ int glite_jppsbe_register_job(
 	}
 	
 	if (glite_jp_db_execstmt(ctx, stmt, NULL) < 0) {
-		if (ctx->error->code == EEXIST) 
+		if (ctx->error->code == EEXIST) {
 			err.code = EEXIST;
 			err.desc = "Job already registered";
+		}
 		else {
 			err.code = EIO;
 			err.desc = "DB access failed";
@@ -479,7 +481,7 @@ int glite_jppsbe_start_upload(
 	*/
 
 	peerhash = str2md5(peername); /* static buffer */
-	if (store_user(ctx, peerhash, owner)) {
+	if (store_user(ctx, peerhash, peername)) {
 		err.code = EIO;
 		err.desc = "Cannot store upload user entry";
 		goto error_out;
@@ -807,7 +809,7 @@ static int get_job_fname(
 	err.source = __FUNCTION__;
 
 	assert(job!=NULL);
-	assert(url_out != NULL);
+	assert(fname_out != NULL);
 
 	assert(class!=NULL);
 

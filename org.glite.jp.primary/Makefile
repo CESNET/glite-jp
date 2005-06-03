@@ -33,7 +33,7 @@ GLOBUS_CFLAGS:=-I${globus_prefix}/include/${nothrflavour}
 
 DEBUG:=-g -O0  -DDEBUG
 
-CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${stagedir}/include ${GLOBUS_CFLAGS}
+CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${stagedir}/include ${GLOBUS_CFLAGS} -I${mysql_prefix}/include -I${mysql_prefix}/include/mysql
 LDFLAGS:=-L${stagedir}/lib
 
 LINK:=libtool --mode=link ${CC} ${LDFLAGS} 
@@ -53,7 +53,7 @@ HDRS_I=file_plugin.h
 HDRS_S=builtin_plugins.h backend.h
 
 SRCS:= bones_server.c soap_ops.c \
-	ftp_backend.c file_plugin.c \
+	new_ftp_backend.c mysql.c file_plugin.c \
 	feed.c tags.c\
 	is_client.c \
 	${ps_prefix}ServerLib.c \
@@ -70,13 +70,24 @@ COMMONLIB:=-lglite_jp_common
 BONESLIB:=-lglite_lb_server_bones
 GSOAPLIB:=-lglite_security_gsoap_plugin_${nothrflavour} -lglite_security_gss_${nothrflavour} \
 	-L${gsoap_prefix}/lib -lgsoap${GSOAP_DEBUG} -L${ares_prefix}/lib -lares
+TRIOLIB:=-lglite_lb_trio
+
+ifneq (${mysql_prefix},/usr)
+	ifeq ($(shell echo ${mysql_version} | cut -d. -f1,2),4.1)
+		MYSQLIB := -L${mysql_prefix}/lib/mysql -lmysqlclient
+        else
+		MYSQLIB := -L${mysql_prefix}/lib -lmysqlclient
+        endif
+else
+	MYSQLIB := -lmysqlclient
+endif
 
 default all: compile
 
 compile: ${daemon} ${example} ${plugins}
 
 ${daemon}: ${OBJS}
-	${LINK} -o $@ ${OBJS} ${BONESLIB} ${COMMONLIB} ${GSOAPLIB} ${GLOBUS_LIBS} 
+	${LINK} -o $@ ${OBJS} ${BONESLIB} ${TRIOLIB} ${COMMONLIB} ${GSOAPLIB} ${GLOBUS_LIBS} ${MYSQLIB} 
 
 ${example}: ${EXA_OBJS}
 	${LINK} -o $@ ${EXA_OBJS} ${GSOAPLIB} ${GLOBUS_LIBS}
