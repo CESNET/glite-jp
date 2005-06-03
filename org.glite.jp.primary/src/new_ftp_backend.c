@@ -284,7 +284,7 @@ int glite_jppsbe_register_job(
 		goto error_out;
 	}
 
-	trio_asprintf(&stmt,"insert into jobs(jobid,dg_jobid,userid,reg_time) "
+	trio_asprintf(&stmt,"insert into jobs(jobid,dg_jobid,owner,reg_time) "
 		"values ('%|Ss','%|Ss','%|Ss', %s)",
 		ju, job, ownerhash, dbtime);
 	if (!stmt) {
