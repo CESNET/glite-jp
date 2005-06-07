@@ -255,7 +255,7 @@ static int request(int conn,struct timeval *to,void *data)
 	if (soap_begin_recv(soap)) {
 		if (soap->error < SOAP_STOP) {
 			soap_send_fault(soap);
-			return -1;
+			return EIO;
 		}
 		return ENOTCONN;
 	}
@@ -270,7 +270,7 @@ static int request(int conn,struct timeval *to,void *data)
 	)
 	{
 		soap_send_fault(soap);
-		return -1;
+		return ctx->error->code;	/* XXX: shall we die on some errors? */
 	}
 
 	glite_jp_run_deferred(ctx);

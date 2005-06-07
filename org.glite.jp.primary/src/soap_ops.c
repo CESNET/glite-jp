@@ -183,7 +183,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__CommitUpload(
 	}
 
 	/* XXX: should not fail when commit_upload was OK */
-	glite_jppsbe_destination_info(ctx,in->destination,&job,&class,&name);
+	assert(glite_jppsbe_destination_info(ctx,in->destination,&job,&class,&name) == 0);
 
 	/* XXX: ignore errors but don't fail silenty */
 	glite_jpps_match_file(ctx,job,class,name);

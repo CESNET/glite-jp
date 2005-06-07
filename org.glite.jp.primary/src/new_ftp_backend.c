@@ -448,7 +448,8 @@ int glite_jppsbe_start_upload(
 
 	/* XXX name length */
 	if (asprintf(&data_basename, "%s%s%s", class,
-		(name != NULL) ? "." : "", name) == -1) {
+		(name != NULL) ? "." : "",
+		(name != NULL) ? name : "") == -1) {
 		err.code = ENOMEM;
 		goto error_out;
 	}
@@ -469,8 +470,11 @@ int glite_jppsbe_start_upload(
 	}
 
 	if (commit_before_inout != NULL)
-		*commit_before_inout = (time_t) LONG_MAX;
 	/* XXX no timeout enforced */
+		/* XXX: gsoap does not like so much, one year should be enough
+		*commit_before_inout = (time_t) LONG_MAX;
+		*/
+		*commit_before_inout = time(NULL) + 365*24*60*60;
 	
 	/* 
 	if (add_to_gridmap(ctx, peername)) {
@@ -491,7 +495,7 @@ int glite_jppsbe_start_upload(
 	trio_asprintf(&stmt,"insert into files"
 		"(jobid,filename,int_path,ext_url,state,deadline,ul_userid) "
 		"values ('%|Ss','%|Ss','%|Ss','%|Ss','%|Ss', '%|Ss', '%|Ss')",
-		ju, data_basename, data_fname, destination_out, "uploading", 
+		ju, data_basename, data_fname, *destination_out, "uploading", 
 		glite_jp_db_timetodb(*commit_before_inout), peerhash);
 	if (!stmt) {
 		err.code = ENOMEM;
@@ -544,7 +548,7 @@ int glite_jppsbe_commit_upload(
 
 	assert(destination != NULL);
 
-	trio_asprintf(&stmt, "select * from files where"
+	trio_asprintf(&stmt, "select * from files where "
 			     "ext_url='%|Ss' and state='uploading'", destination);
 	if (!stmt) {
 		err.code = ENOMEM;
@@ -572,7 +576,7 @@ int glite_jppsbe_commit_upload(
 	glite_jp_db_freestmt(&db_res);
 
 	peername = glite_jp_peer_name(ctx);
-	if (peername = NULL) {
+	if (peername == NULL) {
 		err.code = EINVAL;
 		err.desc = "Cannot obtain client certificate info";
 		goto error_out;
@@ -638,7 +642,7 @@ int glite_jppsbe_destination_info(
 	err.source = __FUNCTION__;
 
 	
-	trio_asprintf(&stmt, "select j.dg_jobid,f.filename from jobs j,files f where"
+	trio_asprintf(&stmt, "select j.dg_jobid,f.filename from jobs j,files f where "
 			     "f.ext_url='%|Ss' and j.jobid=f.jobid", destination);
 	if (!stmt) {
 		err.code = ENOMEM;
@@ -728,7 +732,7 @@ int glite_jppsbe_get_job_url(
 		return glite_jp_stack_error(ctx,&err);
 	}
 
-	trio_asprintf(&stmt, "select owner, reg_time from jobs"
+	trio_asprintf(&stmt, "select owner, reg_time from jobs "
 		"where jobid='%|Ss'", ju);
 
 	if (!stmt) {
@@ -819,7 +823,7 @@ static int get_job_fname(
 		return glite_jp_stack_error(ctx,&err);
 	}
 
-	trio_asprintf(&stmt, "select owner, reg_time from jobs"
+	trio_asprintf(&stmt, "select owner, reg_time from jobs "
 		"where jobid='%|Ss'", ju);
 
 	if (!stmt) {
