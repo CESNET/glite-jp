@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 
 	b_argc = p_argc = 1;
 
-	while ((opt = getopt(argc,argv,"B:P:")) != EOF) switch (opt) {
+	while ((opt = getopt(argc,argv,"B:P:a:")) != EOF) switch (opt) {
 		case 'B':
 			assert(b_argc < 20);
 			if (com = strchr(optarg,',')) *com = 0;
@@ -72,6 +72,12 @@ int main(int argc, char *argv[])
 			assert(p_argc < 20);
 			p_argv[p_argc++] = optarg;
 
+			break;
+		case 'a':
+			if (glite_jpps_readauth(ctx,optarg)) {
+				fprintf(stderr,"%s: %s\n",argv[0],glite_jp_error_chain(ctx));
+				exit (1);
+			}
 			break;
 		case '?': fprintf(stderr,"usage: %s: -Bb,val ... -Pplugin.so ...\n"
 					  "b is backend option\n",argv[0]);

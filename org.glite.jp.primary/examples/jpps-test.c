@@ -207,28 +207,31 @@ int main(int argc,char *argv[])
 					argv[2], &r))) {
 			printf("FeedId: %s\nExpires: %s\n",r.feedId,ctime(&r.expires));
 		}
-	} else if (!strcasecmp(argv[1],"GetJob")) {
-		struct jpsrv__GetJobResponse	r;
+	}
+#endif
+	else if (!strcasecmp(argv[1],"GetJob")) {
+		struct _jpelem__GetJob	in;
+		struct _jpelem__GetJobResponse	out;
 
 		if (argc != 3) usage(argv[0]);
+		in.jobid = argv[2];
 		
-		if (!check_fault(soap,soap_call_jpsrv__GetJob(soap,server,"",
-						argv[2],&r)))
+		if (!check_fault(soap,soap_call___jpsrv__GetJob(soap,server,"",
+						&in,&out)))
 		{
 			int	i;
 
 			printf("JobLog:\n");
 
-			for (i=0; i<r.files->__sizefile;i++) {
+			for (i=0; i<out.__sizefiles;i++) {
 				printf("\tclass = %s, name = %s, url = %s\n",
-						r.files->file[i]->class_,
-						r.files->file[i]->name,
-						r.files->file[i]->url);
+						out.files[i]->class_,
+						out.files[i]->name,
+						out.files[i]->url);
 			}
 		}
 
 	}
-#endif
 	else usage(argv[0]);
 
 	return 0;

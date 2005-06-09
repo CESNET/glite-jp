@@ -97,13 +97,14 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RegisterJob(
 		struct soap *soap,
 		struct _jpelem__RegisterJob *in,
 		struct _jpelem__RegisterJobResponse *empty)
-//		struct __jpsrv__RegisterJobResponse *empty)
 {
 	CONTEXT_FROM_SOAP(soap,ctx);
 	glite_jp_attrval_t owner_val[2];
 
 	printf("%s %s %s\n",__FUNCTION__,in->job,in->owner);
-	if (glite_jppsbe_register_job(ctx,in->job,in->owner)) {
+	if (glite_jpps_authz(ctx,SOAP_TYPE___jpsrv__RegisterJob,in->job,in->owner) ||
+		glite_jppsbe_register_job(ctx,in->job,in->owner))
+	{
 		err2fault(ctx,soap);
 		return SOAP_FAULT;
 	}
@@ -133,6 +134,11 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__StartUpload(
 
 	glite_jp_clear_error(ctx);
 	memset(&err,0,sizeof err);
+
+	if (glite_jpps_authz(ctx,SOAP_TYPE___jpsrv__StartUpload,NULL,NULL)) {
+		err2fault(ctx,soap);
+		return SOAP_FAULT;
+	}
 
 	switch (glite_jpps_fplug_lookup(ctx,in->class_,&pd)) {
 		case ENOENT:
@@ -177,7 +183,9 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__CommitUpload(
 
 	job = class = name = NULL;
 	
-	if (glite_jppsbe_commit_upload(ctx,in->destination)) {
+	if (glite_jpps_authz(ctx,SOAP_TYPE___jpsrv__CommitUpload,NULL,NULL) ||
+		glite_jppsbe_commit_upload(ctx,in->destination))
+	{
 		err2fault(ctx,soap);
 		return SOAP_FAULT;
 	}

@@ -21,6 +21,8 @@
 #include "backend.h"
 #include "db.h"
 
+#include "jpps_H.h"	/* XXX: SOAP_TYPE___jpsrv__GetJob */
+
 #define FTPBE_DEFAULT_DB_CS	"jpps/@localhost:jpps"
 
 struct ftpbe_config {
@@ -444,7 +446,7 @@ int glite_jppsbe_start_upload(
 
 	glite_jp_db_freestmt(&db_res);
 	
-	/* XXX authorization */
+	/* XXX authorization done in soap_ops.c */
 
 	/* XXX name length */
 	if (asprintf(&data_basename, "%s%s%s", class,
@@ -712,7 +714,7 @@ int glite_jppsbe_get_job_url(
 	char *stmt = NULL;
 	glite_jp_db_stmt_t db_res;
 	int db_retn;
-	char *db_row[2] = { NULL, NULL };
+	char *db_row[3] = { NULL, NULL, NULL };
 
 	long reg_time;
 	glite_jp_error_t err;
@@ -728,12 +730,12 @@ int glite_jppsbe_get_job_url(
 
 	if (jobid_unique_pathname(ctx, job, &ju, &ju_path, 1) != 0) {
 		err.code = ctx->error->code;
-		err.desc = "Cannot obtain jobid unique path/name";
+		err.desc = "Cannot obtain jobid unique path/ : ""name";
 		return glite_jp_stack_error(ctx,&err);
 	}
 
-	trio_asprintf(&stmt, "select owner, reg_time from jobs "
-		"where jobid='%|Ss'", ju);
+	trio_asprintf(&stmt, "select j.owner,reg_time,u.cert_subj from jobs j, users u "
+		"where j.jobid='%|Ss' and j.owner = u.userid", ju);
 
 	if (!stmt) {
 		err.code = ENOMEM;
@@ -752,7 +754,7 @@ int glite_jppsbe_get_job_url(
 	}
 	
 	db_retn = glite_jp_db_fetchrow(db_res, db_row);
-	if (db_retn != 2) {
+	if (db_retn != 3) {
 		glite_jp_db_freestmt(&db_res);
 		err.code = EIO;
 		err.desc = "DB access failed";
@@ -760,10 +762,16 @@ int glite_jppsbe_get_job_url(
 	}
 
 	glite_jp_db_freestmt(&db_res);
+
+	if (glite_jpps_authz(ctx,SOAP_TYPE___jpsrv__GetJob,job,db_row[2])) {
+		err.code = EPERM;
+		goto error_out;
+	}
 	
 	/* XXX name length */
 	if (asprintf(&data_basename, "%s%s%s", class,
-		(name != NULL) ? "." : "", name) == -1) {
+		(name != NULL) ? "." : "",
+		(name != NULL) ? name : "") == -1) {
 		err.code = ENOMEM;
 		goto error_out;
 	}
