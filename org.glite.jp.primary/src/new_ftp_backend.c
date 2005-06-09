@@ -752,6 +752,8 @@ int glite_jppsbe_get_job_url(
 		}
 		goto error_out;
 	}
+
+	free(stmt); stmt = NULL;
 	
 	db_retn = glite_jp_db_fetchrow(db_res, db_row);
 	if (db_retn != 3) {
@@ -782,6 +784,22 @@ int glite_jppsbe_get_job_url(
 			ju, data_basename) == -1) {
 		err.code = ENOMEM;
 		goto error_out;
+	}
+
+	trio_asprintf(&stmt,"select 'x' from files where jobid='%|Ss' "
+				"and ext_url = '%|Ss' "
+				"and state='committed' ",ju,*url_out);
+
+	if ((db_retn = glite_jp_db_execstmt(ctx,stmt,&db_res)) <= 0) {
+		if (db_retn == 0) {
+			err.code = ENOENT;
+			err.desc = "not uploaded yet";
+		}
+		else {
+			err.code = EIO;
+			err.desc = "DB access failed";
+		}
+		/* goto error_out; */
 	}
 
 error_out:
