@@ -54,7 +54,7 @@ HDRS_S=builtin_plugins.h backend.h
 
 SRCS:= bones_server.c soap_ops.c \
 	new_ftp_backend.c mysql.c file_plugin.c \
-	feed.c tags.c authz.c\
+	feed.c authz.c\
 	is_client.c \
 	${ps_prefix}ServerLib.c \
 	${is_prefix}ClientLib.c jpps_C.c
@@ -87,7 +87,7 @@ default all: compile
 compile: ${daemon} ${example} ${plugins}
 
 ${daemon}: ${OBJS}
-	${LINK} -o $@ ${OBJS} ${BONESLIB} ${TRIOLIB} ${COMMONLIB} ${GSOAPLIB} ${GLOBUS_LIBS} ${MYSQLIB} 
+	${LINK} -o $@ -export-dynamic ${OBJS} ${BONESLIB} ${TRIOLIB} ${COMMONLIB} ${GSOAPLIB} ${GLOBUS_LIBS} ${MYSQLIB} 
 
 ${example}: ${EXA_OBJS}
 	${LINK} -o $@ ${EXA_OBJS} ${GSOAPLIB} ${GLOBUS_LIBS}

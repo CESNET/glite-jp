@@ -157,12 +157,15 @@ int main(int argc,char *argv[])
 		struct _jpelem__RecordTagResponse	empty;
 		struct jptype__tagValue tagval;
 		
+		int seq = 0;
+	
 		if (argc != 6) usage(argv[0]);
 		
 		in.jobid = argv[2];
 		in.tag = &tagval;
 		tagval.name = argv[3];
-		tagval.sequence = NULL;
+		seq = atoi(argv[4]);
+		tagval.sequence = &seq;
 		tagval.timestamp = NULL;
 		tagval.stringValue = argv[5];
 		tagval.blobValue = NULL;

@@ -219,7 +219,8 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RecordTag(
 
 	if (glite_jpps_fplug_lookup(ctx,GLITE_JP_FILETYPE_TAGS,&pd)
 		|| glite_jppsbe_open_file(ctx,in->jobid,pd[0]->classes[0],NULL,
-						O_WRONLY|O_CREAT,&file_be)
+						O_RDWR|O_CREAT,&file_be)
+			/* XXX: tags need reading to check magic number */
 	) {
 		free(pd);
 		err2fault(ctx,soap);

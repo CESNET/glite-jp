@@ -880,7 +880,7 @@ static int get_job_fname(
 	
 	/* XXX name length */
 	if (asprintf(&data_basename, "%s%s%s", class,
-		(name != NULL) ? "." : "", name) == -1) {
+		(name != NULL) ? "." : "", (name != NULL) ? name : "") == -1) {
 		err.code = ENOMEM;
 		goto error_out;
 	}
