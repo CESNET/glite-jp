@@ -202,42 +202,42 @@ int glite_jpps_match_file(
 	for (pi=0; pd[pi]; pi++) {
 		int	ci;
 		for (ci=0; pd[pi]->uris[ci]; ci++) if (!strcmp(pd[pi]->uris[ci],class)) {
-				void	*ph;
+			void	*ph;
 
-				if (!bh && (ret = glite_jppsbe_open_file(ctx,job,pd[pi]->classes[ci],name,O_RDONLY,&bh))) {
-					free(pd);
-					return ret;
-				}
-
-				if (pd[pi]->ops.open(pd[pi]->fpctx,bh,class,&ph)) {
-					/* XXX: complain more visibly */
-					fputs("plugin open failed\n",stderr);
-					continue;
-				}
-
-				/* XXX: does not belong here but I'd like to avoid opening the file twice */
-				if (!strcmp(class,GLITE_JP_FILETYPE_LB)) {
-					glite_jp_attr_t		owner = { GLITE_JP_ATTR_OWNER, NULL };
-					glite_jp_attrval_t	*val;
-
-					switch (pd[pi]->ops.attr(pd[pi]->fpctx,ph,owner,&val)) {
-						case ENOENT:
-						case ENOSYS: abort();
-						case 0: printf("LB plugin: owner = %s\n",val[0].value.s);
-							/* TODO: store it in backend */
-
-							glite_jp_attrval_free(val,1);
-							break;
-
-						default: /* TODO: complain */; break;
-					}
-				}
-
-				/* TODO: extract attributes for the feeds */
-
-
-				pd[pi]->ops.close(pd[pi]->fpctx,ph);
+			if (!bh && (ret = glite_jppsbe_open_file(ctx,job,pd[pi]->classes[ci],name,O_RDONLY,&bh))) {
+				free(pd);
+				return ret;
 			}
+
+			if (pd[pi]->ops.open(pd[pi]->fpctx,bh,class,&ph)) {
+				/* XXX: complain more visibly */
+				fputs("plugin open failed\n",stderr);
+				continue;
+			}
+
+			/* XXX: does not belong here but I'd like to avoid opening the file twice */
+			if (!strcmp(class,GLITE_JP_FILETYPE_LB)) {
+				glite_jp_attr_t		owner = { GLITE_JP_ATTR_OWNER, NULL };
+				glite_jp_attrval_t	*val;
+
+				switch (pd[pi]->ops.attr(pd[pi]->fpctx,ph,owner,&val)) {
+					case ENOENT:
+					case ENOSYS: abort();
+					case 0: printf("LB plugin: owner = %s\n",val[0].value.s);
+						/* TODO: store it in backend */
+
+						glite_jp_attrval_free(val,1);
+						break;
+
+					default: /* TODO: complain */; break;
+				}
+			}
+
+			/* TODO: extract attributes for the feeds */
+
+
+			pd[pi]->ops.close(pd[pi]->fpctx,ph);
+		}
 	}
 
 	if (bh) glite_jppsbe_close_file(ctx,bh);
