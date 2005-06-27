@@ -18,7 +18,8 @@ typedef struct _glite_jp_context {
 	struct soap	*other_soap;
 	char	*peer;
 	void	**plugins;
-	void	*db_handle;
+	void	*dbhandle;
+	char	**trusted_peers;
 } *glite_jp_context_t;
 
 typedef enum {
