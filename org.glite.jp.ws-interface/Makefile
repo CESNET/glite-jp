@@ -15,6 +15,8 @@ VPATH=${top_srcdir}/interface:${top_srcdir}/src
 STAGETO=interface
 
 XSLTPROC=xsltproc
+XMLLINT:=xmllint
+docbookxls:=http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl
 
 #WSDL=JobProvenancePS.wsdl JobProvenanceIS.wsdl JobProvenanceTypes.wsdl 
 WSDL=JobProvenancePS.wsdl JobProvenanceTypes.wsdl 
@@ -52,3 +54,8 @@ clean:
 	
 %.wsdl: %.xml
 	${XSLTPROC} ../src/puke-wsdl.xsl $< >$@
+
+JobProvenancePS.html: doc.xml JobProvenancePS.xml JobProvenanceTypes.xml puke-ug.xsl
+	${XSLTPROC} --novalid ../src/puke-ug.xsl $< >doc-html.xml
+	${XMLLINT} --valid --noout doc-html.xml
+	${XSLTPROC} --stringparam  chapter.autolabel 0 ${docbookxls} doc-html.xml >$@

@@ -4,22 +4,26 @@
 	ns="http://glite.org/wsdl/services/jp"
 	typePrefix="jpt">
 
+	<version>CVS revision: <![CDATA[ $Header$ ]]></version>
+
 	<types ns="http://glite.org/wsdl/types/jp">
 
 		<enum name="queryOp">
+			Operators used in queries. Most are self-explanatory.
 			<val name="EQUAL"></val>
 			<val name="UNEQUAL"></val>
 			<val name="LESS"></val>
 			<val name="GREATER"></val>
-			<val name="WITHIN"></val>
+			<val name="WITHIN">The attribute is between two specified values.</val>
 		</enum>
 
 		<struct name="tagValue">
-			<elem name="name" type="xsd:string"></elem>
-			<elem name="sequence" type="xsd:int" optional="yes"></elem>
-			<elem name="timestamp" type="xsd:dateTime" optional="yes"></elem>
-			<elem name="stringValue" type="xsd:string" optional="yes"></elem>
-			<elem name="blobValue" type="xsd:base64Binary" optional="yes"></elem>
+			A single value for a user tag.
+			<elem name="name" type="xsd:string">Name of the tag.</elem>
+			<elem name="sequence" type="xsd:int" optional="yes">Sequence of this value (if there are more occurences of this tag it may be used to order them.</elem>
+			<elem name="timestamp" type="xsd:dateTime" optional="yes">When the tag was created.</elem>
+			<elem name="stringValue" type="xsd:string" optional="yes">Value - printable string.</elem>
+			<elem name="blobValue" type="xsd:base64Binary" optional="yes">Value - binary.</elem>
 		</struct>
 	
 		<struct name="genericFault" fault="yes">
@@ -27,7 +31,7 @@
 			<elem name="code" type="xsd:int"></elem>
 			<elem name="text" type="xsd:string"></elem>
 			<elem name="description" type="xsd:string" optional="yes"></elem>
-			<elem name="reason" type="jpt:genericFault" optional="yes"></elem>
+			<elem name="reason" type="genericFault" optional="yes"></elem>
 		</struct>
 	
 		<struct name="primaryQuery">
