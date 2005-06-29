@@ -35,16 +35,18 @@
 		</struct>
 	
 		<struct name="primaryQuery">
-			<elem name="attr" type="xsd:string"></elem>
-			<elem name="op" type="queryOp"></elem>
-			<elem name="value" type="xsd:string"></elem>
-			<elem name="value2" type="xsd:string" optional="yes"></elem>
+			A single condition on job.
+			<elem name="attr" type="xsd:string">Attribute name to query.</elem>
+			<elem name="op" type="queryOp">Operation.</elem>
+			<elem name="value" type="xsd:string">Value to compare the job attribute with.</elem>
+			<elem name="value2" type="xsd:string" optional="yes">Another value (for op = WITHIN).</elem>
 		</struct>
 
 		<struct name="jppsFile">
-			<elem name="class" type="xsd:string"></elem>
-			<elem name="name" type="xsd:string"></elem>
-			<elem name="url" type="xsd:string"></elem>
+			JP primary storage file identification.
+			<elem name="class" type="xsd:string">Type of the file (as set on StartUpload).</elem>
+			<elem name="name" type="xsd:string">Name of the file (if there are more of the same type per job).</elem>
+			<elem name="url" type="xsd:string">Where the file is stored on JP primary storage.</elem>
 		</struct>
 	
 		<list name="string"/>
