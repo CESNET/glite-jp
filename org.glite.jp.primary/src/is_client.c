@@ -8,6 +8,7 @@
 #include "glite/jp/types.h"
 
 #include "feed.h"
+#include "is_client.h"
 /* FIXME
 #include "jpis_H.h"
 #include "jpis_.nsmap"
@@ -17,7 +18,7 @@ int glite_jpps_single_feed(
 		glite_jp_context_t ctx,
 		const char *destination,
 		const char *job,
-		const glite_jp_attrval_t attrs[]
+		glite_jp_attrval_t const * const attrs[]
 )
 {
 	/* TODO: really call JP Index server (via interlogger) */
