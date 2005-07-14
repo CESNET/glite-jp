@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+	Copyright (c) Members of the EGEE Collaboration. 2004 
+	See http://eu-egee.org/partners/ for details on the copyright holders
+	For license conditions see the license file or http://eu-egee.org/license.html
+
+	Configuration options for the gLite JP client module
+-->
+
+	<!-- ======================================================
+         Define extra properties here ...
+         ====================================================== -->
+        
+	<project name="LB Common configuration options">                                                                        
+		<target name="lbmakefiles">
+			<exec executable="ln" failonerror="true">
+				<arg line="-fs ${component.dir}/Makefile ${module.build.dir}/Makefile"/>
+			</exec>
+			<echo file="${module.build.dir}/Makefile.inc">
+top_srcdir=..
+builddir=build
+stagedir=${stage.abs.dir}
+distdir=${dist.dir}
+globalprefix=${global.prefix}
+lbprefix=${subsystem.prefix}
+package=${module.package.name}
+PREFIX=${install.dir}
+version=${module.version}
+glite_location=${with.glite.location}
+globus_prefix=${with.globus.prefix}
+expat_prefix=${with.expat.prefix}
+ares_prefix=${with.ares.prefix}
+gsoap_prefix=${with.gsoap.prefix}
+mysql_prefix=${with.mysql.prefix}
+mysql_version=${ext.mysql.version}
+thrflavour=${with.globus.thr.flavor}
+nothrflavour=${with.globus.nothr.flavor}
+cppunit=${with.cppunit.prefix}
+jpproject=${subsystem.project.dir}
+project=${component.project.dir}
+			</echo>
+	    </target>
+	</project>
