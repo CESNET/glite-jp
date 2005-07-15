@@ -266,6 +266,7 @@ static int request(int conn,struct timeval *to,void *data)
 		return ENOTCONN;
 	}
 
+	soap->keep_alive = 1;
 	if (soap_envelope_begin_in(soap)
 		|| soap_recv_header(soap)
 		|| soap_body_begin_in(soap)
