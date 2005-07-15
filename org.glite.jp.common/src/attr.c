@@ -43,19 +43,27 @@ void glite_jp_attr_union(const glite_jp_attr_t *a, const glite_jp_attr_t *b,
 	int	ac,bc,c,i,j;
 	glite_jp_attr_t	*res;
 
-	assert(a); assert(b); assert(out);
-	for (ac=0; a[ac].type; ac++);
-	for (bc=0; b[bc].type; bc++);
+	assert(out);
+	if (a) for (ac=0; a[ac].type; ac++); else ac=0;
+	if (b) for (bc=0; b[bc].type; bc++); else bc=0;
+
+	if ((c = ac+bc) == 0) {
+		*out = NULL;
+		return;
+	}
+	
 	res = malloc((ac+bc+1) * sizeof *res);
 	memcpy(res,a,ac * sizeof *a);
 	memcpy(res+ac,b,bc * sizeof *b);
 	memset(res+ac+bc,0,sizeof *res);
-	c = ac+bc;
 	qsort(res,c,sizeof *res,attr_cmp);
 
 	for (i=0; i<c; i++) {
 		for (j=i+1; !attr_cmp(res+i,res+j); j++);
-		if (j > i+1) memmove(res+i+1,res+j,c-j);
+		if (j > i+1) {
+			memmove(res+i+1,res+j,c-j);
+			c -= j - (i+1);
+		}
 	}
 
 	for (i=0; res[i].type; i++) switch (res[i].type) {
