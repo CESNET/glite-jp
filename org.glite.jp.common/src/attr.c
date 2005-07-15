@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -63,7 +64,7 @@ void glite_jp_attr_union(const glite_jp_attr_t *a, const glite_jp_attr_t *b,
 	qsort(res,c,sizeof *res,void_attr_cmp);
 
 	for (i=0; i<c; i++) {
-		for (j=i+1; !attr_cmp(res+i,res+j); j++);
+		for (j=i+1; !glite_jp_attr_cmp(res+i,res+j); j++);
 		if (j > i+1) {
 			memmove(res+i+1,res+j,c-j);
 			c -= j - (i+1);
