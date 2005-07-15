@@ -18,10 +18,9 @@ void glite_jp_attrval_free(glite_jp_attrval_t *a,int f)
 	if (f) free(a);
 }
 
-static int attr_cmp(const void *va,const void *vb)
+int glite_jp_attr_cmp(const glite_jp_attr_t *a,const glite_jp_attr_t *b)
 {
 	int	c;
-	const glite_jp_attr_t	*a = va, *b = vb;
 
 	if (a->type < b->type) return -1;
 	if (a->type > b->type) return 1;
@@ -35,6 +34,11 @@ static int attr_cmp(const void *va,const void *vb)
 
 		default: return 0;
 	}
+}
+
+static int void_attr_cmp(const void *va, const void *vb)
+{
+	return glite_jp_attr_cmp(va,vb);
 }
 
 void glite_jp_attr_union(const glite_jp_attr_t *a, const glite_jp_attr_t *b,
@@ -56,7 +60,7 @@ void glite_jp_attr_union(const glite_jp_attr_t *a, const glite_jp_attr_t *b,
 	memcpy(res,a,ac * sizeof *a);
 	memcpy(res+ac,b,bc * sizeof *b);
 	memset(res+ac+bc,0,sizeof *res);
-	qsort(res,c,sizeof *res,attr_cmp);
+	qsort(res,c,sizeof *res,void_attr_cmp);
 
 	for (i=0; i<c; i++) {
 		for (j=i+1; !attr_cmp(res+i,res+j); j++);

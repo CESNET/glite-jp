@@ -90,6 +90,8 @@ void glite_jp_attrval_free(glite_jp_attrval_t *,int);
 void glite_jp_attr_free(glite_jp_attr_t *,int);
 void glite_jp_attrset_free(glite_jp_attr_t *a,int);
 
+int glite_jp_attr_cmp(const glite_jp_attr_t *,const glite_jp_attr_t *);
+
 void glite_jp_attr_union(const glite_jp_attr_t *, const glite_jp_attr_t *,
         glite_jp_attr_t **);
 
