@@ -18,7 +18,7 @@ int glite_jpps_single_feed(
 		glite_jp_context_t ctx,
 		const char *destination,
 		const char *job,
-		glite_jp_attrval_t const * const attrs[]
+		glite_jp_attrval_t const *attrs
 )
 {
 	/* TODO: really call JP Index server (via interlogger) */

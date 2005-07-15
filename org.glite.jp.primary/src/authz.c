@@ -7,6 +7,7 @@
 #include "glite/jp/context.h"
 
 #include "jpps_H.h"
+#include "jptype_map.h"
 
 int glite_jpps_authz(glite_jp_context_t ctx,int op,const char *job,const char *owner)
 {

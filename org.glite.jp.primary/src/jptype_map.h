@@ -14,5 +14,21 @@
 #define LESS jptype__queryOp__LESS
 #define GREATER jptype__queryOp__GREATER
 #define WITHIN jptype__queryOp__WITHIN
+
+#else
+
+#define __jpsrv__RegisterJob __ns1__RegisterJob
+#define __jpsrv__StartUpload __ns1__StartUpload
+#define __jpsrv__CommitUpload __ns1__CommitUpload
+#define __jpsrv__RecordTag __ns1__RecordTag
+#define __jpsrv__FeedIndex __ns1__FeedIndex
+#define __jpsrv__FeedIndexRefresh __ns1__FeedIndexRefresh
+#define __jpsrv__GetJob __ns1__GetJob
+
+#define SOAP_TYPE___jpsrv__RegisterJob SOAP_TYPE___ns1__RegisterJob
+#define SOAP_TYPE___jpsrv__StartUpload SOAP_TYPE___ns1__StartUpload
+#define SOAP_TYPE___jpsrv__CommitUpload SOAP_TYPE___ns1__CommitUpload
+#define SOAP_TYPE___jpsrv__GetJob SOAP_TYPE___ns1__GetJob
+
 #endif
 

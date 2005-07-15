@@ -192,23 +192,23 @@ int glite_jpps_match_file(
 	int	ret;
 	struct	jpfeed	*f = ctx->feeds;
 
-	int	nvals = 0,j,i,attrs[GLITE_JP_ATTR__LAST];
-	glite_jp_attrtype_t	attrl[GLITE_JP_ATTR__LAST];
+	int	nvals = 0,j,i;
+	glite_jp_attr_t		*attrs = NULL, *attrs2;
 	glite_jp_attrval_t	*vals = NULL,*oneval;
 
 	fprintf(stderr,"%s: %s %s %s\n",__FUNCTION__,job,class,name);
 
-	memset(attrs,0,sizeof attrs);
 	
-	for (;f;f=f->next) for (i=0; f->attrs[i].type; i++) attrs[i] = 1;
-	j = 0;
-	for (i=1; i<GLITE_JP_ATTR__LAST; i++) if (attrs[i]) attrl[j++] = i;
-	attrl[j] = GLITE_JP_ATTR_UNDEF;
-
 	switch (glite_jpps_fplug_lookup(ctx,class,&pd)) {
 		case ENOENT: return 0;	/* XXX: shall we complain? */
 		case 0: break;
 		default: return -1;
+	}
+
+	for (;f;f=f->next) {
+		glite_jp_attr_union(attrs,f->attrs,&attrs2);
+		glite_jp_attrset_free(attrs,1);
+		attrs = attrs2;
 	}
 
 	for (pi=0; pd[pi]; pi++) {
@@ -227,31 +227,10 @@ int glite_jpps_match_file(
 				continue;
 			}
 
-#if 0 /* not needed anymore -- owner is known from registration */
-			/* XXX: does not belong here but I'd like to avoid opening the file twice */
-			if (!strcmp(class,GLITE_JP_FILETYPE_LB)) {
-				glite_jp_attr_t		owner = { GLITE_JP_ATTR_OWNER, NULL };
-				glite_jp_attrval_t	*val;
-
-				switch (pd[pi]->ops.attr(pd[pi]->fpctx,ph,owner,&val)) {
-					case ENOENT:
-					case ENOSYS: abort();
-					case 0: printf("LB plugin: owner = %s\n",val[0].value.s);
-						/* TODO: store it in backend */
-
-						glite_jp_attrval_free(val,1);
-						break;
-
-					default: /* TODO: complain */; break;
-				}
-			}
-#endif
-
-			/* TODO: extract attributes for the feeds */
-			for (i=0; attrl[i]; i++) 
-				if (!pd[pi]->ops.attr(pd[pi]->fpctx,ph,attrl[i],&oneval)) {
+			for (i=0; attrs[i].type; i++) 
+				if (!pd[pi]->ops.attr(pd[pi]->fpctx,ph,attrs[i],&oneval)) {
 				/* XXX: ignore error */
-					for (j=0; oneval[j].attr; j++);
+					for (j=0; oneval[j].attr.type; j++);
 					vals = realloc(vals,(nvals+j+1) * sizeof *vals);
 					memcpy(vals+nvals,oneval,(j+1) * sizeof *vals);
 					nvals += j;
@@ -261,19 +240,24 @@ int glite_jpps_match_file(
 		}
 	}
 
-	for (f = ctx->feeds; f; f=f->next) {
-		glite_jp_attrval_t	* fattr = malloc((nvals+1) * sizeof *fattr);
-		int	attri[GLITE_JP_ATTR__LAST];
+	glite_jp_attrset_free(attrs,1);
 
-		memset(attri,0,sizeof attri);
-		for (i=0; f->attrs[i].attr; i++) attri[f->attrs[i].attr] = 1;
+	for (f = ctx->feeds; f; f=f->next) {
+		int 	k;
+		glite_jp_attrval_t	* fattr = malloc((nvals+1) * sizeof *fattr);
 
 		j = 0;
-		for (i=0; i<nvals; i++) if (attri[vals[i].attr]) memcpy(fattr+j++,vals+i,sizeof *fattr);
-		memset(fattr+j,0,sizeof *fattr);
+		for (i=0; i<nvals; i++) for (k=0; f->attrs[k].type; k++)
+			if (!glite_jp_attr_cmp(f->attrs+k,&vals[i].attr))
+				memcpy(fattr+j++,vals+i,sizeof *fattr);
 
-		glite_jp_single_feed(ctx,f->destination,job,fattr);
+		memset(fattr+j,0,sizeof *fattr);
+		glite_jpps_single_feed(ctx,f->destination,job,fattr);
+		free(fattr);
 	}
+
+	for (i=0; vals[i].attr.type; i++) glite_jp_attrval_free(vals+i,0);
+	free(vals);
 
 	if (bh) glite_jppsbe_close_file(ctx,bh);
 	free(pd);

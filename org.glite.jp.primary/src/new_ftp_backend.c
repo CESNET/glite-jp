@@ -23,6 +23,8 @@
 
 #include "jpps_H.h"	/* XXX: SOAP_TYPE___jpsrv__GetJob */
 
+#include "jptype_map.h"
+
 #define FTPBE_DEFAULT_DB_CS	"jpps/@localhost:jpps"
 
 struct ftpbe_config {

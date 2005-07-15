@@ -16,17 +16,6 @@
 #include "file_plugin.h"
 #include "builtin_plugins.h"
 
-#include "soap_version.h"
-#if GSOAP_VERSION <= 20602
-#define __jpsrv__RegisterJob __ns1__RegisterJob
-#define __jpsrv__StartUpload __ns1__StartUpload
-#define __jpsrv__CommitUpload __ns1__CommitUpload
-#define __jpsrv__RecordTag __ns1__RecordTag
-#define __jpsrv__FeedIndex __ns1__FeedIndex
-#define __jpsrv__FeedIndexRefresh __ns1__FeedIndexRefresh
-#define __jpsrv__GetJob __ns1__GetJob
-#endif
-
 static struct jptype__genericFault *jp2s_error(struct soap *soap,
 		const glite_jp_error_t *err)
 {
