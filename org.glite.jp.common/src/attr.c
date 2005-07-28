@@ -6,16 +6,19 @@
 
 void glite_jp_attrval_free(glite_jp_attrval_t *a,int f)
 {
-	free(a->attr.name);
-
 	switch (a->attr.type) {
 		case GLITE_JP_ATTR_OWNER: 
-		case GLITE_JP_ATTR_TAG: 
+		case GLITE_JP_ATTR_GENERIC: 
 			free(a->value.s);
+			break;
+		case GLITE_JP_ATTR_TAG:
+			if (a->value.tag.name) free(a->value.tag.name);
+			if (a->value.tag.value) free(a->value.tag.value);
 			break;
 		default: break;
 	}
 
+	glite_jp_attr_free(&a->attr, 0);
 	if (f) free(a);
 }
 
