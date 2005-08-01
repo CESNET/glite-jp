@@ -31,7 +31,7 @@ struct ftpbe_config {
 	char *internal_path;
 	char *external_path;
 	char *db_cs;
-	char *gridmap;
+//	char *gridmap;
 	char *logname;
 };
 
@@ -47,7 +47,7 @@ static struct option ftpbe_opts[] = {
 	{ "ftp-internal-path", 1, NULL, 'I' },
 	{ "ftp-external-path", 1, NULL,	'E' },
 	{ "ftp-db-cs",	       1, NULL,	'D' },
-	{ "ftp-gridmap",       1, NULL,	'G' },
+//	{ "ftp-gridmap",       1, NULL,	'G' },
 	{ NULL,                0, NULL,  0  }
 };
 
@@ -64,7 +64,7 @@ static int config_check(
 		config->internal_path == NULL ||
 		config->external_path == NULL ||
 		config->db_cs == NULL ||
-		config->gridmap == NULL ||
+//		config->gridmap == NULL ||
 		config->logname == NULL;
 
 	/* XXX check reality */
@@ -196,12 +196,12 @@ int glite_jppsbe_init(
 
 	config->logname = getlogin();
 
-	while ((opt = getopt_long(argc, argv, "I:E:G:", ftpbe_opts, NULL)) != EOF) {
+	while ((opt = getopt_long(argc, argv, "I:E:" /* G: */, ftpbe_opts, NULL)) != EOF) {
 		switch (opt) {
 			case 'I': config->internal_path = optarg; break;
 			case 'E': config->external_path = optarg; break;
 			case 'D': config->db_cs = optarg; break;
-			case 'G': config->gridmap = optarg; break;
+//			case 'G': config->gridmap = optarg; break;
 			default: break;
 		}
 	}
@@ -332,6 +332,7 @@ error_out:
 	}
 }
 
+#if 0
 static int add_to_gridmap(glite_jp_context_t ctx, const char *dn)
 {
 	FILE *gridmap = NULL;
@@ -372,6 +373,7 @@ static int remove_from_gridmap(glite_jp_context_t ctx, const char *dn)
 	/* XXX */
 	return 0;
 }
+#endif
 
 int glite_jppsbe_start_upload(
 	glite_jp_context_t ctx,
