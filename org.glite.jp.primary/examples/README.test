@@ -1,0 +1,40 @@
+Create database:
+----------------
+
+$ mysqladmin -u root -p create jpps 
+$ mysql -u root -p
+mysql> grant all privileges on jpps.* to jpps@localhost identified by '';
+
+$ mysql -p -u jpps jpps <config/glite-jp-primary-dbsetup.sql
+
+
+Start server:
+-------------
+
+$ glite-jp-primarystoraged -P .libs/glite-jp-tags.so -BI,/INTERNAL/PATH -BE,ftp://`hostname`/EXT/PREFIX -a trusted_peers
+
+/INTENAL/PATH points to the directory where JP files are stored
+
+/EXT/PREFIX prefix in URLs to manipulate with these files -- ftp should be
+configured to map ftp://`hostname`/EXT/PREFIX/file to 
+
+trusted_peers	line-by-line list of X509 subjects to be considered "trusted",
+	i.e. services (like LB) we accept data from
+
+
+
+Register job:
+-------------
+
+$ jpps-test RegisterJob JOBID OWNER
+
+Returns:
+- OK 
+- File exists (Job already registered)
+- Operation not permitted (you are not a trusted peer)
+
+
+Record JP tag:
+--------------
+
+$ jpps-test RecordTag JPBID TagA 1 blah

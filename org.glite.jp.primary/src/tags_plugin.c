@@ -9,6 +9,7 @@
 
 #include "file_plugin.h"
 #include "builtin_plugins.h"
+#include "backend.h"
 
 static int tagappend(void *,void *,int,...);
 static int tagopen(void *,void *,const char *uri,void **);
