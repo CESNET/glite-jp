@@ -68,7 +68,7 @@ int glite_jpps_readauth(glite_jp_context_t ctx,const char *file)
 			return glite_jp_stack_error(ctx,&err);
 		}
 
-		ctx->trusted_peers = realloc(ctx->trusted_peers, (cnt+1) * sizeof *ctx->trusted_peers);
+		ctx->trusted_peers = realloc(ctx->trusted_peers, (cnt+2) * sizeof *ctx->trusted_peers);
 		ctx->trusted_peers[cnt++] = strdup(buf);
 		ctx->trusted_peers[cnt] = NULL;
 	}
