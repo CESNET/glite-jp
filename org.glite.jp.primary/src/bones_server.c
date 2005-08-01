@@ -255,7 +255,6 @@ static int request(int conn,struct timeval *to,void *data)
 
 	glite_gsplugin_set_timeout(glite_gsplugin_get_context(soap),to);
 
-/* FIXME: does not work, ask nykolas */
 	soap->max_keep_alive = 1;	/* XXX: prevent gsoap to close connection */ 
 	soap_begin(soap);
 	if (soap_begin_recv(soap)) {
@@ -277,7 +276,13 @@ static int request(int conn,struct timeval *to,void *data)
 	)
 	{
 		soap_send_fault(soap);
-		return ctx->error->code;	/* XXX: shall we die on some errors? */
+		if (ctx->error) {
+			/* XXX: shall we die on some errors? */
+			int	err = ctx->error->code;
+			glite_jp_clear_error(ctx);
+			return err;
+		}
+		return 0;
 	}
 
 	glite_jp_run_deferred(ctx);

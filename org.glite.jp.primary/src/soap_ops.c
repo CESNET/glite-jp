@@ -442,7 +442,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__GetJob(
 		err.desc = "No file found for this job";
 		glite_jp_stack_error(ctx,&err);
 		err2fault(ctx,soap);
-		glite_jp_clear_error(ctx);
+//		glite_jp_clear_error(ctx);
 		return SOAP_FAULT;
 	}
 
