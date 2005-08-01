@@ -55,8 +55,8 @@ int glite_jp_clear_error(glite_jp_context_t ctx)
 
 	while (e) {
 		r = e->reason;
-		free(e->source);
-		free(e->desc);
+		free((char *) e->source);
+		free((char *) e->desc);
 		free(e);
 		e = r;
 	}
