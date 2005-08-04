@@ -67,44 +67,19 @@ int glite_jp_clear_error(glite_jp_context_t ctx)
 
 void glite_jp_free_query_rec(glite_jp_query_rec_t *q)
 {
-	free(q->attr.name); q->attr.name = NULL;
-	switch (q->attr.type) {
-		case GLITE_JP_ATTR_OWNER:
-		case GLITE_JP_ATTR_TAG:
-			free(q->value.s); q->value.s = NULL;
-			if (q->op == GLITE_JP_QUERYOP_WITHIN) {
-				free(q->value2.s);
-				q->value2.s = NULL;
-			}
-			break;
-		default: break;
-	}
-}
-
-int glite_jp_attr_copy(glite_jp_attr_t *dst,const glite_jp_attr_t *src)
-{
-	dst->name = src->name ? strdup(src->name) : NULL;
-	dst->type = src->type;
-	return 0;
+	free(q->attr); 
+	free(q->value);
+	free(q->value2);
+	memset(q,0,sizeof *q);
 }
 
 int glite_jp_queryrec_copy(glite_jp_query_rec_t *dst, const glite_jp_query_rec_t *src)
 {
-	glite_jp_attr_copy(&dst->attr,&src->attr);
+	if (src->attr) dst->attr = strdup(src->attr);
+	if (src->value) dst->value = strdup(src->value);
+	if (src->value2) dst->value2 = strdup(src->value2);
 	dst->op = src->op;
-	switch (src->attr.type) {
-		case GLITE_JP_ATTR_OWNER:
-		case GLITE_JP_ATTR_TAG:
-			dst->value.s = strdup(src->value.s);
-			if (dst->op == GLITE_JP_QUERYOP_WITHIN)
-				dst->value2.s = strdup(src->value2.s);
-			break;
-		case GLITE_JP_ATTR_TIME:
-			memcpy(&dst->value.time,&src->value.time,sizeof dst->value.time);
-			if (dst->op == GLITE_JP_QUERYOP_WITHIN)
-				memcpy(&dst->value2.time,&src->value2.time,sizeof dst->value2.time);
-			break;
-	}
+	dst->origin = src->origin;
 	return 0;
 }
 

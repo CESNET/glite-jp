@@ -23,45 +23,18 @@ typedef struct _glite_jp_context {
 } *glite_jp_context_t;
 
 typedef enum {
-	GLITE_JP_FILECLASS_UNDEF,
-	GLITE_JP_FILECLASS_INPUT,
-	GLITE_JP_FILECLASS_OUTPUT,
-	GLITE_JP_FILECLASS_LBLOG,
-	GLITE_JP_FILECLASS_TAGS,
-	GLITE_JP_FILECLASS__LAST
-} glite_jp_fileclass_t;
+	GLITE_JP_ATTR_ORIG_ANY,		/**< for queries: don't care about origin */
+	GLITE_JP_ATTR_ORIG_SYSTEM,	/**< JP internal, e.g. job owner */
+	GLITE_JP_ATTR_ORIG_USER,	/**< inserted by user explicitely */
+	GLITE_JP_ATTR_ORIG_FILE		/**< coming from uploaded file */
+} glite_jp_attr_orig_t;
 
 typedef struct {
-	char	*name;
-	int	sequence;
-	time_t	timestamp;
-	int	binary;
-	size_t	size;
+	char	*name; 		/**< including namespace */
 	char	*value;
-} glite_jp_tagval_t;
-
-typedef enum {
-	GLITE_JP_ATTR_UNDEF,
-	GLITE_JP_ATTR_OWNER,
-	GLITE_JP_ATTR_TIME,
-	GLITE_JP_ATTR_TAG,
-	GLITE_JP_ATTR_GENERIC,
-	GLITE_JP_ATTR__LAST
-} glite_jp_attrtype_t;
-
-typedef struct {
-	glite_jp_attrtype_t	type;
-	char	*name,*namespace;
-} glite_jp_attr_t;
-
-typedef struct {
-	glite_jp_attr_t	attr;
-	union {
-		char	*s;
-		int	i;
-		struct timeval time;
-		glite_jp_tagval_t tag;
-	} value;
+	glite_jp_attr_orig_t	origin;	
+	char	*origin_detail;	/**< where it came from, i.e. file URI:name */
+	time_t	timestamp;
 } glite_jp_attrval_t;
 
 
@@ -76,26 +49,12 @@ typedef enum {
 } glite_jp_queryop_t;
 
 typedef struct {
-	glite_jp_attr_t attr;
+	char	*attr;
 	glite_jp_queryop_t op;
-	union _glite_jp_query_rec_val {
-		char	*s;
-		int	i;
-		struct timeval time;
-	} value,value2;
+	char	*value, *value2;
+	glite_jp_attr_orig_t origin;
 } glite_jp_query_rec_t;
 
 void glite_jp_attrval_free(glite_jp_attrval_t *,int);
-
-void glite_jp_attr_free(glite_jp_attr_t *,int);
-void glite_jp_attrset_free(glite_jp_attr_t *a,int);
-
-int glite_jp_attr_cmp(const glite_jp_attr_t *,const glite_jp_attr_t *);
-
-void glite_jp_attr_union(const glite_jp_attr_t *, const glite_jp_attr_t *,
-        glite_jp_attr_t **);
-
-void glite_jp_attr_sub(const glite_jp_attr_t *, const glite_jp_attr_t *,
-        glite_jp_attr_t **);
 
 #endif
