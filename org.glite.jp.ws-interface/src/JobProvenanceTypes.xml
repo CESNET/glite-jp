@@ -18,12 +18,9 @@
 		</enum>
 
 		<struct name="tagValue">
-			A single value for a user tag.
-			<elem name="name" type="xsd:string">Name of the tag.</elem>
-			<elem name="sequence" type="xsd:int" optional="yes">Sequence of this value (if there are more occurences of this tag it may be used to order them.</elem>
-			<elem name="timestamp" type="xsd:dateTime" optional="yes">When the tag was created.</elem>
-			<elem name="stringValue" type="xsd:string" optional="yes">Value - printable string.</elem>
-			<elem name="blobValue" type="xsd:base64Binary" optional="yes">Value - binary.</elem>
+			A single user-recorded value for a job attribute.
+			<elem name="name" type="xsd:string">Name of the attribute, including namespace.</elem>
+			<elem name="value" type="xsd:string" optional="yes">Value - printable string.</elem>
 		</struct>
 	
 		<struct name="genericFault" fault="yes">
@@ -38,6 +35,7 @@
 			A single condition on job.
 			<elem name="attr" type="xsd:string">Attribute name to query.</elem>
 			<elem name="op" type="queryOp">Operation.</elem>
+			<elem name="origin" type="attrOrig" optional="yes">Where the attribute value came from.</elem>
 			<elem name="value" type="xsd:string">Value to compare the job attribute with.</elem>
 			<elem name="value2" type="xsd:string" optional="yes">Another value (for op = WITHIN).</elem>
 		</struct>
@@ -48,6 +46,22 @@
 			<elem name="name" type="xsd:string">Name of the file (if there are more of the same type per job).</elem>
 			<elem name="url" type="xsd:string">Where the file is stored on JP primary storage.</elem>
 		</struct>
+
+		<struct name="attrValue">
+			Single value of an attribute.
+			<elem name="name" type="xsd:string">Name of the attribute, including namespace.</elem>
+			<elem name="value" type="xsd:string">Value.</elem>
+			<elem name="timestamp" type="xsd:dateTime">When this value was recorded.</elem>
+			<elem name="origin" type="attrOrig">Where this value came from.</elem>
+			<elem name="originDetail" type="xsd:string" optional="yes"></elem>
+		</struct>
+
+		<enum name="attrOrig">
+			Specification of attribute origin.
+			<val name="SYSTEM">JP system value, e.g. job owner.</val>
+			<val name="USER">Explicitely stored by the user via RecordTag operation.</val>
+			<val name="FILE">Coming from uploaded file.</val>
+		</enum>
 	
 		<list name="string"/>
 	</types>

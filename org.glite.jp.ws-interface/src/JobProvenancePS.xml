@@ -93,10 +93,18 @@
 			<fault name="genericFault" type="genericFault">Any error.</fault>
 		</op>
 	
-		<op name="GetJob">
+		<op name="GetJobFiles">
 			Return URL's of files for a given single job.
 			<input name="jobid" type="xsd:string">The job.</input>
 			<output name="files" type="jppsFile" list="yes" optional="yes">List of the stored files.</output>
+			<fault name="genericFault" type="genericFault">Any error.</fault>
+		</op>
+
+		<op name="GetJobAttributes">
+			Query concrete attributes of a given job.
+			<input name="jobid" type="xsd:string">The job.</input>
+			<input name="attributes" type="xsd:string" list="yes">Which attributes should be retrieved.</input>
+			<output name="attrValues" type="attrValue">Values of the queried attributes.</output>
 			<fault name="genericFault" type="genericFault">Any error.</fault>
 		</op>
 	</operations>
