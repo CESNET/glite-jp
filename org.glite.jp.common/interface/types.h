@@ -3,6 +3,9 @@
 
 #include <sys/time.h>
 
+#define GLITE_JP_SYSTEM_NS	"http://egee.cesnet.cz/en/WSDL/jp-system"
+#define GLITE_JP_ATTR_OWNER	GLITE_JP_SYSTEM_NS ":owner"
+
 typedef struct _glite_jp_error_t {
 	int	code;
 	const char	*desc;
@@ -32,6 +35,8 @@ typedef enum {
 typedef struct {
 	char	*name; 		/**< including namespace */
 	char	*value;
+	int	binary;		/**< value is binary */
+	size_t	size;		/**< in case of binary value */
 	glite_jp_attr_orig_t	origin;	
 	char	*origin_detail;	/**< where it came from, i.e. file URI:name */
 	time_t	timestamp;
