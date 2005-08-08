@@ -4,7 +4,6 @@
 	xmlns="http://schemas.xmlsoap.org/wsdl/"
 	xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-	xmlns:xs="http://www.w3.org/2001/XMLSchema"
 	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
 	xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
 
@@ -13,14 +12,16 @@
 	xmlns:jpt="http://glite.org/wsdl/types/jp">
 
 <xsl:output indent="yes"/>
-<xsl:namespace-alias stylesheet-prefix="xsd" result-prefix="xs"/>
 
 <xsl:template match="/service">
 	<definitions
 		xmlns="http://schemas.xmlsoap.org/wsdl/"
 		name="{@name}"
 		targetNamespace="{@ns}">
-  	<documentation> <xsl:value-of select="text()"/> </documentation>
+  	<documentation>
+			<xsl:value-of select="version"/>
+			<xsl:value-of select="text()"/> 
+		</documentation>
 
 		<xsl:apply-templates select="import"/>
 
@@ -91,6 +92,27 @@
 <xsl:template match="struct">
 	<xsd:complexType name="{@name}">
 		<xsd:sequence>
+			<xsl:call-template name="inner-struct"/>
+		</xsd:sequence>
+	</xsd:complexType>
+</xsl:template>
+
+<xsl:template match="choice">
+	<xsd:complexType name="{@name}">
+		<xsd:choice>
+			<xsl:call-template name="inner-struct"/>
+		</xsd:choice>
+	</xsd:complexType>
+</xsl:template>
+
+
+<xsl:template name="inner-struct">
+	<xsl:variable name="nillable">
+		<xsl:choose>
+			<xsl:when test="local-name(.)='choice'">true</xsl:when>
+			<xsl:otherwise>false</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
 			<xsl:for-each select="elem">
 				<xsl:variable name="type">
 					<xsl:choose>
@@ -114,10 +136,8 @@
 						<xsl:otherwise>1</xsl:otherwise>
 					</xsl:choose>
 				</xsl:variable>
-				<xsd:element name="{@name}" type="{$type}" minOccurs="{$min}" maxOccurs="{$max}"/>
+				<xsd:element name="{@name}" type="{$type}" minOccurs="{$min}" maxOccurs="{$max}" nillable="{$nillable}"/>
 			</xsl:for-each>
-		</xsd:sequence>
-	</xsd:complexType>
 <!--
 	<xsd:complexType name="{@name}List">
 		<xsd:sequence>
