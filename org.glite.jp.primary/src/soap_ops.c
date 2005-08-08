@@ -54,32 +54,6 @@ static void err2fault(const glite_jp_context_t ctx,struct soap *soap)
 	else soap->fault->detail = detail;
 }
 
-/* deprecated 
-static glite_jp_fileclass_t s2jp_fileclass(enum jptype__UploadClass class)
-{
-	switch (class) {
-		case INPUT_SANDBOX: return GLITE_JP_FILECLASS_INPUT;
-		case OUTPUT_SANDBOX: return GLITE_JP_FILECLASS_OUTPUT;
-		case JOB_LOG: return GLITE_JP_FILECLASS_LBLOG;
-		default: return GLITE_JP_FILECLASS_UNDEF;
-	}
-}
-*/
-
-static void s2jp_tag(const struct jptype__tagValue *stag,glite_jp_tagval_t *jptag)
-{
-	memset(jptag,0,sizeof *jptag);
-	jptag->name = strdup(stag->name);
-	jptag->sequence = stag->sequence ? *stag->sequence : 0;
-	jptag->timestamp = stag->timestamp ? *stag->timestamp : 0;
-	if (stag->stringValue) jptag->value = strdup(stag->stringValue);
-	else if (stag->blobValue) {
-		jptag->binary = 1;
-		jptag->size = stag->blobValue->__size;
-		jptag->value = (char *) stag->blobValue->__ptr;
-	}
-}
-
 #define CONTEXT_FROM_SOAP(soap,ctx) glite_jp_context_t	ctx = (glite_jp_context_t) ((soap)->user)
 
 SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RegisterJob(
@@ -98,9 +72,12 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RegisterJob(
 		return SOAP_FAULT;
 	}
 
-	owner_val[0].attr.type = GLITE_JP_ATTR_OWNER;
-	owner_val[0].value.s = in->owner;
-	owner_val[1].attr.type = GLITE_JP_ATTR_UNDEF;
+	owner_val[0].name = GLITE_JP_ATTR_OWNER;
+	owner_val[0].value = in->owner;
+	owner_val[0].origin = GLITE_JP_ATTR_ORIG_SYSTEM;
+	owner_val[0].timestamp = time(NULL);
+	owner_val[0].origin_detail = NULL;
+	owner_val[1].name = NULL;
 
 /* XXX: errrors should be ingored but not silently */
 	glite_jpps_match_attr(ctx,in->job,owner_val); 
@@ -198,8 +175,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RecordTag(
 	CONTEXT_FROM_SOAP(soap,ctx);
 	void	*file_be,*file_p;
 	glite_jpps_fplug_data_t	**pd = NULL;
-
-	glite_jp_tagval_t	mytag;
+	glite_jp_attrval_t	attr[2];
 
 	file_be = file_p = NULL;
 
@@ -216,11 +192,9 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RecordTag(
 		return SOAP_FAULT;
 	}
 
-	s2jp_tag(in->tag,&mytag);
-
 	/* XXX: assuming tag plugin handles just one type */
 	if (pd[0]->ops.open(pd[0]->fpctx,file_be,GLITE_JP_FILETYPE_TAGS,&file_p)
-		|| pd[0]->ops.generic(pd[0]->fpctx,file_p,GLITE_JP_FPLUG_TAGS_APPEND,&mytag))
+		|| pd[0]->ops.generic(pd[0]->fpctx,file_p,GLITE_JP_FPLUG_TAGS_APPEND,in->tag->name,in->tag->value))
 	{
 		err2fault(ctx,soap);
 		if (file_p) pd[0]->ops.close(pd[0]->fpctx,file_p);
@@ -237,69 +211,41 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RecordTag(
 		return SOAP_FAULT;
 	}
 
+	attr[0].name = in->tag->name;
+	attr[0].value = in->tag->value;
+	attr[0].origin = GLITE_JP_ATTR_ORIG_USER;
+	attr[0].timestamp = time(NULL);
+	attr[0].origin_detail = NULL; 	/* XXX */
+
 	/* XXX: ignore errors but don't fail silenty */
-	glite_jpps_match_tag(ctx,in->jobid,&mytag);
+	glite_jpps_match_attr(ctx,in->jobid,attr);
 
 	free(pd);
 	return SOAP_OK;
 }
 
-extern char *glite_jp_default_namespace;
-
-/* XXX: should be public */
-#define GLITE_JP_TAGS_NAMESPACE "http://glite.org/services/jp/tags"
-
-static void s2jp_attr(const char *in,glite_jp_attr_t *out)
+static void s2jp_qval(const struct jptype__stringOrBlob *in, char **value, int *binary, size_t *size)
 {
-	char	*buf = strdup(in),*name = strchr(buf,':'),*ns = NULL;
-
-	if (name) {
-		ns = buf; 
-		*name++ = 0;
+	if (in->string) {
+		*value = in->string;
+		*binary = 0;
+		*size = 0;
 	}
 	else {
-		name = buf; 
-		ns = glite_jp_default_namespace;
-	}
-
-	memset(out,0,sizeof *out);
-
-	if (strcmp(ns,glite_jp_default_namespace))
-		out->type = strcmp(ns,GLITE_JP_TAGS_NAMESPACE) ?
-			GLITE_JP_ATTR_GENERIC : GLITE_JP_ATTR_TAG;
-	else {
-		if (!strcmp(name,"owner")) out->type = GLITE_JP_ATTR_OWNER;
-		else if (!strcmp(name,"time")) out->type = GLITE_JP_ATTR_OWNER;
-
-	}
-
-	if (out->type) {
-		out->name = strdup(name);
-		out->namespace = strdup(ns);
-	}
-}
-
-static void s2jp_queryval(
-		const char *in,
-		glite_jp_attrtype_t type,
-		union _glite_jp_query_rec_val *out)
-{
-	switch (type) {
-		case GLITE_JP_ATTR_OWNER:
-		case GLITE_JP_ATTR_TAG:
-		case GLITE_JP_ATTR_GENERIC:
-			out->s = strdup(in);
-			break;
-		case GLITE_JP_ATTR_TIME:
-			out->time.tv_sec = atoi(in);
-			break;
+		assert(in->blob);	/* XXX: should report error instead */
+		*value = in->blob->__ptr;
+		*binary = 1;
+		*size = in->blob->__size;
 	}
 }
 
 static void s2jp_query(const struct jptype__primaryQuery *in, glite_jp_query_rec_t *out)
 {
-	s2jp_attr(in->attr,&out->attr);
+	int	b;
 
+	out->attr = in->attr;
+
+	s2jp_qval(in->value,&out->value,&out->binary,&out->size);
 	switch (in->op) {
 		case EQUAL: out->op = GLITE_JP_QUERYOP_EQUAL; break;
 		case UNEQUAL: out->op = GLITE_JP_QUERYOP_UNEQUAL; break;
@@ -307,11 +253,18 @@ static void s2jp_query(const struct jptype__primaryQuery *in, glite_jp_query_rec
 		case GREATER: out->op = GLITE_JP_QUERYOP_GREATER; break;
 		case WITHIN:
 			out->op = GLITE_JP_QUERYOP_WITHIN;
-			s2jp_queryval(in->value2,out->attr.type,&out->value2);
+			s2jp_qval(in->value2,&out->value2,&b,&out->size2);
+			assert(out->binary == b);	/* XXX: report error instead */
+
 			break;
 	}
 
-	s2jp_queryval(in->value,out->attr.type,&out->value);
+	if (in->origin) switch (*in->origin) {
+		case jptype__attrOrig__SYSTEM: out->origin = GLITE_JP_ATTR_ORIG_SYSTEM; break;
+		case jptype__attrOrig__USER: out->origin = GLITE_JP_ATTR_ORIG_USER; break;
+		case jptype__attrOrig__FILE_: out->origin = GLITE_JP_ATTR_ORIG_FILE; break;
+	}
+	else out->origin = GLITE_JP_ATTR_ORIG_ANY;
 }
 
 SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__FeedIndex(
@@ -332,13 +285,13 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__FeedIndex(
 	time_t	expires = 0;
 	int 	ret = SOAP_OK;
 
-	glite_jp_attr_t	*attrs = calloc(in->__sizeattributes+1,sizeof *attrs);
+	char	const **attrs = calloc(in->__sizeattributes+1,sizeof *attrs);
 	glite_jp_query_rec_t	*qry = calloc(in->__sizeconditions+1,sizeof *qry);
 	int	i;
 
 	glite_jp_clear_error(ctx);
 
-	for (i = 0; i<in->__sizeattributes; i++) s2jp_attr(in->attributes[i],attrs+i);
+	memcpy(attrs,in->attributes,sizeof *attrs * in->__sizeattributes);
 	for (i = 0; i<in->__sizeconditions; i++) s2jp_query(in->conditions[i],qry+i);
 
 	if (in->history) {
@@ -374,9 +327,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__FeedIndex(
 
 cleanup:
 	free(feed_id);
-	for (i=0; attrs[i].type; i++) free(attrs[i].name);
 	free(attrs);
-	for (i=0; qry[i].attr.type; i++) glite_jp_free_query_rec(qry+i);
 	free(qry);
 
 	return ret;
@@ -391,10 +342,10 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__FeedIndexRefresh(
 	abort();
 }
 
-SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__GetJob(
+SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__GetJobFiles(
 		struct soap *soap,
-		struct _jpelem__GetJob *in,
-		struct _jpelem__GetJobResponse *out)
+		struct _jpelem__GetJobFiles *in,
+		struct _jpelem__GetJobFilesResponse *out)
 {
 	CONTEXT_FROM_SOAP(soap,ctx);
 	char	*url;
@@ -452,3 +403,13 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__GetJob(
 	return SOAP_OK;
 }
 
+SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__GetJobAttributes(
+		struct soap *soap,
+		struct _jpelem__GetJobAttributes *in,
+		struct _jpelem__GetJobAttributesResponse *out)
+{
+	CONTEXT_FROM_SOAP(soap,ctx);
+
+	/* TODO */
+	abort();
+}

@@ -29,7 +29,8 @@ int glite_jpps_authz(glite_jp_context_t ctx,int op,const char *job,const char *o
 			err.desc = "you are not a trusted peer";
 			return glite_jp_stack_error(ctx,&err);
 
-		case SOAP_TYPE___jpsrv__GetJob:
+		case SOAP_TYPE___jpsrv__GetJobFiles:
+		case SOAP_TYPE___jpsrv__GetJobAttributes:
 			assert(owner);
 			return strcmp(owner,ctx->peer) ? glite_jp_stack_error(ctx,&err) : 0;
 			break;

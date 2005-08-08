@@ -769,7 +769,7 @@ int glite_jppsbe_get_job_url(
 
 	glite_jp_db_freestmt(&db_res);
 
-	if (glite_jpps_authz(ctx,SOAP_TYPE___jpsrv__GetJob,job,db_row[2])) {
+	if (glite_jpps_authz(ctx,SOAP_TYPE___jpsrv__GetJobFiles,job,db_row[2])) {
 		err.code = EPERM;
 		goto error_out;
 	}
@@ -1228,9 +1228,11 @@ int glite_jppsbe_get_job_metadata(
 	int got_info = 0;
 	struct timeval tv_reg;
 	char *owner = NULL;
+/* do in plugin
 	int got_tags = 0;
 	void *tags_handle = NULL;
 	glite_jp_tagval_t* tags = NULL;
+*/
 	int i,j;
 	glite_jp_error_t err;
 
@@ -1241,13 +1243,11 @@ int glite_jppsbe_get_job_metadata(
 	memset(&err,0,sizeof err);
 	err.source = __FUNCTION__;
 
-	for (i = 0; attrs_inout[i].attr.type != GLITE_JP_ATTR_UNDEF; i++) {
-		switch (attrs_inout[i].attr.type) {
-		case GLITE_JP_ATTR_OWNER:
-
+	for (i = 0; attrs_inout[i].name; i++) {
 /* must be implemented via filetype plugin
 		case GLITE_JP_ATTR_TIME:
 */
+		if (!strcmp(attrs_inout[i].name,GLITE_JP_ATTR_OWNER)) {
 			if (!got_info) {
 				if (get_job_info(ctx, job, &owner, &tv_reg)) {
 					err.code = ctx->error->code;
@@ -1256,7 +1256,7 @@ int glite_jppsbe_get_job_metadata(
 				}
 				got_info = 1;
 			}
-			break;
+		}
 
 /* must be implemented via filetype plugin
 		case GLITE_JP_ATTR_TAG:
@@ -1278,25 +1278,32 @@ int glite_jppsbe_get_job_metadata(
 			}
 			break;
 */
-		default:
+		else {
 			err.code = EINVAL;
 			err.desc = "Invalid attribute type";
 			goto error_out;
 			break;
 		}
 
-		switch (attrs_inout[i].attr.type) {
-		case GLITE_JP_ATTR_OWNER:
-			attrs_inout[i].value.s = strdup(owner);
-			if (!attrs_inout[i].value.s) {
+		if (!strcmp(attrs_inout[i].name,GLITE_JP_ATTR_OWNER)) {
+			attrs_inout[i].value = strdup(owner);
+			if (!attrs_inout[i].value) {
 				err.code = ENOMEM;
 				err.desc = "Cannot copy owner string";
 				goto error_out;
 			}	
-			break;
+			attrs_inout[i].origin = GLITE_JP_ATTR_ORIG_SYSTEM;
+			attrs_inout[i].origin_detail = NULL;
+
+			/* FIXME: we must store job registration time somewhere */
+			attrs_inout[i].timestamp = 0;
+		}
+	
+/* TODO:
 		case GLITE_JP_ATTR_TIME:
 			attrs_inout[i].value.time = tv_reg;
 			break;
+*/
 
 /* must be implemented via filetype plugin
 		case GLITE_JP_ATTR_TAG:
@@ -1314,32 +1321,22 @@ int glite_jppsbe_get_job_metadata(
 			if (!tags[j].name) attrs_inout[i].value.tag.name = NULL;
 			break;
 */
-		default:
-			break;
-		}
 	}
 
 error_out:
 	free(owner);
+/* plugin
 	if (tags) for (j = 0; tags[j].name != NULL; j++) {
 		free(tags[j].name);
 		free(tags[j].value);
 	}
 	free(tags);
+*/
 	
 	if (err.code) {
 		while (i > 0) {
 			i--;
-			switch (attrs_inout[i].attr.type) {
-			case GLITE_JP_ATTR_OWNER:
-				free(attrs_inout[i].value.s);
-				break;
-			case GLITE_JP_ATTR_TAG:
-				free(attrs_inout[i].value.tag.name);
-				free(attrs_inout[i].value.tag.value);
-			default:
-				break;
-			}
+			glite_jp_attrval_free(attrs_inout+i,0);
 		}
 		return glite_jp_stack_error(ctx,&err);
 	} else {

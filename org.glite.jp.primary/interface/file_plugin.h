@@ -27,7 +27,7 @@ typedef struct _glite_jpps_fplug_op_t {
 \retval ENOSYS	this attribute is not defined by this type of file
 \retval ENOENT	no value is present 
 */
-	int	(*attr)(void *fpctx,void *handle,glite_jp_attr_t attr,glite_jp_attrval_t **attrval);
+	int	(*attr)(void *fpctx,void *handle,const char *attr,glite_jp_attrval_t **attrval);
 
 /** File type specific operation. 
 \param[in] fpctx	Plugin context.
@@ -45,6 +45,7 @@ typedef struct _glite_jpps_fplug_data_t {
 					handled by the plugin. */
 	char	**classes;	/**< The same as uris but filesystem-friendly
 					(can be used to construct file names).*/
+	char	**namespaces;	/**< Which attribute namespaces this plugin handles. */
 
 	glite_jpps_fplug_op_t ops; 	/**< Plugin operations. */
 } glite_jpps_fplug_data_t;
