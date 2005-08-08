@@ -57,6 +57,8 @@ typedef struct {
 	char	*attr;
 	glite_jp_queryop_t op;
 	char	*value, *value2;
+	int	binary;
+	size_t	size,size2;
 	glite_jp_attr_orig_t origin;
 } glite_jp_query_rec_t;
 
