@@ -36,8 +36,8 @@
 			<elem name="attr" type="xsd:string">Attribute name to query.</elem>
 			<elem name="op" type="queryOp">Operation.</elem>
 			<elem name="origin" type="attrOrig" optional="yes">Where the attribute value came from.</elem>
-			<elem name="value" type="xsd:string">Value to compare the job attribute with.</elem>
-			<elem name="value2" type="xsd:string" optional="yes">Another value (for op = WITHIN).</elem>
+			<elem name="value" type="stringOrBlob">Value to compare the job attribute with.</elem>
+			<elem name="value2" type="stringOrBlob" optional="yes">Another value (for op = WITHIN).</elem>
 		</struct>
 
 		<struct name="jppsFile">
@@ -50,11 +50,16 @@
 		<struct name="attrValue">
 			Single value of an attribute.
 			<elem name="name" type="xsd:string">Name of the attribute, including namespace.</elem>
-			<elem name="value" type="xsd:string">Value.</elem>
+			<elem name="value" type="stringOrBlob" optional="yes">String value.</elem>
 			<elem name="timestamp" type="xsd:dateTime">When this value was recorded.</elem>
 			<elem name="origin" type="attrOrig">Where this value came from.</elem>
 			<elem name="originDetail" type="xsd:string" optional="yes"></elem>
 		</struct>
+
+		<choice name="stringOrBlob">
+			<elem name="string" type="xsd:string">String value.</elem>
+			<elem name="blob" type="xsd:base64Binary">Binary value.</elem>
+		</choice>
 
 		<enum name="attrOrig">
 			Specification of attribute origin.
