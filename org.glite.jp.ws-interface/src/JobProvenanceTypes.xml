@@ -20,7 +20,7 @@
 		<struct name="tagValue">
 			A single user-recorded value for a job attribute.
 			<elem name="name" type="xsd:string">Name of the attribute, including namespace.</elem>
-			<elem name="value" type="xsd:string" optional="yes">Value - printable string.</elem>
+			<elem name="value" type="stringOrBlob" optional="yes">Value.</elem>
 		</struct>
 	
 		<struct name="genericFault" fault="yes">
@@ -67,6 +67,40 @@
 			<val name="USER">Explicitely stored by the user via RecordTag operation.</val>
 			<val name="FILE">Coming from uploaded file.</val>
 		</enum>
+
+		<struct name="jobRecord">
+			Information on a single job.
+			Used for both feeding JP index server from primary storage
+			and to answer user queries on index server.
+			<elem name="jobid" type="xsd:string">ID of the job.</elem>
+			<elem name="attributes" type="attrValue" optional="yes" list="yes">
+				Attribute values, required by query/feed and available right now.
+			</elem>
+			<elem name="primaryStorage" type="xsd:string" list="yes" optional="yes">
+				User query only: which primary storage(s) have data on this job.
+			</elem>
+		</struct>
+
+		<struct name="indexQuery">
+			Single query condition on a job.
+			Similarly to LB, these outer conditions are logically ANDed.
+			<elem name="attr" type="xsd:string">
+				Which attribute the condition refers to.
+			</elem>
+			<elem name="origin" optional="yes" type="attrOrig">
+				Specific attribute origin (if we do care).
+			</elem>
+			<elem name="record" list="yes" type="indexQueryRecord">
+				List of conditions on attribute attr.
+				These conditions are logically ORed.
+			</elem>
+		</struct>
+
+		<struct name="indexQueryRecord">
+			Single condition on an attribute.
+			<elem name="op" type="queryOp">Query operation.</elem>
+			<elem name="value" type="stringOrBlob">Value to compare attribute with.</elem>
+		</struct>
 	
 		<list name="string"/>
 	</types>

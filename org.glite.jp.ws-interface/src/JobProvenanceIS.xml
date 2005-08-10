@@ -1,0 +1,42 @@
+<service name="JobProvenancePS"
+	ns="http://glite.org/wsdl/services/jp"
+	prefix="jp"
+	typeNs="http://glite.org/wsdl/types/jp"
+	typePrefix="jpt"
+	elemNs="http://glite.org/wsdl/elements/jp"
+	elemPrefix="jpe"
+	xmlns:jpt="http://glite.org/wsdl/types/jp">
+
+	<version>CVS revision: <![CDATA[ $Header$ ]]></version>
+
+	<import namespace="http://glite.org/wsdl/services/jp" location="JobProvenanceTypes.wsdl"/>
+
+	<fault name="genericFault"/>
+
+	<operations>
+		<op name="UpdateJobs">
+			Called by JP primary storage as a response to FeedIndex request.
+			Updates information on jobs in index server, according to what JPPS
+			currently knows.
+			<input name="feedId" type="xsd:string">Id of the feed, as returned by JPPS FeedIndex operation.</input>
+			<input name="feedDone" type="xsd:boolean">Flag of completed batch feed.</input>
+			<input name="jobAttributes" type="jobRecord" list="yes">Attributes per job.</input>
+
+			<fault name="genericFault" type="genericFault">Any error.</fault>
+		</op>
+	
+		<op name="QueryJobs">
+			User query to index server.
+			<input name="conditions" type="indexQuery" list="yes">
+				Query conditions, similar to LB.
+			</input>
+			<input name="attributes" type="xsd:string" list="yes" optional="yes">
+				Set of attributes to be retrieved directly from index server (if any).
+			</input>
+			<output name="jobs" type="jobRecord" list="yes">
+				List of jobs matching the query.
+			</output>
+			<fault name="genericFault" type="genericFault">Any error.</fault>
+		</op>
+	</operations>
+</service>
