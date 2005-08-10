@@ -29,8 +29,9 @@ static void usage(const char *me)
 			"		RegisterJob jobid owner\n"
 			"		StartUpload jobid class commit_before mimetype\n"
 			"		CommitUpload destination\n"
-			"		RecordTag jobid tagname sequence stringvalue\n"
-			"		GetJob jobid\n"
+			"		RecordTag jobid tagname stringvalue\n"
+			"		GetJobFiles jobid\n"
+			"		GetJobAttr jobid attr\n"
 			"		FeedIndex destination query_number history continuous\n"
 			"		FeedIndexRefresh feedid\n"
 		,me);
@@ -156,19 +157,17 @@ int main(int argc,char *argv[])
 		struct _jpelem__RecordTag	in;
 		struct _jpelem__RecordTagResponse	empty;
 		struct jptype__tagValue tagval;
+		struct jptype__stringOrBlob	val;
 		
 		int seq = 0;
 	
-		if (argc != 6) usage(argv[0]);
+		if (argc != 5) usage(argv[0]);
 		
 		in.jobid = argv[2];
 		in.tag = &tagval;
 		tagval.name = argv[3];
-		seq = atoi(argv[4]);
-		tagval.sequence = &seq;
-		tagval.timestamp = NULL;
-		tagval.stringValue = argv[5];
-		tagval.blobValue = NULL;
+		tagval.value = &val;
+		val.string = argv[4];
 		
 		if (!check_fault(soap,
 				soap_call___jpsrv__RecordTag(soap, server, "",&in, &empty))) {
@@ -212,14 +211,14 @@ int main(int argc,char *argv[])
 		}
 	}
 #endif
-	else if (!strcasecmp(argv[1],"GetJob")) {
-		struct _jpelem__GetJob	in;
-		struct _jpelem__GetJobResponse	out;
+	else if (!strcasecmp(argv[1],"GetJobFiles")) {
+		struct _jpelem__GetJobFiles	in;
+		struct _jpelem__GetJobFilesResponse	out;
 
 		if (argc != 3) usage(argv[0]);
 		in.jobid = argv[2];
 		
-		if (!check_fault(soap,soap_call___jpsrv__GetJob(soap,server,"",
+		if (!check_fault(soap,soap_call___jpsrv__GetJobFiles(soap,server,"",
 						&in,&out)))
 		{
 			int	i;
@@ -234,6 +233,11 @@ int main(int argc,char *argv[])
 			}
 		}
 
+	}
+	else if (!strcasecmp(argv[1],"GetJobAttr")) {
+		
+		if (argc != 4) usage(argv[0]);
+		/* TODO */
 	}
 	else usage(argv[0]);
 
