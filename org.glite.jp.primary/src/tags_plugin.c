@@ -26,7 +26,7 @@ static int tagdummy()
 struct tags_handle {
 	void	*bhandle;
 	int	n;
-	glite_jp_tagval_t	*tags;
+	glite_jp_attrval_t	*tags;
 };
 
 int init(glite_jp_context_t ctx, glite_jpps_fplug_data_t *data)
@@ -76,7 +76,7 @@ static int tagclose(void *fpctx,void *handle)
 
 static int tagappend(void *fpctx,void *handle,int oper,...)
 {
-	glite_jp_tagval_t	*tag;
+	glite_jp_attrval_t	*tag;
 	va_list	ap;
 	char	*hdr,*rec;
 	glite_jp_context_t	ctx = fpctx;
@@ -90,10 +90,10 @@ static int tagappend(void *fpctx,void *handle,int oper,...)
 	glite_jp_clear_error(ctx);
 
 	va_start(ap,oper);
-	tag = va_arg(ap,glite_jp_tagval_t *);
+	tag = va_arg(ap,glite_jp_attrval_t *);
 	va_end(ap);
 
-	printf("tagappend: %s,%d,%s\n",tag->name,tag->sequence,tag->value);
+	printf("tagappend: %s,%s\n",tag->name,tag->value);
 
 	assert(oper == GLITE_JP_FPLUG_TAGS_APPEND);
 
@@ -122,7 +122,8 @@ static int tagappend(void *fpctx,void *handle,int oper,...)
 		return glite_jp_stack_error(ctx,&err);
 	}
 
-	trio_asprintf(&hdr,"%d %ld %c",tag->sequence,
+/* XXX: origin is always USER, not recorded */
+	trio_asprintf(&hdr,"%ld %c",
 			tag->timestamp,tag->binary ? 'B' : 'S');
 
 	rlen = strlen(tag->name) + strlen(hdr) + 2 /* \0 after name and after hdr */ +

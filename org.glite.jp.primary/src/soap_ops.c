@@ -179,6 +179,13 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RecordTag(
 
 	file_be = file_p = NULL;
 
+	attr[0].name = in->tag->name;
+	attr[0].value = in->tag->value;
+	attr[0].origin = GLITE_JP_ATTR_ORIG_USER;
+	attr[0].timestamp = time(NULL);
+	attr[0].origin_detail = NULL; 	/* XXX */
+	attr[1].name = NULL;
+
 	/* XXX: we assume just one plugin and also that TAGS plugin handles
 	 * just one uri/class */
 
@@ -194,7 +201,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RecordTag(
 
 	/* XXX: assuming tag plugin handles just one type */
 	if (pd[0]->ops.open(pd[0]->fpctx,file_be,GLITE_JP_FILETYPE_TAGS,&file_p)
-		|| pd[0]->ops.generic(pd[0]->fpctx,file_p,GLITE_JP_FPLUG_TAGS_APPEND,in->tag->name,in->tag->value))
+		|| pd[0]->ops.generic(pd[0]->fpctx,file_p,GLITE_JP_FPLUG_TAGS_APPEND,attr))
 	{
 		err2fault(ctx,soap);
 		if (file_p) pd[0]->ops.close(pd[0]->fpctx,file_p);
@@ -210,12 +217,6 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RecordTag(
 		free(pd);
 		return SOAP_FAULT;
 	}
-
-	attr[0].name = in->tag->name;
-	attr[0].value = in->tag->value;
-	attr[0].origin = GLITE_JP_ATTR_ORIG_USER;
-	attr[0].timestamp = time(NULL);
-	attr[0].origin_detail = NULL; 	/* XXX */
 
 	/* XXX: ignore errors but don't fail silenty */
 	glite_jpps_match_attr(ctx,in->jobid,attr);
