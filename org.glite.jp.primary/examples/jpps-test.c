@@ -168,6 +168,7 @@ int main(int argc,char *argv[])
 		tagval.name = argv[3];
 		tagval.value = &val;
 		val.string = argv[4];
+		val.blob = NULL;
 		
 		if (!check_fault(soap,
 				soap_call___jpsrv__RecordTag(soap, server, "",&in, &empty))) {
