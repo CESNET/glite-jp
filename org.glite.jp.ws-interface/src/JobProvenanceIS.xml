@@ -1,4 +1,4 @@
-<service name="JobProvenancePS"
+<service name="JobProvenanceIS"
 	ns="http://glite.org/wsdl/services/jp"
 	prefix="jp"
 	typeNs="http://glite.org/wsdl/types/jp"
