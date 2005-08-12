@@ -180,7 +180,15 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RecordTag(
 	file_be = file_p = NULL;
 
 	attr[0].name = in->tag->name;
-	attr[0].value = in->tag->value;
+	if (in->tag->value->string) {
+		attr[0].value = in->tag->value->string;
+		attr[0].binary = 0;
+	}
+	else {
+		attr[0].value = in->tag->value->blob->__ptr;
+		attr[0].size = in->tag->value->blob->__size;
+		attr[0].binary = 1;
+	}
 	attr[0].origin = GLITE_JP_ATTR_ORIG_USER;
 	attr[0].timestamp = time(NULL);
 	attr[0].origin_detail = NULL; 	/* XXX */
