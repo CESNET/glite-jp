@@ -15,6 +15,7 @@
 			<val name="LESS"></val>
 			<val name="GREATER"></val>
 			<val name="WITHIN">The attribute is between two specified values.</val>
+			<val name="EXISTS">The attribute exists (even having a NULL value).</val>
 		</enum>
 
 		<struct name="tagValue">
