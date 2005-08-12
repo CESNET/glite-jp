@@ -6,6 +6,7 @@
 #include "glite/jp/context.h"
 
 #include "feed.h"
+#include "attrs.h"
 
 #include "jpps_H.h"
 /* #include "JobProvenancePS.nsmap" */
@@ -412,13 +413,63 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__GetJobFiles(
 	return SOAP_OK;
 }
 
+static enum jptype__attrOrig jp2s_origin(glite_jp_attr_orig_t o)
+{
+	switch (o) {
+		case GLITE_JP_ATTR_ORIG_SYSTEM: return jptype__attrOrig__SYSTEM;
+		case GLITE_JP_ATTR_ORIG_USER: return jptype__attrOrig__USER;
+		case GLITE_JP_ATTR_ORIG_FILE: return jptype__attrOrig__FILE_;
+		default: abort(); /* XXX */
+	}
+}
+
 SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__GetJobAttributes(
 		struct soap *soap,
 		struct _jpelem__GetJobAttributes *in,
 		struct _jpelem__GetJobAttributesResponse *out)
 {
+	glite_jp_attrval_t	*attr;
+	int	i,n;
+
 	CONTEXT_FROM_SOAP(soap,ctx);
 
-	/* TODO */
-	abort();
+
+
+	if (glite_jpps_get_attrs(ctx,in->jobid,in->attributes,in->__sizeattributes,&attr)) {
+		err2fault(ctx,soap);
+		return SOAP_FAULT;
+	}
+
+	for (i=0; attr[i].name; i++);
+	out->__sizeattrValues = n = i;
+
+	out->attrValues = soap_malloc(soap,n * sizeof *out->attrValues);
+	for (i=0; attr[i].name; i++) {
+		struct jptype__attrValue	*a = soap_malloc(soap,sizeof *a);
+		out->attrValues[i] = a;
+
+		a->name = soap_strdup(soap,attr[i].name); free(attr[i].name);
+		a->value = soap_malloc(soap,sizeof *a->value);
+		if (attr[i].binary) {
+			a->value->blob = soap_malloc(soap,sizeof *a->value->blob);
+			memset(a->value->blob,0,sizeof *a->value->blob);
+			a->value->blob->__ptr = soap_malloc(soap,attr[i].size);
+			a->value->blob->__size = attr[i].size;
+			memcpy(a->value->blob->__ptr,attr[i].value,attr[i].size);
+
+			a->value->string = NULL;
+		}
+		else {
+			a->value->string = soap_strdup(soap,attr[i].value);
+			a->value->blob = NULL;
+		}
+		free(attr[i].value);
+		a->origin = jp2s_origin(attr[i].origin);
+		a->originDetail = attr[i].origin_detail ? soap_strdup(soap,attr[i].origin_detail) : NULL;
+		free(attr[i].origin_detail);
+		a->timestamp = attr[i].timestamp;
+	}
+	free(attr);
+
+	return SOAP_OK;
 }

@@ -54,7 +54,7 @@ HDRS_S=builtin_plugins.h backend.h
 
 SRCS:= bones_server.c soap_ops.c \
 	new_ftp_backend.c mysql.c file_plugin.c \
-	feed.c authz.c\
+	feed.c authz.c attrs.c\
 	is_client.c \
 	${ps_prefix}ServerLib.c \
 	${is_prefix}ClientLib.c jpps_C.c
