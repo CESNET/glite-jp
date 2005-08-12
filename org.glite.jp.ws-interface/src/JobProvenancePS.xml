@@ -104,7 +104,7 @@
 			Query concrete attributes of a given job.
 			<input name="jobid" type="xsd:string">The job.</input>
 			<input name="attributes" type="xsd:string" list="yes">Which attributes should be retrieved.</input>
-			<output name="attrValues" type="attrValue">Values of the queried attributes.</output>
+			<output name="attrValues" type="attrValue" list="yes">Values of the queried attributes.</output>
 			<fault name="genericFault" type="genericFault">Any error.</fault>
 		</op>
 	</operations>
