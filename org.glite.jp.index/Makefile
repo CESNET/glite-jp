@@ -23,15 +23,17 @@ CC=gcc
 -include Makefile.inc
 
 
-VPATH=${top_srcdir}/src:${top_srcdir}/examples:${top_srcdir}/test:${top_srcdir}/project:${jpproject}
+VPATH=${top_srcdir}/src:${top_srcdir}/examples:${top_srcdir}/test:${top_srcdir}/project:${jpproject}:${stagedir}/interface
 
 GLOBUS_LIBS:=-L${globus_prefix}/lib \
 	-lglobus_common_${nothrflavour} \
 	-lglobus_gssapi_gsi_${nothrflavour}
 
+GLOBUS_CFLAGS:=-I${globus_prefix}/include/${nothrflavour}
+
 DEBUG:=-g -O0  -DDEBUG
 
-CFLAGS:=${DEBUG} -I. -I${gsoap_prefix}/include -I${stagedir}/include
+CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${stagedir}/include ${GLOBUS_CFLAGS} -I${mysql_prefix}/include -I${mysql_prefix}/include/mysql
 LDFLAGS:=-L${stagedir}/lib
 
 LINK:=libtool --mode=link ${CC} ${LDFLAGS} 
@@ -40,46 +42,58 @@ INSTALL:=libtool --mode=install install
 
 
 daemon:=glite-jp-indexd
-example:=jpis-test
 soap_prefix:=jpis_
 
-SRCS:= simple_server.c soap_ops.c \
+SRCS:= conf.c bones_server.c soap_ops.c \
 	${soap_prefix}C.c \
-	${soap_prefix}Server.c
+	${soap_prefix}ServerLib.c \
+	${soap_prefix}ClientLib.c 
 
-EXA_SRCS:=jpis-test.c ${soap_prefix}C.c ${soap_prefix}Client.c
 
+OBJS:=${SRCS:.c=.o}
 
-OBJS:=${SRCS:.c=.o} stdsoap2.o
-EXA_OBJS:=${EXA_SRCS:.c=.o} stdsoap2.o
 
 COMMONLIB:=-lglite_jp_common
+BONESLIB:=-lglite_lb_server_bones
+GSOAPLIB:=-lglite_security_gsoap_plugin_${nothrflavour} -lglite_security_gss_${nothrflavour} \
+	-L${gsoap_prefix}/lib -lgsoap${GSOAP_DEBUG} -L${ares_prefix}/lib -lares
+TRIOLIB:=-lglite_lb_trio
+
+ifneq (${mysql_prefix},/usr)
+	ifeq ($(shell echo ${mysql_version} | cut -d. -f1,2),4.1)
+		MYSQLIB := -L${mysql_prefix}/lib/mysql -lmysqlclient
+	else
+		MYSQLIB := -L${mysql_prefix}/lib -lmysqlclient
+	endif
+else
+	MYSQLIB := -lmysqlclient
+endif
+
 
 default all: compile
 
-compile: ${daemon} ${example}
+compile: ${daemon}
 
 ${daemon}: ${OBJS}
-	${LINK} -o $@ ${OBJS} ${COMMONLIB} ${GLOBUS_LIBS}
+	${LINK} -o $@ -export-dynamic ${OBJS} ${BONESLIB} ${TRIOLIB} ${COMMONLIB} ${GSOAPLIB} ${GLOBUS_LIBS} ${MYSQLIB}
 
-${example}: ${EXA_OBJS}
-	${LINK} -o $@ ${EXA_OBJS}
 
 JobProvenanceIS.xh: JobProvenanceIS.wsdl JobProvenanceTypes.wsdl typemap.dat
-	cp  ${jpproject}/JobProvenanceTypes.wsdl .
+	cp  ${stagedir}/interface/JobProvenanceTypes.wsdl .
 	${gsoap_prefix}/bin/wsdl2h -t ${top_srcdir}/src/typemap.dat -c -o $@ $<
 	rm -f JobProvenanceTypes.wsdl
 
+${soap_prefix}ClientLib.c ${soap_prefix}Client.c \
+${soap_prefix}Server.c ${soap_prefix}ServerLib.c  \
 ${soap_prefix}C.c ${soap_prefix}H.h: JobProvenanceIS.xh
-	${gsoap_prefix}/bin/soapcpp2 -w -c -p ${soap_prefix} JobProvenanceIS.xh
+	${gsoap_prefix}/bin/soapcpp2 -n -w -c -p ${soap_prefix} JobProvenanceIS.xh
 
-#$(SOAP_PREFIX)H.h $(SOAP_PREFIX)C.c: LB.xh
-#        $(GSOAP_BIN_PATH)/soapcpp2 -w -c -p $(SOAP_PREFIX) LB.xh
-#
-#LB.xh: LB.wsdl typemap.dat
-#         $(GSOAP_BIN_PATH)/wsdl2h -c -o $@ LB.wsdl
-#
-
+#env_C.c env_Server.c:
+#	touch env.xh
+#	cp  ${stagedir}/interface/JobProvenanceTypes.wsdl .
+#	${gsoap_prefix}/bin/wsdl2h  -t ${top_srcdir}/src/typemap.dat -c -o env.xh JobProvenanceTypes.wsdl
+#	rm -f JobProvenanceTypes.wsdl
+#	${gsoap_prefix}/bin/soapcpp2 -w -c -p env_ env.xh
 
 check: 
 	-echo nothing yet
@@ -102,7 +116,7 @@ distbin:
 	$(MAKE) install PREFIX=`pwd`/tmpbuilddir${stagedir}
 	save_dir=`pwd`; cd tmpbuilddir${stagedir} && tar -czf $$save_dir/${top_srcdir}/${distdir}/${package}-${version}_bin.tar.gz *; cd $$save_dir
 	rm -rf tmpbuilddir
-        
+	
 install:
 	-mkdir -p ${PREFIX}/bin ${PREFIX}/etc ${PREFIX}/etc/init.d
 	for p in bkserverd bkindex; do \
@@ -117,7 +131,7 @@ install:
 
 clean:
 
-soap_ops.o jpis-test.o simple_server.o: ${soap_prefix}H.h
+soap_ops.o bones_server.o simple_server.o: ${soap_prefix}H.h
 
 # we have no real config.h but have to force gSoap not to use
 # linux ftime with broken (aka obsolete) DST information
@@ -126,4 +140,11 @@ stdsoap2.o: ${gsoap_prefix}/devel/stdsoap2.c
 	test -f config.h || touch config.h
 	@echo 'The following warning "time_t (de)serialization is not MT safe on this platform" is harmless'
 	${CC} -o $@ -c -DHAVE_CONFIG_H ${CFLAGS} ${gsoap_prefix}/devel/stdsoap2.c
+
+soap_ops.o bones_server.o: soap_version.h
+
+soap_version.h:
+	${gsoap_prefix}/bin/soapcpp2 /dev/null
+	perl -ne '$$. == 2 && /.*([0-9])\.([0-9])\.([0-9]).*/ && printf "#define GSOAP_VERSION %d%02d%02d\n",$$1,$$2,$$3' soapH.h >$@
+	-rm soapC.cpp soapH.h soapStub.h soapClient.cpp soapServer.cpp soapClientLib.cpp soapServerLib.cpp
 

@@ -5,12 +5,14 @@
 #include "glite/jp/context.h"
 
 #include "jpis_H.h"
-#include "JobProvenanceIS.nsmap"
+#include "jpis_.nsmap"
+#include "soap_version.h"
 
-static struct jptype__GenericJPFaultType *jp2s_error(struct soap *soap,
+
+static struct jptype__genericFault *jp2s_error(struct soap *soap,
 		const glite_jp_error_t *err)
 {
-	struct jptype__GenericJPFaultType *ret = NULL;
+	struct jptype__genericFault *ret = NULL;
 	if (err) {
 		ret = soap_malloc(soap,sizeof *ret);
 		memset(ret,0,sizeof *ret);
@@ -27,13 +29,17 @@ static void err2fault(const glite_jp_context_t ctx,struct soap *soap)
 {
 	char	*et;
 	struct SOAP_ENV__Detail	*detail = soap_malloc(soap,sizeof *detail);
-	struct _GenericJPFault *f = soap_malloc(soap,sizeof *f);
+	struct _genericFault *f = soap_malloc(soap,sizeof *f);
 
 
-	f->jptype__GenericJPFault = jp2s_error(soap,ctx->error);
+	f->jpelem__genericFault = jp2s_error(soap,ctx->error);
 
-	detail->__type = SOAP_TYPE__GenericJPFault;
+	detail->__type = SOAP_TYPE__genericFault;
+#if GSOAP_VERSION >= 20700
+	detail->fault = f;
+#else
 	detail->value = f;
+#endif
 	detail->__any = NULL;
 
 	soap_receiver_fault(soap,"Oh, shit!",NULL);
@@ -41,6 +47,7 @@ static void err2fault(const glite_jp_context_t ctx,struct soap *soap)
 	else soap->fault->detail = detail;
 }
 
+/*
 static void s2jp_tag(const struct jptype__TagValue *stag,glite_jp_tagval_t *jptag)
 {
 	memset(jptag,0,sizeof *jptag);
@@ -54,26 +61,24 @@ static void s2jp_tag(const struct jptype__TagValue *stag,glite_jp_tagval_t *jpta
 		jptag->value = (char *) stag->blobValue->__ptr;
 	}
 }
+*/
 
 #define CONTEXT_FROM_SOAP(soap,ctx) glite_jp_context_t	ctx = (glite_jp_context_t) ((soap)->user)
 
-SOAP_FMAC5 int SOAP_FMAC6 jpsrv__UpdateJobs(
+SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__UpdateJobs(
 	struct soap *soap,
-	char *feed_id,
-	struct jptype__UpdateJobsData *jobs,
-	enum xsd__boolean done
-)
+	struct _jpelem__UpdateJobs *jpelem__UpdateJobs,
+	struct _jpelem__UpdateJobsResponse *jpelem__UpdateJobsResponse)
 {
-	printf("%s items %d jobid %s\n",__FUNCTION__,jobs->__sizejob,
-			jobs->job[0]->jobid);
+	puts(__FUNCTION__);
 	return SOAP_OK;
 }
 
-SOAP_FMAC5 int SOAP_FMAC6 jpsrv__QueryJobs(
+
+SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__QueryJobs(
 	struct soap *soap,
-	struct jptype__IndexQuery *query,
-	struct jpsrv__QueryJobsResponse *resp
-)
+	struct _jpelem__QueryJobs *jpelem__QueryJobs,
+	struct _jpelem__QueryJobsResponse *jpelem__QueryJobsResponse)
 {
 	puts(__FUNCTION__);
 	return SOAP_OK;
