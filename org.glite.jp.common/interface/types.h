@@ -3,9 +3,6 @@
 
 #include <sys/time.h>
 
-#define GLITE_JP_SYSTEM_NS	"http://egee.cesnet.cz/en/WSDL/jp-system"
-#define GLITE_JP_ATTR_OWNER	GLITE_JP_SYSTEM_NS ":owner"
-
 typedef struct _glite_jp_error_t {
 	int	code;
 	const char	*desc;
@@ -21,6 +18,7 @@ typedef struct _glite_jp_context {
 	struct soap	*other_soap;
 	char	*peer;
 	void	**plugins;
+	void	**type_plugins;
 	void	*dbhandle;
 	char	**trusted_peers;
 } *glite_jp_context_t;
@@ -62,7 +60,5 @@ typedef struct {
 	size_t	size,size2;
 	glite_jp_attr_orig_t origin;
 } glite_jp_query_rec_t;
-
-void glite_jp_attrval_free(glite_jp_attrval_t *,int);
 
 #endif

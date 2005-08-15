@@ -20,30 +20,50 @@ typedef struct _glite_jp_tplug_data_t {
 		const glite_jp_attrval_t *b,
 		int	*result);
 
-/** Convert to and from XML representation */
-	char (*to_xml)(void *,const glite_jp_attrval_t *a);
-	glite_jp_attrval_t (*from_xml)(void *,const char *,const char *);
+/** Convert to database string representation.
+ * It is guaranteed the returned value can be converted back with
+ * from_db().
+ * The resulting value may not be suitable for indexing with db engine.
+ *
+ * \param[in] attr the attribute value to convert
+ * \retval NULL can't be converted
+ * \retval other the string representation.
+ * */
+	char * (*to_db_full)(void *ctx,const glite_jp_attrval_t *attr);
 
-/** Convert to and from database string representation */
-	char (*to_db)(void *,const glite_jp_attrval_t *a);
-	glite_jp_attrval_t (*from_db)(void *,const char *);
+/** Convert to a database string representation suitable for indexing.
+ * The function is non-decreasing (wrt. cmp() above and strcmp()), however it
+ * is not guaranteed to be one-to-one.
+ *
+ * \param[in] attr the value to convert
+ * \param[in] len maximum length of the converted value.
+ * \retval NULL can't be converted
+ * \retval other the string representation
+ */
+	char * (*to_db_index)(void *ctx,const glite_jp_attrval_t *attr,int len);
 
-/** Query for database type. 
+/** Convert from 
+	int (*from_db)(void *ctx,const char *str,glite_jp_attrval_t *attr);
+
+/** Query for database types suitable to store values returned by
+ * to_db_full() and to_db_index(). 
  * Useful for db column dynamic creation etc.
  */
-	const char (*db_type)(void *,const glite_jp_attr_t *);
+	const char * (*db_type_full)(void *ctx,const char *attr);
+	const char * (*db_type_index)(void *ctx,const char *attr,int len);
 
 } glite_jp_tplug_data_t;
 
 /** Plugin init function.
     Must be called init, supposed to be called as many times as required
     for different param's (e.g. xsd files).
+    Registers the plugin in ctx.
  */
 
 typedef int (*glite_jp_tplug_init_t)(
 	glite_jp_context_t	ctx,
 	const char		*param,
-	glite_jp_tplug_data	*plugin_data
+	glite_jp_tplug_data_t	*plugin_data
 );
 
 #endif
