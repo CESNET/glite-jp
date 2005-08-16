@@ -42,12 +42,17 @@ typedef struct _glite_jp_tplug_data_t {
  */
 	char * (*to_db_index)(void *ctx,const glite_jp_attrval_t *attr,int len);
 
-/** Convert from 
+/** Convert from the database format.
+ * \param[in] str the string value
+ * \param[inout] attr name contains the name of the attribute to be converted
+ * 		the rest of attr is filled in.
+ */
 	int (*from_db)(void *ctx,const char *str,glite_jp_attrval_t *attr);
 
 /** Query for database types suitable to store values returned by
  * to_db_full() and to_db_index(). 
  * Useful for db column dynamic creation etc.
+ * Return pointer to internal static data, non-reentrant.
  */
 	const char * (*db_type_full)(void *ctx,const char *attr);
 	const char * (*db_type_index)(void *ctx,const char *attr,int len);
