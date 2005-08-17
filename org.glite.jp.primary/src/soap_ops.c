@@ -4,6 +4,7 @@
 
 #include "glite/jp/types.h"
 #include "glite/jp/context.h"
+#include "glite/jp/attr.h"
 
 #include "feed.h"
 #include "attrs.h"
