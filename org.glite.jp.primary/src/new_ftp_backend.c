@@ -1793,6 +1793,19 @@ int glite_jppsbe_is_metadata(glite_jp_context_t ctx,const char *attr)
 }
 
 
+int glite_jppsbe_get_names(
+	glite_jp_context_t ctx,
+	const char *job,
+	const char *class,
+	char	***names_out
+)
+{
+	/* TODO */
+	abort();
+}
+
+
+
 /* XXX:
 - no primary authorization yet
 - no concurrency control yet
