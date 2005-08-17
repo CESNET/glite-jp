@@ -14,6 +14,7 @@
 #include <sys/stat.h>
 
 #include "glite/jp/types.h"
+#include "glite/jp/attr.h"
 #include "glite/jp/context.h"
 #include "glite/jp/strmd5.h"
 
@@ -1781,6 +1782,16 @@ int glite_jppsbe_query(
 }
 
 #endif
+
+
+int glite_jppsbe_is_metadata(glite_jp_context_t ctx,const char *attr)
+{
+	/* XXX: should be more */
+	if (!strcmp(attr,GLITE_JP_ATTR_OWNER)) return 1;
+
+	return 0;
+}
+
 
 /* XXX:
 - no primary authorization yet

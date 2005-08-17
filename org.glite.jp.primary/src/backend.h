@@ -96,6 +96,11 @@ int glite_jppsbe_append(
 	size_t nbytes
 );
 
+int glite_jppsbe_is_metadata(
+	glite_jp_context_t ctx,
+	const char *attr
+);
+
 int glite_jppsbe_get_job_metadata(
 	glite_jp_context_t ctx,
 	const char *job,
