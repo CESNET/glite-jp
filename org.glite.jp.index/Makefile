@@ -42,15 +42,18 @@ INSTALL:=libtool --mode=install install
 
 
 daemon:=glite-jp-indexd
-soap_prefix:=jpis_
+example:=jpis-test
+is_prefix:=jpis_
+ps_prefix:=jpps_
 
 SRCS:= conf.c bones_server.c soap_ops.c \
-	${soap_prefix}C.c \
-	${soap_prefix}ServerLib.c \
-	${soap_prefix}ClientLib.c 
+	${is_prefix}ServerLib.c \
+	${ps_prefix}ClientLib.c ${ps_prefix}C.c
 
+EXA_SRCS:=jpis-test.c ${is_prefix}C.c ${is_prefix}Client.c
 
 OBJS:=${SRCS:.c=.o}
+EXA_OBJS:=${EXA_SRCS:.c=.o}
 
 
 COMMONLIB:=-lglite_jp_common
@@ -77,16 +80,28 @@ compile: ${daemon}
 ${daemon}: ${OBJS}
 	${LINK} -o $@ -export-dynamic ${OBJS} ${BONESLIB} ${TRIOLIB} ${COMMONLIB} ${GSOAPLIB} ${GLOBUS_LIBS} ${MYSQLIB}
 
+${example}: ${EXA_OBJS}
+	${LINK} -o $@ ${EXA_OBJS} ${GSOAPLIB} ${GLOBUS_LIBS}
 
 JobProvenanceIS.xh: JobProvenanceIS.wsdl JobProvenanceTypes.wsdl typemap.dat
 	cp  ${stagedir}/interface/JobProvenanceTypes.wsdl .
 	${gsoap_prefix}/bin/wsdl2h -t ${top_srcdir}/src/typemap.dat -c -o $@ $<
 	rm -f JobProvenanceTypes.wsdl
 
-${soap_prefix}ClientLib.c ${soap_prefix}Client.c \
-${soap_prefix}Server.c ${soap_prefix}ServerLib.c  \
-${soap_prefix}C.c ${soap_prefix}H.h: JobProvenanceIS.xh
-	${gsoap_prefix}/bin/soapcpp2 -n -w -c -p ${soap_prefix} JobProvenanceIS.xh
+JobProvenancePS.xh: %.xh: %.wsdl JobProvenanceTypes.wsdl typemap.dat
+	cp  ${stagedir}/interface/JobProvenanceTypes.wsdl .
+	${gsoap_prefix}/bin/wsdl2h  -t ${top_srcdir}/src/typemap.dat -c -o $@ $<
+	rm -f JobProvenanceTypes.wsdl
+
+${is_prefix}ClientLib.c ${is_prefix}Client.c \
+${is_prefix}Server.c ${is_prefix}ServerLib.c  \
+${is_prefix}C.c ${is_prefix}H.h: JobProvenanceIS.xh
+	${gsoap_prefix}/bin/soapcpp2 -n -w -c -p ${is_prefix} JobProvenanceIS.xh
+
+${ps_prefix}Client.c ${ps_prefix}ClientLib.c  \
+${ps_prefix}C.c ${ps_prefix}H.h: JobProvenancePS.xh
+	${gsoap_prefix}/bin/soapcpp2 -n -w -c -p ${ps_prefix} JobProvenancePS.xh
+
 
 #env_C.c env_Server.c:
 #	touch env.xh
@@ -131,7 +146,7 @@ install:
 
 clean:
 
-soap_ops.o bones_server.o simple_server.o: ${soap_prefix}H.h
+soap_ops.o bones_server.o simple_server.o: ${is_prefix}H.h ${ps_prefix}H.h
 
 # we have no real config.h but have to force gSoap not to use
 # linux ftime with broken (aka obsolete) DST information

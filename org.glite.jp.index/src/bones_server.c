@@ -17,11 +17,18 @@
 #include "soap_version.h"
 #include "jpis_H.h"
 
+#if GSOAP_VERSION <= 20602
+#define soap_call___jpsrv__FeedIndex soap_call___ns1__FeedIndex
+#define soap_call___jpsrv__FeedIndexRefresh soap_call___ns1__FeedIndexRefresh
+#endif
+
 #define CONN_QUEUE	20
 
 extern SOAP_NMAC struct Namespace jpis__namespaces[],jpps__namespaces[];
 extern SOAP_NMAC struct Namespace namespaces[] = { {NULL,NULL} };
 // namespaces[] not used here, but need to prevent linker to complain...
+
+extern void MyFeedIndex(glite_jp_is_conf *conf, char *dest);
 
 static int newconn(int,struct timeval *,void *);
 static int request(int,struct timeval *,void *);
@@ -54,13 +61,14 @@ int main(int argc, char *argv[])
 	int			one = 1,opt,i;
 	edg_wll_GssStatus	gss_code;
 	struct sockaddr_in	a;
-	glite_jp_is_conf	conf;
+	glite_jp_is_conf	*conf;
 	char			*config_file;
 
 
 	glite_jp_init_context(&ctx);
 
 	/* Read config options/file */
+	// XXX: need add something meaningfull to src/conf.c !
 	config_file = NULL;
 	glite_jp_get_conf(argc, argv, config_file, &conf);
 
@@ -113,6 +121,16 @@ int main(int argc, char *argv[])
 
 	glite_srvbones_set_param(GLITE_SBPARAM_SLAVES_COUNT,1);
 	glite_srvbones_run(data_init,&stab,1 /* XXX: entries in stab */,debug);
+
+
+	// XXX: need solve 2 WSDLs problem :(
+	/*
+	for (i=0; conf->PS_list[i]; i++)
+		MyFeedIndex(conf,conf->PS_list[i]);
+	*/
+
+
+	glite_jp_free_conf(conf);
 
 	return 0;
 }
@@ -267,6 +285,8 @@ static int disconn(int conn,struct timeval *to,void *data)
 {
 	struct soap	*soap = (struct soap *) data;
 	soap_end(soap); // clean up everything and close socket
-
+	
 	return 0;
 }
+
+
