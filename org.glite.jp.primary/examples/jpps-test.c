@@ -97,6 +97,16 @@ static struct jptype__PrimaryQueryElement sample_query[][5] = {
 };
 #endif
 
+static const char *orig2str(enum jptype__attrOrig orig)
+{
+	switch (orig) {
+		case jptype__attrOrig__SYSTEM: return "SYSTEM";
+		case jptype__attrOrig__USER: return "USER";
+		case jptype__attrOrig__FILE_: return "FILE";
+		default: return "unknown";
+	}
+}
+
 int main(int argc,char *argv[])
 {
 	char	*server = "http://localhost:8901";
@@ -224,7 +234,7 @@ int main(int argc,char *argv[])
 		{
 			int	i;
 
-			printf("JobLog:\n");
+			printf("JobFiles:\n");
 
 			for (i=0; i<out.__sizefiles;i++) {
 				printf("\tclass = %s, name = %s, url = %s\n",
@@ -236,9 +246,29 @@ int main(int argc,char *argv[])
 
 	}
 	else if (!strcasecmp(argv[1],"GetJobAttr")) {
+		struct _jpelem__GetJobAttributes	in;
+		struct _jpelem__GetJobAttributesResponse	out;
 		
 		if (argc != 4) usage(argv[0]);
-		/* TODO */
+		in.jobid = argv[2];
+		in.__sizeattributes = 1;
+		in.attributes = &argv[3];
+
+		if (!check_fault(soap,soap_call___jpsrv__GetJobAttributes(soap,server,"",&in,&out)))
+		{
+			int	i;
+
+			puts("Attribute values:");
+			for (i=0; i<out.__sizeattrValues; i++)
+				printf("\t%s\t%s\t%s",
+					out.attrValues[i]->value->string ?
+						out.attrValues[i]->value->string :
+						"binary",
+					orig2str(out.attrValues[i]->origin),
+					ctime(&out.attrValues[i]->timestamp));
+
+		}
+		
 	}
 	else usage(argv[0]);
 

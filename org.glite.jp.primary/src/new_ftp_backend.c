@@ -1801,8 +1801,64 @@ int glite_jppsbe_get_names(
 	char	***names_out
 )
 {
-	/* TODO */
-	abort();
+	char	*qry = NULL,*file = NULL,*dot;
+	char	**out = NULL;
+	glite_jp_db_stmt_t	s = NULL;
+	int rows,nout = 0;
+	glite_jp_error_t	err;
+
+	glite_jp_clear_error(ctx);
+	memset(&err,0,sizeof err);
+	err.source = __FUNCTION__;
+
+	trio_asprintf(&qry,"select filename from files "
+			"where jobid = '%|Ss' and state = 'comitted'",job);
+
+	if ((rows = glite_jp_db_execstmt(ctx,qry,&s)) <= 0) {
+		if (rows == 0) {
+			err.code = ENOENT;
+			err.desc = "No files for this job";
+		}
+		else {
+			err.code = EIO;
+			err.desc = "DB call fail retrieving job files";
+		}
+		glite_jp_stack_error(ctx,&err);
+		goto cleanup;
+	}
+
+	while ((rows = glite_jp_db_fetchrow(s,&file))) {
+		int	l;
+
+		if (rows < 0) {
+			err.code = EIO;
+			err.desc = "DB call fail retrieving job files";
+			goto cleanup;
+		}
+
+		dot = strchr(file,'.'); /* XXX: can class contain dot? */
+
+		if (dot) *dot = 0;
+		if (!strcmp(file,class)) out[nout++] = dot ? dot+1 : NULL;
+
+		free(file);
+		file = NULL;
+	}
+
+cleanup:
+	if (s) glite_jp_db_freestmt(&s);
+	free(qry);
+	free(file);
+
+	if (ctx->error) {
+		int	i;
+		for (i=0; out && out[i]; i++) free(out[i]);
+		free(out);
+		return -ctx->error->code;
+	}
+
+	*names_out = out;
+	return nout;
 }
 
 

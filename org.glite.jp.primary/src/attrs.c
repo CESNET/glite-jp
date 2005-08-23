@@ -6,14 +6,18 @@
 #include "glite/jp/types.h"
 #include "glite/jp/attr.h"
 
+#include "backend.h"
 #include "attrs.h"
 #include "file_plugin.h"
+#include "builtin_plugins.h"
 
 static struct {
 	char	*class,*uri;
 	glite_jpps_fplug_data_t	**plugins;
 	int	nplugins;
 } *known_classes;
+
+static int tags_index;
 
 
 static void scan_classes(glite_jp_context_t ctx)
@@ -29,7 +33,7 @@ static void scan_classes(glite_jp_context_t ctx)
 			for (k=0; known_classes && known_classes[k].class
 					&& strcmp(pd->classes[j],known_classes[k].class);
 				k++);
-			if (known_classes[k].class) {
+			if (known_classes && known_classes[k].class) {
 				known_classes[k].plugins = realloc(known_classes[k].plugins,
 						(known_classes[k].nplugins + 2) * sizeof(glite_jpps_fplug_data_t *));
 				known_classes[k].plugins[known_classes[k].nplugins++] = pd;
@@ -43,6 +47,8 @@ static void scan_classes(glite_jp_context_t ctx)
 				known_classes[k].plugins[0] = pd;
 				known_classes[k].plugins[1] = NULL;
 				known_classes[k].nplugins = 1;
+				memset(known_classes+k+1,0,sizeof *known_classes);
+				if (!strcmp(known_classes[k].uri,GLITE_JP_FILETYPE_TAGS)) tags_index = k;
 			}
 		}
 	}
@@ -72,6 +78,7 @@ glite_jpps_get_attrs(glite_jp_context_t ctx,const char *job,char const *const *a
 	int	nfiles = 0;
 
 	nmeta = nother = 0;
+	glite_jp_clear_error(ctx);
 
 /* sort the queried attributes to backend metadata and others -- retrived by plugins 
  * XXX: assumes unique values for metadata.
@@ -91,19 +98,28 @@ glite_jpps_get_attrs(glite_jp_context_t ctx,const char *job,char const *const *a
 	}
 
 /* retrieve the metadata */
-	if (err = glite_jppsbe_get_job_metadata(ctx,job,meta)) goto cleanup;
+	if (meta && (err = glite_jppsbe_get_job_metadata(ctx,job,meta))) goto cleanup;
 
 	if (!known_classes) scan_classes(ctx);
 
 /* build a list of available files for this job */
-	for (i=0; known_classes[i].class; i++) {
-		char	**names;
-		glite_jppsbe_get_names(ctx,job,known_classes[i].class,&names);
+	files = malloc(sizeof *files);
+	files->class_idx = tags_index;
+	files->name = NULL;
+	nfiles = 1;
 
-		if (names) for (j=0; names[j]; j++) {
-			files = realloc(files,(nfiles+1) * sizeof *files);
-			files[nfiles].class_idx = i;
-			files[nfiles++].name = names[j];
+	for (i=0; known_classes[i].class; i++) {
+		char	**names = NULL;
+		int	nnames = 
+			glite_jppsbe_get_names(ctx,job,known_classes[i].class,&names);
+		if (nnames < 0) continue; /* XXX: error ignored */
+
+		if (nnames > 0) {
+			files = realloc(files,nfiles+nnames+1 * sizeof *files);
+			for (j=0; names[j]; j++) {
+				files[nfiles].class_idx = i;
+				files[nfiles++].name = names[j];
+			}
 		}
 		free(names);
 	}
@@ -115,10 +131,10 @@ glite_jpps_get_attrs(glite_jp_context_t ctx,const char *job,char const *const *a
 
 		/* XXX: ignore error */
 		if (!glite_jppsbe_open_file(ctx,job,
-			known_classes[ci = files[i].class_idx],
+			known_classes[ci = files[i].class_idx].class,
 			files[i].name,O_RDONLY,&beh))
 		{
-			for (j=0; known_classes[ci].plugins[j]; j++) {
+			for (j=0; j<known_classes[ci].nplugins; j++) {
 				void	*ph;
 
 				glite_jpps_fplug_data_t	*p = 
@@ -145,8 +161,17 @@ glite_jpps_get_attrs(glite_jp_context_t ctx,const char *job,char const *const *a
 	nout = merge_attrvals(&out,nout,meta);
 	free(meta); meta = NULL;
 
-	*attrs_out = out;
-	err = 0;
+	if (nout) {
+		*attrs_out = out;
+		err = 0;
+	}
+	else {
+		glite_jp_error_t 	e;
+		e.code = ENOENT;
+		e.source = __FUNCTION__;
+		e.desc = "no attributes found";
+		err = glite_jp_stack_error(ctx,&e);
+	}
 
 cleanup:
 	if (meta) for (i=0; i<nmeta; i++) glite_jp_attrval_free(meta+i,0);
