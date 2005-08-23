@@ -27,7 +27,9 @@ VPATH=${top_srcdir}/src:${top_srcdir}/examples:${top_srcdir}/project:${stagedir}
 
 GLOBUS_LIBS:=-L${globus_prefix}/lib \
 	-lglobus_common_${nothrflavour} \
-	-lglobus_gssapi_gsi_${nothrflavour}
+	-lglobus_gssapi_gsi_${nothrflavour} \
+	-lglobus_ftp_client_gcc32dbg \
+	-lglobus_ftp_control_gcc32dbg
 
 GLOBUS_CFLAGS:=-I${globus_prefix}/include/${nothrflavour}
 
