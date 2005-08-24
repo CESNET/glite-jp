@@ -388,7 +388,7 @@ static int dump_importer(void)
 	struct _jpelem__StartUploadResponse		su_out;
 	struct _jpelem__CommitUpload			cu_in;
 	struct _jpelem__CommitUploadResponse	empty;
-
+	static int		readnew = 1;
 	char		   *msg = NULL,
 				   *fname = NULL,
 				   *aux;
@@ -404,58 +404,69 @@ static int dump_importer(void)
 #define				_jpps 2
 
 
-	ret = edg_wll_MaildirTransStart(dump_mdir, &msg, &fname);
+	if ( readnew ) ret = edg_wll_MaildirTransStart(dump_mdir, &msg, &fname);
+	else ret = edg_wll_MaildirRetryTransStart(dump_mdir, (time_t)60, &msg, &fname);
+	if ( !ret ) { 
+		readnew = ~readnew;
+		if ( readnew ) ret = edg_wll_MaildirTransStart(dump_mdir, &msg, &fname);
+		else ret = edg_wll_MaildirRetryTransStart(dump_mdir, (time_t)60, &msg, &fname);
+		if ( !ret ) {
+			readnew = ~readnew;
+			return 0;
+		}
+	}
+
 	if ( ret < 0 ) {
 		dprintf(("[%s] edg_wll_MaildirTransStart: %s (%s)\n", name, strerror(errno), lbm_errdesc));
 		if ( !debug ) syslog(LOG_ERR, "edg_wll_MaildirTransStart: %s (%s)", strerror(errno), lbm_errdesc);
 		return -1;
-	} else if ( ret > 0 ) {
-		dprintf(("[%s] dump JP import request received\n", name));
-		if ( !debug ) syslog(LOG_INFO, "dump JP import request received");
-
-		ret = 0;
-		if ( parse_msg(msg, tab) < 0 ) {
-			dprintf(("[%s] Wrong format of message!\n", name));
-			if ( !debug ) syslog(LOG_ERR, "Wrong format of message");
-			ret = 0;
-		} else do {
-			su_in.job = tab[_job].val;
-			su_in.class_ = "urn:org.glite.jp.primary:lb";
-			su_in.name = tab[_file].val;
-			su_in.commitBefore = 1000 + time(NULL);
-			su_in.contentType = "text/lb";
-			dprintf(("[%s] Importing LB dump file '%s'\n", name, tab[_file].val));
-			if ( !debug ) syslog(LOG_INFO, "Importing LB dump file '%s'\n", msg);
-			ret = soap_call___jpsrv__StartUpload(soap, tab[_jpps].val?:jpps, "", &su_in, &su_out);
-			ret = check_soap_fault(soap, ret);
-			/* XXX: grrrrrrr! test it!!!
-			if ( (ret = check_soap_fault(soap, ret)) ) break;
-			dprintf(("[%s] Destination: %s\n\tCommit before: %s\n", su_out.destination, ctime(&su_out.commitBefore)));
-			*/
-
-			if ( (fhnd = open(tab[_file].val, O_RDONLY)) < 0 ) {
-				dprintf(("[%s] Can't open dump file: %s\n", name, tab[_file].val));
-				if ( !debug ) syslog(LOG_ERR, "Can't open dump file: %s", tab[_file].val);
-				ret = 1;
-				break;
-			}
-			/* XXX: grrrrrrr! remove next line!!! */
-			su_out.destination = "gsiftp://nain.ics.muni.cz:5678/tmp/gsiftp-dump-tst-file";
-			if ( (ret = gftp_put_file(su_out.destination, fhnd)) ) break;
-			close(fhnd);
-			dprintf(("[%s] File sent, commiting the upload\n", name));
-			cu_in.destination = su_out.destination;
-			ret = soap_call___jpsrv__CommitUpload(soap, tab[_jpps].val?:jpps, "", &cu_in, &empty);
-			if ( (ret = check_soap_fault(soap, ret)) ) break;
-			dprintf(("[%s] Dump upload succesfull\n", name));
-		} while (0);
-		edg_wll_MaildirTransEnd(dump_mdir, fname, ret? LBMD_TRANS_FAILED: LBMD_TRANS_OK);
-		free(fname);
-		free(msg);
-		return 1;
 	}
 
-	return 0;
+	dprintf(("[%s] dump JP import request received\n", name));
+	if ( !debug ) syslog(LOG_INFO, "dump JP import request received");
+
+	ret = 0;
+	if ( parse_msg(msg, tab) < 0 ) {
+		dprintf(("[%s] Wrong format of message!\n", name));
+		if ( !debug ) syslog(LOG_ERR, "Wrong format of message");
+		ret = 0;
+	} else do {
+		su_in.job = tab[_job].val;
+		su_in.class_ = "urn:org.glite.jp.primary:lb";
+		su_in.name = tab[_file].val;
+		su_in.commitBefore = 1000 + time(NULL);
+		su_in.contentType = "text/lb";
+		dprintf(("[%s] Importing LB dump file '%s'\n", name, tab[_file].val));
+		if ( !debug ) syslog(LOG_INFO, "Importing LB dump file '%s'\n", msg);
+		ret = soap_call___jpsrv__StartUpload(soap, tab[_jpps].val?:jpps, "", &su_in, &su_out);
+		ret = check_soap_fault(soap, ret);
+		/* XXX: grrrrrrr! test it!!!
+		if ( (ret = check_soap_fault(soap, ret)) ) break;
+		dprintf(("[%s] Destination: %s\n\tCommit before: %s\n", su_out.destination, ctime(&su_out.commitBefore)));
+		*/
+
+		if ( (fhnd = open(tab[_file].val, O_RDONLY)) < 0 ) {
+			dprintf(("[%s] Can't open dump file: %s\n", name, tab[_file].val));
+			if ( !debug ) syslog(LOG_ERR, "Can't open dump file: %s", tab[_file].val);
+			ret = 1;
+			break;
+		}
+		/* XXX: grrrrrrr! remove next line!!! */
+		su_out.destination = "gsiftp://nain.ics.muni.cz:5678/tmp/gsiftp-dump-tst-file";
+		if ( (ret = gftp_put_file(su_out.destination, fhnd)) ) break;
+		close(fhnd);
+		dprintf(("[%s] File sent, commiting the upload\n", name));
+		cu_in.destination = su_out.destination;
+		ret = soap_call___jpsrv__CommitUpload(soap, tab[_jpps].val?:jpps, "", &cu_in, &empty);
+		if ( (ret = check_soap_fault(soap, ret)) ) break;
+		dprintf(("[%s] Dump upload succesfull\n", name));
+	} while (0);
+
+	edg_wll_MaildirTransEnd(dump_mdir, fname, ret? LBMD_TRANS_FAILED_RETRY: LBMD_TRANS_OK);
+	free(fname);
+	free(msg);
+
+	return 1;
 }
 
 
