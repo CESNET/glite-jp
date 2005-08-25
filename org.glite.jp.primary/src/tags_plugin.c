@@ -16,6 +16,12 @@ static int tagopen(void *,void *,const char *uri,void **);
 static int tagclose(void *,void *);
 static int tagattr(void *,void *,const char *,glite_jp_attrval_t **);
 
+struct tags_handle {
+	void	*bhandle;
+	int	n;
+	glite_jp_attrval_t	*tags;
+};
+
 static int tagsread(void *,struct tags_handle *);
 
 #define TAGS_MAGIC 0x74c016f2	/* two middle digits encode version, i.e. 01 */
@@ -25,12 +31,6 @@ static int tagdummy()
 	puts("tagdummy()");
 	return -1;
 }
-
-struct tags_handle {
-	void	*bhandle;
-	int	n;
-	glite_jp_attrval_t	*tags;
-};
 
 int init(glite_jp_context_t ctx, glite_jpps_fplug_data_t *data)
 {
