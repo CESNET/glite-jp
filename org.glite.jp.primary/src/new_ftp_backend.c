@@ -14,9 +14,9 @@
 #include <sys/stat.h>
 
 #include "glite/jp/types.h"
-#include "glite/jp/attr.h"
 #include "glite/jp/context.h"
 #include "glite/jp/strmd5.h"
+#include "glite/jp/known_attr.h"
 #include "glite/jp/attr.h"
 
 #include "tags.h"
