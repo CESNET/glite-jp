@@ -1,9 +1,6 @@
 #ifndef __GLITE_JP_ATTR
 #define __GLITE_JP_ATTR
 
-#define GLITE_JP_SYSTEM_NS	"http://egee.cesnet.cz/en/WSDL/jp-system"
-#define GLITE_JP_ATTR_OWNER	GLITE_JP_SYSTEM_NS ":owner"
-
 void glite_jp_attrval_free(glite_jp_attrval_t *,int);
 void glite_jp_attrval_copy(glite_jp_attrval_t *,const glite_jp_attrval_t *);
 
