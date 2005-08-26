@@ -17,6 +17,22 @@ void glite_jp_attrval_free(glite_jp_attrval_t *a,int f)
 	if (f) free(a);
 }
 
+void glite_jp_attrval_copy(glite_jp_attrval_t *dst,const glite_jp_attrval_t *src)
+{
+	dst->name = strdup(src->name);
+	dst->origin = src->origin;
+	dst->size = src->size;
+	dst->timestamp = src->timestamp;
+	dst->origin_detail = src->origin_detail ? 
+		strdup(src->origin_detail) : NULL;
+	if (dst->binary = src->binary) {
+		dst->value = malloc(src->size);
+		memcpy(dst->value,src->value,src->size);
+	}
+	else dst->value = strdup(src->value);
+}
+
+
 #define min(x,y) ((x) > (y) ? (y) : (x))
 
 static int fb_cmp(void *ctx,const glite_jp_attrval_t *a,const glite_jp_attrval_t *b,int *result)

@@ -5,6 +5,7 @@
 #define GLITE_JP_ATTR_OWNER	GLITE_JP_SYSTEM_NS ":owner"
 
 void glite_jp_attrval_free(glite_jp_attrval_t *,int);
+void glite_jp_attrval_copy(glite_jp_attrval_t *,const glite_jp_attrval_t *);
 
 /* Search through registered type plugins and call appropriate plugin method.
  * See type_plugin.h for detailed description.
@@ -18,6 +19,7 @@ char *glite_jp_attrval_to_db_index(glite_jp_context_t ctx,const glite_jp_attrval
 int glite_jp_attrval_from_db(glite_jp_context_t ctx,const char *str,glite_jp_attrval_t *attr);
 const char *glite_jp_attrval_db_type_full(glite_jp_context_t ctx,const char *attr);
 const char *glite_jp_attrval_db_type_index(glite_jp_context_t ctx,const char *attr,int len);
+
 
 
 
