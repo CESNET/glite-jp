@@ -47,7 +47,7 @@ example:=jpps-test
 ps_prefix:=jpps_
 is_prefix:=jpis_
 
-plugins:=glite-jp-tags.la
+plugins:=glite-jp-tags.la glite-jp-ftpdauth.la
 
 HDRS_I=file_plugin.h
 HDRS_S=builtin_plugins.h backend.h
@@ -174,6 +174,9 @@ stdsoap2.o: ${gsoap_prefix}/devel/stdsoap2.c
 
 glite-jp-tags.la: tags_plugin.lo
 	${SOLINK} -o $@ tags_plugin.lo
+
+glite-jp-ftpdauth.la: ftpd_auth.lo
+	${SOLINK} -o $@ ftpd_auth.lo
 
 %.lo: %.c
 	${LTCOMPILE} -o $@ -c $<
