@@ -6,9 +6,6 @@
 
 #include "jpis_H.h"
 #include "jpis_.nsmap"
-// XXX: need solve 2 WSDLs problem :(
-//#include "jpps_H.h"
-//#include "jpps_.nsmap"
 #include "soap_version.h"
 
 
@@ -87,59 +84,3 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__QueryJobs(
 	puts(__FUNCTION__);
 	return SOAP_OK;
 }
-
-
-
-
-
-/*----------------------*/
-/* PS WSDL client calls */
-/*----------------------*/
-
-/*
-// XXX: need solve 2 WSDLs problem :(
-
-// call PS FeedIndex for a given destination
-void MyFeedIndex(glite_jp_is_conf *conf, char *dest)
-{
-	struct _jpelem__FeedIndex		in;
-	struct jpsrv__FeedIndexResponse 	out;
-	struct jptype__PrimaryQuery     	query;
-	struct jptype__stringOrBlob		value;
-//	struct xsd__base64Binary		blob;
-	int 					i;
-
-
-	memset(&in, 0, sizeof(in));
-
-	for (i=0; conf->attrs[i]; i++) ;
-	in.__sizeattributes = i;
-	in.attributes = conf->attrs;
-
-	// XXX: we need C -> WSDL conversion function !
-	query.attr = conf->query[0][0].attr;
-	query.op = conf->query[0][0].op; 	// XXX: nasty, needs conversion
-	query.origin = jptype__attrOrig__USER;
-	value.string = conf->query[0][0].value; // XXX: hope string
-//	memset(&blob, 0, sizeof(blob));
-//	value.blob = &blob;
-	value.blob = NULL;
-	query.value = &value;
-	query.value2 = NULL;
-
-	in.__sizeconditions = 1
-	in.conditions = malloc(sizeof(*in.conditions));
-	in.conditions[0] = &query;	// XXX: supp. only one dimensional queries ! (no ORs)
-					// for 2D queries one more _sizeconditions needed IMO
-
-	in.history = conf->history;
-	in.continuous = conf->continuous;
-
-	if (!check_fault(soap,soap_call_jpsrv___FeedIndex(soap,server,"",
-			dest, &in, &out)))
-	{
-		printf("FeedId: %s\nExpires: %s\n",out.feedId,ctime(&out.expires));
-	}
-
-}
-*/

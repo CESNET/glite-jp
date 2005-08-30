@@ -13,6 +13,7 @@
 #include "glite/security/glite_gsplugin.h"
 
 #include "conf.h"
+#include "soap_ps_calls.h"
 
 #include "soap_version.h"
 #include "jpis_H.h"
@@ -117,17 +118,15 @@ int main(int argc, char *argv[])
 		fprintf(stderr,"Server idenity: %s\n",mysubj);
 	else fputs("WARNING: Running unauthenticated\n",stderr);
 
+	// ask PS server for data
+	// XXX: should come after glite_srvbones_run(), when listening
+	for (i=0; conf->PS_list[i]; i++)
+		MyFeedIndex(conf,conf->PS_list[i]);
+
 	/* XXX: daemonise */
 
 	glite_srvbones_set_param(GLITE_SBPARAM_SLAVES_COUNT,1);
 	glite_srvbones_run(data_init,&stab,1 /* XXX: entries in stab */,debug);
-
-
-	// XXX: need solve 2 WSDLs problem :(
-	/*
-	for (i=0; conf->PS_list[i]; i++)
-		MyFeedIndex(conf,conf->PS_list[i]);
-	*/
 
 
 	glite_jp_free_conf(conf);

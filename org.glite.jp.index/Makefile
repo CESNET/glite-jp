@@ -46,7 +46,7 @@ example:=jpis-test
 is_prefix:=jpis_
 ps_prefix:=jpps_
 
-SRCS:= conf.c bones_server.c soap_ops.c \
+SRCS:= conf.c bones_server.c soap_ops.c soap_ps_calls.c \
 	${is_prefix}ServerLib.c \
 	${ps_prefix}ClientLib.c ${ps_prefix}C.c
 
