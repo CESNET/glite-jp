@@ -1592,10 +1592,12 @@ int glite_jppsbe_query(
 	glite_jp_context_t ctx,
 	const glite_jp_query_rec_t query[],
 	const glite_jp_attrval_t metadata[],
+	void *arg,
 	int (*callback)(
 		glite_jp_context_t ctx,
 		const char *job,
-		const glite_jp_attrval_t metadata[]
+		const glite_jp_attrval_t metadata[],
+		void *arg
 	)
 )
 {
@@ -1769,10 +1771,12 @@ int glite_jppsbe_query(
 	glite_jp_context_t ctx,
 	const glite_jp_query_rec_t query[],
 	const glite_jp_attrval_t metadata[],
+	void *arg,
 	int (*callback)(
 		glite_jp_context_t ctx,
 		const char *job,
-		const glite_jp_attrval_t metadata[]
+		const glite_jp_attrval_t metadata[],
+		void *arg
 	)
 )
 {
