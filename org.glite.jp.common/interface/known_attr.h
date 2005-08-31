@@ -7,6 +7,10 @@
 /** Job owner, as specified with RegisterJob JPPS operation */
 #define GLITE_JP_ATTR_OWNER	GLITE_JP_SYSTEM_NS ":owner" 
 
+/** Timestamp of job registration in JP.
+ * Should be almost the same time as registration with LB. */
+#define GLITE_JP_ATTR_REGTIME	GLITE_JP_SYSTEM_NS ":regtime" 
+
 /** Namespace for attributes derived from LB system data */
 #define GLITE_JP_LB_NS		"http://egee.cesnet.cz/en/WSDL/jp-lb"
 
