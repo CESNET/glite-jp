@@ -12,6 +12,9 @@
 
 #include "stdsoap2.h"
 
+extern int glite_jpis_QueryCondToSoap(struct soap *soap, glite_jp_query_rec_t *in, struct jptype__primaryQuery **out);
+
+
 /*------------------*/
 /* Helper functions */
 /*------------------*/
@@ -85,6 +88,7 @@ printf("MyFeedIndex for %s called\n", dest);
 	in.__sizeattributes = i;
 	in.attributes = conf->attrs;
 
+/*
 	// XXX: we need C -> WSDL conversion function !
 	query.attr = conf->query[0][0].attr;
 	query.op = conf->query[0][0].op; 	// XXX: nasty, needs conversion
@@ -96,9 +100,18 @@ printf("MyFeedIndex for %s called\n", dest);
 	value.blob = NULL;
 	query.value = &value;
 	query.value2 = NULL;
+*/
+	for (i=0; conf->query[i]; i++);
+	in.__sizeconditions = i;
+	in.conditions = malloc(i * sizeof(*in.conditions));
 
-	in.__sizeconditions = 1;
-	in.conditions = malloc(sizeof(*in.conditions));
+	for (i=0; conf->query[i]; i++) {
+		if (glite_jpis_QueryCondToSoap(soap, conf->query[i], &(in.conditions[i])) != SOAP_OK) {
+			printf("MyFeedIndex() - error during conds conversion\n");
+			goto err;
+		}
+	}
+
 	in.conditions[0] = &query;	// XXX: supp. only one dimensional queries ! (no ORs)
 					// for 2D queries one more _sizeconditions needed IMO
 
@@ -106,11 +119,14 @@ printf("MyFeedIndex for %s called\n", dest);
 	in.continuous = conf->continuous;
 
 	//if (!check_fault(soap,soap_call_jpsrv___FeedIndex(soap,dest,"",
-	if (soap_call___jpsrv__FeedIndex(soap,dest,"", &in, &out))
+	if (soap_call___jpsrv__FeedIndex(soap,dest,"", &in, &out)) {
 		printf("soap_call___jpsrv__FeedIndex() returned error\n");
+		goto err;
+	}
 	else
 		printf("FeedId: %s\nExpires: %s\n",out.feedId,ctime(&out.feedExpires));
 	
+err:
 	soap_end(soap);
 }
 
