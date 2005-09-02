@@ -53,6 +53,7 @@ static int QueryValToSoap(
 	
         assert(in); assert(out);
 	if ( !(val = soap_malloc(soap, sizeof(*val))) ) return SOAP_FAULT;
+	memset(val, 0, sizeof(*val) );
 
         if (binary) {
 		val->string = NULL;
@@ -66,6 +67,8 @@ static int QueryValToSoap(
 		val->blob = NULL;
 		if ( !(val->string = soap_strdup(soap, in)) )  return SOAP_FAULT;
 	}
+
+	*out = val;
 
 	return SOAP_OK;
 }
