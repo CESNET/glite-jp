@@ -75,7 +75,7 @@ endif
 
 default all: compile
 
-compile: ${daemon}
+compile: ${daemon} ${example}
 
 ${daemon}: ${OBJS}
 	${LINK} -o $@ -export-dynamic ${OBJS} ${BONESLIB} ${TRIOLIB} ${COMMONLIB} ${GSOAPLIB} ${GLOBUS_LIBS} ${MYSQLIB}

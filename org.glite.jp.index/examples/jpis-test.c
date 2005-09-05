@@ -75,8 +75,9 @@ int main(int argc,char *argv[])
 
 	// test calls of server functions
 	{
-		struct _jpelem__QueryJobs in;
-		struct _jpelem__QueryJobsResponse out;
+	// this call is issued by JPPS
+		struct _jpelem__UpdateJobs 		in;
+		struct _jpelem__UpdateJobsResponse 	out;
 
 		memset(&in, 0, sizeof(in));
 		memset(&out, 0, sizeof(out));
@@ -84,11 +85,45 @@ int main(int argc,char *argv[])
 			soap_call___jpsrv__UpdateJobs(soap,server,"",&in,&out));
 	}
 	{
+	// this call is issued by user
 		struct _jpelem__QueryJobs		in;
+		struct jptype__indexQuery 		*cond;
+		struct jptype__indexQueryRecord 	*rec;
 		struct _jpelem__QueryJobsResponse	out;
 
-		memset(&in, 0, sizeof(in));
+		
+		in.__sizeconditions = 1;
+		in.conditions = soap_malloc(soap,
+			in.__sizeconditions * 
+			sizeof(*(in.conditions)));
+		
+		cond = soap_malloc(soap, sizeof(*cond));
+		memset(cond, 0, sizeof(*cond));
+		cond->attr = soap_strdup(soap, "date");
+		cond->origin = NULL;
+		cond->__sizerecord = 1;
+		cond->record = soap_malloc(soap, sizeof(*(cond->record)));
+
+		rec = soap_malloc(soap, sizeof(*rec));
+		memset(rec, 0, sizeof(*rec));
+		rec->op = jptype__queryOp__GREATER;
+		rec->value = soap_malloc(soap, sizeof(*(rec->value)));
+		rec->value->string = soap_strdup(soap, "0");
+		rec->value->blob = NULL;
+		
+		*(cond->record) = rec;
+		*(in.conditions) = cond;
+
+		in.__sizeattributes = 3;
+		in.attributes = soap_malloc(soap,
+			in.__sizeattributes *
+			sizeof(*(in.attributes)));
+		in.attributes[0] = soap_strdup(soap, "owner");
+		in.attributes[1] = soap_strdup(soap, "date");
+		in.attributes[2] = soap_strdup(soap, "location");
+
 		memset(&out, 0, sizeof(out));
+
 		check_fault(soap,
 			soap_call___jpsrv__QueryJobs(soap, server, "",&in,&out));
 	} 
