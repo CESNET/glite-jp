@@ -27,13 +27,21 @@ static int check_qry_item(
 {
 	int	cmp,cmp2;
 	long	scmp,ucmp;
+	glite_jp_attrval_t	qattr;
 
 	if (strcmp(qry->attr,attr->name)) return 0;
 
-	if (qry->origin && qry->origin != attr->origin) return 0;
+	if (qry->origin != GLITE_JP_ATTR_ORIG_ANY && qry->origin != attr->origin) return 0;
 
-	/* FIXME: fallback only, loop over type plugins and use plugin compare function */
-	cmp = strcmp(attr->value,qry->value);
+	memset(&qattr,0,sizeof qattr);
+	qattr.name = qry->attr;
+	qattr.value = qry->value;
+	qattr.binary = qry->binary;
+	qattr.size = qry->size;
+	qattr.origin = qry->origin;
+
+	/* XXX: don't assert */
+	assert(glite_jp_attrval_cmp(ctx,attr,&qattr,&cmp) == 0);
 
 	switch (qry->op) {
 		case GLITE_JP_QUERYOP_EQUAL: return !cmp;
@@ -42,8 +50,10 @@ static int check_qry_item(
 		case GLITE_JP_QUERYOP_GREATER: return cmp > 0;
 
 		case GLITE_JP_QUERYOP_WITHIN:
-			/* FIXME: the same */
-			cmp2 = strcmp(attr->value,qry->value);
+			qattr.value = qry->value2;
+			qattr.size = qry->size2;
+			/* XXX: assert */
+			assert(glite_jp_attrval_cmp(ctx,attr,&qattr,&cmp2) == 0);
 			return cmp >= 0 && cmp2 <= 0;
 	}
 }
