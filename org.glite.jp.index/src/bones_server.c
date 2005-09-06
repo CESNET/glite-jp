@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -13,6 +14,7 @@
 #include "glite/security/glite_gsplugin.h"
 
 #include "conf.h"
+#include "db_ops.h"
 #include "soap_ps_calls.h"
 
 #include "soap_version.h"
@@ -50,11 +52,8 @@ static char 		*port = "8902";
 static int 		debug = 1;
 
 static glite_jp_context_t	ctx;
-
-//static int call_opts(glite_jp_context_t,char *,char *,int (*)(glite_jp_context_t,int,char **));
-
-char *glite_jp_default_namespace;
-
+static char 			*glite_jp_default_namespace;
+static glite_jp_is_conf		*conf;	// Let's make configuration visible to all slaves
 
 
 int main(int argc, char *argv[])
@@ -62,7 +61,6 @@ int main(int argc, char *argv[])
 	int			one = 1,opt,i;
 	edg_wll_GssStatus	gss_code;
 	struct sockaddr_in	a;
-	glite_jp_is_conf	*conf;
 	char			*config_file;
 
 
@@ -118,11 +116,6 @@ int main(int argc, char *argv[])
 		fprintf(stderr,"Server idenity: %s\n",mysubj);
 	else fputs("WARNING: Running unauthenticated\n",stderr);
 
-	// ask PS server for data
-	// XXX: should come after glite_srvbones_run(), when listening
-	for (i=0; conf->PS_list[i]; i++)
-		MyFeedIndex(conf,conf->PS_list[i]);
-
 	/* XXX: daemonise */
 
 	glite_srvbones_set_param(GLITE_SBPARAM_SLAVES_COUNT,1);
@@ -134,15 +127,35 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
+/* slave's init comes here */	
 static int data_init(void **data)
 {
-	*data = (void *) soap_new();
+	char	*PS_URL = NULL;
 
+
+	*data = (void *) soap_new();
 	printf("[%d] slave started\n",getpid());
 
-	/* slave's init comes here */	
-
-	return 0;
+	/* ask PS server for data */
+	do {
+		switch (glite_jpis_lockUninitializedFeed(&PS_URL)) {
+			case ENOENT:
+				// no more feeds to initialize
+				return 0;
+			case ENOLCK:
+				// error during locking
+				printf("[%d] slave_init(): Locking error.\n",getpid());
+				free(PS_URL);
+				return -1;
+			default:
+				// contact PS server, ask for data, save feedId and expiration
+				// to DB and unlock feed
+				MyFeedIndex(conf, PS_URL);
+				free(PS_URL);
+				PS_URL = NULL;
+				break;
+		}
+	} while (1);
 }
 
 static int newconn(int conn,struct timeval *to,void *data)

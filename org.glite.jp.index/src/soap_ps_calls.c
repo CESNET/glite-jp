@@ -9,6 +9,7 @@
 #include "soap_version.h"
 
 #include "conf.h"
+#include "db_ops.h"
 
 #include "stdsoap2.h"
 
@@ -104,10 +105,14 @@ printf("MyFeedIndex for %s called\n", dest);
 	//if (!check_fault(soap,soap_call_jpsrv___FeedIndex(soap,dest,"",
 	if (soap_call___jpsrv__FeedIndex(soap,dest,"", &in, &out)) {
 		printf("soap_call___jpsrv__FeedIndex() returned error\n");
+		glite_jpis_unlockFeed(dest);
 		goto err;
 	}
-	else
+	else {
 		printf("FeedId: %s\nExpires: %s\n",out.feedId,ctime(&out.feedExpires));
+		glite_jpis_feedInit(dest, out.feedId, out.feedExpires);
+		glite_jpis_unlockFeed(dest);
+	}
 	
 err:
 	soap_end(soap);
