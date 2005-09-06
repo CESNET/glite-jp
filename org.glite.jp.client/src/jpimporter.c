@@ -183,6 +183,9 @@ int main(int argc, char *argv[])
 	fprintf(fpid, "%d", getpid());
 	fclose(fpid);
 		
+	edg_wll_MaildirInit(reg_mdir);
+	edg_wll_MaildirInit(dump_mdir);
+
 	if ( !debug ) {
 		if ( daemon(1,0) == -1 ) { perror("deamon()"); exit(1); }
 
