@@ -90,7 +90,7 @@ static struct option opts[] = {
 	{ NULL,          0, NULL,     0}
 };
 
-static const char *get_opt_string = "hgp:r:d::i:t:c:k:C:";
+static const char *get_opt_string = "hgp:r:d:i:t:c:k:C:";
 
 static void usage(char *me)
 {
