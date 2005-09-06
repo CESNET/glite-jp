@@ -1089,77 +1089,52 @@ static int get_job_info(
 	struct timeval *tv_reg
 )
 {
-	char *ju = NULL;
-	char *ju_path = NULL;
-	FILE *regfile = NULL;
-	long reg_time_sec;
-	long reg_time_usec;
-	int ownerlen = 0;
-	int info_version;
-	char *int_fname = NULL;
-	glite_jp_error_t err;
+	char	*qry,*col[2];
+	int	rows;
+	glite_jp_error_t	err;
+	glite_jp_db_stmt_t	s = NULL;
 
-	glite_jp_clear_error(ctx);
 	memset(&err,0,sizeof err);
 	err.source = __FUNCTION__;
+	glite_jp_clear_error(ctx);
 
-	if (jobid_unique_pathname(ctx, job, &ju, &ju_path, 1) != 0) {
-		err.code = ctx->error->code;
-		err.desc = "Cannot obtain jobid unique path/name";
-		return glite_jp_stack_error(ctx,&err);
-	}
+	trio_asprintf(&qry,"select u.cert_subj,j.reg_time "
+		"from jobs j, users u "
+		"where j.owner = u.userid "
+		"and j.dg_jobid = '%|Ss'",job);
 
-	if (asprintf(&int_fname, "%s/regs/%s/%s.info",
-			config->internal_path, ju_path, ju) == -1) {
-		err.code = ENOMEM;
-		goto error_out;
-	}
-	regfile = fopen(int_fname, "r");
-	if (regfile == NULL) {
-		err.code = errno;
-		if (errno == ENOENT) 
-			err.desc = "Job not registered";
-		else
-			err.desc = "Cannot open jobs's reg info file";
-		goto error_out;
-	}
-	if (fscanf(regfile, "%d %ld.%ld %*s %*s %d ", &info_version,
-		&reg_time_sec, &reg_time_usec, &ownerlen) < 4 || ferror(regfile)) {
-		fclose(regfile);
-		err.code = errno;
-		err.desc = "Cannot read jobs's reg info file";
-		goto error_out;
-	}
-	if (ownerlen) {
-		*owner = (char *) calloc(1, ownerlen+1);
-		if (!*owner) {
-			err.code = ENOMEM;
-			goto error_out;
+	if ((rows = glite_jp_db_execstmt(ctx,qry,&s)) <= 0) {
+		if (rows == 0) {
+			err.code = ENOENT;
+			err.desc = "No records for this job";
 		}
-		if (fgets(*owner, ownerlen+1, regfile) == NULL) {
-			fclose(regfile);
-			free(*owner);
-			err.code = errno;
-			err.desc = "Cannot read jobs's reg info file";
-			goto error_out;
+		else {
+			err.code = EIO;
+			err.desc = "DB call fail retrieving job files";
 		}
+		glite_jp_stack_error(ctx,&err);
+		goto cleanup;
 	}
-	fclose(regfile);
 
-	tv_reg->tv_sec = reg_time_sec;
-	tv_reg->tv_usec = reg_time_usec;
-
-error_out:
-	free(int_fname);
-	free(ju);
-	free(ju_path);
-	if (err.code) {
-		return glite_jp_stack_error(ctx,&err);
-	} else { 
-		return 0;
+	if (glite_jp_db_fetchrow(s,col) < 0) {
+		err.code = EIO;
+		err.desc = "DB call fail retrieving job files";
+		glite_jp_stack_error(ctx,&err);
+		goto cleanup;
 	}
+
+	*owner = col[0];
+	tv_reg->tv_sec = glite_jp_db_dbtotime(col[1]);
+	tv_reg->tv_usec = 0;
+	free(col[1]);
+
+cleanup:
+	free(qry);
+	if (s) glite_jp_db_freestmt(&s);
+	return err.code;
 }
 
+#if 0 /* called from query */
 static int get_job_info_int(
 	glite_jp_context_t ctx,
 	const char *int_fname,
@@ -1221,6 +1196,8 @@ error_out:
 	}
 }
 
+#endif
+
 int glite_jppsbe_get_job_metadata(
 	glite_jp_context_t ctx,
 	const char *job,
@@ -1249,7 +1226,8 @@ int glite_jppsbe_get_job_metadata(
 /* must be implemented via filetype plugin
 		case GLITE_JP_ATTR_TIME:
 */
-		if (!strcmp(attrs_inout[i].name,GLITE_JP_ATTR_OWNER)) {
+		if (!strcmp(attrs_inout[i].name,GLITE_JP_ATTR_OWNER)
+			|| !strcmp(attrs_inout[i].name,GLITE_JP_ATTR_REGTIME)) {
 			if (!got_info) {
 				if (get_job_info(ctx, job, &owner, &tv_reg)) {
 					err.code = ctx->error->code;
@@ -1297,8 +1275,15 @@ int glite_jppsbe_get_job_metadata(
 			attrs_inout[i].origin = GLITE_JP_ATTR_ORIG_SYSTEM;
 			attrs_inout[i].origin_detail = NULL;
 
-			/* FIXME: we must store job registration time somewhere */
-			attrs_inout[i].timestamp = 0;
+			/* XXX */
+			attrs_inout[i].timestamp = tv_reg.tv_sec;
+		}
+
+		if (!strcmp(attrs_inout[i].name,GLITE_JP_ATTR_REGTIME)) {
+			trio_asprintf(&attrs_inout[i].value,"%ld.%06ld",tv_reg.tv_sec,tv_reg.tv_usec);
+			attrs_inout[i].origin = GLITE_JP_ATTR_ORIG_SYSTEM;
+			attrs_inout[i].origin_detail = NULL;
+			attrs_inout[i].timestamp = tv_reg.tv_sec;
 		}
 	
 /* TODO:
