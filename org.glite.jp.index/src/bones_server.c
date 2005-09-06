@@ -25,7 +25,10 @@
 #define soap_call___jpsrv__FeedIndexRefresh soap_call___ns1__FeedIndexRefresh
 #endif
 
-#define CONN_QUEUE	20
+#define CONN_QUEUE		20
+#define MAX_SLAVES_NUM		20	// max. of slaves to be spawned
+#define USER_QUERY_SLAVES_NUM	2	// # of slaves reserved for user queries if
+					// # PS to conntact is << MAX_SLAVES_NUM
 
 extern SOAP_NMAC struct Namespace jpis__namespaces[],jpps__namespaces[];
 extern SOAP_NMAC struct Namespace namespaces[] = { {NULL,NULL} };
@@ -116,9 +119,17 @@ int main(int argc, char *argv[])
 		fprintf(stderr,"Server idenity: %s\n",mysubj);
 	else fputs("WARNING: Running unauthenticated\n",stderr);
 
-	/* XXX: daemonise */
+	/* daemonise */
 
-	glite_srvbones_set_param(GLITE_SBPARAM_SLAVES_COUNT,1);
+	/* XXX: uncomment after testing phase
+	for (i=0; conf->PS_list[i]; i++);	// count PS we need to contact
+	i += USER_QUERY_SLAVES_NUM;		// add some slaves for user queries
+	if (i > MAX_SLAVES_NUM)
+		glite_srvbones_set_param(GLITE_SBPARAM_SLAVES_COUNT, MAX_SLAVES_NUM);
+	else
+		glite_srvbones_set_param(GLITE_SBPARAM_SLAVES_COUNT, i);
+	*/
+	/* for dbg - one slave OK */ glite_srvbones_set_param(GLITE_SBPARAM_SLAVES_COUNT,1);
 	glite_srvbones_run(data_init,&stab,1 /* XXX: entries in stab */,debug);
 
 
