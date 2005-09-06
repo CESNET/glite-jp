@@ -71,6 +71,8 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__UpdateJobs(
 	struct _jpelem__UpdateJobs *jpelem__UpdateJobs,
 	struct _jpelem__UpdateJobsResponse *jpelem__UpdateJobsResponse)
 {
+	// XXX: test client in examples/jpis-test
+	//      sends to this function some data for testing
 	puts(__FUNCTION__);
 	return SOAP_OK;
 }

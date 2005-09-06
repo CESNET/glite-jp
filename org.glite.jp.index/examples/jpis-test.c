@@ -76,11 +76,47 @@ int main(int argc,char *argv[])
 	// test calls of server functions
 	{
 	// this call is issued by JPPS
+		struct jptype__jobRecord		*rec;
 		struct _jpelem__UpdateJobs 		in;
 		struct _jpelem__UpdateJobsResponse 	out;
 
 		memset(&in, 0, sizeof(in));
 		memset(&out, 0, sizeof(out));
+
+		in.feedId = soap_strdup(soap, "12345");
+		in.feedDone = false_;
+		in.__sizejobAttributes = 1;
+		in.jobAttributes = soap_malloc(soap, 
+			in.__sizejobAttributes * sizeof(*(in.jobAttributes)));
+		{
+			rec = soap_malloc(soap,  sizeof(*rec));
+			rec->jobid = soap_strdup(soap, "https://localhost:7846/pokus");
+			rec->__sizeprimaryStorage = 0;
+			rec->primaryStorage = NULL;
+			rec->__sizeattributes = 2;
+			rec->attributes = soap_malloc(soap,
+				rec->__sizeattributes * sizeof(*(rec->attributes)));
+			rec->attributes[0] = soap_malloc(soap, sizeof(*(rec->attributes[0])));
+			rec->attributes[0]->name = soap_strdup(soap, "owner");
+			rec->attributes[0]->value =  soap_malloc(soap, sizeof(*(rec->attributes[0]->value)));
+			rec->attributes[0]->value->string = soap_strdup(soap, "Ja");
+			rec->attributes[0]->value->blob = NULL;
+			rec->attributes[0]->timestamp = 333;
+			rec->attributes[0]->origin = jptype__attrOrig__USER;
+			rec->attributes[0]->originDetail = NULL;
+
+			rec->attributes[1] = soap_malloc(soap, sizeof(*(rec->attributes[1])));
+			rec->attributes[1]->name = soap_strdup(soap, "status");
+			rec->attributes[1]->value =  soap_malloc(soap, sizeof(*(rec->attributes[0]->value)));
+			rec->attributes[1]->value->string = soap_strdup(soap, "Done");
+			rec->attributes[1]->value->blob = NULL;
+			rec->attributes[1]->timestamp = 333;
+			rec->attributes[1]->origin = jptype__attrOrig__USER;
+			rec->attributes[1]->originDetail = NULL;
+
+		}
+		in.jobAttributes[0] = rec;
+
 		check_fault(soap,
 			soap_call___jpsrv__UpdateJobs(soap,server,"",&in,&out));
 	}

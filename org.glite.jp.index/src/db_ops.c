@@ -1,6 +1,7 @@
 #ident "$Header$"
 
 #include <time.h>
+#include <errno.h>
 
 /* Find first unitialized feed, lock it and return URL of corresponding PS 
  *
@@ -11,7 +12,7 @@
 
 int glite_jpis_lockUninitializedFeed(char **PS_URL)
 {
-	return 0;
+	return ENOENT;
 }
 
 
