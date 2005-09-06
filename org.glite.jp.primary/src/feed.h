@@ -5,8 +5,12 @@
 struct jpfeed {
 	char	*id,*destination;
 	time_t	expires;
-	char	**attrs;
-	glite_jp_query_rec_t	*qry;
+	char	**attrs,**meta_attr,**other_attr;
+	int	int_other_attr; /* index from where other_attr is extended
+				  with attributes from other_query */ 
+
+	int	nother_attr, nmeta_attr, nmeta_qry, nother_qry;
+	glite_jp_query_rec_t	*qry,*meta_qry,*other_qry;
 	struct jpfeed	*next;
 };
 
