@@ -45,6 +45,8 @@ start()
 		if su - $GLITE_USER -c "test -r /etc/grid-security/hostkey.pem -a -r /etc/grid-security/hostcert.pem"; then
 			echo "$0: WARNING: /etc/grid-security/hostkey.pem readable by $GLITE_USER"
 			creds="-c /etc/grid-security/hostcert.pem -k /etc/grid-security/hostkey.pem"
+			X509_USER_CERT=/etc/grid-security/hostcert.pem
+			X509_USER_KEY=/etc/grid-security/hostkey.pem
 		fi
 	fi
 
@@ -59,12 +61,16 @@ start()
 	fi
 
 	echo -n Starting glite-jp-primarystoraged ...
-	su - $GLITE_USER -c "$GLITE_LOCATION/bin/glite-jp-primarystoraged \
+	su - $GLITE_USER -c "X509_USER_CERT=\"$X509_USER_CERT\" \
+		X509_USER_KEY=\"$X509_USER_KEY\" \
+		$GLITE_LOCATION/bin/glite-jp-primarystoraged \
 		-BI,'$GLITE_JP_INTERNAL' -BE,'$GLITE_JP_EXTERNAL' \
 		${GLITE_JP_DBCS_OPTION} " && echo " done" || echo " FAILED"
 
 	echo -n Starting JP gridftp server ...
-	su - $GLITE_USER -c "LD_PRELOAD=$GLITE_LOCATION/lib/glite-jp-ftpdauth.so \
+	su - $GLITE_USER -c "X509_USER_CERT=\"$X509_USER_CERT\" \
+		X509_USER_KEY=\"$X509_USER_KEY\" \
+		LD_PRELOAD=$GLITE_LOCATION/lib/glite-jp-ftpdauth.so \
 		$GLOBUS_LOCATION/sbin/in.ftpd -a -S -p $GLITE_JP_FTP_PORT & \
 		pid=\$!; sleep 2; kill -0 \$pid" && echo " done" || echo " FAILED"
 }
@@ -72,7 +78,9 @@ start()
 stop()
 {
 	# XXX pidfiles
-	echo >&2 'stopping JP PS not implemented yet'
+	killall glite-jp-primarystoraged
+
+	echo >&2 'stopping JP gridftp server not implemented yet'
 	return 1
 }
 
