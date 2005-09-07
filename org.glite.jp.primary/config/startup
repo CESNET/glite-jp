@@ -1,0 +1,106 @@
+#!/bin/sh
+
+GLITE_LOCATION=${GLITE_LOCATION:-/opt/glite}
+GLITE_LOCATION_VAR=${GLITE_LOCATION_VAR:-${GLITE_LOCATION}/var}
+
+[ -f /etc/glite.conf ] && . /etc/glite.conf
+[ -f $GLITE_LOCATION/etc/glite-wms.conf ] && . $GLITE_LOCATION/etc/glite-wms.conf
+
+[ -f $GLITE_LOCATION/etc/jp.conf ] && . $GLITE_LOCATION/etc/jp.conf
+[ -f $GLITE_LOCATION_VAR/etc/jp.conf ] && . $GLITE_LOCATION_VAR/etc/jp.conf
+
+[ -f $HOME/.glite.conf ] && . $HOME/.glite.conf
+
+[ -n "$GLITE_JP_PRIMARY_PIDFILE" ] && pidfile=$GLITE_JP_PRIMARY_PIDFILE ||
+	pidfile=$GLITE_LOCATION_VAR/glite-jp-primarystoraged.pid
+
+unset creds
+
+GLITE_JP_PS_PORT=8901
+
+start()
+{
+	if test -z "$GLITE_USER" ;then
+		echo 'Error: GLITE_USER is not set'
+		echo FAILED
+		return 1
+	fi
+	if test -z "$GLOBUS_LOCATION" ;then
+		echo 'Error: GLOBUS_LOCATION is not set'
+		echo FAILED
+		return 1
+	fi
+	if test -z "$GLITE_JP_FTP_PORT" -o \
+		-z "$GLITE_JP_INTERNAL" -o -z "$GLITE_JP_EXTERNAL" ;then
+		echo 'Error: incomplete configuration (GLITE_JP_FTP_PORT,' \
+			'GLITE_JP_INTERNAL, or GLITE_JP_EXTERNAL is not set'
+		echo FAILED
+		return 1
+	fi
+
+	[ -n "$GLITE_HOST_CERT" -a -n "$GLITE_HOST_KEY" ] &&
+		creds="-c $GLITE_HOST_CERT -k $GLITE_HOST_KEY"
+
+	if test -z "$creds"; then
+		if su - $GLITE_USER -c "test -r /etc/grid-security/hostkey.pem -a -r /etc/grid-security/hostcert.pem"; then
+			echo "$0: WARNING: /etc/grid-security/hostkey.pem readable by $GLITE_USER"
+			creds="-c /etc/grid-security/hostcert.pem -k /etc/grid-security/hostkey.pem"
+		fi
+	fi
+
+
+	[ -z "$creds" ] && echo $0: WARNING: No credentials specified. Using default lookup which is dangerous. >&2
+
+	# XXX: creds and pidfile not supported yet
+
+	unset GLITE_JP_DBCS_OPTION
+	if test -n "$GLITE_JP_DBCS"; then
+		GLITE_JP_DBCS_OPTION="-BD,'$GLITE_JP_DBCS'"
+	fi
+
+	echo -n Starting glite-jp-primarystoraged ...
+	su - $GLITE_USER -c "$GLITE_LOCATION/bin/glite-jp-primarystoraged \
+		-BI,'$GLITE_JP_INTERNAL' -BE,'$GLITE_JP_EXTERNAL' \
+		${GLITE_JP_DBCS_OPTION} " && echo " done" || echo " FAILED"
+
+	echo -n Starting JP gridftp server ...
+	su - $GLITE_USER -c "LD_PRELOAD=$GLITE_LOCATION/lib/glite-jp-ftpdauth.so \
+		$GLOBUS_LOCATION/sbin/in.ftpd -a -S -p $GLITE_JP_FTP_PORT & \
+		pid=\$!; sleep 2; kill -0 \$pid" && echo " done" || echo " FAILED"
+}
+
+stop()
+{
+	# XXX pidfiles
+	echo >&2 'stopping JP PS not implemented yet'
+	return 1
+}
+
+status()
+{
+	# XXX pidfile
+        if netstat -an --inet | grep "^tcp .* 0.0.0.0:${GLITE_JP_PS_PORT} .*LISTEN" >/dev/null 2>&1 ;then
+        echo glite-jp-primarystoraged running 
+        else
+        echo glite-jp-primarystoraged not running
+        return 1
+        fi
+
+        if netstat -an --inet | grep "^tcp .* 0.0.0.0:${GLITE_JP_FTP_PORT} .*LISTEN" >/dev/null 2>&1 ;then
+        echo JP gridftp server running 
+        else
+        echo JP gridftp server not running
+        return 1
+        fi
+
+	return 0
+}
+
+case x$1 in
+	xstart)	start;;
+	xstop)	stop;;
+	xrestart) stop; start;;
+	xstatus) status;;
+	x*)	echo usage: $0 start,stop,restart,status >&2
+		exit 1;;
+esac
