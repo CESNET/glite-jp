@@ -34,6 +34,12 @@ Returns:
 - Operation not permitted (you are not a trusted peer)
 
 
+Check system attributes known from job registration:
+
+$ ./jpps-test GetJobAttr JOBID http://egee.cesnet.cz/en/WSDL/jp-system:owner
+$ ./jpps-test GetJobAttr JOBID http://egee.cesnet.cz/en/WSDL/jp-system:regtime
+
+
 Record JP tag:
 --------------
 

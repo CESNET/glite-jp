@@ -3,14 +3,24 @@
 
 
 struct jpfeed {
+/* feed data */
 	char	*id,*destination;
 	time_t	expires;
+
+/* complete and split query and attribute list */
 	char	**attrs,**meta_attr,**other_attr;
 	int	int_other_attr; /* index from where other_attr is extended
 				  with attributes from other_query */ 
 
 	int	nother_attr, nmeta_attr, nmeta_qry, nother_qry;
 	glite_jp_query_rec_t	*qry,*meta_qry,*other_qry;
+
+/* jobs stacked for feed */
+	int	njobs;
+	char	**jobs;
+	glite_jp_attrval_t	**job_attrs;
+
+/* next feed */
 	struct jpfeed	*next;
 };
 
