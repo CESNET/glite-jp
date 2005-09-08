@@ -116,7 +116,7 @@ glite_jpps_get_attrs(glite_jp_context_t ctx,const char *job,char const *const *a
 
 		if (nnames > 0) {
 			files = realloc(files,nfiles+nnames+1 * sizeof *files);
-			for (j=0; names[j]; j++) {
+			for (j=0; j<nnames; j++) {
 				files[nfiles].class_idx = i;
 				files[nfiles++].name = names[j];
 			}
@@ -146,9 +146,17 @@ glite_jpps_get_attrs(glite_jp_context_t ctx,const char *job,char const *const *a
 						glite_jp_attrval_t	*myattr;
 						/* XXX: ignore errors */
 						if (!p->ops.attr(p->fpctx,ph,other[j],&myattr)) {
+							int	k;
+							for (k=0; myattr[k].name; k++) {
+								myattr[k].origin = GLITE_JP_ATTR_ORIG_FILE;
+								trio_asprintf(&myattr[k].origin_detail,"%s %s",
+										known_classes[ci].uri,
+										files[i].name ? files[i].name : "");
+							}
 							nout = merge_attrvals(&out,nout,myattr);
 							free(myattr);
 						}
+
 					}
 					p->ops.close(p->fpctx,ph);
 				}
