@@ -1801,8 +1801,8 @@ int glite_jppsbe_get_names(
 	memset(&err,0,sizeof err);
 	err.source = __FUNCTION__;
 
-	trio_asprintf(&qry,"select filename from files "
-			"where jobid = '%|Ss' and state = 'comitted'",job);
+	trio_asprintf(&qry,"select filename from files f,jobs j "
+			"where j.dg_jobid = '%|Ss' and j.jobid = f.jobid and f.state = 'committed'",job);
 
 	if ((rows = glite_jp_db_execstmt(ctx,qry,&s)) <= 0) {
 		if (rows == 0) {
@@ -1829,6 +1829,7 @@ int glite_jppsbe_get_names(
 		dot = strchr(file,'.'); /* XXX: can class contain dot? */
 
 		if (dot) *dot = 0;
+		out = realloc(out,(nout+1) * sizeof *out);
 		if (!strcmp(file,class)) out[nout++] = dot ? dot+1 : NULL;
 
 		free(file);
