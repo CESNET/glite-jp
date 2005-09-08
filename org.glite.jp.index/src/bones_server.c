@@ -74,6 +74,11 @@ int main(int argc, char *argv[])
 	config_file = NULL;
 	glite_jp_get_conf(argc, argv, config_file, &conf);
 
+	/* XXX preliminary support for plugins 
+	for (i=0; conf->plugins[i]; i++)
+		glite_jp_typeplugin_load(ctx,conf->plugins[i]);
+	*/
+	
 
 #if GSOAP_VERSION <= 20602
 	for (i=0; jpis__namespaces[i].id && strcmp(jpis__namespaces[i].id,"ns1"); i++);

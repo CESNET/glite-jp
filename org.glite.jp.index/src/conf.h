@@ -14,6 +14,7 @@ typedef struct _glite_jp_is_conf {
 	char	**attrs;		// atributes to obtain
 	char 	**PS_list;		// URLs of Primary Storage servers
 	char	**indexed_attrs;	// list of indexed atributes
+	char	**plugins;		// list of plugin.so's
 
 	glite_jp_query_rec_t	**query;	// query to Primary Server
 

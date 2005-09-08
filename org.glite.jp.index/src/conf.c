@@ -31,6 +31,9 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 	conf->indexed_attrs[0] = strdup("owner");
 	conf->indexed_attrs[1] = strdup("location");
 
+	// XXX: some plugin names should come here in future
+	conf->plugins = NULL;
+
 	// all job since Epoche
 	conf->query = calloc(2,sizeof(*conf->query));
 	conf->query[0] = calloc(2,sizeof(**conf->query));
