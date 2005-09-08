@@ -11,12 +11,17 @@ $ mysql -p -u jpps jpps <config/glite-jp-primary-dbsetup.sql
 Start server:
 -------------
 
-$ glite-jp-primarystoraged -P .libs/glite-jp-tags.so -BI,/INTERNAL/PATH -BE,ftp://`hostname`/EXT/PREFIX -a trusted_peers
+$ glite-jp-primarystoraged -P .libs/glite-jp-tags.so -P/wherever/it/is/glite_lb_plugin.so \
+	-BI,/INTERNAL/PATH -BE,gsiftp://`hostname`/EXT/PREFIX -a trusted_peers
+
+$ LD_PRELOAD=.libs/glite-jp-ftpdauth.so GLITE_USER=ljocha X509_USER_PROXY=/home/ljocha/umbar.pem \
+	FTPBE_INT_PREFIX=/INTERNAL/PATH \
+	${GLOBUS_LOCATION}/sbin/in.ftpd -a -s -p 8902 -v
 
 /INTENAL/PATH points to the directory where JP files are stored
 
 /EXT/PREFIX prefix in URLs to manipulate with these files -- ftp should be
-configured to map ftp://`hostname`/EXT/PREFIX/file to 
+configured to map ftp://`hostname`/EXT/PREFIX/file to /INTERNAL/PATH/file
 
 trusted_peers	line-by-line list of X509 subjects to be considered "trusted",
 	i.e. services (like LB) we accept data from
@@ -44,3 +49,29 @@ Record JP tag:
 --------------
 
 $ jpps-test RecordTag JPBID TagA 1 blah
+
+
+TODO
+
+
+Upload
+------
+
+Normal way:
+
+$ ./jpps-test startupload JOBID urn:org.glite.jp.primary:lb 1234 text/plain
+
+OK
+Destination: gsiftp://the.jp.server/EXT/PREFIX/some/strange/path
+Commit before: Fri Sep  8 14:38:53 2006
+
+$ globus-url-copy file://where/the/file/is/lb-dump-JOBID gsiftp://the.jp.server/EXT/PREFIX/some/strange/path
+$ ./jpps-test commitupload gsiftp://the.jp.server/EXT/PREFIX/some/strange/path
+OK
+
+Attacks:
+XX - upload something without startupload
+OK - repeated startupload
+XX - get uncommitted file
+XX - get file with different credentials
+XX - upload again comitted file
