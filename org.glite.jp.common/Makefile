@@ -37,19 +37,27 @@ LINKXX:=libtool --mode=link ${CXX} ${LDFLAGS}
 INSTALL:=libtool --mode=install install
 COMPILE:=libtool --mode=compile ${CC} ${CFLAGS}
 
-HDRS:=types.h context.h strmd5.h attr.h known_attr.h
+HDRS:=types.h context.h strmd5.h attr.h known_attr.h trio.h
 
 SRCS:=context.c strmd5.c attr.c
 OBJS:=${SRCS:.c=.lo}
 
 commonlib:= libglite_jp_common.la
 
+
+TRIO_OBJS:=escape.o trio.o strio.o
+TRIO_LIB:=libglite_jp_trio.la
+TRIO_LOBJS:=${TRIO_OBJS:.o=.lo}
+
 default all: compile
 
-compile: ${commonlib}
+compile: ${commonlib} ${TRIO_LIB}
 
 ${commonlib}: ${OBJS}
 	${LINK} -o $@ ${OBJS}
+
+${TRIO_LIB}: ${TRIO_LOBJS}
+	${LINK} ${version_info} -o $@ ${TRIO_LOBJS} -lm
 
 check: 
 	-echo nothing yet
@@ -63,7 +71,7 @@ install:
 	-mkdir -p ${PREFIX}/include/${globalprefix}/${jpprefix}
 	cd ${top_srcdir}/interface && install -m 644 ${HDRS} ${PREFIX}/include/${globalprefix}/${jpprefix}
 	-mkdir -p ${PREFIX}/lib
-	${INSTALL} -m 755 ${commonlib} ${PREFIX}/lib
+	${INSTALL} -m 755 ${commonlib} ${TRIO_LIB} ${PREFIX}/lib
 
 dist: distsrc distbin
 
