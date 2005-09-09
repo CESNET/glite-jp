@@ -70,7 +70,7 @@ COMMONLIB:=-lglite_jp_common
 BONESLIB:=-lglite_lb_server_bones
 GSOAPLIB:=-lglite_security_gsoap_plugin_${nothrflavour} -lglite_security_gss_${nothrflavour} \
 	-L${gsoap_prefix}/lib -lgsoap${GSOAP_DEBUG} -L${ares_prefix}/lib -lares
-TRIOLIB:=-lglite_lb_trio
+TRIOLIB:=-lglite_jp_trio
 
 ifneq (${mysql_prefix},/usr)
 	ifeq ($(shell echo ${mysql_version} | cut -d. -f1,2),4.1)
@@ -175,8 +175,8 @@ stdsoap2.o: ${gsoap_prefix}/devel/stdsoap2.c
 glite-jp-tags.la: tags_plugin.lo
 	${SOLINK} -o $@ tags_plugin.lo
 
-glite-jp-ftpdauth.la: ftpd_auth.lo
-	${SOLINK} -o $@ ftpd_auth.lo
+glite-jp-ftpdauth.la: ftpd_auth.lo mysql.lo
+	${SOLINK} -o $@ ftpd_auth.lo mysql.lo ${COMMONLIB} ${TRIOLIB} ${MYSQLIB}
 
 %.lo: %.c
 	${LTCOMPILE} -o $@ -c $<
