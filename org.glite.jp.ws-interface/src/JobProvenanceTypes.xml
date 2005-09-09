@@ -80,6 +80,10 @@
 			<elem name="primaryStorage" type="xsd:string" list="yes" optional="yes">
 				User query only: which primary storage(s) have data on this job.
 			</elem>
+			<elem name="remove" type="xsd:boolean" optional="yes">
+				UpdateJobs only: this job no longer belongs to the feed.
+				Attribute values are those which caused the change.
+			</elem>
 		</struct>
 
 		<struct name="indexQuery">
