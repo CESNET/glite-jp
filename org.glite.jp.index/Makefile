@@ -48,7 +48,8 @@ ps_prefix:=jpps_
 
 SRCS:= conf.c bones_server.c soap_ops.c soap_ps_calls.c ws_typeref.c db_ops.c\
 	${is_prefix}ServerLib.c \
-	${ps_prefix}ClientLib.c ${ps_prefix}C.c
+	${ps_prefix}ClientLib.c ${ps_prefix}C.c \
+	dbis.c
 
 EXA_SRCS:=jpis-test.c ${is_prefix}C.c ${is_prefix}Client.c
 
@@ -82,6 +83,13 @@ ${daemon}: ${OBJS}
 
 ${example}: ${EXA_OBJS}
 	${LINK} -o $@ ${EXA_OBJS} ${GSOAPLIB} ${GLOBUS_LIBS}
+
+test_db.o: dbis.c
+	${CC} ${CFLAGS} -DTEST_DBIS -c $< -o $@
+
+test_db: test_db.o
+	${LINK} -o $@ $+ -lglite_jp_common ${MYSQLIB} ${GLOBUS_LIBS}
+	
 
 JobProvenanceIS.xh: JobProvenanceIS.wsdl JobProvenanceTypes.wsdl typemap.dat
 	cp  ${stagedir}/interface/JobProvenanceTypes.wsdl .
