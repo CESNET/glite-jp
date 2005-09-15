@@ -86,3 +86,40 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__QueryJobs(
 	puts(__FUNCTION__);
 	return SOAP_OK;
 }
+
+
+SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__AddFeed(
+        struct soap *soap,
+        struct _jpelem__AddFeed *in,
+        struct _jpelem__AddFeedResponse *out)
+{
+        // XXX: test client in examples/jpis-test
+        //      sends to this function some data for testing
+        puts(__FUNCTION__);
+        return SOAP_OK;
+}
+
+
+SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__GetFeedIDs(
+        struct soap *soap,
+        struct _jpelem__GetFeedIDs *in,
+        struct _jpelem__GetFeedIDsResponse *out)
+{
+        // XXX: test client in examples/jpis-test
+        //      sends to this function some data for testing
+        puts(__FUNCTION__);
+        return SOAP_OK;
+}
+
+
+SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__DeleteFeed(
+        struct soap *soap,
+        struct _jpelem__DeleteFeed *in,
+        struct _jpelem__DeleteFeedResponse *out)
+{
+        // XXX: test client in examples/jpis-test
+        //      sends to this function some data for testing
+        puts(__FUNCTION__);
+        return SOAP_OK;
+}
+

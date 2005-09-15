@@ -19,6 +19,9 @@
 
 #define __jpsrv__UpdateJobs __ns1__UpdateJobs
 #define __jpsrv__QueryJobs __ns1__QueryJobs
+#define __jpsrv__AddFeed __ns1__AddFeed
+#define __jpsrv__GetFeeds __ns1__getFeedIDs
+#define __jpsrv__DeleteFeed __ns1__DeleteFeed
 
 #endif
 
