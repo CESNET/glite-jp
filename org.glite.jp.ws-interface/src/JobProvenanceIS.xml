@@ -14,6 +14,8 @@
 	<fault name="genericFault"/>
 
 	<operations>
+
+		<!-- System operations -->
 		<op name="UpdateJobs">
 			Called by JP primary storage as a response to FeedIndex request.
 			Updates information on jobs in index server, according to what JPPS
@@ -24,7 +26,8 @@
 
 			<fault name="genericFault" type="genericFault">Any error.</fault>
 		</op>
-	
+
+		<!-- User operations -->	
 		<op name="QueryJobs">
 			User query to index server.
 			<input name="conditions" type="indexQuery" list="yes">
@@ -38,5 +41,30 @@
 			</output>
 			<fault name="genericFault" type="genericFault">Any error.</fault>
 		</op>
+
+		<!-- Admin operations -->
+		<op name="AddFeed">
+                        Called by JP index serve admin tool to ask new  primary storage server to feed it.
+                        Updates information on PS in index server, according to what JPPS
+                        currently knows.
+                        <input name="feed" type="feedSession">
+				New feed IS URL, filter and query type.
+			</input>
+                        <fault name="genericFault" type="genericFault">Any error.</fault>
+                </op>
+		<op name="GetFeedIDs">
+			Called by JP index serve admin tool to find out IS open feeds
+			<input name="feeds" type="feedSession" list="yes">
+                                List of active feeds on IS.
+                        </input>
+			<fault name="genericFault" type="genericFault">Any error.</fault>	
+		</op>
+		<op name="DeleteFeed">
+			Called by JP index serve admin tool to remove one feed session.
+			<input name="feedId" type="xsd:string">
+				ID of feed to be removed.
+			</input>
+			<fault name="genericFault" type="genericFault">Any error.</fault>
+                </op>
 	</operations>
 </service>

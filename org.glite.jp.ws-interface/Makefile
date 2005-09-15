@@ -19,7 +19,6 @@ XMLLINT:=xmllint
 docbookxls:=http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl
 
 WSDL=JobProvenancePS.wsdl JobProvenanceIS.wsdl JobProvenanceTypes.wsdl 
-#WSDL=JobProvenancePS.wsdl JobProvenanceTypes.wsdl 
 
 all compile: ${WSDL}
 

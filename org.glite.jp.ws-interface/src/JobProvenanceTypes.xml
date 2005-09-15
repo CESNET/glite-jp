@@ -41,6 +41,15 @@
 			<elem name="value2" type="stringOrBlob" optional="yes">Another value (for op = WITHIN).</elem>
 		</struct>
 
+		<struct name="feedSession">
+			One session between IS and PS (aka feed) charactetristics.
+			<elem name="primaryServer" type="xsd:string">URL of primary server.</elem>
+			<elem name="condition" type="primaryQuery" list="yes">Filter conditions.</elem>
+			<elem name="history" type="xsd:int">Query type.</elem>
+			<elem name="continuous" type="xsd:int">Query type</elem>
+			<elem name="feedId" type="xsd:string" optional="yes">Unique ID of the feed session.</elem>
+		</struct>
+
 		<struct name="jppsFile">
 			JP primary storage file identification.
 			<elem name="class" type="xsd:string">Type of the file (as set on StartUpload).</elem>
