@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+	Copyright (c) Members of the EGEE Collaboration. 2004 
+	See http://eu-egee.org/partners/ for details on the copyright holders
+	For license conditions see the license file or http://eu-egee.org/license.html
+
+	Common build properties file for the gLite JP Common Server component
+	
+	Authors: Ales Krenek <ljocha@ics.muni.cz>
+	Version info: $Id$
+	Release: $Name$	
+	
+	Revision history:
+	$Log$
+	Revision 1.2  2004/11/22 14:00:37  dimeglio
+	Updated to use standard files
+	Fixed names (was using common instead of real module name)
+	
+	Revision 1.1.1.1  2004/10/15 09:49:13  akrenek
+-->
+
+<project name="JP Common Server component common properties">
+
+	<!-- Include build properties to allow overwriting 
+	     of properties for subsystem                    -->
+	<property file="project/build.properties" />	
+
+	<!-- ======================================================
+          Define corresponding subsystem properties
+		 ====================================================== -->
+
+	<!-- Subsystem name -->
+	<property name="subsystem.name" value="${jp.subsystem.name}"/>
+		
+	<!-- Subsystem prefix -->
+	<property name="subsystem.prefix" value="${jp.subsystem.prefix}"/>
+
+	<!-- ======================================================
+          Define component properties
+		 ====================================================== -->
+		 		
+	<!-- Component name prefix -->
+	<property name="component.prefix" value="server-common" />
+			
+	<!-- ======================================================
+          Define general component properties
+		 ====================================================== -->
+	
+	<import file="${component.general.properties.file}" />
+						
+	<!-- ======================================================
+		 Define extra properties here ...
+		 ====================================================== -->
+		 
+		 						
+</project>
