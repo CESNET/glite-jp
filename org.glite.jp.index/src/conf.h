@@ -7,18 +7,23 @@
 #include "glite/jp/types.h"
 
 
+typedef struct _glite_jp_is_feed {
+	char    		*PS_URL;	//URLs of Primary Storage servers
+	glite_jp_query_rec_t    **query;        // query to Primary Server (aka filter)
+	int     		history, 	// type of query
+				continuous;	
+} glite_jp_is_feed;
+
+
 typedef struct _glite_jp_is_conf {
 	// all I need to get from comman line options and configuration file
 
 					// arrays are zero-terminated
 	char	**attrs;		// atributes to obtain
-	char 	**PS_list;		// URLs of Primary Storage servers
 	char	**indexed_attrs;	// list of indexed atributes
 	char	**plugins;		// list of plugin.so's
 
-	glite_jp_query_rec_t	**query;	// query to Primary Server
-
-	int	history, continuous;	// type of query
+	glite_jp_is_feed	**feeds;	// null terminated list of feeds
 } glite_jp_is_conf;
 
 

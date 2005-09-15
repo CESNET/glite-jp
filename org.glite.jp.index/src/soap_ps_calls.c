@@ -65,6 +65,16 @@ static void err2fault(const glite_jp_context_t ctx,struct soap *soap)
 /* PS WSDL client calls */
 /*----------------------*/
 
+static int find_dest_index(glite_jp_is_conf *conf, char *dest)
+{
+	int i;
+
+	for (i=0; conf->feeds[i]; i++)
+		if (!strcmp(dest, conf->feeds[i]->PS_URL)) return(i);
+
+	return -1;
+}
+
 
 // call PS FeedIndex for a given destination
 void MyFeedIndex(glite_jp_is_conf *conf, char *dest)
@@ -74,7 +84,7 @@ void MyFeedIndex(glite_jp_is_conf *conf, char *dest)
 	struct jptype__primaryQuery     	query;
 	struct jptype__stringOrBlob		value;
 //	struct xsd__base64Binary		blob;
-	int 					i;
+	int 					i, dest_index;
 	struct soap             		*soap = soap_new();
 
 
@@ -89,18 +99,22 @@ printf("MyFeedIndex for %s called\n", dest);
 	in.__sizeattributes = i;
 	in.attributes = conf->attrs;
 
-	for (in.__sizeconditions=0; conf->query[in.__sizeconditions]; in.__sizeconditions++);
+	if ((dest_index = find_dest_index(conf, dest)) < 0) goto err;
+
+	for (i=0; conf->feeds[dest_index]->query[i]; i++);
+	in.__sizeconditions = i;
 	in.conditions = malloc(in.__sizeconditions * sizeof(*in.conditions));
 
-	for (i=0; conf->query[i]; i++) {
-		if (glite_jpis_QueryCondToSoap(soap, conf->query[i], &(in.conditions[i])) != SOAP_OK) {
+	for (i=0; conf->feeds[dest_index]->query[i]; i++) {
+		if (glite_jpis_QueryCondToSoap(soap, conf->feeds[dest_index]->query[i], 
+				&(in.conditions[i])) != SOAP_OK) {
 			printf("MyFeedIndex() - error during conds conversion\n");
 			goto err;
 		}
 	}
 
-	in.history = conf->history;
-	in.continuous = conf->continuous;
+	in.history = conf->feeds[dest_index]->history;
+	in.continuous = conf->feeds[dest_index]->continuous;
 
 	//if (!check_fault(soap,soap_call_jpsrv___FeedIndex(soap,dest,"",
 	if (soap_call___jpsrv__FeedIndex(soap,dest,"", &in, &out)) {
