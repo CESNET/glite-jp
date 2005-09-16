@@ -91,3 +91,6 @@ clean:
 
 %.lo: %.c
 	${COMPILE} -o $@ -c $< 
+
+${TRIO_LOBJS}: %.lo: %.c
+	${COMPILE} -o $@ -c -DDATAGRID_EXTENSION $< 
