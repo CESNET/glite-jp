@@ -23,7 +23,7 @@ CC=gcc
 -include Makefile.inc
 
 
-VPATH=${top_srcdir}/src:${top_srcdir}/examples:${top_srcdir}/project:${stagedir}/interface
+VPATH=${top_srcdir}/src:${top_srcdir}/examples:${top_srcdir}/project:${stagedir}/interface:${top_srcdir}/build
 
 GLOBUS_LIBS:=-L${globus_prefix}/lib \
 	-lglobus_common_${nothrflavour} \
@@ -43,6 +43,16 @@ LTCOMPILE:=libtool --mode=compile ${CC} ${CFLAGS}
 LINKXX:=libtool --mode=link ${CXX} ${LDFLAGS} 
 INSTALL:=libtool --mode=install install
 
+HDRS:=jpimporter.h
+
+LIBOBJS:=jpimp_ctx.o jpimp_lib.o
+
+LIBTHROBJS:=${LIBOBJS:.o=.thr.o}
+LIBLOBJS:=${LIBOBJS:.o=.lo}
+
+LIB:=libglite_jp_importer_${nothrflavour}.la
+THRLIB:=libglite_jp_importer_${thrflavour}.la
+
 daemon:=glite-jp-importer
 
 wsprefix:=jpps_
@@ -56,17 +66,21 @@ EXA_SRCS:=
 OBJS:=${SRCS:.c=.o}
 EXA_OBJS:=${EXA_SRCS:.c=.o}
 
-COMMONLIB:=-lglite_jp_common
 GSOAPLIB:=-lglite_security_gsoap_plugin_${nothrflavour} -lglite_security_gss_${nothrflavour} \
 	-L${gsoap_prefix}/lib -lgsoap${GSOAP_DEBUG} -L${ares_prefix}/lib -lares
 LBMAILDIRLIB:=-lglite_lb_maildir
 
+version_info=-version-info `echo ${version} | cut -d. -f1,2 | tr . :`
+
 default all: compile
 
-compile: ${daemon} 
+compile: ${daemon} ${LIB}
+
+${LIB}: ${LIBOBJS}
+	${LINK} ${version_info} -o $@ ${LIBLOBJS} -rpath ${glite_location}/lib ${LBMAILDIRLIB}
 
 ${daemon}: ${OBJS}
-	${LINK} -o $@ ${OBJS} ${LBMAILDIRLIB} ${COMMONLIB} ${GSOAPLIB} ${GLOBUS_LIBS}
+	${LINK} -o $@ ${OBJS} ${LBMAILDIRLIB} ${GSOAPLIB} ${GLOBUS_LIBS}
 
 
 JobProvenancePS.xh: %.xh: %.wsdl JobProvenanceTypes.wsdl typemap.dat
