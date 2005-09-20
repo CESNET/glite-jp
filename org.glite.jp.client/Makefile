@@ -22,6 +22,7 @@ CC=gcc
 
 -include Makefile.inc
 
+STAGETO=include/${globalprefix}/${jpprefix}
 
 VPATH=${top_srcdir}/src:${top_srcdir}/examples:${top_srcdir}/project:${stagedir}/interface:${top_srcdir}/build
 
@@ -43,7 +44,8 @@ LTCOMPILE:=libtool --mode=compile ${CC} ${CFLAGS}
 LINKXX:=libtool --mode=link ${CXX} ${LDFLAGS} 
 INSTALL:=libtool --mode=install install
 
-HDRS:=jpimporter.h
+STAGE_HDRS:=jpcl_ctx_int.h
+HDRS:=jp_client.h jpimporter.h
 
 LIBOBJS:=jpimp_ctx.o jpimp_lib.o
 
@@ -131,8 +133,14 @@ distbin:
 	rm -rf tmpbuilddir
         
 install:
-	-mkdir -p ${PREFIX}/bin ${PREFIX}/etc ${PREFIX}/examples ${PREFIX}/etc/init.d
+	-mkdir -p ${PREFIX}/${STAGETO}
+	-mkdir -p ${PREFIX}/bin
 	${INSTALL} -m 755 ${daemon} ${PREFIX}/bin
+	${INSTALL} -m 644 ${HDRS} ${PREFIX}/${STAGETO}
+	if [ x${DOSTAGE} = xyes ]; then \
+		cd ${top_srcdir}/interface && ${INSTALL} -m 644 ${FAKE_H} ${PREFIX}/${STAGETO} ; \
+	fi
+
 
 clean:
 
