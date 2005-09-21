@@ -4,8 +4,9 @@
 #include <stdarg.h>
 #include <string.h>
 
-#include "jpimporter.h"
+#include "jp_client.h"
 #include "jpcl_ctx_int.h"
+#include "jpimporter.h"
 
 
 int glite_jpcl_InitContext(glite_jpcl_context_t *ctx)
