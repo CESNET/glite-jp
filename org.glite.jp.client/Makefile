@@ -47,7 +47,9 @@ INSTALL:=libtool --mode=install install
 STAGE_HDRS:=jpcl_ctx_int.h
 HDRS:=jp_client.h jpimporter.h
 
-LIBOBJS:=jpimp_ctx.o jpimp_lib.o
+LIBOBJS:=jpcl_ctx.o jpimp_lib.o
+
+EXAMPLES:=jpps_upload_files
 
 LIBTHROBJS:=${LIBOBJS:.o=.thr.o}
 LIBLOBJS:=${LIBOBJS:.o=.lo}
@@ -78,11 +80,18 @@ default all: compile
 
 compile: ${daemon} ${LIB}
 
+examples: ${EXAMPLES}
+
 ${LIB}: ${LIBOBJS}
 	${LINK} ${version_info} -o $@ ${LIBLOBJS} -rpath ${glite_location}/lib ${LBMAILDIRLIB}
 
 ${daemon}: ${OBJS}
 	${LINK} -o $@ ${OBJS} ${LBMAILDIRLIB} ${GSOAPLIB} ${GLOBUS_LIBS}
+
+${EXAMPLES}: ${LIB}
+${EXAMPLES}: %: %.o
+	${LINK} -o $@ $< ${LIB} -ltar ${LBMAILDIRLIB} 
+
 
 
 JobProvenancePS.xh: %.xh: %.wsdl JobProvenanceTypes.wsdl typemap.dat
