@@ -43,7 +43,7 @@ int glite_jpimporter_upload_files(
 	assert(proxy != NULL);
 
 	if ( edg_wll_MaildirInit(ctx->lbmd_dir) ) {
-		asprintf(errs, "edg_wll_MaildirInit(): %s", lbm_errdesc);
+		asprintf(&errs, "edg_wll_MaildirInit(): %s", lbm_errdesc);
 		glite_jpcl_SetError(ctx, errno, errs);
 		free(errs);
 		return -1;
@@ -59,7 +59,7 @@ int glite_jpimporter_upload_files(
 				TEMP_FILE_PREFIX, getpid(), time(NULL));
 		if ( (fd = open(archive, O_CREAT|O_EXCL|O_WRONLY, 00600)) < 0 ) {
 			if ( errno == EEXIST ) { sleep(2); continue; }
-			asprintf(errs, "Can't create tar file %s", archive);
+			asprintf(&errs, "Can't create tar file %s", archive);
 			glite_jpcl_SetError(ctx, ECANCELED, errs);
 			free(errs);
 			return -1;
@@ -68,16 +68,17 @@ int glite_jpimporter_upload_files(
 
 #ifdef COMPILE_WITH_LIBTAR
 	if ( tar_fdopen(&t, fd, archive, NULL, O_WRONLY, 0, TAR_GNU) < 0 ) {
-		asprintf(errs, "Can't create tar archive %s", archive);
+		asprintf(&errs, "Can't create tar archive %s", archive);
 		glite_jpcl_SetError(ctx, errno, errs);
 		rv = -1;
 		goto cleanup;
 	}
 
 	for ( i = 0; files[i]; i++ ) {
-		char *s = files[i];
+		char *s = (char *)files[i];
 		if ( tar_append_file(t, s, (s[0]=='/')? s+1: s) < 0 ) {
-			glite_jpcl_SetError(ctx, errno, "Can't append file into archive");
+			asprintf(&errs, "Can't append file into tar archive %s", archive);
+			glite_jpcl_SetError(ctx, errno, errs);
 			rv = -1;
 			goto cleanup;
 		}   
@@ -85,14 +86,14 @@ int glite_jpimporter_upload_files(
 #endif
 
 	if ( ctx->jpps )
-		asprintf(msg, "jobid\t%s\nfile\t%s\nproxy\t%sjpps\t%s",
+		asprintf(&msg, "jobid\t%s\nfile\t%s\nproxy\t%sjpps\t%s",
 				jobid, archive, proxy, ctx->jpps);
 	else
-		asprintf(msg, "jobid\t%s\nfile\t%s\nproxy\t%s",
+		asprintf(&msg, "jobid\t%s\nfile\t%s\nproxy\t%s",
 				jobid, archive, proxy);
 
 	if ( edg_wll_MaildirStoreMsg(ctx->lbmd_dir, "localhost", msg) ) {
-		asprintf(errs, "edg_wll_MaildirStoreMsg(): %s", lbm_errdesc);
+		asprintf(&errs, "edg_wll_MaildirStoreMsg(): %s", lbm_errdesc);
 		glite_jpcl_SetError(ctx, errno, errs);
 		rv = -1;
 		goto cleanup;
@@ -106,7 +107,7 @@ cleanup:
 #else
 	close(fd);
 #endif
-	unlink(archive);
+	if ( rv ) unlink(archive);
 	free(errs);
 	free(msg);
 
