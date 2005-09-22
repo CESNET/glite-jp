@@ -10,6 +10,7 @@
 #include <glite/jp/strmd5.h>
 
 #include "conf.h"
+#include "db_ops.h"
 
 
 #define TABLE_PREFIX_DATA "attr_"
@@ -51,10 +52,11 @@ int glite_jpis_initDatabase(glite_jp_context_t ctx, glite_jp_is_conf *conf) {
 	const char *type_index, *type_full;
 	size_t i;
 	MYSQL_BIND param[4];
-	unsigned long attrid_len, name_len, type_len;
-	char attrid[33], name[256], type[33];
-	int indexed;
+	unsigned long attrid_len, name_len, type_len, source_len;
+	char attrid[33], name[256], type[33], source[256];
+	int indexed, state, locked;
 	char sql[512];
+	glite_jp_is_feed **feeds;
 
 	glite_jp_db_assign_param(&param[0], MYSQL_TYPE_VAR_STRING, attrid, &attrid_len);
 	glite_jp_db_assign_param(&param[1], MYSQL_TYPE_VAR_STRING, name, &name_len);
@@ -64,6 +66,7 @@ int glite_jpis_initDatabase(glite_jp_context_t ctx, glite_jp_is_conf *conf) {
 
 	memset(attrid, 0, sizeof(attrid));
 
+	// attrs table and attrid_* tables
 	attrs = conf->attrs;
 	i = 0;
 	while (attrs[i]) {
@@ -92,8 +95,28 @@ int glite_jpis_initDatabase(glite_jp_context_t ctx, glite_jp_is_conf *conf) {
 
 		i++;
 	}
-
 	glite_jp_db_freestmt(&stmt);
+
+	// feeds table
+	glite_jp_db_assign_param(&param[0], MYSQL_TYPE_LONG, &state);
+	glite_jp_db_assign_param(&param[1], MYSQL_TYPE_LONG, &locked);
+	glite_jp_db_assign_param(&param[2], MYSQL_TYPE_VAR_STRING, source, &source_len);
+	if (glite_jp_db_prepare(ctx, "INSERT INTO feeds (state, locked, source) VALUES (?, ?, ?)", &stmt, param, NULL) != 0) goto fail;
+	feeds = conf->feeds;
+	i = 0;
+	memset(source, 0, sizeof(source));
+	while (feeds[i]) {
+		state = (feeds[i]->history ? GLITE_JP_IS_STATE_HIST : 0) |
+		        (feeds[i]->continuous ? GLITE_JP_IS_STATE_CONT : 0);
+		locked = 0;
+		strncpy(source, feeds[i]->PS_URL, sizeof(source) - 1);
+		source_len = strlen(source);
+		if (glite_jp_db_execute(stmt) == -1) goto fail_stmt;
+
+		i++;
+	}
+	glite_jp_db_freestmt(&stmt);
+
 	return 0;
 
 fail_stmt:

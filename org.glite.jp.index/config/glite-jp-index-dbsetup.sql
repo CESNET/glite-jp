@@ -22,14 +22,17 @@ create table attrs (
 );
 
 create table feeds (
-        feedid		char(32)	binary not null,
+	uniqueid	int		auto_increment not null,
+	feedid		char(32)	binary unique,
 	state		int		not null,
+	locked		int		not null,
 	source		varchar(255)	not null,
-	expires		datetime	not null,
+	expires		datetime,
 	attrs		mediumblob	null,
 	condition	mediumblob	null,
 
-        primary key (feedid),
+        primary key (uniqueid),
+        index (uniqueid),
         index (feedid),
 	index (state)
 );
