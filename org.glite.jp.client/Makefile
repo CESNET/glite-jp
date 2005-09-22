@@ -71,7 +71,7 @@ version_info=-version-info `echo ${version} | cut -d. -f1,2 | tr . :`
 
 default all: compile
 
-compile: ${daemon} ${LIB}
+compile: ${daemon} ${LIB} ${EXAMPLES}
 
 examples: ${EXAMPLES}
 
@@ -137,9 +137,10 @@ distbin:
 install:
 	-mkdir -p ${PREFIX}/${STAGETO}
 	-mkdir -p ${PREFIX}/bin
-	-mkdir -p ${PREFIX}/lib
+	-mkdir -p ${PREFIX}/examples
 	${INSTALL} -m 755 ${daemon} ${PREFIX}/bin
 	${INSTALL} -m 644 ${LIB} ${PREFIX}/lib
+	${INSTALL} -m 644 jpps_upload_files ${PREFIX}/examples/glite-jp-primary-upload_files
 	cd ${top_srcdir}/interface && ${INSTALL} -m 644 ${HDRS} ${PREFIX}/${STAGETO}
 	if [ x${DOSTAGE} = xyes ]; then \
 		cd ${top_srcdir}/interface && ${INSTALL} -m 644 ${STAGE_HDRS} ${PREFIX}/${STAGETO} ; \
