@@ -12,6 +12,9 @@
 
 	Revision history:
 	$Log$
+	Revision 1.5  2005/05/26 15:13:22  zurek
+	inserted module.build.file
+	
 	Revision 1.4  2004/12/17 20:26:46  dimeglio
 	Removed index
 	
@@ -223,7 +226,7 @@
 		</if>
 	</target>
 
-	<target name="index" unless="setenvonly" depends="envset, common" >
+	<target name="index" unless="setenvonly" depends="envset, common, server-common" >
 		<if>
 			<isset property="small.memory" />
 			<then>
@@ -239,7 +242,7 @@
 		</if>
 	</target>
 
-	<target name="primary" unless="setenvonly" depends="envset, ws-interface, common" >
+	<target name="primary" unless="setenvonly" depends="envset, ws-interface, common, server-common" >
 		<if>
 			<isset property="small.memory" />
 			<then>
@@ -249,6 +252,22 @@
 			</then>
 			<else>
 				<ant dir="${jp.subsystem.dir}.primary"
+					target="${target}"
+					inheritall="false" />
+			</else>
+		</if>
+	</target>
+
+	<target name="server-common" unless="setenvonly" depends="envset" >
+		<if>
+			<isset property="small.memory" />
+			<then>
+				<exec dir="${jp.subsystem.dir}.server-common" executable="${antExec}" failonerror="${failonerror}">
+					<arg line="${target} &quot;-Dsmall.memory=true&quot; &quot;-Dbootstrap=${bootstrap}&quot; &quot;-Dfailonerror=${failonerror}&quot; &quot;-Ddo.cvs.tag=${do.cvs.tag}&quot;"/>
+				</exec>
+			</then>
+			<else>
+				<ant dir="${jp.subsystem.dir}.server-common"
 					target="${target}"
 					inheritall="false" />
 			</else>
