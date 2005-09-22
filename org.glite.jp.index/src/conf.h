@@ -4,7 +4,7 @@
 #define _CONF_H
 
 
-#include "glite/jp/types.h"
+#include <glite/jp/types.h>
 
 
 typedef struct _glite_jp_is_feed {

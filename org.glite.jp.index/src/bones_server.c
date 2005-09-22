@@ -34,7 +34,7 @@ extern SOAP_NMAC struct Namespace jpis__namespaces[],jpps__namespaces[];
 extern SOAP_NMAC struct Namespace namespaces[] = { {NULL,NULL} };
 // namespaces[] not used here, but need to prevent linker to complain...
 
-extern void MyFeedIndex(glite_jp_is_conf *conf, char *dest);
+extern void MyFeedIndex(glite_jp_context_t ctx, glite_jp_is_conf *conf, char *dest);
 
 static int newconn(int,struct timeval *,void *);
 static int request(int,struct timeval *,void *);
@@ -154,7 +154,7 @@ static int data_init(void **data)
 
 	/* ask PS server for data */
 	do {
-		switch (glite_jpis_lockUninitializedFeed(&PS_URL)) {
+		switch (glite_jpis_lockUninitializedFeed(ctx,&PS_URL)) {
 			case ENOENT:
 				// no more feeds to initialize
 				return 0;
@@ -166,7 +166,7 @@ static int data_init(void **data)
 			default:
 				// contact PS server, ask for data, save feedId and expiration
 				// to DB and unlock feed
-				MyFeedIndex(conf, PS_URL);
+				MyFeedIndex(ctx, conf, PS_URL);
 				free(PS_URL);
 				PS_URL = NULL;
 				break;

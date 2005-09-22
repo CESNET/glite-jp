@@ -77,7 +77,7 @@ static int find_dest_index(glite_jp_is_conf *conf, char *dest)
 
 
 // call PS FeedIndex for a given destination
-void MyFeedIndex(glite_jp_is_conf *conf, char *dest)
+void MyFeedIndex(glite_jp_context_t ctx, glite_jp_is_conf *conf, char *dest)
 {
 	struct _jpelem__FeedIndex		in;
 	struct _jpelem__FeedIndexResponse 	out;
@@ -119,13 +119,13 @@ printf("MyFeedIndex for %s called\n", dest);
 	//if (!check_fault(soap,soap_call_jpsrv___FeedIndex(soap,dest,"",
 	if (soap_call___jpsrv__FeedIndex(soap,dest,"", &in, &out)) {
 		printf("soap_call___jpsrv__FeedIndex() returned error\n");
-		glite_jpis_unlockFeed(dest);
+		glite_jpis_unlockFeed(ctx, dest);
 		goto err;
 	}
 	else {
 		printf("FeedId: %s\nExpires: %s\n",out.feedId,ctime(&out.feedExpires));
-		glite_jpis_feedInit(dest, out.feedId, out.feedExpires);
-		glite_jpis_unlockFeed(dest);
+		glite_jpis_feedInit(ctx, dest, out.feedId, out.feedExpires);
+		glite_jpis_unlockFeed(ctx, dest);
 	}
 	
 err:

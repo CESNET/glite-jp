@@ -25,6 +25,7 @@ create table feeds (
         feedid		char(32)	binary not null,
 	state		int		not null,
 	source		varchar(255)	not null,
+	expires		datetime	not null,
 	attrs		mediumblob	null,
 	condition	mediumblob	null,
 

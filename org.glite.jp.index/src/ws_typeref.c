@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdsoap2.h>
 
-#include "glite/jp/types.h"
+#include <glite/jp/types.h>
 
 #include "jpps_H.h"
 #include "ws_typemap.h"
@@ -33,7 +33,7 @@ static void OrigToSoap(struct soap *soap, const glite_jp_attr_orig_t in, enum jp
         case GLITE_JP_ATTR_ORIG_ANY: o = NULL; break;
         case GLITE_JP_ATTR_ORIG_SYSTEM: *o = SYSTEM; break;
         case GLITE_JP_ATTR_ORIG_USER: *o = USER; break;
-        case GLITE_JP_ATTR_ORIG_FILE: *o = FILE; break;
+        case GLITE_JP_ATTR_ORIG_FILE: *o = FILE_; break;
         default: assert(0); break;
         }
 	

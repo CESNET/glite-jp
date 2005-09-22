@@ -6,7 +6,7 @@
 
 #define SYSTEM jptype__attrOrig__SYSTEM
 #define USER jptype__attrOrig__USER
-#define FILE jptype__attrOrig__FILE_
+#define FILE_ jptype__attrOrig__FILE_
 
 #define EQUAL jptype__queryOp__EQUAL
 #define UNEQUAL jptype__queryOp__UNEQUAL

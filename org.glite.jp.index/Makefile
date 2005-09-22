@@ -49,7 +49,6 @@ ps_prefix:=jpps_
 SRCS:= conf.c bones_server.c soap_ops.c soap_ps_calls.c ws_typeref.c db_ops.c\
 	${is_prefix}ServerLib.c \
 	${ps_prefix}ClientLib.c ${ps_prefix}C.c \
-	dbis.c
 
 EXA_SRCS:=jpis-test.c ${is_prefix}C.c ${is_prefix}Client.c
 
@@ -58,6 +57,7 @@ EXA_OBJS:=${EXA_SRCS:.c=.o}
 
 
 COMMONLIB:=-lglite_jp_common
+SRVCOMMONLIB:=-lglite_jp_server_common
 BONESLIB:=-lglite_lb_server_bones
 GSOAPLIB:=-lglite_security_gsoap_plugin_${nothrflavour} -lglite_security_gss_${nothrflavour} \
 	-L${gsoap_prefix}/lib -lgsoap${GSOAP_DEBUG} -L${ares_prefix}/lib -lares
@@ -79,17 +79,13 @@ default all: compile
 compile: ${daemon} ${example}
 
 ${daemon}: ${OBJS}
-	${LINK} -o $@ -export-dynamic ${OBJS} ${BONESLIB} ${TRIOLIB} ${COMMONLIB} ${GSOAPLIB} ${GLOBUS_LIBS} ${MYSQLIB}
+	${LINK} -o $@ -export-dynamic ${OBJS} ${BONESLIB} ${TRIOLIB} ${COMMONLIB} ${GSOAPLIB} ${GLOBUS_LIBS} ${MYSQLIB} ${SRVCOMMONLIB}
 
 ${example}: ${EXA_OBJS}
 	${LINK} -o $@ ${EXA_OBJS} ${GSOAPLIB} ${GLOBUS_LIBS}
 
-test_db.o: dbis.c
-	${CC} ${CFLAGS} -DTEST_DBIS -c $< -o $@
-
-test_db: test_db.o
-	${LINK} -o $@ $+ -lglite_jp_common ${MYSQLIB} ${GLOBUS_LIBS}
-	
+jpis-db-internal: jpis-db-internal.o db_ops.o conf.o
+	${LINK} -o $@ $+ ${COMMONLIB} ${SRVCOMMONLIB} ${GLOBUS_LIBS}
 
 JobProvenanceIS.xh: JobProvenanceIS.wsdl JobProvenanceTypes.wsdl typemap.dat
 	cp  ${stagedir}/interface/JobProvenanceTypes.wsdl .
