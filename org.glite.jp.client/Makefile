@@ -24,7 +24,7 @@ CC=gcc
 
 STAGETO=include/${globalprefix}/${jpprefix}
 
-VPATH=${top_srcdir}/src:${top_srcdir}/examples:${top_srcdir}/project:${stagedir}/interface:${top_srcdir}/build
+VPATH=${top_srcdir}/src:${top_srcdir}/examples:${top_srcdir}/project$:${top_srcdir}/interface:${stagedir}/interface:${top_srcdir}/build
 
 GLOBUS_LIBS:=-L${globus_prefix}/lib \
 	-lglobus_common_${nothrflavour} \
@@ -47,10 +47,9 @@ INSTALL:=libtool --mode=install install
 STAGE_HDRS:=jpcl_ctx_int.h
 HDRS:=jp_client.h jpimporter.h
 
-LIBOBJS:=jpcl_ctx.o jpimp_lib.o
-
 EXAMPLES:=jpps_upload_files
 
+LIBOBJS:=jpcl_ctx.o jpimp_lib.o
 LIBTHROBJS:=${LIBOBJS:.o=.thr.o}
 LIBLOBJS:=${LIBOBJS:.o=.lo}
 
@@ -61,14 +60,8 @@ daemon:=glite-jp-importer
 
 wsprefix:=jpps_
 
-SRCS:= jpimporter.c \
-	${wsprefix}ClientLib.c ${wsprefix}C.c
-#	env_C.c
-
-EXA_SRCS:=
-
+SRCS:=jpimporter.c ${wsprefix}ClientLib.c ${wsprefix}C.c
 OBJS:=${SRCS:.c=.o}
-EXA_OBJS:=${EXA_SRCS:.c=.o}
 
 GSOAPLIB:=-lglite_security_gsoap_plugin_${nothrflavour} -lglite_security_gss_${nothrflavour} \
 	-L${gsoap_prefix}/lib -lgsoap${GSOAP_DEBUG} -L${ares_prefix}/lib -lares
@@ -144,10 +137,12 @@ distbin:
 install:
 	-mkdir -p ${PREFIX}/${STAGETO}
 	-mkdir -p ${PREFIX}/bin
+	-mkdir -p ${PREFIX}/lib
 	${INSTALL} -m 755 ${daemon} ${PREFIX}/bin
-	${INSTALL} -m 644 ${HDRS} ${PREFIX}/${STAGETO}
+	${INSTALL} -m 644 ${LIB} ${PREFIX}/lib
+	cd ${top_srcdir}/interface && ${INSTALL} -m 644 ${HDRS} ${PREFIX}/${STAGETO}
 	if [ x${DOSTAGE} = xyes ]; then \
-		cd ${top_srcdir}/interface && ${INSTALL} -m 644 ${FAKE_H} ${PREFIX}/${STAGETO} ; \
+		cd ${top_srcdir}/interface && ${INSTALL} -m 644 ${STAGE_HDRS} ${PREFIX}/${STAGETO} ; \
 	fi
 
 
