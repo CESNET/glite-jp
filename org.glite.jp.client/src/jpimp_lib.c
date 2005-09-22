@@ -86,10 +86,10 @@ int glite_jpimporter_upload_files(
 #endif
 
 	if ( ctx->jpps )
-		asprintf(&msg, "jobid\t%s\nfile\t%s\nproxy\t%sjpps\t%s",
+		asprintf(&msg, "jobid\t%s\nfile\t%s\nproxy\t%s\njpps\t%s\n",
 				jobid, archive, proxy, ctx->jpps);
 	else
-		asprintf(&msg, "jobid\t%s\nfile\t%s\nproxy\t%s",
+		asprintf(&msg, "jobid\t%s\nfile\t%s\nproxy\t%s\n",
 				jobid, archive, proxy);
 
 	if ( edg_wll_MaildirStoreMsg(ctx->lbmd_dir, "localhost", msg) ) {
