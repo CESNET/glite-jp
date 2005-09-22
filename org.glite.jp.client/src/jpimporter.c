@@ -401,10 +401,12 @@ static int dump_importer(void)
 						{"jobid", NULL},
 						{"file", NULL},
 						{"jpps", NULL},
+						{"proxy", NULL},
 						{NULL, NULL}};
-#define				_job  0
-#define				_file 1
-#define				_jpps 2
+#define				_job   0
+#define				_file  1
+#define				_jpps  2
+#define				_proxy 3
 
 
 	if ( readnew ) ret = edg_wll_MaildirTransStart(dump_mdir, &msg, &fname);
