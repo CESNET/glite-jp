@@ -121,7 +121,7 @@ static glite_jp_tplug_data_t *get_plugin(glite_jp_context_t ctx,const char *anam
 	void	**cp = ctx->type_plugins;
 	char	*colon,*ns;
 
-	assert(cp);
+	if (!cp) return &fallback_plugin;
 	glite_jp_clear_error(ctx);
 	ns = strdup(aname);
 	colon = strrchr(ns,':');

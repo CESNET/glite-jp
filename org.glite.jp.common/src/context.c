@@ -6,7 +6,13 @@
 
 int glite_jp_init_context(glite_jp_context_t *ctx)
 {
-	*ctx = calloc(1,sizeof **ctx);
+	return (*ctx = calloc(1,sizeof **ctx)) != NULL;
+}
+
+void glite_jp_free_context(glite_jp_context_t ctx)
+{
+	glite_jp_clear_error(ctx);
+	free(ctx);
 }
 
 char *glite_jp_peer_name(glite_jp_context_t ctx)

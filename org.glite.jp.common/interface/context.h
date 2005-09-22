@@ -2,6 +2,7 @@
 #define __GLITE_JP_CONTEXT
 
 int glite_jp_init_context(glite_jp_context_t *);
+void glite_jp_free_context(glite_jp_context_t);
 void glite_jp_free_query_rec(glite_jp_query_rec_t *);
 
 char *glite_jp_peer_name(glite_jp_context_t);
