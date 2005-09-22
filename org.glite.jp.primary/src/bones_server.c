@@ -213,6 +213,7 @@ static int newconn(int conn,struct timeval *to,void *data)
 	/* TODO: DNS paranoia etc. */
 
 	if (edg_wll_gss_accept(mycred,conn,to,plugin_ctx->connection,&gss_code)) {
+		/* TODO: better error reporting */
 		printf("[%d] GSS connection accept failed, closing.\n", getpid());
 		ret = 1;
 		goto cleanup;
