@@ -1751,7 +1751,6 @@ error_out:
 
 #else 
 
-/* placeholder instead */
 int glite_jppsbe_query(
 	glite_jp_context_t ctx,
 	const glite_jp_query_rec_t query[],
@@ -1766,9 +1765,160 @@ int glite_jppsbe_query(
 )
 {
 	glite_jp_error_t	err;
-	err.code = ENOSYS;
-	err.desc = "not implemented";
-	return glite_jp_stack_error(ctx,&err);
+	int	i,ret;
+	int	quser = 0, muser = -1, mtime = -1;
+	char	*where = NULL,*stmt = NULL,*aux = NULL, *cols = NULL;
+	char	*qres[3] = { NULL, NULL, NULL };
+	int	cmask = 0, owner_idx = -1, reg_idx = -1;
+	glite_jp_db_stmt_t	q;
+	glite_jp_attrval_t	meta_clone[2];
+
+	memset(&err,0,sizeof err);
+	glite_jp_clear_error(ctx);
+	err.source = __FUNCTION__;
+
+	/* XXX: assuming not more than 2 */
+	memcpy(meta_clone,metadata,sizeof meta_clone);
+
+	for (i=0; query[i].attr; i++) {
+		char	*qitem;
+
+		/* XXX: don't assert() */
+		assert(!query[i].binary);
+
+		if (!strcmp(query[i].attr,GLITE_JP_ATTR_OWNER)) {
+			switch (query[i].op) {
+				case GLITE_JP_QUERYOP_EQUAL:
+					quser = 1;
+					trio_asprintf(&qitem,"u.cert_subj = '%|Ss'",query[i].value);
+					break;
+				default:
+					err.code = EINVAL;
+					err.desc = "only = allowed for owner queries";
+					glite_jp_stack_error(ctx,&err);
+					goto cleanup;
+			}
+		}
+		else if (!strcmp(query[i].attr,GLITE_JP_ATTR_REGTIME)) {
+			time_t 	t = glite_jp_attr2time(query[i].value);
+			char	*t1 = glite_jp_db_timetodb(t),*t2 = NULL;
+
+			switch (query[i].op) {
+				case GLITE_JP_QUERYOP_EQUAL:
+					trio_asprintf(&qitem,"j.reg_time = %s",t1);
+					break;
+				case GLITE_JP_QUERYOP_UNEQUAL:
+					trio_asprintf(&qitem,"j.reg_time != %s",t1);
+					break;
+				case GLITE_JP_QUERYOP_LESS:
+					trio_asprintf(&qitem,"j.reg_time < %s",t1);
+					break;
+				case GLITE_JP_QUERYOP_GREATER:
+					trio_asprintf(&qitem,"j.reg_time > %s",t1);
+					break;
+				case GLITE_JP_QUERYOP_WITHIN:
+					free(t2);
+					trio_asprintf(&qitem,"j.reg_time >= %s and j.reg_time <= %s",
+							t1,t2 = glite_jp_db_timetodb(glite_jp_attr2time(query[i].value2)+1));
+					break;
+				default:
+					err.code = EINVAL;
+					err.desc = "invalid query op";
+					glite_jp_stack_error(ctx,&err);
+					goto cleanup;
+			}
+			free(t1);
+			free(t2);
+		}
+		trio_asprintf(&aux,"%s%s%s",where ? where : "",where ? " and " : "", qitem);
+		free(where);
+		free(qitem);
+		where = aux;
+		aux = NULL;
+	}
+
+	for (i=0; metadata[i].name; i++) {
+		assert (i<2);	/* XXX: should never happen */
+
+		if (!strcmp(metadata[i].name,GLITE_JP_ATTR_OWNER)) {
+			quser = 1;
+			cmask |= 1;
+			owner_idx = i;
+		}
+		else if (!strcmp(metadata[i].name,GLITE_JP_ATTR_REGTIME)) {
+			cmask |= 2;
+			reg_idx = i;
+		}
+		else {
+			err.code = EINVAL;
+			err.desc = "invalid query column";
+			glite_jp_stack_error(ctx,&err);
+			goto cleanup;
+		}
+	}
+	switch (cmask) {
+		case 1: cols = "j.dg_jobid,u.cert_subj"; break;
+		case 2: cols = "j.dg_jobid,j.reg_time"; break;
+		case 3:	cols = "j.dg_jobid,u.cert_subj,j.reg_time"; break;
+	}
+	
+	trio_asprintf(stmt,"select %s from jobs j%s where %s",
+			cols,
+			quser ? ",u.users" : "",
+			where);
+
+	if (glite_jp_db_execstmt(ctx,stmt,&q) <= 0) {
+		err.code = EIO;
+		err.desc = "DB call fail";
+		glite_jp_stack_error(ctx,&err);
+		goto cleanup;
+	}
+
+	while ((ret = glite_jp_db_fetchrow(q,qres)) > 0) {
+		if (cmask & 1) {
+			/* XXX: owner always first */
+			meta_clone[owner_idx].value = qres[1];
+			qres[1] = NULL;
+		}
+		if (cmask & 2) {
+			int	qi = cmask == 2 ? 1 : 2;
+			time_t	t = glite_jp_db_dbtotime(qres[qi]);
+			meta_clone[reg_idx].value = glite_jp_time2attr(t);
+			free(qres[qi]);
+			qres[qi] = NULL;
+		}
+		if (callback(ctx,qres[0],meta_clone,arg)) {
+			err.code = EIO;
+			err.desc = qres[0];
+			glite_jp_stack_error(ctx,&err);
+			goto cleanup;
+		}
+
+		free(qres[0]);
+		free(meta_clone[0].value);
+		free(meta_clone[1].value);
+		qres[0] = meta_clone[0].value = meta_clone[1].value = NULL;
+	}
+
+
+	if (ret < 0) {
+		err.code = EIO;
+		err.desc = "DB call fail";
+		glite_jp_stack_error(ctx,&err);
+		goto cleanup;
+	}
+
+	/* FIXME: unfinished */
+
+cleanup:
+	free(where);
+	free(aux);
+	free(stmt);
+	free(qres[0]); free(qres[1]); free(qres[2]);
+	free(meta_clone[0].value); free(meta_clone[1].value);
+	if (q) glite_jp_db_freestmt(&q);
+
+	return err.code;
 }
 
 #endif
