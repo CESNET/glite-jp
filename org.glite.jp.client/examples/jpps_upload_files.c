@@ -10,7 +10,7 @@ static char *myname;
 void usage(void)
 {
 	fprintf(stderr,
-			"Usage: %s [-h][-p user_proxy][-j jobid] files\n"
+			"Usage: %s [-h][-p user_proxy][-j jobid] file [file ...]\n"
 			"    -h                 show this help\n"
 			"    -p <file>          path to the proxy filename\n"
 			"    -j <jobid>         jobid string\n"
@@ -27,7 +27,7 @@ int main(int argc, char **argv)
 						   *proxy,
 						   *lbmd = NULL,
 						   *jpps = NULL;
-	int						i;
+	int						i, j;
 
 
 	myname = strrchr(argv[0],'/');
@@ -44,11 +44,14 @@ int main(int argc, char **argv)
 		else {usage();return 1;}
 	}
 
+	if ( i >= argc ) { usage(); return 1; }
+
 	if ( !(files = calloc(argc-i+1, sizeof(*files))) ) {
 		perror("calloc()");
 		return 1;
 	}
-	for ( i = 0; i < argc; i++ ) files[i] = argv[i+1];
+	j = 0;
+	while ( i < argc ) files[j++] = argv[i++];
 
 	if ( glite_jpcl_InitContext(&ctx) ) {
 		perror("glite_jpcl_InitContext()");
