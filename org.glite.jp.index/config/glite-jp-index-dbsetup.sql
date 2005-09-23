@@ -3,6 +3,7 @@ create table jobs (
         dg_jobid        varchar(255)    binary not null,
         ownerid         char(32)        binary not null,
         aclid           char(32)        binary null,
+	ps		varchar(255)    not null,
 
         primary key (jobid),
         unique (dg_jobid),
