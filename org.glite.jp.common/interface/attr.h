@@ -17,7 +17,8 @@ int glite_jp_attrval_from_db(glite_jp_context_t ctx,const char *str,glite_jp_att
 const char *glite_jp_attrval_db_type_full(glite_jp_context_t ctx,const char *attr);
 const char *glite_jp_attrval_db_type_index(glite_jp_context_t ctx,const char *attr,int len);
 
-
+time_t glite_jp_attr2time(const char *);
+char * glite_jp_time2attr(time_t);
 
 
 #endif

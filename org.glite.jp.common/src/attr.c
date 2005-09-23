@@ -196,3 +196,14 @@ const char *glite_jp_attrval_db_type_index(glite_jp_context_t ctx,const char *at
 	glite_jp_clear_error(ctx);
 	return ap->db_type_index(ap->pctx,attr,len);
 }
+
+time_t glite_jp_attr2time(const char *a)
+{
+	abort();
+}
+
+char * glite_jp_time2attr(time_t t)
+{
+	abort();
+}
+
