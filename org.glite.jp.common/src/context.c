@@ -81,11 +81,10 @@ void glite_jp_free_query_rec(glite_jp_query_rec_t *q)
 
 int glite_jp_queryrec_copy(glite_jp_query_rec_t *dst, const glite_jp_query_rec_t *src)
 {
+	memcpy(dst,src,sizeof *src);
 	if (src->attr) dst->attr = strdup(src->attr);
 	if (src->value) dst->value = strdup(src->value);
 	if (src->value2) dst->value2 = strdup(src->value2);
-	dst->op = src->op;
-	dst->origin = src->origin;
 	return 0;
 }
 
