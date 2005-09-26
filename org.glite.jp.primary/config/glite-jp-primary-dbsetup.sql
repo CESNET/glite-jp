@@ -44,3 +44,20 @@ create table users (
 create table backend_info (
 	version		char(32)	binary not null
 );
+
+create table feeds (
+	feedid	char(32)	binary not null,
+	destination	varchar(255)	binary not null,
+	expires	datetime	not null,
+	cols	mediumblob	not null,
+	query	mediumblob	not null,
+
+	primary key (feedid)
+);
+
+create table fed_jobs (
+	feedid	char(32)	binary not null,
+	jobid	char(32)	binary not null,
+
+	primary key (jobid,feedid)
+);

@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <fcntl.h>
+#include <signal.h>
 
 #include "glite/jp/types.h"
 #include "glite/jp/strmd5.h"
@@ -12,6 +13,9 @@
 #include "file_plugin.h"
 #include "builtin_plugins.h"
 #include "is_client.h"
+#include "backend.h"
+
+extern pid_t	master;
 
 /* 
  * seconds before feed expires: should be 
@@ -61,6 +65,17 @@ static int check_qry_item(
 	}
 }
 
+/* retrieve all attributes for a feed */
+int full_feed(
+	glite_jp_context_t ctx,
+	const struct jpfeed *feed,
+	const char *job,
+	glite_jp_attrval_t **attrs)
+{
+	/* TODO: */
+	abort();
+}
+
 /* XXX: limit on query size -- I'm lazy to malloc() */
 #define QUERY_MAX	100
 
@@ -74,7 +89,7 @@ static int match_feed(
 		const glite_jp_attrval_t attrs[] 
 )
 {
-	int	i;
+	int	i,fed;
 	int	qi[QUERY_MAX];
 
 	glite_jp_attrval_t *newattr = NULL;
@@ -135,7 +150,15 @@ static int match_feed(
 	}
 
 	/* matched completely */
-	return glite_jpps_single_feed(ctx,feed->destination,job,attrs);
+	glite_jppsbe_check_fed(ctx,feed->id,job,&fed);
+	if (!fed) {
+		glite_jp_attrval_t	*a;
+		full_feed(ctx,feed,job,&a);
+		glite_jpps_single_feed(ctx,feed->destination,job,a);
+		for (i=0; a[i].name; i++) glite_jp_attrval_free(a+i,0);
+		free(a);
+	}
+	else glite_jpps_single_feed(ctx,feed->destination,job,attrs);
 	return 0;
 }
 
@@ -259,25 +282,33 @@ int glite_jpps_match_file(
 
 	free(attrs);
 
+	if (bh) glite_jppsbe_close_file(ctx,bh);
+	free(pd);
+
 	for (f = ctx->feeds; f; f=f->next) {
-		int 	k;
-		glite_jp_attrval_t	* fattr = malloc((nvals+1) * sizeof *fattr);
+		int 	k,fed;
+		glite_jp_attrval_t	* fattr;
 
-		j = 0;
-		for (i=0; i<nvals; i++) for (k=0; f->attrs[k]; k++)
-			if (!strcmp(f->attrs[k],vals[i].name))
-				memcpy(fattr+j++,vals+i,sizeof *fattr);
+		glite_jppsbe_check_fed(ctx,f->id,job,&fed);
+		if (!fed) full_feed(ctx,f,job,&fattr);
+		else {
+			fattr = malloc((nvals+1) * sizeof *fattr);
 
-		memset(fattr+j,0,sizeof *fattr);
+			j = 0;
+			for (i=0; i<nvals; i++) for (k=0; f->attrs[k]; k++)
+				if (!strcmp(f->attrs[k],vals[i].name))
+					memcpy(fattr+j++,vals+i,sizeof *fattr);
+
+			memset(fattr+j,0,sizeof *fattr);
+
+		}
 		glite_jpps_single_feed(ctx,f->destination,job,fattr);
+		if (!fed) for (i=0; fattr[i].name; i++) glite_jp_attrval_free(fattr+i,0);
 		free(fattr);
 	}
 
 	for (i=0; vals[i].name; i++) glite_jp_attrval_free(vals+i,0);
 	free(vals);
-
-	if (bh) glite_jppsbe_close_file(ctx,bh);
-	free(pd);
 
 	return 0;
 }
@@ -415,7 +446,8 @@ static int run_feed_deferred(glite_jp_context_t ctx,void *feed)
 	for (i=0; f->attrs[i]; f++)
 		if (glite_jppsbe_is_metadata(ctx,f->attrs[i])) cnt++;
 
-	f->meta_attr = cnt ? malloc(cnt * sizeof *f->meta_attr) : NULL;
+	f->meta_attr = cnt ? malloc((cnt+1) * sizeof *f->meta_attr) : NULL;
+	f->meta_attr[cnt] = NULL;
 	f->nmeta_attr = cnt;
 
 	f->other_attr = i-cnt ? malloc((i-cnt) * sizeof *f->other_attr) : NULL;
@@ -434,7 +466,8 @@ static int run_feed_deferred(glite_jp_context_t ctx,void *feed)
 	for (i=0; f->qry[i].attr; i++)
 		if (glite_jppsbe_is_metadata(ctx,f->qry[i].attr)) cnt++;
 
-	f->meta_qry = malloc(cnt * sizeof *f->meta_qry);
+	f->meta_qry = malloc((cnt+1) * sizeof *f->meta_qry);
+	memset(f->meta_qry+cnt,0,sizeof *f->meta_qry);
 	f->nmeta_qry = cnt;
 	f->other_qry = malloc((i-cnt) * sizeof *f->other_qry);
 	f->nother_qry = i-cnt;
@@ -495,17 +528,23 @@ static int register_feed_deferred(glite_jp_context_t ctx,void *feed)
 {
 	struct jpfeed	*f = feed;
 
-	f->next = ctx->feeds;
-	ctx->feeds = f;
-	return 0;
-}
-
-
 /* FIXME:
  * - volatile implementation: should store the registrations in a file
  *   and recover after restart
  * - should communicate the data among all server slaves
+
+	f->next = ctx->feeds;
+	ctx->feeds = f;
  */
+
+	if (glite_jppsbe_store_feed(ctx,f)) fputs(glite_jp_error_chain(ctx),stderr);
+	else kill(-master,SIGUSR1);	/* gracefully terminate slaves 
+				   and let master restart them */
+
+	return 0;
+}
+
+
 int glite_jpps_register_feed(
 	glite_jp_context_t ctx,
 	const char *destination,

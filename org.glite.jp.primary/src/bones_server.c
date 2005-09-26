@@ -12,6 +12,7 @@
 #include <stdsoap2.h>
 #include "glite/security/glite_gsplugin.h"
 
+#include "feed.h"
 #include "backend.h"
 #include "file_plugin.h"
 
@@ -45,6 +46,8 @@ static glite_jp_context_t	ctx;
 static int call_opts(glite_jp_context_t,char *,char *,int (*)(glite_jp_context_t,int,char **));
 
 char *glite_jp_default_namespace;
+
+pid_t	master;
 
 int main(int argc, char *argv[])
 {
@@ -149,6 +152,9 @@ int main(int argc, char *argv[])
 
 	/* XXX: daemonise */
 
+	setpgrp(); /* needs for signalling */
+	master = getpid();
+
 	glite_srvbones_set_param(GLITE_SBPARAM_SLAVES_COUNT,1);
 	glite_srvbones_run(data_init,&stab,1 /* XXX: entries in stab */,debug);
 
@@ -161,6 +167,8 @@ static int data_init(void **data)
 
 	printf("[%d] slave started\n",getpid());
 	glite_jppsbe_init_slave(ctx);	/* XXX: global but slave's */
+	sleep(10);
+	if (glite_jppsbe_read_feeds(ctx)) fputs(glite_jp_error_chain(ctx),stderr);
 
 	return 0;
 }

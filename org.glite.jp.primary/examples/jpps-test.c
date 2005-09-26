@@ -32,7 +32,7 @@ static void usage(const char *me)
 			"		RecordTag jobid tagname stringvalue\n"
 			"		GetJobFiles jobid\n"
 			"		GetJobAttr jobid attr\n"
-			"		FeedIndex destination query_number history continuous\n"
+			"		FeedIndex \n"
 			"		FeedIndexRefresh feedid\n"
 		,me);
 
@@ -185,32 +185,45 @@ int main(int argc,char *argv[])
 			/* OK */
 		}
 	} 
+   	 else if (!strcasecmp(argv[1],"FeedIndex")) {
+		char  	*ap[2] = {
+			"http://egee.cesnet.cz/en/Schema/LB/Attributes:RB",
+			"http://egee.cesnet.cz/en/WSDL/jp-system:owner"
+		};
+
+		struct jptype__stringOrBlob vals[] = {
+			{ "/O=CESNET/O=Masaryk University/CN=Ales Krenek", NULL },
+			{ "Done", NULL }
+		};
+
+		struct jptype__primaryQuery	q[] = {
+			{ 
+				"http://egee.cesnet.cz/en/WSDL/jp-system:owner",
+				jptype__queryOp__EQUAL,
+				NULL, vals, NULL
+			},
+			{
+				"http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus",
+				jptype__queryOp__UNEQUAL,
+				NULL, vals+1, NULL
+			}
+		}, *qp[] = { q, q+1 };
+		struct _jpelem__FeedIndex	in = {
+			"http://some.index//",
+			2,ap,
+			2,qp,
+			0,
+			1
+		};
+		struct _jpelem__FeedIndexResponse	out;
+
+		if (!check_fault(soap,soap_call___jpsrv__FeedIndex(soap,server,"",&in,&out)))
+		{
+			printf("FeedId: %s\nExpires: %s\n",out.feedId,ctime(&out.feedExpires));
+		}
+	 }
 /* FIXME: new wsdl  */
 #if 0
-   	 else if (!strcasecmp(argv[1],"FeedIndex")) {
-		struct jpsrv__FeedIndexResponse	r;
-		struct jptype__Attribute	*ap[2];
-		struct jptype__Attributes	attr = { 2, ap };
-		struct jptype__PrimaryQueryElement *qp[100];
-		struct jptype__PrimaryQuery	qry = { 0, qp }; 
-
-		int	i,j,qi = atoi(argv[3])-1;
-
-		if (argc != 6) usage(argv[0]);
-
-		for (i=0; i<attr.__sizeitem; i++) ap[i] = sample_attr+i;
-
-		for (i=0; sample_query[qi][i].attr; i++)
-			qp[i] = &sample_query[qi][i];
-		qry.__sizeitem = i;
-		
-		if (!check_fault(soap,soap_call_jpsrv__FeedIndex(soap,server,"",
-				argv[2],&attr,&qry,!strcasecmp(argv[4],"true"),
-					!strcasecmp(argv[5],"true"),
-					&r)))
-		{
-			printf("FeedId: %s\nExpires: %s\n",r.feedId,ctime(&r.expires));
-		}
 	} else if (!strcasecmp(argv[1], "FeedIndexRefresh")) {
 		struct jpsrv__FeedIndexRefreshResponse r;
 

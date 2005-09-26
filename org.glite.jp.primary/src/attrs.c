@@ -6,6 +6,7 @@
 #include "glite/jp/types.h"
 #include "glite/jp/attr.h"
 
+#include "feed.h"
 #include "backend.h"
 #include "attrs.h"
 #include "file_plugin.h"

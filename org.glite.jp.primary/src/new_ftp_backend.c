@@ -18,7 +18,9 @@
 #include "glite/jp/strmd5.h"
 #include "glite/jp/known_attr.h"
 #include "glite/jp/attr.h"
+#include "glite/jp/escape.h"
 
+#include "feed.h"
 #include "tags.h"
 #include "backend.h"
 #include "db.h"
@@ -1754,7 +1756,7 @@ error_out:
 int glite_jppsbe_query(
 	glite_jp_context_t ctx,
 	const glite_jp_query_rec_t query[],
-	const glite_jp_attrval_t metadata[],
+	char * attrs[],
 	void *arg,
 	int (*callback)(
 		glite_jp_context_t ctx,
@@ -1771,14 +1773,17 @@ int glite_jppsbe_query(
 	char	*qres[3] = { NULL, NULL, NULL };
 	int	cmask = 0, owner_idx = -1, reg_idx = -1;
 	glite_jp_db_stmt_t	q;
-	glite_jp_attrval_t	meta_clone[2];
+	glite_jp_attrval_t	metadata[2];
 
 	memset(&err,0,sizeof err);
 	glite_jp_clear_error(ctx);
 	err.source = __FUNCTION__;
 
 	/* XXX: assuming not more than 2 */
-	memcpy(meta_clone,metadata,sizeof meta_clone);
+	memset(metadata,0,sizeof metadata);
+
+	/* XXX: const discarding is OK */
+	for (i=0;attrs[i]; i++) metadata[i].name = (char *) attrs[i];
 
 	for (i=0; query[i].attr; i++) {
 		char	*qitem;
@@ -1877,17 +1882,17 @@ int glite_jppsbe_query(
 	while ((ret = glite_jp_db_fetchrow(q,qres)) > 0) {
 		if (cmask & 1) {
 			/* XXX: owner always first */
-			meta_clone[owner_idx].value = qres[1];
+			metadata[owner_idx].value = qres[1];
 			qres[1] = NULL;
 		}
 		if (cmask & 2) {
 			int	qi = cmask == 2 ? 1 : 2;
 			time_t	t = glite_jp_db_dbtotime(qres[qi]);
-			meta_clone[reg_idx].value = glite_jp_time2attr(t);
+			metadata[reg_idx].value = glite_jp_time2attr(t);
 			free(qres[qi]);
 			qres[qi] = NULL;
 		}
-		if (callback(ctx,qres[0],meta_clone,arg)) {
+		if (callback(ctx,qres[0],metadata,arg)) {
 			err.code = EIO;
 			err.desc = qres[0];
 			glite_jp_stack_error(ctx,&err);
@@ -1895,9 +1900,9 @@ int glite_jppsbe_query(
 		}
 
 		free(qres[0]);
-		free(meta_clone[0].value);
-		free(meta_clone[1].value);
-		qres[0] = meta_clone[0].value = meta_clone[1].value = NULL;
+		free(metadata[0].value);
+		free(metadata[1].value);
+		qres[0] = metadata[0].value = metadata[1].value = NULL;
 	}
 
 
@@ -1915,7 +1920,7 @@ cleanup:
 	free(aux);
 	free(stmt);
 	free(qres[0]); free(qres[1]); free(qres[2]);
-	free(meta_clone[0].value); free(meta_clone[1].value);
+	free(metadata[0].value); free(metadata[1].value);
 	if (q) glite_jp_db_freestmt(&q);
 
 	return err.code;
@@ -2001,6 +2006,251 @@ cleanup:
 	*names_out = out;
 	return nout;
 }
+
+
+/** mark the job as sent to this feed */
+int glite_jppsbe_set_fed(
+	glite_jp_context_t ctx,
+	const char *feed,
+	const char *job
+)
+{
+	char	*stmt = NULL;
+	int	rows;
+	glite_jp_error_t	err;
+	memset(&err,0,sizeof err);
+
+	trio_asprintf(&stmt,"insert into fed_job(feedid,jobid) "
+		"values ('%|Ss','%|Ss')", feed,job);
+
+	if ((rows = glite_jp_db_execstmt(ctx,stmt,NULL)) < 0) {
+		err.source = __FUNCTION__;
+		err.code = EIO;
+		err.desc = "insert into fed_jobs";
+		glite_jp_stack_error(ctx,&err);
+		goto cleanup;
+	}
+
+	if (rows != 1) {
+		err.source = __FUNCTION__;
+		err.code = EIO;
+		err.desc = "inserted rows != 1";
+		glite_jp_stack_error(ctx,&err);
+	}
+
+cleanup:
+	free(stmt);
+	return err.code;
+}
+
+
+/** check whether the job has been already sent to this feed */
+int glite_jppsbe_check_fed(
+	glite_jp_context_t ctx,
+	const char *feed,
+	const char *job,
+	int *result
+)
+{
+	char	*stmt = NULL;
+	int	rows;
+	glite_jp_error_t	err;
+	memset(&err,0,sizeof err);
+	trio_asprintf(&stmt,"select 'x' from fed_jobs "
+			"where jobid = '%|Ss' and feedid = '%|Ss'",
+			job,feed);
+
+	if ((rows = glite_jp_db_execstmt(ctx,stmt,NULL)) < 0) {
+		err.source = __FUNCTION__;
+		err.code = EIO;
+		err.desc = "select from fed_jobs";
+		glite_jp_stack_error(ctx,&err);
+		goto cleanup;
+	}
+
+	*result = rows;
+
+cleanup:
+	free(stmt);
+	return err.code;
+}
+
+
+/** store the feed to database */
+int glite_jppsbe_store_feed(
+	glite_jp_context_t ctx,
+	struct jpfeed *feed
+)
+{
+	char	*stmt,*aux,*alist,*qlist,*e;
+	int	i,rows;
+	glite_jp_error_t	err;
+
+	memset(&err,0,sizeof err);
+
+	qlist, alist = stmt = aux = e = NULL;
+
+	for (i=0; feed->attrs[i]; i++) {
+		char	*e;
+		trio_asprintf(&aux,"%s%s%s",
+				alist ? alist : "",
+				alist ? "\n" : "",
+				e = edg_wll_LogEscape(feed->attrs[i]));
+		free(e);
+		free(alist);
+		alist = aux;
+		aux = NULL;
+	}
+
+	for (i=0; feed->qry[i].attr; i++) {
+		char	op,*e1,*e2 = NULL;
+
+		/* XXX */
+		assert(!feed->qry[i].binary);
+
+		switch (feed->qry[i].op) {
+			case GLITE_JP_QUERYOP_EQUAL: op = '='; break;
+			case GLITE_JP_QUERYOP_UNEQUAL: op = '!'; break;
+			case GLITE_JP_QUERYOP_LESS: op = '<'; break;
+			case GLITE_JP_QUERYOP_GREATER: op = '>'; break;
+			case GLITE_JP_QUERYOP_EXISTS: op = 'E'; break;
+			default: abort(); /* XXX */
+		}
+
+		trio_asprintf(&aux,"%s%s%s\n%c\n%s",
+				qlist ? qlist : "",
+				qlist ? "\n" : "",
+				e1 = edg_wll_LogEscape(feed->qry[i].attr),
+				op,
+				op != 'E' ? e2 = edg_wll_LogEscape(feed->qry[i].value) : "E");
+		free(e1); free(e2);
+
+		free(qlist);
+		qlist = aux;
+		aux = NULL;
+	}
+
+	trio_asprintf(&stmt,"insert into feeds(feedid,destination,expires,cols,query) "
+			"values ('%|Ss','%|Ss',%s,'%|Ss','%|Ss')",
+			feed->id,feed->destination,
+			e = glite_jp_db_timetodb(feed->expires),
+			alist,qlist);
+
+	free(alist); free(qlist); free(e);
+
+	if ((rows = glite_jp_db_execstmt(ctx,stmt,NULL)) < 0) {
+		err.source = __FUNCTION__;
+		err.code = EIO;
+		err.desc = "insert into fed_jobs";
+		glite_jp_stack_error(ctx,&err);
+		goto cleanup;
+	}
+
+	if (rows != 1) {
+		err.source = __FUNCTION__;
+		err.code = EIO;
+		err.desc = "inserted rows != 1";
+		glite_jp_stack_error(ctx,&err);
+	}
+
+cleanup:
+	free(stmt);
+	return err.code;
+
+}
+
+
+/** purge expired feeds */
+int glite_jppsbe_purge_feeds(
+	glite_jp_context_t ctx
+)
+{
+	/* TODO */
+	abort();
+}
+
+
+/** read stored feed into context */
+int glite_jppsbe_read_feeds(
+	glite_jp_context_t ctx
+)
+{
+	char	*stmt,*res[5],*expires;
+	glite_jp_error_t	err;
+	glite_jp_db_stmt_t	q = NULL;
+	int	rows;
+
+	stmt = expires = NULL;
+	memset(&err,0,sizeof err);
+	memset(&res,0,sizeof res);
+	err.source = __FUNCTION__;
+
+	expires = glite_jp_db_timetodb(time(NULL));
+	trio_asprintf(&stmt,"select feedid,destination,expires,cols,query "
+			"from feeds "
+			"where expires > %s",expires);
+	free(expires); expires = NULL;
+
+	if ((rows = glite_jp_db_execstmt(ctx, stmt, &q)) < 0) {
+		err.code = EIO;
+		err.desc = "select from feeds";
+		glite_jp_stack_error(ctx,&err);
+		goto cleanup;
+	}
+
+	while ((rows = glite_jp_db_fetchrow(q,res)) > 0) {
+		struct jpfeed *f = calloc(1,sizeof *f);
+		int	n;
+		char	*p;
+
+		f->id = res[0]; res[0] = NULL;
+		f->destination = res[1]; res[1] = NULL;
+		f->expires = glite_jp_db_dbtotime(res[2]); free(res[2]); res[2] = NULL;
+
+		n = 0;
+		for (p = strtok(res[3],"\n"); p; p = strtok(NULL,"\n")) {
+			f->attrs = realloc(f->attrs,(n+2) * sizeof *f->attrs);
+			f->attrs[n] = edg_wll_LogUnescape(p);
+			f->attrs[++n] = NULL;
+		}
+
+		n = 0;
+		for (p = strtok(res[4],"\n"); p; p = strtok(NULL,"\n")) {
+			f->qry = realloc(f->qry,(n+2) * sizeof *f->qry);
+			memset(&f->qry[n],0,sizeof *f->qry);
+			f->qry[n].attr = edg_wll_LogUnescape(p);
+			p = strtok(NULL,"\n");
+			switch (*p) {
+				case '=': f->qry[n].op = GLITE_JP_QUERYOP_EQUAL; break;
+				case '<': f->qry[n].op = GLITE_JP_QUERYOP_LESS; break;
+				case '>': f->qry[n].op = GLITE_JP_QUERYOP_GREATER; break;
+				case '!': f->qry[n].op = GLITE_JP_QUERYOP_UNEQUAL; break;
+				case 'E': f->qry[n].op = GLITE_JP_QUERYOP_EXISTS; break;
+				default: abort(); /* XXX: internal inconsistency */
+			}
+			p = strtok(NULL,"\n");
+			if (f->qry[n].op != GLITE_JP_QUERYOP_EXISTS) 
+				f->qry[n].value = edg_wll_LogUnescape(p);
+
+			memset(&f->qry[++n],0,sizeof *f->qry);
+		}
+		f->next = ctx->feeds;
+		ctx->feeds = f;
+	}
+
+	if (rows < 0) {
+		err.code = EIO;
+		err.desc = "fetch from feeds";
+		glite_jp_stack_error(ctx,&err);
+		goto cleanup;
+	}
+
+cleanup:
+	glite_jp_db_freestmt(&q);
+	free(res[0]); free(res[1]); free(res[2]); free(res[3]); free(res[4]);
+	return err.code;
+}
+
 
 
 
