@@ -132,11 +132,11 @@ int glite_jp_add_deferred(
 
 	for (i=0; v && *v; i++);
 
-	ctx->deferred_func = realloc(ctx->deferred_func, (i+1) * sizeof *ctx->deferred_func);
+	ctx->deferred_func = realloc(ctx->deferred_func, (i+2) * sizeof *ctx->deferred_func);
 	ctx->deferred_func[i] = func;
 	ctx->deferred_func[i+1] = NULL;
 
-	ctx->deferred_arg = realloc(ctx->deferred_arg,(i+1) * sizeof *ctx->deferred_arg);
+	ctx->deferred_arg = realloc(ctx->deferred_arg,(i+2) * sizeof *ctx->deferred_arg);
 	ctx->deferred_arg[i] = arg;
 	ctx->deferred_arg[i+1] = NULL;
 
