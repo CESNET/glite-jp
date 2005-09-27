@@ -29,7 +29,6 @@ create table feeds (
 	locked		int		not null,
 	source		varchar(255)	not null,
 	expires		datetime,
-	attrs		mediumblob	null,
 	condition	mediumblob	null,
 
         primary key (uniqueid),
