@@ -75,3 +75,20 @@ OK - repeated startupload
 XX - get uncommitted file
 XX - get file with different credentials
 XX - upload again comitted file
+
+
+
+
+
+Register feed
+
+$ jpps-test FeedIndex
+
+registers predefined feed, seen in database (table feeds), slaves should
+restart
+
+
+
+Batch feed
+
+$ jpps-test FeedIndex yes

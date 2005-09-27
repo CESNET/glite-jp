@@ -352,8 +352,34 @@ static struct jpfeed *make_jpfeed(
 
 void jpfeed_free(struct jpfeed *f)
 {
-	/* TODO */
-	abort();
+	int	i;
+
+	assert(f->njobs == 0); /* XXX: we shouldn't do this */
+
+	free(f->id);
+	free(f->destination);
+	if (f->attrs) {
+		for (i=0; f->attrs[i]; i++) free(f->attrs[i]);
+		free(f->attrs);
+	}
+	for (i=0; i<f->nmeta_attr; i++) free(f->meta_attr[i]);
+	free(f->meta_attr);
+	for (i=0; i<f->nother_attr; i++) free(f->other_attr[i]);
+	free(f->other_attr);
+
+	if (f->qry) {
+		for (i=0; f->qry[i].attr; i++) glite_jp_free_query_rec(f->qry+i);
+		free(f->qry);
+	}
+
+	for (i=0; i<f->nmeta_qry; i++) glite_jp_free_query_rec(f->meta_qry+i);
+	free(f->meta_qry);
+	for (i=0; i<f->nother_qry; i++) glite_jp_free_query_rec(f->other_qry+i);
+	free(f->other_qry);
+
+	/* XXX: no next */
+
+	free(f);
 }
 
 static int drain_feed(glite_jp_context_t ctx, struct jpfeed *f)
@@ -443,7 +469,7 @@ static int run_feed_deferred(glite_jp_context_t ctx,void *feed)
 	glite_jp_clear_error(ctx);
 /* count "meta" attributes */
 	cnt = 0;
-	for (i=0; f->attrs[i]; f++)
+	for (i=0; f->attrs[i]; i++)
 		if (glite_jppsbe_is_metadata(ctx,f->attrs[i])) cnt++;
 
 	f->meta_attr = cnt ? malloc((cnt+1) * sizeof *f->meta_attr) : NULL;

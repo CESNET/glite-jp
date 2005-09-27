@@ -32,7 +32,7 @@ static void usage(const char *me)
 			"		RecordTag jobid tagname stringvalue\n"
 			"		GetJobFiles jobid\n"
 			"		GetJobAttr jobid attr\n"
-			"		FeedIndex \n"
+			"		FeedIndex [yes (history)]\n"
 			"		FeedIndexRefresh feedid\n"
 		,me);
 
@@ -216,6 +216,8 @@ int main(int argc,char *argv[])
 			1
 		};
 		struct _jpelem__FeedIndexResponse	out;
+
+		in.history = argc >= 3 && !strcasecmp(argv[2],"yes");
 
 		if (!check_fault(soap,soap_call___jpsrv__FeedIndex(soap,server,"",&in,&out)))
 		{

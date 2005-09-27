@@ -1867,10 +1867,11 @@ int glite_jppsbe_query(
 		case 3:	cols = "j.dg_jobid,u.cert_subj,j.reg_time"; break;
 	}
 	
-	trio_asprintf(stmt,"select %s from jobs j%s where %s",
+	trio_asprintf(&stmt,"select %s from jobs j%s where %s %s",
 			cols,
-			quser ? ",u.users" : "",
-			where);
+			quser ? ",users u" : "",
+			where,
+			cmask & 1 ? "and u.userid = j.owner" : "");
 
 	if (glite_jp_db_execstmt(ctx,stmt,&q) <= 0) {
 		err.code = EIO;
