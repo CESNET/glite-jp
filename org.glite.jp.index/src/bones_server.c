@@ -34,7 +34,7 @@ extern SOAP_NMAC struct Namespace jpis__namespaces[],jpps__namespaces[];
 extern SOAP_NMAC struct Namespace namespaces[] = { {NULL,NULL} };
 // namespaces[] not used here, but need to prevent linker to complain...
 
-extern void MyFeedIndex(glite_jp_context_t ctx, glite_jp_is_conf *conf, char *dest);
+extern void MyFeedIndex(glite_jpis_context_t ctx, glite_jp_is_conf *conf, long int uniqueid, char *dest);
 
 static int newconn(int,struct timeval *,void *);
 static int request(int,struct timeval *,void *);
@@ -45,6 +45,11 @@ static int data_init(void **data);
 static struct glite_srvbones_service stab = {
 	"JP Index Server", -1, newconn, request, reject, disconn
 };
+
+typedef struct {
+	glite_jpis_context_t ctx;
+	struct soap *soap;
+} slave_data_t;
 
 static time_t 		cert_mtime;
 static char 		*server_cert, *server_key, *cadir;
@@ -65,9 +70,15 @@ int main(int argc, char *argv[])
 	edg_wll_GssStatus	gss_code;
 	struct sockaddr_in	a;
 	char			*config_file;
+	glite_jpis_context_t	isctx;
 
 
 	glite_jp_init_context(&ctx);
+	if (glite_jpis_init_context(&isctx, ctx) != 0) {
+		fprintf(stderr, "Connect DB failed: %s (%s)\n", ctx->error->desc, ctx->error->source);
+		glite_jp_free_context(ctx);
+		return 1;
+	}
 
 	/* Read config options/file */
 	// XXX: need add something meaningfull to src/conf.c !
@@ -79,6 +90,21 @@ int main(int argc, char *argv[])
 		glite_jp_typeplugin_load(ctx,conf->plugins[i]);
 	*/
 	
+
+	if (glite_jpis_dropDatabase(ctx) != 0) {
+		fprintf(stderr, "Drop DB failed: %s (%s)\n", ctx->error->desc, ctx->error->source);
+		glite_jpis_free_context(isctx);
+		glite_jp_free_context(ctx);
+		return 1;
+	}
+
+	if (glite_jpis_initDatabase(ctx, conf) != 0) {
+		fprintf(stderr, "Init DB failed: %s (%s)\n", ctx->error->desc, ctx->error->source);
+		glite_jpis_free_context(isctx);
+		glite_jp_free_context(ctx);
+		return 1;
+	}
+
 
 #if GSOAP_VERSION <= 20602
 	for (i=0; jpis__namespaces[i].id && strcmp(jpis__namespaces[i].id,"ns1"); i++);
@@ -139,6 +165,8 @@ int main(int argc, char *argv[])
 
 
 	glite_jp_free_conf(conf);
+	glite_jpis_free_context(isctx);
+	glite_jp_free_context(ctx);
 
 	return 0;
 }
@@ -146,15 +174,21 @@ int main(int argc, char *argv[])
 /* slave's init comes here */	
 static int data_init(void **data)
 {
-	char	*PS_URL = NULL;
+	slave_data_t	*private;
+	char		*PS_URL = NULL;
+	long int	uniqueid;
 
-
-	*data = (void *) soap_new();
+	private = calloc(sizeof(*private), 1);
+	if (glite_jpis_init_context(&private->ctx, ctx) != 0) {
+		printf("[%d] slave_init(): DB error: %s (%s)\n",getpid(),ctx->error->desc,ctx->error->source);
+		return -1;
+	}
+	private->soap = soap_new();
 	printf("[%d] slave started\n",getpid());
 
 	/* ask PS server for data */
 	do {
-		switch (glite_jpis_lockUninitializedFeed(ctx,&PS_URL)) {
+		switch (glite_jpis_lockUninitializedFeed(private->ctx,&uniqueid,&PS_URL)) {
 			case ENOENT:
 				// no more feeds to initialize
 				return 0;
@@ -162,11 +196,12 @@ static int data_init(void **data)
 				// error during locking
 				printf("[%d] slave_init(): Locking error.\n",getpid());
 				free(PS_URL);
+				glite_jpis_free_context(private->ctx);
 				return -1;
 			default:
 				// contact PS server, ask for data, save feedId and expiration
 				// to DB and unlock feed
-				MyFeedIndex(ctx, conf, PS_URL);
+				MyFeedIndex(private->ctx, conf, uniqueid, PS_URL);
 				free(PS_URL);
 				PS_URL = NULL;
 				break;
@@ -176,7 +211,9 @@ static int data_init(void **data)
 
 static int newconn(int conn,struct timeval *to,void *data)
 {
-	struct soap		*soap = (struct soap *) data;
+	slave_data_t     *private = (slave_data_t *)data;
+	struct soap		*soap = private->soap;
+	glite_jp_context_t	ctx = private->ctx->jpctx;
 	glite_gsplugin_Context	plugin_ctx;
 
 	gss_cred_id_t		newcred = GSS_C_NO_CREDENTIAL;
@@ -189,7 +226,6 @@ static int newconn(int conn,struct timeval *to,void *data)
 
 	soap_init2(soap,SOAP_IO_KEEPALIVE,SOAP_IO_KEEPALIVE);
 	soap_set_namespaces(soap,jpis__namespaces);
-	soap->user = (void *) ctx; /* XXX: one instance per slave */
 
 /* not yet: client to JP Storage Server
  * probably wil come to other place, just not forget it....
@@ -252,6 +288,7 @@ static int newconn(int conn,struct timeval *to,void *data)
 	return 0;
 
 cleanup:
+	glite_jpis_free_context(private->ctx);
 	glite_gsplugin_free_context(plugin_ctx);
 	soap_end(soap);
 
@@ -260,8 +297,9 @@ cleanup:
 
 static int request(int conn,struct timeval *to,void *data)
 {
-	struct soap		*soap = data;
-	glite_jp_context_t	ctx = soap->user;
+	slave_data_t		*private = (slave_data_t *)data;
+	struct soap		*soap = private->soap;
+	glite_jp_context_t	ctx = private->ctx->jpctx;
 
 	glite_gsplugin_set_timeout(glite_gsplugin_get_context(soap),to);
 
@@ -311,7 +349,10 @@ static int reject(int conn)
 
 static int disconn(int conn,struct timeval *to,void *data)
 {
-	struct soap	*soap = (struct soap *) data;
+	slave_data_t		*private = (slave_data_t *)data;
+	struct soap		*soap = private->soap;
+
+	glite_jpis_free_context(private->ctx);
 	soap_end(soap); // clean up everything and close socket
 	
 	return 0;
