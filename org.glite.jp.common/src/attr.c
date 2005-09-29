@@ -63,6 +63,7 @@ static char * fb_to_db_full(void *ctx,const glite_jp_attrval_t *attr)
 		db[0] = 'S'; db[1] = ':';
 		strcpy(db+2,attr->value);
 	}
+	return db;
 }
 
 static char * fb_to_db_index(void *ctx,const glite_jp_attrval_t *attr,int len)
@@ -89,6 +90,7 @@ int fb_from_db(void *ctx,const char *str,glite_jp_attrval_t *attr)
 			break;
 		default: return EINVAL;
 	}
+	return 0;
 }
 
 static const char * fb_type_full(void *ctx,const char *attr)
