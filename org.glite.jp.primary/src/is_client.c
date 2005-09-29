@@ -42,8 +42,8 @@ int glite_jpps_multi_feed(
 		glite_jp_context_t ctx,
 		int njobs,
 		const char *dest,
-		const char **jobs,
-		glite_jp_attrval_t const **attrs)
+		char **jobs,
+		glite_jp_attrval_t **attrs)
 {
 	int	i,j;
 
