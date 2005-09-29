@@ -10,14 +10,13 @@
 #include "feed.h"
 #include "attrs.h"
 
-#include "jpps_H.h"
-/* #include "JobProvenancePS.nsmap" */
-#include "jpps_.nsmap" 
-
 #include "jptype_map.h"
 
 #include "file_plugin.h"
 #include "builtin_plugins.h"
+
+#include "jpps_ServerLib.c"
+#include "jpps_.nsmap"
 
 static struct jptype__genericFault *jp2s_error(struct soap *soap,
 		const glite_jp_error_t *err)

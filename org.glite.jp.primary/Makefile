@@ -56,9 +56,10 @@ SRCS:= bones_server.c soap_ops.c \
 	new_ftp_backend.c mysql.c file_plugin.c \
 	feed.c authz.c attrs.c\
 	is_client.c \
-	${ps_prefix}ServerLib.c \
-	${is_prefix}ClientLib.c jpps_C.c
-#	env_C.c
+	env_C.c
+
+#	${ps_prefix}ServerLib.c \
+#	${is_prefix}ClientLib.c jpps_C.c
 
 EXA_SRCS:=jpps-test.c ${ps_prefix}C.c ${ps_prefix}Client.c
 
@@ -112,9 +113,6 @@ ${is_prefix}C.c ${is_prefix}H.h: JobProvenanceIS.xh
 
 env_C.c env_Server.c:
 	touch env.xh
-	cp  ${jpproject}/JobProvenanceTypes.wsdl .
-	${gsoap_prefix}/bin/wsdl2h  -t ${top_srcdir}/src/typemap.dat -c -o env.xh JobProvenanceTypes.wsdl
-	rm -f JobProvenanceTypes.wsdl
 	${gsoap_prefix}/bin/soapcpp2 -w -c -p env_ env.xh
 
 #$(SOAP_PREFIX)H.h $(SOAP_PREFIX)C.c: LB.xh
