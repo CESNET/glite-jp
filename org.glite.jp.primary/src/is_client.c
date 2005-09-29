@@ -54,5 +54,6 @@ int glite_jpps_multi_feed(
 			printf("%s = %s\n",attrs[i][j].name,attrs[i][j].value);
 		putchar(10);
 	}
+	return 0;
 }
 
