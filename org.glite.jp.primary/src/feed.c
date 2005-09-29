@@ -8,6 +8,7 @@
 #include <signal.h>
 
 #include "glite/jp/types.h"
+#include "glite/jp/context.h"
 #include "glite/jp/strmd5.h"
 #include "feed.h"
 #include "file_plugin.h"
@@ -384,7 +385,25 @@ void jpfeed_free(struct jpfeed *f)
 
 static int drain_feed(glite_jp_context_t ctx, struct jpfeed *f)
 {
-	/* TODO */ abort();
+	int	ret = 0;
+	glite_jp_clear_error(ctx);
+	if (f->njobs) {
+		int	i,j;
+		ret = glite_jpps_multi_feed(ctx,f->njobs,f->destination,f->jobs,f->job_attrs);
+
+		for (i=0; i<f->njobs; i++) {
+			for (j=0; f->job_attrs[i][j].name; j++)
+				glite_jp_attrval_free(&f->job_attrs[i][j],0);
+			free(f->job_attrs[i]);
+			free(f->jobs[i]);
+		}
+		free(f->job_attrs);
+		free(f->jobs);
+		f->job_attrs = NULL;
+		f->jobs = NULL;
+		f->njobs = 0;
+	}
+	return ret;
 }
 
 static int feed_query_callback(
@@ -424,7 +443,7 @@ static int feed_query_callback(
 	for (i=0; meta && meta[i].name; i++)
 		for (j=0; j<f->nmeta_attr; j++) 
 			if (!strcmp(meta[i].name,f->meta_attr[j])) {
-				out = realloc(out,(nout+2) * sizeof(out));
+				out = realloc(out,(nout+2) * sizeof *out);
 				glite_jp_attrval_copy(out+nout,meta+i);
 				nout++;
 			}
@@ -432,12 +451,13 @@ static int feed_query_callback(
 	for (i=0; other[i].name; i++) 
 		for (j=0; j<f->int_other_attr; j++)
 			if (!strcmp(other[i].name,f->other_attr[j])) {
-				out = realloc(out,(nout+2) * sizeof(out));
+				out = realloc(out,(nout+2) * sizeof *out);
 				glite_jp_attrval_copy(out+nout,other+i);
 				nout++;
 			}
 
 	if (nout) {
+		memset(out+nout,0,sizeof *out);
 		f->jobs = realloc(f->jobs,(f->njobs+1)*sizeof *f->jobs);
 		f->jobs[f->njobs] = strdup(job);
 		f->job_attrs = realloc(f->job_attrs,(f->njobs+1)*sizeof *f->job_attrs);
@@ -476,7 +496,7 @@ static int run_feed_deferred(glite_jp_context_t ctx,void *feed)
 	f->meta_attr[cnt] = NULL;
 	f->nmeta_attr = cnt;
 
-	f->other_attr = i-cnt ? malloc((i-cnt) * sizeof *f->other_attr) : NULL;
+	f->other_attr = i-cnt ? malloc((i-cnt+1) * sizeof *f->other_attr) : NULL;
 
 /* sort attributes to "meta" and others */
 	m = o = 0;
@@ -495,7 +515,7 @@ static int run_feed_deferred(glite_jp_context_t ctx,void *feed)
 	f->meta_qry = malloc((cnt+1) * sizeof *f->meta_qry);
 	memset(f->meta_qry+cnt,0,sizeof *f->meta_qry);
 	f->nmeta_qry = cnt;
-	f->other_qry = malloc((i-cnt) * sizeof *f->other_qry);
+	f->other_qry = malloc((i-cnt+1) * sizeof *f->other_qry);
 	f->nother_qry = i-cnt;
 
 	m = o = 0;
@@ -516,7 +536,7 @@ static int run_feed_deferred(glite_jp_context_t ctx,void *feed)
 		int	j;
 		for (j=0; j<f->int_other_attr && strcmp(f->other_attr[j],f->other_qry[i].attr); j++);
 		if (j == f->int_other_attr) {
-			f->other_attr = realloc(f->other_attr,(o+1) * sizeof *f->other_attr);
+			f->other_attr = realloc(f->other_attr,(o+2) * sizeof *f->other_attr);
 			f->other_attr[o++] = strdup(f->other_qry[i].attr);
 		}
 	}

@@ -37,3 +37,22 @@ int glite_jpps_single_feed(
 #endif
 	return 0;
 }
+
+int glite_jpps_multi_feed(
+		glite_jp_context_t ctx,
+		int njobs,
+		const char *dest,
+		const char **jobs,
+		glite_jp_attrval_t const **attrs)
+{
+	int	i,j;
+
+	printf("multi_feed: %s\n",dest);
+	for (i=0; i<njobs; i++) {
+		puts(jobs[i]);
+		for (j=0; attrs[i][j].name; j++)
+			printf("%s = %s\n",attrs[i][j].name,attrs[i][j].value);
+		putchar(10);
+	}
+}
+
