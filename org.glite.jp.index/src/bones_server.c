@@ -3,6 +3,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <unistd.h>
 
 #include "glite/jp/types.h"
 #include "glite/jp/context.h"
@@ -204,6 +205,8 @@ static int data_init(void **data)
 				MyFeedIndex(private->ctx, conf, uniqueid, PS_URL);
 				free(PS_URL);
 				PS_URL = NULL;
+// FIXME: infinite retrying on fail ==> fast increasing of used resources
+				sleep(2); 
 				break;
 		}
 	} while (1);
@@ -226,6 +229,7 @@ static int newconn(int conn,struct timeval *to,void *data)
 
 	soap_init2(soap,SOAP_IO_KEEPALIVE,SOAP_IO_KEEPALIVE);
 	soap_set_namespaces(soap,jpis__namespaces);
+	soap->user = (void *) ctx;
 
 /* not yet: client to JP Storage Server
  * probably wil come to other place, just not forget it....

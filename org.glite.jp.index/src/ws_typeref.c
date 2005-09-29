@@ -7,6 +7,7 @@
 
 #include "jpps_H.h"
 #include "ws_typemap.h"
+#include "ws_typeref.h"
 
 
 
@@ -110,6 +111,29 @@ int glite_jpis_QueryCondToSoap(
 	return SOAP_OK;
 }
 
+static void SoapToAttrOrig(glite_jp_attr_orig_t *out, const enum jptype__attrOrig in)
+{
+        switch ( in )
+        {
+	case jptype__attrOrig__SYSTEM: *out = GLITE_JP_ATTR_ORIG_SYSTEM; break;
+	case jptype__attrOrig__USER: *out = GLITE_JP_ATTR_ORIG_USER; break;
+	case jptype__attrOrig__FILE_: *out = GLITE_JP_ATTR_ORIG_FILE; break;
+	default: assert(0); break;
+        }
+}
 
-
-
+void SoapToAttrVal(glite_jp_attrval_t *av, const struct jptype__attrValue *attr) {
+	memset(av, 0, sizeof(*av));
+	av->name = attr->name;
+	av->binary = attr->value->blob ? 1 : 0;
+	assert(av->binary || attr->value->string);
+	if (av->binary) {
+		av->value = attr->value->blob->__ptr;
+		av->size =attr->value->blob->__size ;
+	} else {
+		av->size = -1;
+	}
+	SoapToAttrOrig(&av->origin, attr->origin);
+	av->origin_detail = attr->originDetail;
+	av->timestamp = attr->timestamp;
+}

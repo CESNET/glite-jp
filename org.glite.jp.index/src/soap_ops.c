@@ -1,14 +1,14 @@
 #include <stdio.h>
 #include <fcntl.h>
+#include <assert.h>
 
-#include "glite/jp/types.h"
-#include "glite/jp/context.h"
+#include <glite/jp/types.h>
+#include <glite/jp/context.h>
 
 #include "jpis_H.h"
 #include "jpis_.nsmap"
 #include "soap_version.h"
-
-
+#include "db_ops.h"
 
 
 
@@ -64,16 +64,67 @@ static void err2fault(const glite_jp_context_t ctx,struct soap *soap)
 /*-----------------------------------------*/
 
 
-#define CONTEXT_FROM_SOAP(soap,ctx) glite_jp_context_t	ctx = (glite_jp_context_t) ((soap)->user)
+#define CONTEXT_FROM_SOAP(soap,ctx) glite_jpis_context_t	ctx = (glite_jpis_context_t) ((soap)->user)
+
+
+static int updateJob(glite_jpis_context_t isctx, struct jptype__jobRecord *jobAttrs) {
+	glite_jp_attrval_t av;
+	struct jptype__attrValue *attr;
+	int ret, iattrs;
+
+	printf("%s: jobid='%s', attrs=%d\n", __FUNCTION__, jobAttrs->jobid, jobAttrs->__sizeattributes);
+
+	if (jobAttrs->remove) assert(*(jobAttrs->remove) == 0);
+
+	for (iattrs = 0; iattrs < jobAttrs->__sizeattributes; iattrs++) {
+		attr = jobAttrs->attributes[iattrs];
+		SoapToAttrVal(&av, attr);
+		if ((ret = glite_jpis_insertAttrVal(isctx, jobAttrs->jobid, &av)) != 0) return ret;
+	}
+
+	return 0;
+}
+
 
 SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__UpdateJobs(
 	struct soap *soap,
 	struct _jpelem__UpdateJobs *jpelem__UpdateJobs,
 	struct _jpelem__UpdateJobsResponse *jpelem__UpdateJobsResponse)
 {
+	int ret, ijobs;
+	const char *feedid;
+	int status, done;
+	CONTEXT_FROM_SOAP(soap, isctx);
+	glite_jp_context_t jpctx = isctx->jpctx;
+
 	// XXX: test client in examples/jpis-test
 	//      sends to this function some data for testing
 	puts(__FUNCTION__);
+
+	// get info about the feed
+	feedid = jpelem__UpdateJobs->feedId;
+	memset(isctx->param_feedid, 0, sizeof(isctx->param_feedid));
+	strncpy(isctx->param_feedid, feedid, sizeof(isctx->param_feedid) - 1);
+	if ((ret = glite_jp_db_execute(isctx->select_info_feed_stmt)) != 1) {
+		fprintf(stderr, "can't get info about '%s', returned %d records: %s (%s)\n", feedid, ret, jpctx->error->desc, jpctx->error->source);
+		return SOAP_FAULT;
+	}
+	// update status, if needed (only oring)
+	status = isctx->param_state;
+	done = jpelem__UpdateJobs->feedDone ? GLITE_JP_IS_STATE_DONE : 0;
+	if ((done != (status & GLITE_JP_IS_STATE_DONE)) && done) {
+		isctx->param_state != done;
+		if ((ret = glite_jp_db_execute(isctx->update_state_feed_stmt)) != 1) {
+			fprintf(stderr, "can't update state of '%s', returned %d records: %s (%s)\n", feedid, ret, jpctx->error->desc, jpctx->error->source);
+			return SOAP_FAULT;
+		}
+	}
+
+	// insert all attributes
+	for (ijobs = 0; ijobs < jpelem__UpdateJobs->__sizejobAttributes; ijobs++) {
+		if (updateJob(isctx, jpelem__UpdateJobs->jobAttributes[ijobs]) != 0) return SOAP_FAULT;
+	}
+
 	return SOAP_OK;
 }
 

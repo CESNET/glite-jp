@@ -3,7 +3,7 @@
 #include <string.h>
 #include <assert.h>
 
-#include "glite/security/glite_gsplugin.h"
+#include <glite/security/glite_gsplugin.h>
 
 #include "jpis_H.h"
 #include "jpis_.nsmap"
@@ -67,8 +67,7 @@ int main(int argc,char *argv[])
 	int	opt;
 	struct soap	*soap = soap_new();
 
-
-	soap_init(soap);
+	soap_init(soap);	
 	soap_set_namespaces(soap, jpis__namespaces);
 
 	soap_register_plugin(soap,glite_gsplugin);

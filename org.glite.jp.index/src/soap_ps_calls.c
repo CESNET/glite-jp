@@ -10,10 +10,9 @@
 
 #include "conf.h"
 #include "db_ops.h"
+#include "ws_typeref.h"
 
 #include "stdsoap2.h"
-
-extern int glite_jpis_QueryCondToSoap(struct soap *soap, glite_jp_query_rec_t *in, struct jptype__primaryQuery **out);
 
 
 /*------------------*/

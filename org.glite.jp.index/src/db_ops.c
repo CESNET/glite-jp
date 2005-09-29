@@ -27,9 +27,15 @@
         INDEX (jobid),\n\
         INDEX (value)\n\
 );"
+#define SQLCMD_INSERT_ATTRVAL "INSERT INTO " TABLE_PREFIX_DATA "%s (jobid, value, full_value) VALUES (\n\
+	'%s',\n\
+	'%s',\n\
+	'%s'\n\
+)"
+#define INDEX_LENGTH 255
 
-#define lprintf
-//#define lprintf printf
+//#define lprintf
+#define lprintf printf
 
 #define WORD_SWAP(X) ((((X) >> 8) & 0xFF) | (((X) & 0xFF) << 8))
 #define LONG_SWAP(X) (WORD_SWAP(((X) >> 16) & 0xFFFF) | ((WORD_SWAP(X) & 0xFFFF) << 16))
@@ -238,6 +244,14 @@ fail:
 }
 
 
+/**
+ * Convert attribute name to attribute id.
+ */
+char *glite_jpis_attr_name2id(const char *name) {
+	return str2md5(name);
+}
+
+
 /* Init the database. 
  *
  * \retval 0        OK
@@ -271,10 +285,10 @@ int glite_jpis_initDatabase(glite_jp_context_t ctx, glite_jp_is_conf *conf) {
 	i = 0;
 	while (attrs[i]) {
 		type_full = glite_jp_attrval_db_type_full(ctx, attrs[i]);
-		type_index = glite_jp_attrval_db_type_index(ctx, attrs[i], 255);
+		type_index = glite_jp_attrval_db_type_index(ctx, attrs[i], INDEX_LENGTH);
 
 		// attrid column
-		tmp = str2md5(attrs[i]);
+		tmp = glite_jpis_attr_name2id(attrs[i]);
 		strncpy(attrid, tmp, sizeof(attrid) - 1);
 		free(tmp);
 		attrid_len = strlen(attrid);
@@ -385,7 +399,7 @@ int glite_jpis_init_context(glite_jpis_context_t *isctx, glite_jp_context_t jpct
 	// sql command: select an uninitialized unlocked feed
 	glite_jp_db_assign_result(&myres[0], MYSQL_TYPE_LONG, NULL, &((*isctx)->param_uniqueid));
 	glite_jp_db_assign_result(&myres[1], MYSQL_TYPE_VAR_STRING, NULL, (*isctx)->param_ps, sizeof((*isctx)->param_ps), &(*isctx)->param_ps_len);
-	if ((ret = glite_jp_db_prepare(jpctx, "SELECT uniqueid, source FROM feeds WHERE (locked=0) AND (feedid IS NULL)", &(*isctx)->select_feed_stmt, NULL, myres)) != 0) goto fail_connect;
+	if ((ret = glite_jp_db_prepare(jpctx, "SELECT uniqueid, source FROM feeds WHERE (locked=0) AND (feedid IS NULL)", &(*isctx)->select_unlocked_feed_stmt, NULL, myres)) != 0) goto fail_connect;
 
 	// sql command: lock the feed (via uniqueid)
 	glite_jp_db_assign_param(&myparam[0], MYSQL_TYPE_LONG, &(*isctx)->param_uniqueid);
@@ -395,20 +409,36 @@ int glite_jpis_init_context(glite_jpis_context_t *isctx, glite_jp_context_t jpct
 	glite_jp_db_assign_param(&myparam[0], MYSQL_TYPE_VAR_STRING, (*isctx)->param_feedid, &(*isctx)->param_feedid_len);
 	glite_jp_db_assign_param(&myparam[1], MYSQL_TYPE_DATETIME, &(*isctx)->param_expires);
 	glite_jp_db_assign_param(&myparam[2], MYSQL_TYPE_LONG, &(*isctx)->param_uniqueid);
-	if ((ret = glite_jp_db_prepare(jpctx, "UPDATE feeds SET feedid=?, expires=?  WHERE (uniqueid=?)", &(*isctx)->init_feed_stmt, myparam, NULL)) != 0) goto fail_cmd2;
+	if ((ret = glite_jp_db_prepare(jpctx, "UPDATE feeds SET feedid=?, expires=? WHERE (uniqueid=?)", &(*isctx)->init_feed_stmt, myparam, NULL)) != 0) goto fail_cmd2;
 
 	// sql command: unlock the feed (via uniqueid)
 	glite_jp_db_assign_param(&myparam[0], MYSQL_TYPE_LONG, &(*isctx)->param_uniqueid);
-	if ((ret = glite_jp_db_prepare(jpctx, "UPDATE feeds SET locked=0  WHERE (uniqueid=?)", &(*isctx)->unlock_feed_stmt, myparam, NULL)) != 0) goto fail_cmd3;
+	if ((ret = glite_jp_db_prepare(jpctx, "UPDATE feeds SET locked=0 WHERE (uniqueid=?)", &(*isctx)->unlock_feed_stmt, myparam, NULL)) != 0) goto fail_cmd3;
+
+	// sql command: get info about the feed (via feedid)
+	glite_jp_db_assign_param(&myparam[0], MYSQL_TYPE_STRING, (*isctx)->param_feedid, &(*isctx)->param_feedid_len);
+	glite_jp_db_assign_result(&myres[0], MYSQL_TYPE_LONG, NULL, &(*isctx)->param_uniqueid);
+	glite_jp_db_assign_result(&myres[1], MYSQL_TYPE_LONG, NULL, &(*isctx)->param_state);
+	if ((ret = glite_jp_db_prepare(jpctx, "SELECT uniqueid, state FROM feeds WHERE (feedid=?)", &(*isctx)->select_info_feed_stmt, myparam, myres)) != 0) goto fail_cmd4;
+
+	// sql command: update state of the feed (via uniqueid)
+	glite_jp_db_assign_param(&myparam[0], MYSQL_TYPE_LONG, &(*isctx)->param_state);
+	glite_jp_db_assign_param(&myparam[1], MYSQL_TYPE_LONG, &(*isctx)->param_uniqueid);
+	if ((ret = glite_jp_db_prepare(jpctx, "UPDATE feeds SET state=? WHERE (uniqueid=?)", &(*isctx)->update_state_feed_stmt, myparam, NULL)) != 0) goto fail_cmd5;
 
 	return 0;
 
+	glite_jp_db_freestmt(&(*isctx)->update_state_feed_stmt);
+fail_cmd5:
+	glite_jp_db_freestmt(&(*isctx)->select_info_feed_stmt);
+fail_cmd4:
+	glite_jp_db_freestmt(&(*isctx)->unlock_feed_stmt);
 fail_cmd3:
 	glite_jp_db_freestmt(&(*isctx)->init_feed_stmt);
 fail_cmd2:
 	glite_jp_db_freestmt(&(*isctx)->lock_feed_stmt);
 fail_cmd:
-	glite_jp_db_freestmt(&(*isctx)->select_feed_stmt);
+	glite_jp_db_freestmt(&(*isctx)->select_unlocked_feed_stmt);
 fail_connect:
 	glite_jp_db_close((*isctx)->jpctx);
 fail:
@@ -418,10 +448,12 @@ fail:
 
 
 int glite_jpis_free_context(glite_jpis_context_t ctx) {
-	glite_jp_db_freestmt(&ctx->select_feed_stmt);
+	glite_jp_db_freestmt(&ctx->select_unlocked_feed_stmt);
 	glite_jp_db_freestmt(&ctx->lock_feed_stmt);
 	glite_jp_db_freestmt(&ctx->init_feed_stmt);
 	glite_jp_db_freestmt(&ctx->unlock_feed_stmt);
+	glite_jp_db_freestmt(&ctx->select_info_feed_stmt);
+	glite_jp_db_freestmt(&ctx->update_state_feed_stmt);
 	glite_jp_db_close(ctx->jpctx);
 	free(ctx);
 }
@@ -439,12 +471,12 @@ int glite_jpis_lockUninitializedFeed(glite_jpis_context_t ctx, long int *uniquei
 	int ret;
 
 	do {
-		switch (glite_jp_db_execute(ctx->select_feed_stmt)) {
+		switch (glite_jp_db_execute(ctx->select_unlocked_feed_stmt)) {
 		case -1: lprintf("error selecting unlocked feed\n"); return ENOLCK;
 		case 0: lprintf("no more uninit. feeds unlocked\n"); return ENOENT;
 		default: break;
 		}
-		if (glite_jp_db_fetch(ctx->select_feed_stmt) != 0) return ENOLCK;
+		if (glite_jp_db_fetch(ctx->select_unlocked_feed_stmt) != 0) return ENOLCK;
 		lprintf("selected uninit. feed %lu\n", ctx->param_uniqueid);
 
 		ret = glite_jp_db_execute(ctx->lock_feed_stmt);
@@ -488,4 +520,25 @@ int glite_jpis_unlockFeed(glite_jpis_context_t ctx, long int uniqueid) {
 	lprintf("unlocking feed, uniqueid=%li, result=%d\n", uniqueid, ret);
 
 	return ret == 1 ? 0 : ENOLCK;
+}
+
+
+int glite_jpis_insertAttrVal(glite_jpis_context_t ctx, const char *jobid, glite_jp_attrval_t *av) {
+	char *sql, *table, *value, *full_value;
+
+	table = glite_jpis_attr_name2id(av->name);
+	value = glite_jp_attrval_to_db_index(ctx->jpctx, av, INDEX_LENGTH);
+	full_value = glite_jp_attrval_to_db_full(ctx->jpctx, av);
+	asprintf(&sql, SQLCMD_INSERT_ATTRVAL, table, jobid, value, full_value);
+	free(table);
+	free(value);
+	free(full_value);
+	lprintf("%s: sql=%s\n", __FUNCTION__, sql);
+	if (glite_jp_db_execstmt(ctx->jpctx, sql, NULL) != 1) {
+		free(sql);
+		return ctx->jpctx->error->code;
+	}
+	free(sql);
+
+	return 0;
 }
