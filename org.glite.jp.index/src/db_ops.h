@@ -22,7 +22,7 @@ typedef struct _glite_jpis_context {
 	long int param_uniqueid, param_state;
 	char param_feedid[33], param_ps[256];
 	unsigned long param_ps_len, param_feedid_len;
-	MYSQL_TIME param_expires;
+	void *param_expires;
 } *glite_jpis_context_t;
 
 char *glite_jpis_attr_name2id(const char *name);

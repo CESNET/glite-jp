@@ -97,8 +97,10 @@ static int array_add(void **data, size_t *len, size_t *maxlen, void *new_data, s
 
 	ptr = *len;
 	(*len) += new_data_len;
-	while (*len > *maxlen) {
-		(*maxlen) *= 2;
+	if (*len > *maxlen) {
+		do {
+			(*maxlen) *= 2;
+		} while (*len > *maxlen);
 		if ((tmp = realloc(*data, *maxlen)) == NULL) return ENOMEM;
 		*data = tmp;
 	}
@@ -263,7 +265,7 @@ int glite_jpis_initDatabase(glite_jp_context_t ctx, glite_jp_is_conf *conf) {
 	char **attrs, *tmp;
 	const char *type_index, *type_full;
 	size_t i;
-	MYSQL_BIND param[4];
+	void *param;
 	unsigned long attrid_len, name_len, type_len, source_len, dbconds_len;
 	char attrid[33], name[256], type[33], source[256], dbconds[1024];
 	int indexed, state, locked;
@@ -272,10 +274,11 @@ int glite_jpis_initDatabase(glite_jp_context_t ctx, glite_jp_is_conf *conf) {
 	glite_jp_is_feed **feeds;
 	void *conds;
 
-	glite_jp_db_assign_param(&param[0], MYSQL_TYPE_VAR_STRING, attrid, &attrid_len);
-	glite_jp_db_assign_param(&param[1], MYSQL_TYPE_VAR_STRING, name, &name_len);
-	glite_jp_db_assign_param(&param[2], MYSQL_TYPE_LONG, &indexed);
-	glite_jp_db_assign_param(&param[3], MYSQL_TYPE_VAR_STRING, type, &type_len);
+	glite_jp_db_create_params(&param, 4,
+		GLITE_JP_DB_TYPE_VARCHAR, attrid, &attrid_len,
+		GLITE_JP_DB_TYPE_VARCHAR, name, &name_len,
+		GLITE_JP_DB_TYPE_INT, &indexed,
+		GLITE_JP_DB_TYPE_VARCHAR, type, &type_len);
 	if (glite_jp_db_prepare(ctx, "INSERT INTO attrs (attrid, name, indexed, type) VALUES (?, ?, ?, ?)", &stmt, param, NULL) != 0) goto fail;
 
 	memset(attrid, 0, sizeof(attrid));
@@ -312,10 +315,11 @@ int glite_jpis_initDatabase(glite_jp_context_t ctx, glite_jp_is_conf *conf) {
 	glite_jp_db_freestmt(&stmt);
 
 	// feeds table
-	glite_jp_db_assign_param(&param[0], MYSQL_TYPE_LONG, &state);
-	glite_jp_db_assign_param(&param[1], MYSQL_TYPE_LONG, &locked);
-	glite_jp_db_assign_param(&param[2], MYSQL_TYPE_VAR_STRING, source, &source_len);
-	glite_jp_db_assign_param(&param[3], MYSQL_TYPE_MEDIUM_BLOB, dbconds, &dbconds_len);
+	glite_jp_db_create_params(&param, 4,
+		GLITE_JP_DB_TYPE_INT, &state,
+		GLITE_JP_DB_TYPE_INT, &locked,
+		GLITE_JP_DB_TYPE_VARCHAR, source, &source_len,
+		GLITE_JP_DB_TYPE_MEDIUMBLOB, dbconds, &dbconds_len);
 	if (glite_jp_db_prepare(ctx, "INSERT INTO feeds (state, locked, source, condition) VALUES (?, ?, ?, ?)", &stmt, param, NULL) != 0) goto fail;
 	feeds = conf->feeds;
 	i = 0;
@@ -356,14 +360,14 @@ fail:
 
 int glite_jpis_dropDatabase(glite_jp_context_t ctx) {
 	glite_jp_db_stmt_t stmt_tabs;
-	MYSQL_BIND inp, res;
+	void *inp, *res;
 	char attrid[33], sql[256];
 	unsigned long len;
 	int ret;
 
 	// search data tables and drop them
-	glite_jp_db_assign_result(&res, MYSQL_TYPE_STRING, NULL, attrid, sizeof(attrid), &len);
-	if (glite_jp_db_prepare(ctx, "SELECT attrid FROM attrs", &stmt_tabs, NULL, &res) != 0) goto fail;
+	glite_jp_db_create_results(&res, 1, GLITE_JP_DB_TYPE_CHAR, NULL, attrid, sizeof(attrid), &len);
+	if (glite_jp_db_prepare(ctx, "SELECT attrid FROM attrs", &stmt_tabs, NULL, res) != 0) goto fail;
 	if (glite_jp_db_execute(stmt_tabs) == -1) goto fail_tabs;
 	while ((ret = glite_jp_db_fetch(stmt_tabs)) == 0) {
 		snprintf(sql, sizeof(sql), SQLCMD_DROP_DATA_TABLE, attrid);
@@ -388,8 +392,8 @@ fail:
 
 int glite_jpis_init_context(glite_jpis_context_t *isctx, glite_jp_context_t jpctx) {
 	int ret;
-	MYSQL_BIND myparam[3];
-	MYSQL_BIND myres[2];
+	void *myparam;
+	void *myres;
 
 	*isctx = calloc(sizeof(**isctx), 1);
 	
@@ -397,33 +401,37 @@ int glite_jpis_init_context(glite_jpis_context_t *isctx, glite_jp_context_t jpct
 	if ((ret = glite_jp_db_connect(jpctx, GLITE_JP_IS_DEFAULTCS)) != 0) goto fail;
 
 	// sql command: select an uninitialized unlocked feed
-	glite_jp_db_assign_result(&myres[0], MYSQL_TYPE_LONG, NULL, &((*isctx)->param_uniqueid));
-	glite_jp_db_assign_result(&myres[1], MYSQL_TYPE_VAR_STRING, NULL, (*isctx)->param_ps, sizeof((*isctx)->param_ps), &(*isctx)->param_ps_len);
+	glite_jp_db_create_results(&myres, 2,
+		GLITE_JP_DB_TYPE_INT, NULL, &((*isctx)->param_uniqueid),
+		GLITE_JP_DB_TYPE_VARCHAR, NULL, (*isctx)->param_ps, sizeof((*isctx)->param_ps), &(*isctx)->param_ps_len);
 	if ((ret = glite_jp_db_prepare(jpctx, "SELECT uniqueid, source FROM feeds WHERE (locked=0) AND (feedid IS NULL)", &(*isctx)->select_unlocked_feed_stmt, NULL, myres)) != 0) goto fail_connect;
 
 	// sql command: lock the feed (via uniqueid)
-	glite_jp_db_assign_param(&myparam[0], MYSQL_TYPE_LONG, &(*isctx)->param_uniqueid);
+	glite_jp_db_create_params(&myparam, 1, GLITE_JP_DB_TYPE_INT, &(*isctx)->param_uniqueid);
 	if ((ret = glite_jp_db_prepare(jpctx, "UPDATE feeds SET locked=1 WHERE (locked = 0) AND (uniqueid = ?)", &(*isctx)->lock_feed_stmt, myparam, NULL)) != 0) goto fail_cmd;
 
 	// sql command: assign the feed (via uniqueid)
-	glite_jp_db_assign_param(&myparam[0], MYSQL_TYPE_VAR_STRING, (*isctx)->param_feedid, &(*isctx)->param_feedid_len);
-	glite_jp_db_assign_param(&myparam[1], MYSQL_TYPE_DATETIME, &(*isctx)->param_expires);
-	glite_jp_db_assign_param(&myparam[2], MYSQL_TYPE_LONG, &(*isctx)->param_uniqueid);
+	glite_jp_db_create_params(&myparam, 3,
+		GLITE_JP_DB_TYPE_VARCHAR, (*isctx)->param_feedid, &(*isctx)->param_feedid_len,
+		GLITE_JP_DB_TYPE_DATETIME, &(*isctx)->param_expires,
+		GLITE_JP_DB_TYPE_INT, &(*isctx)->param_uniqueid);
 	if ((ret = glite_jp_db_prepare(jpctx, "UPDATE feeds SET feedid=?, expires=? WHERE (uniqueid=?)", &(*isctx)->init_feed_stmt, myparam, NULL)) != 0) goto fail_cmd2;
 
 	// sql command: unlock the feed (via uniqueid)
-	glite_jp_db_assign_param(&myparam[0], MYSQL_TYPE_LONG, &(*isctx)->param_uniqueid);
+	glite_jp_db_create_params(&myparam, 1, GLITE_JP_DB_TYPE_INT, &(*isctx)->param_uniqueid);
 	if ((ret = glite_jp_db_prepare(jpctx, "UPDATE feeds SET locked=0 WHERE (uniqueid=?)", &(*isctx)->unlock_feed_stmt, myparam, NULL)) != 0) goto fail_cmd3;
 
 	// sql command: get info about the feed (via feedid)
-	glite_jp_db_assign_param(&myparam[0], MYSQL_TYPE_STRING, (*isctx)->param_feedid, &(*isctx)->param_feedid_len);
-	glite_jp_db_assign_result(&myres[0], MYSQL_TYPE_LONG, NULL, &(*isctx)->param_uniqueid);
-	glite_jp_db_assign_result(&myres[1], MYSQL_TYPE_LONG, NULL, &(*isctx)->param_state);
+	glite_jp_db_create_params(&myparam, 1, GLITE_JP_DB_TYPE_CHAR, (*isctx)->param_feedid, &(*isctx)->param_feedid_len);
+	glite_jp_db_create_results(&myres, 2,
+		GLITE_JP_DB_TYPE_INT, NULL, &(*isctx)->param_uniqueid,
+		GLITE_JP_DB_TYPE_INT, NULL, &(*isctx)->param_state);
 	if ((ret = glite_jp_db_prepare(jpctx, "SELECT uniqueid, state FROM feeds WHERE (feedid=?)", &(*isctx)->select_info_feed_stmt, myparam, myres)) != 0) goto fail_cmd4;
 
 	// sql command: update state of the feed (via uniqueid)
-	glite_jp_db_assign_param(&myparam[0], MYSQL_TYPE_LONG, &(*isctx)->param_state);
-	glite_jp_db_assign_param(&myparam[1], MYSQL_TYPE_LONG, &(*isctx)->param_uniqueid);
+	glite_jp_db_create_params(&myparam, 2, 
+		GLITE_JP_DB_TYPE_INT, &(*isctx)->param_state,
+		GLITE_JP_DB_TYPE_INT, &(*isctx)->param_uniqueid);
 	if ((ret = glite_jp_db_prepare(jpctx, "UPDATE feeds SET state=? WHERE (uniqueid=?)", &(*isctx)->update_state_feed_stmt, myparam, NULL)) != 0) goto fail_cmd5;
 
 	return 0;
@@ -497,10 +505,9 @@ int glite_jpis_initFeed(glite_jpis_context_t ctx, long int uniqueid, char *feedI
 	int ret;
 
 	memset(ctx->param_feedid, 0, sizeof(ctx->param_feedid));
-	memset(&ctx->param_expires, 0, sizeof(ctx->param_expires));
 	strncpy(ctx->param_feedid, feedId, sizeof(ctx->param_feedid) - 1);
 	ctx->param_feedid_len = strlen(ctx->param_feedid) + 1;
-	glite_jp_db_assign_time(&ctx->param_expires, feedExpires);
+	glite_jp_db_set_time(ctx->param_expires, feedExpires);
 	ctx->param_uniqueid = uniqueid;
 
 	ret = glite_jp_db_execute(ctx->init_feed_stmt);
