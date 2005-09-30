@@ -200,7 +200,6 @@ static int newconn(int conn,struct timeval *to,void *data)
 
 	glite_gsplugin_init_context(&plugin_ctx);
 	plugin_ctx->connection = calloc(1,sizeof *plugin_ctx->connection);
-	soap_register_plugin_arg(soap,glite_gsplugin,plugin_ctx);
 
 	switch (edg_wll_gss_watch_creds(server_cert,&cert_mtime)) {
 		case 0: break;
@@ -248,10 +247,11 @@ static int newconn(int conn,struct timeval *to,void *data)
 	if (client_name != GSS_C_NO_NAME) gss_release_name(&min_stat, &client_name);
 	if (token.value) gss_release_buffer(&min_stat, &token);
 
+	soap_register_plugin_arg(soap,glite_gsplugin,plugin_ctx);
 	return 0;
 
 cleanup:
-	glite_gsplugin_free_context(plugin_ctx);
+	glite_gsplugin_free_context(plugin_ctx); plugin_ctx = NULL;
 	soap_end(soap);
 
 	return ret;
