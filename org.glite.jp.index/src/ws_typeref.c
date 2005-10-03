@@ -10,7 +10,6 @@
 #include "ws_typeref.h"
 
 
-
 static void QueryOpToSoap(const glite_jp_queryop_t in, enum jptype__queryOp *out)
 {
         switch ( in )
@@ -25,7 +24,7 @@ static void QueryOpToSoap(const glite_jp_queryop_t in, enum jptype__queryOp *out
         }
 }
 
-static void OrigToSoap(struct soap *soap, const glite_jp_attr_orig_t in, enum jptype__attrOrig **out)
+static void AttrOrigToSoap(struct soap *soap, const glite_jp_attr_orig_t in, enum jptype__attrOrig **out)
 {
 	enum jptype__attrOrig 	*o = soap_malloc(soap, sizeof(*o));
 
@@ -41,8 +40,7 @@ static void OrigToSoap(struct soap *soap, const glite_jp_attr_orig_t in, enum jp
 	*out = o;
 }
 
-
-static int QueryValToSoap(
+static int QueryRecordValToSoap(
         struct soap			*soap,
 	int				binary,
 	size_t				size,
@@ -52,7 +50,7 @@ static int QueryValToSoap(
 	struct jptype__stringOrBlob	*val;
 
 	
-        assert(in); assert(out);
+        assert(out);
 	if ( !(val = soap_malloc(soap, sizeof(*val))) ) return SOAP_FAULT;
 	memset(val, 0, sizeof(*val) );
 
@@ -74,7 +72,6 @@ static int QueryValToSoap(
 	return SOAP_OK;
 }
 
-
 /**
  * Translate JP query condition from C query_rec to Soap
  *
@@ -94,14 +91,14 @@ int glite_jpis_QueryCondToSoap(
 
 	if ( !(qr->attr = soap_strdup(soap, in->attr)) ) return SOAP_FAULT;
 	QueryOpToSoap(in->op, &(qr->op));
-	OrigToSoap(soap, in->origin, &(qr->origin));
+	AttrOrigToSoap(soap, in->origin, &(qr->origin));
 	
 	switch ( in->op ) {
 	case GLITE_JP_QUERYOP_WITHIN:
-		if (QueryValToSoap(soap, in->binary, in->size2, in->value2, &qr->value2)) 
+		if (QueryRecordValToSoap(soap, in->binary, in->size2, in->value2, &qr->value2)) 
 			return SOAP_FAULT;
 	default:
-		if (QueryValToSoap(soap, in->binary, in->size, in->value, &qr->value)) 
+		if (QueryRecordValToSoap(soap, in->binary, in->size, in->value, &qr->value)) 
                         return SOAP_FAULT;
 		break;
 	}
