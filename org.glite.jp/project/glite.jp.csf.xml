@@ -12,6 +12,9 @@
 
 	Revision history:
 	$Log$
+	Revision 1.3  2004/12/10 09:46:41  akrenek
+	included ws-interface
+	
 	Revision 1.2  2004/12/01 18:24:25  zsalvet
 	common, index, and primary components defined
 	
@@ -131,6 +134,10 @@
 			<equals arg1="${org.glite.jp.primary.version}" arg2="HEAD" />
 		</condition>
 
+		<condition property="server-common.head">
+			<equals arg1="${org.glite.jp.server-common.version}" arg2="HEAD" />
+		</condition>
+
 	</target>
 
     	<presetdef name="cvs-co">
@@ -238,8 +245,19 @@
 			tag="${org.glite.jp.primary.version}" />
 	</target>
 
+	<!-- server-common -->
+	<target name="server-common" depends="evaluate.cvs.tags, get.server-common.head, get.server-common.tag"/>
+	<target name="get.server-common.head" if="server-common.head">
+		<cvs-co package="org.glite.jp.server-common" />
+	</target>
+	<target name="get.server-common.tag" unless="server-common.head">
+		<cvs-co package="org.glite.jp.server-common"
+			tag="${org.glite.jp.server-common.version}" />
+	</target>
+
 	<!-- All project modules -->
- 	<target name="project" depends="ws-interface,
+ 	<target name="project" depends="server-common,
+					ws-interface,
 					common,
 					index,
 					primary" />
