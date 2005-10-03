@@ -113,7 +113,8 @@
 		<struct name="indexQueryRecord">
 			Single condition on an attribute.
 			<elem name="op" type="queryOp">Query operation.</elem>
-			<elem name="value" type="stringOrBlob">Value to compare attribute with.</elem>
+			<elem name="value" type="stringOrBlob" optional="yes">Value to compare attribute with.</elem>
+			<elem name="value2" type="stringOrBlob" optional="yes">Value to compare attribute with.</elem>
 		</struct>
 	
 		<list name="string"/>
