@@ -31,7 +31,7 @@ int glite_jpis_initDatabase(glite_jp_context_t ctx, glite_jp_is_conf *conf);
 int glite_jpis_dropDatabase(glite_jp_context_t ctx);
 
 int glite_jpis_init_context(glite_jpis_context_t *isctx, glite_jp_context_t jpctx);
-int glite_jpis_free_context(glite_jpis_context_t ctx);
+void glite_jpis_free_context(glite_jpis_context_t ctx);
 
 int glite_jpis_lockUninitializedFeed(glite_jpis_context_t ctx, long int *uinqueid, char **PS_URL);
 int glite_jpis_initFeed(glite_jpis_context_t ctx, long int uniqueid, char *feedId, time_t feedExpires);

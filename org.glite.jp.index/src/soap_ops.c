@@ -9,6 +9,7 @@
 #include "jpis_.nsmap"
 #include "soap_version.h"
 #include "db_ops.h"
+#include "ws_typeref.h"
 
 
 
@@ -35,7 +36,6 @@ static struct jptype__genericFault *jp2s_error(struct soap *soap,
 
 static void err2fault(const glite_jp_context_t ctx,struct soap *soap)
 {
-	char	*et;
 	struct SOAP_ENV__Detail	*detail = soap_malloc(soap,sizeof *detail);
 	struct _genericFault *f = soap_malloc(soap,sizeof *f);
 
@@ -78,7 +78,7 @@ static int updateJob(glite_jpis_context_t isctx, struct jptype__jobRecord *jobAt
 
 	for (iattrs = 0; iattrs < jobAttrs->__sizeattributes; iattrs++) {
 		attr = jobAttrs->attributes[iattrs];
-		SoapToAttrVal(&av, attr);
+		glite_jpis_SoapToAttrVal(&av, attr);
 		if ((ret = glite_jpis_insertAttrVal(isctx, jobAttrs->jobid, &av)) != 0) return ret;
 	}
 

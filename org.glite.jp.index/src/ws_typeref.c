@@ -122,7 +122,7 @@ static void SoapToAttrOrig(glite_jp_attr_orig_t *out, const enum jptype__attrOri
         }
 }
 
-void SoapToAttrVal(glite_jp_attrval_t *av, const struct jptype__attrValue *attr) {
+void glite_jpis_SoapToAttrVal(glite_jp_attrval_t *av, const struct jptype__attrValue *attr) {
 	memset(av, 0, sizeof(*av));
 	av->name = attr->name;
 	av->binary = attr->value->blob ? 1 : 0;

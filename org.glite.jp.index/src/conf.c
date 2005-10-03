@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <glite/jp/types.h>
+#include <glite/jp/context.h>
 #include "conf.h"
 
 
@@ -59,5 +61,27 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 
 void glite_jp_free_conf(glite_jp_is_conf *conf)
 {
-	// XXX: structure dealocation
+	size_t i, j, k;
+	glite_jp_is_feed *feed;
+
+	if (!conf) return;
+
+	if (conf->attrs) for (i = 0; conf->attrs[i]; i++) free(conf->attrs[i]);
+	if (conf->indexed_attrs) for (i = 0; conf->indexed_attrs[i]; i++) free(conf->indexed_attrs[i]);
+	if (conf->plugins) for (i = 0; conf->plugins[i]; i++) free(conf->plugins[i]);
+	if (conf->feeds) for (i = 0; conf->feeds[i]; i++) {
+		feed = conf->feeds[i];
+		free(feed->PS_URL);
+		for (j = 0; feed->query[j]; j++) {
+			for (k = 0; feed->query[j][k].attr; k++) glite_jp_free_query_rec(&feed->query[j][k]);
+			free(feed->query[j]);
+		}
+		free(feed->query);
+		free(feed);
+	}
+	free(conf->attrs);
+	free(conf->indexed_attrs);
+	free(conf->plugins);
+	free(conf->feeds);
+	free(conf);
 }

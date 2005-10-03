@@ -1,11 +1,14 @@
 #ident "$Header$"
 
+#define _GNU_SOURCE
+
 #include <time.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <inttypes.h>
 #include <string.h>
 #include <assert.h>
+#include <stdio.h>
 
 #include <glite/jp/types.h>
 #include <glite/jp/context.h>
@@ -47,7 +50,7 @@
 
 #define COND_MAGIC 0x444E4F43
 
-static is_indexed(glite_jp_is_conf *conf, const char *attr) {
+static int is_indexed(glite_jp_is_conf *conf, const char *attr) {
 	size_t i;
 
 	i = 0;
@@ -67,11 +70,13 @@ static size_t db_arg2_length(glite_jp_query_rec_t *query) {
 	switch (query->op) {
 		case GLITE_JP_QUERYOP_WITHIN:
 			len = query->binary ? query->size2 : strlen(query->value2) + 1;
+		case GLITE_JP_QUERYOP_UNDEF:
 		case GLITE_JP_QUERYOP_EQUAL:
 		case GLITE_JP_QUERYOP_UNEQUAL:
 		case GLITE_JP_QUERYOP_LESS:
 		case GLITE_JP_QUERYOP_GREATER:
 		case GLITE_JP_QUERYOP_EXISTS:
+		case GLITE_JP_QUERYOP__LAST:
 			len = 0;
 	}
 
@@ -191,7 +196,7 @@ static int glite_jpis_db_queries_deserialize(glite_jp_query_rec_t ***queries, vo
 		if ((query = calloc(sizeof(*query), 1)) == NULL) goto fail;
 		l = array_get_long(&blob_ptr);
 		if (l != COND_MAGIC) {
-			printf("blob=%p, blob_ptr=%p, 0x%08" PRIX32 "\n", blob, blob_ptr, l);
+			lprintf("blob=%p, blob_ptr=%p, 0x%08" PRIX32 "\n", blob, blob_ptr, l);
 			ret = EINVAL;
 			goto fail_query;
 		}
@@ -360,7 +365,7 @@ fail:
 
 int glite_jpis_dropDatabase(glite_jp_context_t ctx) {
 	glite_jp_db_stmt_t stmt_tabs;
-	void *inp, *res;
+	void *res;
 	char attrid[33], sql[256];
 	unsigned long len;
 	int ret;
@@ -455,7 +460,7 @@ fail:
 }
 
 
-int glite_jpis_free_context(glite_jpis_context_t ctx) {
+void glite_jpis_free_context(glite_jpis_context_t ctx) {
 	glite_jp_db_freestmt(&ctx->select_unlocked_feed_stmt);
 	glite_jp_db_freestmt(&ctx->lock_feed_stmt);
 	glite_jp_db_freestmt(&ctx->init_feed_stmt);

@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
@@ -8,7 +10,7 @@
 #include "db_ops.h"
 
 
-static print_err(glite_jp_context_t ctx) {
+static void print_err(glite_jp_context_t ctx) {
 	glite_jp_error_t *e;
 
 	e = ctx->error;
@@ -49,7 +51,7 @@ int main(int argc, char *argv[]) {
 			printf("locked: uniqueid=%li, ps=%s\n", uniqueid, ps);
 			free(ps);
 
-			asprintf(&feedid, "feed://%d", uniqueid + 3);
+			asprintf(&feedid, "feed://%lu", uniqueid + 3);
 			if (glite_jpis_initFeed(isctx, uniqueid, feedid, (time_t)10000) != 0) {
 				free(feedid);
 				goto faildb;

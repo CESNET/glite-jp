@@ -38,7 +38,6 @@ static struct jptype__genericFault *jp2s_error(struct soap *soap,
 
 static void err2fault(const glite_jp_context_t ctx,struct soap *soap)
 {
-	char	*et;
 	struct SOAP_ENV__Detail	*detail = soap_malloc(soap,sizeof *detail);
 	struct _genericFault *f = soap_malloc(soap,sizeof *f);
 
@@ -80,8 +79,8 @@ void MyFeedIndex(glite_jpis_context_t ctx, glite_jp_is_conf *conf, long int uniq
 {
 	struct _jpelem__FeedIndex		in;
 	struct _jpelem__FeedIndexResponse 	out;
-	struct jptype__primaryQuery     	query;
-	struct jptype__stringOrBlob		value;
+//	struct jptype__primaryQuery     	query;
+//	struct jptype__stringOrBlob		value;
 //	struct xsd__base64Binary		blob;
 	int 					i, dest_index;
 	struct soap             		*soap = soap_new();
