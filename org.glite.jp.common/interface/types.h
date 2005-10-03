@@ -21,6 +21,7 @@ typedef struct _glite_jp_context {
 	void	**type_plugins;
 	void	*dbhandle;
 	char	**trusted_peers;
+	char	*myURL;
 } *glite_jp_context_t;
 
 typedef enum {
