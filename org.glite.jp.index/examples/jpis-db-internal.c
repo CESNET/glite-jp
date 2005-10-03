@@ -1,5 +1,3 @@
-#define _GNU_SOURCE
-
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>

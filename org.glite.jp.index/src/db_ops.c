@@ -1,7 +1,5 @@
 #ident "$Header$"
 
-#define _GNU_SOURCE
-
 #include <time.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -399,11 +397,13 @@ int glite_jpis_init_context(glite_jpis_context_t *isctx, glite_jp_context_t jpct
 	int ret;
 	void *myparam;
 	void *myres;
+	const char *cs;
 
 	*isctx = calloc(sizeof(**isctx), 1);
 	
 	(*isctx)->jpctx = jpctx;
-	if ((ret = glite_jp_db_connect(jpctx, GLITE_JP_IS_DEFAULTCS)) != 0) goto fail;
+	if ((cs = getenv("GLITE_JPIS_DB")) == NULL) cs = GLITE_JP_IS_DEFAULTCS;
+	if ((ret = glite_jp_db_connect(jpctx, cs)) != 0) goto fail;
 
 	// sql command: select an uninitialized unlocked feed
 	glite_jp_db_create_results(&myres, 2,

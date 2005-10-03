@@ -113,7 +113,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__UpdateJobs(
 	status = isctx->param_state;
 	done = jpelem__UpdateJobs->feedDone ? GLITE_JP_IS_STATE_DONE : 0;
 	if ((done != (status & GLITE_JP_IS_STATE_DONE)) && done) {
-		isctx->param_state != done;
+		isctx->param_state |= done;
 		if ((ret = glite_jp_db_execute(isctx->update_state_feed_stmt)) != 1) {
 			fprintf(stderr, "can't update state of '%s', returned %d records: %s (%s)\n", feedid, ret, jpctx->error->desc, jpctx->error->source);
 			return SOAP_FAULT;

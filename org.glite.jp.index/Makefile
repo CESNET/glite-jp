@@ -31,9 +31,10 @@ GLOBUS_LIBS:=-L${globus_prefix}/lib \
 
 GLOBUS_CFLAGS:=-I${globus_prefix}/include/${nothrflavour}
 
-DEBUG:=-W -Wall -Wno-unused-parameter -Wno-unused-function -g -O0  -DDEBUG
+CPPFLAGS:=-DDEBUG -D_GNU_SOURCE
+DEBUG:=-W -Wall -Wno-unused-parameter -Wno-unused-function -g -O0
 
-CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${stagedir}/include ${GLOBUS_CFLAGS} -I${mysql_prefix}/include -I${mysql_prefix}/include/mysql
+CFLAGS:=${CPPFLAGS} ${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${stagedir}/include ${GLOBUS_CFLAGS} -I${mysql_prefix}/include -I${mysql_prefix}/include/mysql
 LDFLAGS:=-L${stagedir}/lib
 
 LINK:=libtool --mode=link ${CC} ${LDFLAGS} 
