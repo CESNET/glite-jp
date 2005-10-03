@@ -45,7 +45,7 @@ static glite_jp_context_t	ctx;
 
 static int call_opts(glite_jp_context_t,char *,char *,int (*)(glite_jp_context_t,int,char **));
 
-char *glite_jp_default_namespace;
+const char *glite_jp_default_namespace;
 
 pid_t	master;
 
@@ -56,8 +56,12 @@ int main(int argc, char *argv[])
 	struct sockaddr_in	a;
 	char	*b_argv[20] = { "backend" },*p_argv[20] = { "plugins" },*com;
 	int	b_argc,p_argc;
+	char	buf[1000];
 
 	glite_jp_init_context(&ctx);
+	globus_libc_gethostname(buf,sizeof buf);
+	buf[999] = 0;
+	ctx->myURL = buf;
 
 	b_argc = p_argc = 1;
 
@@ -176,6 +180,7 @@ static int data_init(void **data)
 static int newconn(int conn,struct timeval *to,void *data)
 {
 	struct soap	*soap = (struct soap *) data;
+	glite_jp_context_t	ctx = soap->user;
 	glite_gsplugin_Context	plugin_ctx;
 
 	gss_cred_id_t		newcred = GSS_C_NO_CREDENTIAL;
@@ -190,13 +195,6 @@ static int newconn(int conn,struct timeval *to,void *data)
 	soap_init2(soap,SOAP_IO_KEEPALIVE,SOAP_IO_KEEPALIVE);
 	soap_set_namespaces(soap,jpps__namespaces);
 	soap->user = (void *) ctx; /* XXX: one instance per slave */
-
-/* not yet: client to JP index
-	ctx->other_soap = soap_new();
-	soap_init(ctx->other_soap);
-	soap_set_namespaces(ctx->other_soap,jpis__namespaces);
-*/
-
 
 	glite_gsplugin_init_context(&plugin_ctx);
 	plugin_ctx->connection = calloc(1,sizeof *plugin_ctx->connection);
@@ -311,7 +309,14 @@ static int reject(int conn)
 static int disconn(int conn,struct timeval *to,void *data)
 {
 	struct soap	*soap = (struct soap *) data;
+	glite_jp_context_t	ctx = soap->user;
+
 	soap_end(soap); // clean up everything and close socket
+	if (ctx->other_soap) {
+		soap_end(ctx->other_soap);
+		soap_free(ctx->other_soap);
+		ctx->other_soap = NULL;
+	}
 
 	return 0;
 }

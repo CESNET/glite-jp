@@ -2004,7 +2004,7 @@ cleanup:
 		return -ctx->error->code;
 	}
 
-	*names_out = out;
+	if (nout) *names_out = out;
 	return nout;
 }
 
