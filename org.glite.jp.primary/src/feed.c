@@ -155,11 +155,11 @@ static int match_feed(
 	if (!fed) {
 		glite_jp_attrval_t	*a;
 		full_feed(ctx,feed,job,&a);
-		glite_jpps_single_feed(ctx,feed->destination,job,a);
+		glite_jpps_single_feed(ctx,feed->id,0,feed->destination,job,a);
 		for (i=0; a[i].name; i++) glite_jp_attrval_free(a+i,0);
 		free(a);
 	}
-	else glite_jpps_single_feed(ctx,feed->destination,job,attrs);
+	else glite_jpps_single_feed(ctx,feed->id,0,feed->destination,job,attrs);
 	return 0;
 }
 
@@ -303,7 +303,7 @@ int glite_jpps_match_file(
 			memset(fattr+j,0,sizeof *fattr);
 
 		}
-		glite_jpps_single_feed(ctx,f->destination,job,fattr);
+		glite_jpps_single_feed(ctx,f->id,0,f->destination,job,fattr);
 		if (!fed) for (i=0; fattr[i].name; i++) glite_jp_attrval_free(fattr+i,0);
 		free(fattr);
 	}
@@ -383,13 +383,13 @@ void jpfeed_free(struct jpfeed *f)
 	free(f);
 }
 
-static int drain_feed(glite_jp_context_t ctx, struct jpfeed *f)
+static int drain_feed(glite_jp_context_t ctx, struct jpfeed *f,int done)
 {
 	int	ret = 0;
 	glite_jp_clear_error(ctx);
 	if (f->njobs) {
 		int	i,j;
-		ret = glite_jpps_multi_feed(ctx,f->njobs,f->destination,f->jobs,f->job_attrs);
+		ret = glite_jpps_multi_feed(ctx,f->id,done,f->njobs,f->destination,f->jobs,f->job_attrs);
 
 		for (i=0; i<f->njobs; i++) {
 			for (j=0; f->job_attrs[i][j].name; j++)
@@ -467,7 +467,7 @@ static int feed_query_callback(
 	}
 
 /* run the feed eventually */
-	if (f->njobs >= BATCH_FEED_SIZE && drain_feed(ctx,f)) {
+	if (f->njobs >= BATCH_FEED_SIZE && drain_feed(ctx,f,0)) {
 		err.code = EIO;
 		err.desc = "sending batch feed";
 		glite_jp_stack_error(ctx,&err);
@@ -544,7 +544,7 @@ static int run_feed_deferred(glite_jp_context_t ctx,void *feed)
 	f->nother_attr = o;
 
 	ret = glite_jppsbe_query(ctx,f->meta_qry,f->meta_attr,f,feed_query_callback);
-	if (!ret) ret = drain_feed(ctx,f);
+	if (!ret) ret = drain_feed(ctx,f,1);
 
 cleanup:
 
