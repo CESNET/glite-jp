@@ -109,7 +109,7 @@ static const char *orig2str(enum jptype__attrOrig orig)
 
 int main(int argc,char *argv[])
 {
-	char	*server = "http://localhost:8901";
+	char	*server = NULL;
 	int	opt;
 	struct soap	*soap = soap_new();
 
@@ -122,10 +122,15 @@ int main(int argc,char *argv[])
 
 	while ((opt = getopt(argc,argv,"s:")) >= 0) switch (opt) {
 		case 's': server = optarg;
-			  argv += 2;
 			break;
 		case '?': usage(argv[0]);
 	}
+
+	if (server) {
+		argv += 2;
+		argc -= 2;
+	}
+	else server = "http://localhost:8901";
 
 	if (!strcasecmp(argv[1],"RegisterJob")) {
 		struct _jpelem__RegisterJob	in;
