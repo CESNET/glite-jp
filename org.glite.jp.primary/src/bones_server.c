@@ -180,7 +180,6 @@ static int data_init(void **data)
 static int newconn(int conn,struct timeval *to,void *data)
 {
 	struct soap	*soap = (struct soap *) data;
-	glite_jp_context_t	ctx = soap->user;
 	glite_gsplugin_Context	plugin_ctx;
 
 	gss_cred_id_t		newcred = GSS_C_NO_CREDENTIAL;
