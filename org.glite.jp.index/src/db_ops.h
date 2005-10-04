@@ -36,6 +36,7 @@ void glite_jpis_free_context(glite_jpis_context_t ctx);
 int glite_jpis_lockUninitializedFeed(glite_jpis_context_t ctx, long int *uinqueid, char **PS_URL);
 int glite_jpis_initFeed(glite_jpis_context_t ctx, long int uniqueid, char *feedId, time_t feedExpires);
 int glite_jpis_unlockFeed(glite_jpis_context_t ctx, long int uniqueid);
+void glite_jpis_tryReconnectFeed(glite_jpis_context_t ctx,  long int uniqueid, time_t reconn_time);
 
 int glite_jpis_insertAttrVal(glite_jpis_context_t ctx, const char *jobid, glite_jp_attrval_t *av);
 

@@ -4,6 +4,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <time.h>
 
 #include "glite/jp/types.h"
 #include "glite/jp/context.h"
@@ -30,6 +31,9 @@
 #define MAX_SLAVES_NUM		20	// max. of slaves to be spawned
 #define USER_QUERY_SLAVES_NUM	2	// # of slaves reserved for user queries if
 					// # PS to conntact is << MAX_SLAVES_NUM
+
+#define RECONNECT_TIME		60*20	// when try reconnect to PS in case of error (in sec)
+
 
 extern SOAP_NMAC struct Namespace jpis__namespaces[],jpps__namespaces[];
 extern SOAP_NMAC struct Namespace namespaces[] = { {NULL,NULL} };
@@ -199,14 +203,17 @@ static int data_init(void **data)
 				free(PS_URL);
 				glite_jpis_free_context(private->ctx);
 				return -1;
+			case ENOTCONN:
+				// error when connecting to PS
+				glite_jpis_tryReconnectFeed(private->ctx, uniqueid,
+					time(NULL) + RECONNECT_TIME);
+				break;
 			default:
 				// contact PS server, ask for data, save feedId and expiration
 				// to DB and unlock feed
 				MyFeedIndex(private->ctx, conf, uniqueid, PS_URL);
 				free(PS_URL);
 				PS_URL = NULL;
-// FIXME: infinite retrying on fail ==> fast increasing of used resources
-				sleep(2); 
 				break;
 		}
 	} while (1);

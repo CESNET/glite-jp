@@ -535,6 +535,13 @@ int glite_jpis_unlockFeed(glite_jpis_context_t ctx, long int uniqueid) {
 }
 
 
+/* Saves TTL (when to reconnect if error occured) for given feed */
+
+void glite_jpis_tryReconnectFeed(glite_jpis_context_t ctx, long int uniqueid, time_t reconn_time) {
+
+}
+
+
 int glite_jpis_insertAttrVal(glite_jpis_context_t ctx, const char *jobid, glite_jp_attrval_t *av) {
 	char *sql, *table, *value, *full_value;
 
