@@ -7,7 +7,7 @@
 
 #include "jpps_H.h"
 #include "ws_typemap.h"
-#include "ws_typeref.h"
+#include "ws_ps_typeref.h"
 
 
 static void QueryOpToSoap(const glite_jp_queryop_t in, enum jptype__queryOp *out)

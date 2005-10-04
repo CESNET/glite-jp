@@ -7,7 +7,7 @@
 
 #include "jpis_H.h"
 #include "ws_typemap.h"
-#include "ws_typeref.h"
+#include "ws_ps_typeref.h"
 
 
 static void SoapToQueryOp(const enum jptype__queryOp in, glite_jp_queryop_t *out)
@@ -26,10 +26,17 @@ static void SoapToQueryOp(const enum jptype__queryOp in, glite_jp_queryop_t *out
 
 static void SoapToAttrOrig(struct soap *soap, const enum jptype__attrOrig *in, glite_jp_attr_orig_t *out)
 {
+	assert(out);
 
-        switch ( in )
+	// XXX: shlouldn't be ANY in WSDL??
+	if (!in) {
+		*out = GLITE_JP_ATTR_ORIG_ANY;
+		return;
+	}
+
+        switch ( *in )
         {
-        case NULL: *out = GLITE_JP_ATTR_ORIG_ANY; break;
+//        case NULL: *out = GLITE_JP_ATTR_ORIG_ANY; break;
         case SYSTEM: *out = GLITE_JP_ATTR_ORIG_SYSTEM; break;
         case USER: *out = GLITE_JP_ATTR_ORIG_USER; break;
         case FILE_: *out = GLITE_JP_ATTR_ORIG_FILE; break;
@@ -46,17 +53,17 @@ static int SoapToQueryRecordVal(
 {
 	
         assert(in);
-	if (value->string) {
+	if (in->string) {
 		*binary = 0;
 		*size = 0;
-		*value = strdup(value->string);
+		*value = strdup(in->string);
 
 		return 0;
 	}
-	else if (value->blob) {
+	else if (in->blob) {
 		*binary = 1;
-		*size = value->blob->__size;
-		memcpy(*value, value->blob->__ptr, value->blob->__size);
+		*size = in->blob->__size;
+		memcpy(*value, in->blob->__ptr, in->blob->__size);
 		// XXX how to handle id, type, option?
 
 		return 0;
@@ -85,21 +92,21 @@ int glite_jpis_SoapToQueryCond(
 	assert(in); assert(out);
 	qr = calloc(in->__sizerecord, sizeof(*qr));	
 
-	for (i=0; i < __sizerecord; i++) {
+	for (i=0; i < in->__sizerecord; i++) {
 		qr[i].attr = strdup(in->attr);
-		SoapToQueryOpTo(in->record[i]->op, &(qr[i].op));
+		SoapToQueryOp(in->record[i]->op, &(qr[i].op));
 
 		switch (qr[i].op) {
 		case GLITE_JP_QUERYOP_EXISTS:
                 	break;
 
 		case GLITE_JP_QUERYOP_WITHIN:
-			SoapToQueryRecordVal(in->record[i]->value2, *(qr[i].binary), 
-				*(qr[i].size2), *(qr[i].value2));
+			SoapToQueryRecordVal(soap, in->record[i]->value2, &(qr[i].binary), 
+				&(qr[i].size2), &(qr[i].value2));
 			// fall through
 		default:
-			SoapToQueryRecordVal(in->record[i]->value, *(qr[i].binary), 
-				*(qr[i].size), 	*(qr[i].value));
+			SoapToQueryRecordVal(soap, in->record[i]->value, &(qr[i].binary), 
+				&(qr[i].size), 	&(qr[i].value));
 			break;
 		}
 		

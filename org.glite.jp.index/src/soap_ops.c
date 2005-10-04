@@ -9,7 +9,10 @@
 #include "jpis_.nsmap"
 #include "soap_version.h"
 #include "db_ops.h"
-#include "ws_typeref.h"
+// XXX: avoid 2 wsdl collisions - work only because ws_ps_typeref.h 
+// uses common types from jpis_H.h (awful)
+#include "ws_ps_typeref.h"
+#include "ws_is_typeref.h"
 
 
 

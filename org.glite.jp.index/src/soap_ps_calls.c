@@ -10,7 +10,7 @@
 
 #include "conf.h"
 #include "db_ops.h"
-#include "ws_typeref.h"
+#include "ws_ps_typeref.h"
 
 #include "stdsoap2.h"
 
