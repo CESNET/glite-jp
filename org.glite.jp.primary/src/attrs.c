@@ -67,7 +67,7 @@ static int merge_attrvals(glite_jp_attrval_t **out,int nout,const glite_jp_attrv
 	return nout+nin;
 }
 
-glite_jpps_get_attrs(glite_jp_context_t ctx,const char *job,char const *const *attr,int nattr,glite_jp_attrval_t **attrs_out)
+glite_jpps_get_attrs(glite_jp_context_t ctx,const char *job,char **attr,int nattr,glite_jp_attrval_t **attrs_out)
 {
 	glite_jp_attrval_t	*meta = NULL,*out = NULL;
         char const	**other = NULL;
