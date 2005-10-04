@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 
 #include <glite/jp/db.h>
 
@@ -52,13 +53,15 @@ int main(int argc, char *argv[]) {
 			asprintf(&feedid, "feed://%lu", uniqueid + 3);
 			if (glite_jpis_initFeed(isctx, uniqueid, feedid, (time_t)10000) != 0) {
 				free(feedid);
-				goto faildb;
+				goto failconf;
 			}
 			free(feedid);
 
-			if (glite_jpis_unlockFeed(isctx, uniqueid) != 0) goto faildb;
+			if (glite_jpis_unlockFeed(isctx, uniqueid) != 0) goto failconf;
 		}
 	} while (ret == 0);
+
+	if (glite_jpis_tryReconnectFeed(isctx, uniqueid, time(NULL) + 10) != 0) goto failconf;
 
 	glite_jp_free_conf(conf);
 	glite_jpis_free_context(isctx);

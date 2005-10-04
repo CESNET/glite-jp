@@ -406,10 +406,11 @@ int glite_jpis_init_context(glite_jpis_context_t *isctx, glite_jp_context_t jpct
 	if ((ret = glite_jp_db_connect(jpctx, cs)) != 0) goto fail;
 
 	// sql command: select an uninitialized unlocked feed
+	glite_jp_db_create_params(&myparam, 1, GLITE_JP_DB_TYPE_DATETIME, &(*isctx)->param_expires);
 	glite_jp_db_create_results(&myres, 2,
 		GLITE_JP_DB_TYPE_INT, NULL, &((*isctx)->param_uniqueid),
 		GLITE_JP_DB_TYPE_VARCHAR, NULL, (*isctx)->param_ps, sizeof((*isctx)->param_ps), &(*isctx)->param_ps_len);
-	if ((ret = glite_jp_db_prepare(jpctx, "SELECT uniqueid, source FROM feeds WHERE (locked=0) AND (feedid IS NULL)", &(*isctx)->select_unlocked_feed_stmt, NULL, myres)) != 0) goto fail_connect;
+	if ((ret = glite_jp_db_prepare(jpctx, "SELECT uniqueid, source FROM feeds WHERE (locked=0) AND (feedid IS NULL) AND ((state <> " GLITE_JP_IS_STATE_ERROR_STR ") OR (expires >= ?))", &(*isctx)->select_unlocked_feed_stmt, myparam, myres)) != 0) goto fail_connect;
 
 	// sql command: lock the feed (via uniqueid)
 	glite_jp_db_create_params(&myparam, 1, GLITE_JP_DB_TYPE_INT, &(*isctx)->param_uniqueid);
@@ -439,8 +440,17 @@ int glite_jpis_init_context(glite_jpis_context_t *isctx, glite_jp_context_t jpct
 		GLITE_JP_DB_TYPE_INT, &(*isctx)->param_uniqueid);
 	if ((ret = glite_jp_db_prepare(jpctx, "UPDATE feeds SET state=? WHERE (uniqueid=?)", &(*isctx)->update_state_feed_stmt, myparam, NULL)) != 0) goto fail_cmd5;
 
+	// sql command: set the error on feed
+	glite_jp_db_create_params(&myparam, 3, 
+		GLITE_JP_DB_TYPE_INT, &(*isctx)->param_state,
+		GLITE_JP_DB_TYPE_DATETIME, &(*isctx)->param_expires,
+		GLITE_JP_DB_TYPE_INT, &(*isctx)->param_uniqueid);
+	if ((ret = glite_jp_db_prepare(jpctx, "UPDATE feeds SET state=?, expires=? WHERE (uniqueid=?)", &(*isctx)->update_error_feed_stmt, myparam, NULL)) != 0) goto fail_cmd6;
+
 	return 0;
 
+	glite_jp_db_freestmt(&(*isctx)->update_error_feed_stmt);
+fail_cmd6:
 	glite_jp_db_freestmt(&(*isctx)->update_state_feed_stmt);
 fail_cmd5:
 	glite_jp_db_freestmt(&(*isctx)->select_info_feed_stmt);
@@ -461,6 +471,7 @@ fail:
 
 
 void glite_jpis_free_context(glite_jpis_context_t ctx) {
+	glite_jp_db_freestmt(&ctx->update_error_feed_stmt);
 	glite_jp_db_freestmt(&ctx->select_unlocked_feed_stmt);
 	glite_jp_db_freestmt(&ctx->lock_feed_stmt);
 	glite_jp_db_freestmt(&ctx->init_feed_stmt);
@@ -483,6 +494,7 @@ int glite_jpis_lockUninitializedFeed(glite_jpis_context_t ctx, long int *uniquei
 {
 	int ret;
 
+	glite_jp_db_set_time(ctx->param_expires, time(NULL));
 	do {
 		switch (glite_jp_db_execute(ctx->select_unlocked_feed_stmt)) {
 		case -1: lprintf("error selecting unlocked feed\n"); return ENOLCK;
@@ -537,8 +549,12 @@ int glite_jpis_unlockFeed(glite_jpis_context_t ctx, long int uniqueid) {
 
 /* Saves TTL (when to reconnect if error occured) for given feed */
 
-void glite_jpis_tryReconnectFeed(glite_jpis_context_t ctx, long int uniqueid, time_t reconn_time) {
-
+int glite_jpis_tryReconnectFeed(glite_jpis_context_t ctx, long int uniqueid, time_t reconn_time) {
+	ctx->param_uniqueid = uniqueid;
+	ctx->param_state = GLITE_JP_IS_STATE_ERROR;
+	glite_jp_db_set_time(ctx->param_expires, reconn_time);
+	if (glite_jp_db_execute(ctx->update_error_feed_stmt) == -1) return ctx->jpctx->error->code;
+	return 0;
 }
 
 

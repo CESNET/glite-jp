@@ -14,11 +14,13 @@
 #define GLITE_JP_IS_STATE_HIST 1
 #define GLITE_JP_IS_STATE_CONT 2
 #define GLITE_JP_IS_STATE_DONE 4
+#define GLITE_JP_IS_STATE_ERROR 8
+#define GLITE_JP_IS_STATE_ERROR_STR "8"
 
 
 typedef struct _glite_jpis_context {
 	glite_jp_context_t jpctx;
-	glite_jp_db_stmt_t select_unlocked_feed_stmt, lock_feed_stmt, init_feed_stmt, unlock_feed_stmt, select_info_feed_stmt, update_state_feed_stmt;
+	glite_jp_db_stmt_t select_unlocked_feed_stmt, lock_feed_stmt, init_feed_stmt, unlock_feed_stmt, select_info_feed_stmt, update_state_feed_stmt, update_error_feed_stmt;
 	long int param_uniqueid, param_state;
 	char param_feedid[33], param_ps[256];
 	unsigned long param_ps_len, param_feedid_len;
@@ -36,7 +38,7 @@ void glite_jpis_free_context(glite_jpis_context_t ctx);
 int glite_jpis_lockUninitializedFeed(glite_jpis_context_t ctx, long int *uinqueid, char **PS_URL);
 int glite_jpis_initFeed(glite_jpis_context_t ctx, long int uniqueid, char *feedId, time_t feedExpires);
 int glite_jpis_unlockFeed(glite_jpis_context_t ctx, long int uniqueid);
-void glite_jpis_tryReconnectFeed(glite_jpis_context_t ctx,  long int uniqueid, time_t reconn_time);
+int glite_jpis_tryReconnectFeed(glite_jpis_context_t ctx, long int uniqueid, time_t reconn_time);
 
 int glite_jpis_insertAttrVal(glite_jpis_context_t ctx, const char *jobid, glite_jp_attrval_t *av);
 

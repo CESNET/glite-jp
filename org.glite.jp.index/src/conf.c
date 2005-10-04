@@ -20,15 +20,19 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 
 	conf = calloc(1, sizeof(*conf));
 
-	conf->attrs = calloc(5, sizeof(*conf->attrs));
+	conf->attrs = calloc(8, sizeof(*conf->attrs));
 	conf->attrs[0] = strdup("owner");
 	conf->attrs[1] = strdup("status");
 	conf->attrs[2] = strdup("location");
 	conf->attrs[3] = strdup("jobid");
+	conf->attrs[4] = strdup("user");
+	conf->attrs[5] = strdup("tag");
+	conf->attrs[6] = strdup("host");
 
-	conf->indexed_attrs = calloc(3, sizeof(*conf->indexed_attrs));
+	conf->indexed_attrs = calloc(4, sizeof(*conf->indexed_attrs));
 	conf->indexed_attrs[0] = strdup("owner");
-	conf->indexed_attrs[1] = strdup("location");
+	conf->indexed_attrs[1] = strdup("user");
+	conf->indexed_attrs[2] = strdup("location");
 
 	// XXX: some plugin names should come here in future
 	conf->plugins = NULL;
@@ -38,7 +42,7 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 	conf->feeds = calloc(2, sizeof(*(conf->feeds)));
 	
 	conf->feeds[0] = calloc(1, sizeof(**(conf->feeds)));
-	conf->feeds[0]->PS_URL = strdup("http://localhost:8901");
+	conf->feeds[0]->PS_URL = strdup("http://umbar-test.ics.muni.cz:8901");
 
 	// all job since Epoche
 	conf->feeds[0]->query = calloc(2,sizeof(*conf->feeds[0]->query));
