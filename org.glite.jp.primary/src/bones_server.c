@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
 
 	b_argc = p_argc = 1;
 
-	while ((opt = getopt(argc,argv,"B:P:a:")) != EOF) switch (opt) {
+	while ((opt = getopt(argc,argv,"B:P:a:p:")) != EOF) switch (opt) {
 		case 'B':
 			assert(b_argc < 20);
 			if (com = strchr(optarg,',')) *com = 0;
@@ -85,6 +85,9 @@ int main(int argc, char *argv[])
 				fprintf(stderr,"%s: %s\n",argv[0],glite_jp_error_chain(ctx));
 				exit (1);
 			}
+			break;
+		case 'p':
+			port = optarg;
 			break;
 		case '?': fprintf(stderr,"usage: %s: -Bb,val ... -Pplugin.so ...\n"
 					  "b is backend option\n",argv[0]);
@@ -217,8 +220,12 @@ static int newconn(int conn,struct timeval *to,void *data)
 	/* TODO: DNS paranoia etc. */
 
 	if (edg_wll_gss_accept(mycred,conn,to,plugin_ctx->connection,&gss_code)) {
-		/* TODO: better error reporting */
-		printf("[%d] GSS connection accept failed, closing.\n", getpid());
+		char	*et;
+
+		edg_wll_gss_get_error(&gss_code,"",&et);
+
+		fprintf(stderr,"[%d] GSS connection accept failed: %s\nClosing connection.\n",getpid(),et);
+		free(et);
 		ret = 1;
 		goto cleanup;
 	}
