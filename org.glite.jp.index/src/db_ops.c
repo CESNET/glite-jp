@@ -447,8 +447,16 @@ int glite_jpis_init_context(glite_jpis_context_t *isctx, glite_jp_context_t jpct
 		GLITE_JP_DB_TYPE_INT, &(*isctx)->param_uniqueid);
 	if ((ret = glite_jp_db_prepare(jpctx, "UPDATE feeds SET state=?, expires=? WHERE (uniqueid=?)", &(*isctx)->update_error_feed_stmt, myparam, NULL)) != 0) goto fail_cmd6;
 
+	// sql command: get info about indexed attributes
+	glite_jp_db_create_results(&myres, 1,
+		GLITE_JP_DB_TYPE_VARCHAR, NULL, &(*isctx)->param_indexed,  sizeof((*isctx)->param_indexed), &(*isctx)->param_indexed_len);
+	if ((ret = glite_jp_db_prepare(jpctx, "SELECT name FROM attrs WHERE (indexed=1)", &(*isctx)->select_info_attrs_indexed, NULL, myres)) != 0) goto fail_cmd7;
+
+
 	return 0;
 
+	
+fail_cmd7:
 	glite_jp_db_freestmt(&(*isctx)->update_error_feed_stmt);
 fail_cmd6:
 	glite_jp_db_freestmt(&(*isctx)->update_state_feed_stmt);

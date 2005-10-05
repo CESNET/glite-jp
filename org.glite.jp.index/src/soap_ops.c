@@ -14,7 +14,8 @@
 #include "ws_ps_typeref.h"
 #include "ws_is_typeref.h"
 
-
+#define	INDEXED_STRIDE	2	// how often realloc indexed indexed attr result
+				// XXX: 2 is only for debugging, replace with e.g. 100
 
 /*------------------*/
 /* Helper functions */
@@ -132,12 +133,69 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__UpdateJobs(
 }
 
 
+static int checkIndexedConditions(glite_jpis_context_t isctx, struct _jpelem__QueryJobs *in)
+{
+	char 			**indexed_attrs;
+	int			i, j, k, ret;
+
+
+	if ((ret = glite_jp_db_execute(isctx->select_info_attrs_indexed)) == -1) {
+		fprintf(stderr, "Error when executing select_info_attrs_indexed, \
+			returned %d records: %s (%s)\n", 
+			ret, isctx->jpctx->error->desc, isctx->jpctx->error->source);
+		return SOAP_FAULT;
+	}
+
+	i = 0;
+	while (glite_jp_db_fetch(isctx->select_info_attrs_indexed) == 0) {
+		if (!(i % INDEXED_STRIDE)) {
+			indexed_attrs = realloc(indexed_attrs, 
+				((i / INDEXED_STRIDE) * INDEXED_STRIDE + 1)  
+				* sizeof(*indexed_attrs));
+		}
+		i++;
+		indexed_attrs[i] = strdup(isctx->param_indexed);
+        }
+
+	for (k=0; k < in->__sizeconditions; k++) {
+		for (j=0; j < i; j++) {
+			if (!strcmp(in->conditions[k]->attr, indexed_attrs[j])) {
+				ret = 0;
+				goto end;
+			}
+		}
+	} 
+	ret = 1;
+
+end:
+	for (j=0;  j < i; j++) free(indexed_attrs[j]);
+	free(indexed_attrs);
+
+	return(ret);
+}
+
+
 SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__QueryJobs(
 	struct soap *soap,
-	struct _jpelem__QueryJobs *jpelem__QueryJobs,
-	struct _jpelem__QueryJobsResponse *jpelem__QueryJobsResponse)
+	struct _jpelem__QueryJobs *in,
+	struct _jpelem__QueryJobsResponse *out)
 {
+	CONTEXT_FROM_SOAP(soap, isctx);
+        glite_jp_context_t 	jpctx = isctx->jpctx;
+	glite_jp_query_rec_t	**qr;
+
+
 	puts(__FUNCTION__);
+	if ( glite_jpis_SoapToQueryConds(soap, in->__sizeconditions, in->conditions, &qr) ) {
+		return SOAP_ERR;
+	}
+
+	if ( checkIndexedConditions(isctx, in) ) {
+		fprintf(stderr, "No indexed attribute in query\n");
+		return SOAP_ERR;
+	}
+
+	
 	return SOAP_OK;
 }
 

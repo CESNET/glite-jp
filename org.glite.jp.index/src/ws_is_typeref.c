@@ -74,13 +74,7 @@ static int SoapToQueryRecordVal(
 }
 
 
-/**
- * Translate JP query condition from soap to C query_rec 
- *
- * \param IN Soap structure
- * \param OUT in glite_jp_query_rec_t query record
- */
-int glite_jpis_SoapToQueryCond(
+static int SoapToQueryCond(
         struct soap			*soap,
         struct jptype__indexQuery	*in,
         glite_jp_query_rec_t		**out)
@@ -105,11 +99,44 @@ int glite_jpis_SoapToQueryCond(
 				&(qr[i].size2), &(qr[i].value2));
 			// fall through
 		default:
-			SoapToQueryRecordVal(soap, in->record[i]->value, &(qr[i].binary), 
-				&(qr[i].size), 	&(qr[i].value));
+			if ( SoapToQueryRecordVal(soap, in->record[i]->value, &(qr[i].binary), 
+					&(qr[i].size), 	&(qr[i].value)) ) {
+				*out = NULL;
+				return 1;
+			}
 			break;
 		}
 		
 		SoapToAttrOrig(soap, in->origin, &(qr[i].origin) );
 	}	
+	
+	*out = qr;
+}
+
+/**
+ * Translate JP query conditions from soap to C query_rec 
+ *
+ * \param IN Soap structure
+ * \param OUT array of glite_jp_query_rec_t query records
+ */
+int glite_jpis_SoapToQueryConds(
+        struct soap			*soap,
+	int				size,
+        struct jptype__indexQuery	**in,
+        glite_jp_query_rec_t		***out)
+{
+	glite_jp_query_rec_t    **qr;
+	int 			i;
+
+	assert(in); assert(out);
+        qr = calloc(size+1, sizeof(*qr));
+
+	for (i=0; i<size; i++) {
+		if ( SoapToQueryCond(soap, in[i], &(qr[i])) ) {
+			*out = NULL;
+			return 1;
+		}
+	}
+
+	*out = qr;
 }
