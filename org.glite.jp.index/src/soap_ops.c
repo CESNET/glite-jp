@@ -180,9 +180,9 @@ end:
 }
 
 
-static int get_jobids(struct soap *soap, glite_jpis_context_t isctx, struct _jpelem__QueryJobs *in, char ***jobids)
+static int get_jobids(struct soap *soap, glite_jpis_context_t isctx, struct _jpelem__QueryJobs *in, char ***jobids, char *** ps_list)
 {
-	char 			*qa, *qb, *qop, *qbase, *query, *jid, **jids;
+	char 			*qa, *qb, *qop, *qbase, *query, *res[2], **jids, **pss;
 	int 			i, j, ret;
 	glite_jp_db_stmt_t	stmt;
 	glite_jp_queryop_t	op;
@@ -257,26 +257,33 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t isctx, struct _jpe
 
 	i = 0;
 	do {
-		if ( (ret = glite_jp_db_fetchrow(stmt, &jid) < 0) ) goto err;
+		if ( (ret = glite_jp_db_fetchrow(stmt, res) < 0) ) goto err;
 		if (!(i % JOBIDS_STRIDE)) {
                         jids = realloc(jids,
                                 ((i / JOBIDS_STRIDE) * JOBIDS_STRIDE + 2)
                                 * sizeof(*jids));
                 }
-		jids[i] = jid;
+		if (!(i % JOBIDS_STRIDE)) {
+                        pss = realloc(pss,
+                                ((i / JOBIDS_STRIDE) * JOBIDS_STRIDE + 2)
+                                * sizeof(*pss));
+                }
+		jids[i] = res[0];
 		jids[i+1] = NULL;
-		jid = NULL;
+		pss[i] = res[1];
+		pss[i+1] = NULL;
 		i++;	
 	} while (ret);
 	glite_jp_db_freestmt(&stmt);	
 
 	*jobids = jids;
+	*ps_list = pss;
 
 	return 0;
 	
 err:
 	free(query);
-	free(jid);
+	free(pss);
 	free(jids);
 	glite_jp_db_freestmt(&stmt);
 
@@ -396,7 +403,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__QueryJobs(
 //        glite_jp_context_t 		jpctx = isctx->jpctx;
 //	glite_jp_query_rec_t		**qr;
 	struct jptype__jobRecord	**jr;
-	char				**jobids;
+	char				**jobids, **ps_list;
 	int 				i, size;
 
 
@@ -410,7 +417,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__QueryJobs(
 		return SOAP_ERR;
 	}
 
-	if ( get_jobids(soap, isctx, in, &jobids) ) {
+	if ( get_jobids(soap, isctx, in, &jobids, &ps_list) ) {
 		return SOAP_ERR;
 	}
 
@@ -421,8 +428,17 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__QueryJobs(
 		if ( get_attrs(soap, isctx, jobids[i], in, &(jr[i])) ) {
 			return SOAP_ERR;
 		}	
+		// XXX: in prototype we return only first value of PS URL
+		// in future database shoul contain one more table with URLs
+		jr[i]->__sizeprimaryStorage = 1;
+		jr[i]->primaryStorage = soap_malloc(soap, sizeof(*(jr[i]->primaryStorage)));
+		jr[i]->primaryStorage[0] = soap_strdup(soap, ps_list[i]);
+		free(ps_list[i]);
+		free(jobids[i]);
 	}
-	
+	free(jobids);
+	free(ps_list);
+
 	(*out).__sizejobs = size;
 	(*out).jobs = jr;
 	
