@@ -24,7 +24,7 @@ static void QueryOpToSoap(const glite_jp_queryop_t in, enum jptype__queryOp *out
         }
 }
 
-static void AttrOrigToSoap(struct soap *soap, const glite_jp_attr_orig_t in, enum jptype__attrOrig **out)
+void glite_jpis_AttrOrigToSoap(struct soap *soap, const glite_jp_attr_orig_t in, enum jptype__attrOrig **out)
 {
 	enum jptype__attrOrig 	*o = soap_malloc(soap, sizeof(*o));
 
@@ -91,7 +91,7 @@ int glite_jpis_QueryCondToSoap(
 
 	if ( !(qr->attr = soap_strdup(soap, in->attr)) ) return SOAP_FAULT;
 	QueryOpToSoap(in->op, &(qr->op));
-	AttrOrigToSoap(soap, in->origin, &(qr->origin));
+	glite_jpis_AttrOrigToSoap(soap, in->origin, &(qr->origin));
 	
 	switch ( in->op ) {
 	case GLITE_JP_QUERYOP_WITHIN:
