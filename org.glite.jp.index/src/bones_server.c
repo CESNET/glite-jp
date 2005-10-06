@@ -6,14 +6,14 @@
 #include <unistd.h>
 #include <time.h>
 
-#include "glite/jp/types.h"
-#include "glite/jp/context.h"
+#include <glite/jp/types.h>
+#include <glite/jp/context.h>
 
-#include "glite/lb/srvbones.h"
-#include "glite/security/glite_gss.h"
+#include <glite/lb/srvbones.h>
+#include <glite/security/glite_gss.h>
 
 #include <stdsoap2.h>
-#include "glite/security/glite_gsplugin.h"
+#include <glite/security/glite_gsplugin.h>
 
 #include "conf.h"
 #include "db_ops.h"
@@ -39,8 +39,6 @@
 extern SOAP_NMAC struct Namespace jpis__namespaces[],jpps__namespaces[];
 extern SOAP_NMAC struct Namespace namespaces[] = { {NULL,NULL} };
 // namespaces[] not used here, but need to prevent linker to complain...
-
-extern void MyFeedIndex(glite_jpis_context_t ctx, glite_jp_is_conf *conf, long int uniqueid, char *dest);
 
 static int newconn(int,struct timeval *,void *);
 static int request(int,struct timeval *,void *);
@@ -192,8 +190,8 @@ int main(int argc, char *argv[])
 static int data_init(void **data)
 {
 	slave_data_t	*private;
-	char		*PS_URL = NULL;
 	long int	uniqueid;
+	char		*PS_URL = NULL;
 
 	private = calloc(sizeof(*private), 1);
 	glite_jpis_init_context(&private->ctx, ctx, conf);
@@ -207,28 +205,28 @@ static int data_init(void **data)
 	/* ask PS server for data */
 	do {
 		switch (glite_jpis_lockUninitializedFeed(private->ctx,&uniqueid,&PS_URL)) {
+			case 0:
+				// contact PS server, ask for data, save feedId and expiration
+				// to DB and unlock feed
+				if (MyFeedIndex(private->ctx, conf, uniqueid, PS_URL) != 0) {
+					printf("[%d] slave_init(): %s (%s), reconnecting later\n", getpid(), ctx->error->desc, ctx->error->source);
+					// error when connecting to PS
+					glite_jpis_tryReconnectFeed(private->ctx, uniqueid,
+						time(NULL) + RECONNECT_TIME);
+				}
+				free(PS_URL);
+				PS_URL = NULL;
+				break;
 			case ENOENT:
 				// no more feeds to initialize
 				return 0;
-			case ENOLCK:
+			default:
 				// error during locking
 				printf("[%d] slave_init(): Locking error.\n",getpid());
 				free(PS_URL);
 				glite_jpis_free_db(private->ctx);
 				glite_jpis_free_context(private->ctx);
 				return -1;
-			case ENOTCONN:
-				// error when connecting to PS
-				glite_jpis_tryReconnectFeed(private->ctx, uniqueid,
-					time(NULL) + RECONNECT_TIME);
-				break;
-			default:
-				// contact PS server, ask for data, save feedId and expiration
-				// to DB and unlock feed
-				MyFeedIndex(private->ctx, conf, uniqueid, PS_URL);
-				free(PS_URL);
-				PS_URL = NULL;
-				break;
 		}
 	} while (1);
 }

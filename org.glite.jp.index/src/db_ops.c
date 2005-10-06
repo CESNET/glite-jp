@@ -411,7 +411,7 @@ int glite_jpis_init_db(glite_jpis_context_t isctx) {
 	glite_jp_db_create_results(&myres, 2,
 		GLITE_JP_DB_TYPE_INT, NULL, &(isctx->param_uniqueid),
 		GLITE_JP_DB_TYPE_VARCHAR, NULL, isctx->param_ps, sizeof(isctx->param_ps), &isctx->param_ps_len);
-	if ((ret = glite_jp_db_prepare(jpctx, "SELECT uniqueid, source FROM feeds WHERE (locked=0) AND (feedid IS NULL) AND ((state <> " GLITE_JP_IS_STATE_ERROR_STR ") OR (expires >= ?))", &isctx->select_unlocked_feed_stmt, myparam, myres)) != 0) goto fail;
+	if ((ret = glite_jp_db_prepare(jpctx, "SELECT uniqueid, source FROM feeds WHERE (locked=0) AND (feedid IS NULL) AND ((state <> " GLITE_JP_IS_STATE_ERROR_STR ") OR (expires <= ?))", &isctx->select_unlocked_feed_stmt, myparam, myres)) != 0) goto fail;
 
 	// sql command: lock the feed (via uniqueid)
 	glite_jp_db_create_params(&myparam, 1, GLITE_JP_DB_TYPE_INT, &isctx->param_uniqueid);
@@ -484,8 +484,10 @@ void glite_jpis_free_db(glite_jpis_context_t ctx) {
 int glite_jpis_lockUninitializedFeed(glite_jpis_context_t ctx, long int *uniqueid, char **PS_URL)
 {
 	int ret;
+	time_t now;
 
-	glite_jp_db_set_time(ctx->param_expires, time(NULL));
+	now = time(NULL);
+	glite_jp_db_set_time(ctx->param_expires, now);
 	do {
 		switch (glite_jp_db_execute(ctx->select_unlocked_feed_stmt)) {
 		case -1: lprintf("error selecting unlocked feed\n"); return ENOLCK;
@@ -493,10 +495,10 @@ int glite_jpis_lockUninitializedFeed(glite_jpis_context_t ctx, long int *uniquei
 		default: break;
 		}
 		if (glite_jp_db_fetch(ctx->select_unlocked_feed_stmt) != 0) return ENOLCK;
-		lprintf("selected uninit. feed %lu\n", ctx->param_uniqueid);
+		lprintf("selected uninit. feed %ld\n", ctx->param_uniqueid);
 
 		ret = glite_jp_db_execute(ctx->lock_feed_stmt);
-		lprintf("locked %d feeds (uniqueid=%lu)\n", ret, ctx->param_uniqueid);
+		lprintf("locked %d feeds (uniqueid=%ld, time=%ld)\n", ret, ctx->param_uniqueid, now);
 	} while (ret != 1);
 
 	*uniqueid = ctx->param_uniqueid;
@@ -541,6 +543,7 @@ int glite_jpis_unlockFeed(glite_jpis_context_t ctx, long int uniqueid) {
 /* Saves TTL (when to reconnect if error occured) for given feed */
 
 int glite_jpis_tryReconnectFeed(glite_jpis_context_t ctx, long int uniqueid, time_t reconn_time) {
+	lprintf("reconnect, un=%ld, %ld\n", uniqueid, reconn_time);
 	ctx->param_uniqueid = uniqueid;
 	ctx->param_state = GLITE_JP_IS_STATE_ERROR;
 	glite_jp_db_set_time(ctx->param_expires, reconn_time);

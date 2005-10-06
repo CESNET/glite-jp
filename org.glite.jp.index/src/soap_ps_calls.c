@@ -76,7 +76,7 @@ static int find_dest_index(glite_jp_is_conf *conf, char *dest)
 
 
 // call PS FeedIndex for a given destination
-void MyFeedIndex(glite_jpis_context_t ctx, glite_jp_is_conf *conf, long int uniqueid, char *dest)
+int MyFeedIndex(glite_jpis_context_t ctx, glite_jp_is_conf *conf, long int uniqueid, char *dest)
 {
 	struct _jpelem__FeedIndex		in;
 	struct _jpelem__FeedIndexResponse 	out;
@@ -85,7 +85,8 @@ void MyFeedIndex(glite_jpis_context_t ctx, glite_jp_is_conf *conf, long int uniq
 //	struct xsd__base64Binary		blob;
 	int 					i, dest_index;
 	struct soap             		*soap = soap_new();
-
+	glite_jp_error_t err;
+	char *src;
 
 printf("MyFeedIndex for %s called\n", dest);
 
@@ -93,6 +94,7 @@ printf("MyFeedIndex for %s called\n", dest);
         soap_set_namespaces(soap,jpps__namespaces);
 
 	memset(&in, 0, sizeof(in));
+	memset(&err, 0, sizeof(err));
 
 	for (i=0; conf->attrs[i]; i++) ;
 	in.__sizeattributes = i;
@@ -102,12 +104,15 @@ printf("MyFeedIndex for %s called\n", dest);
 
 	for (i=0; conf->feeds[dest_index]->query[i]; i++);
 	in.__sizeconditions = i;
-	in.conditions = malloc(in.__sizeconditions * sizeof(*in.conditions));
+	in.conditions = soap_malloc(soap, in.__sizeconditions * sizeof(*in.conditions));
 
 	for (i=0; conf->feeds[dest_index]->query[i]; i++) {
 		if (glite_jpis_QueryCondToSoap(soap, conf->feeds[dest_index]->query[i], 
 				&(in.conditions[i])) != SOAP_OK) {
-			printf("MyFeedIndex() - error during conds conversion\n");
+			err.code = EINVAL;
+			err.desc = "error during conds conversion";
+			asprintf(&src, "%s/%s():%d", __FILE__, __FUNCTION__, __LINE__);
+			printf("%s\n", src);
 			goto err;
 		}
 	}
@@ -117,8 +122,12 @@ printf("MyFeedIndex for %s called\n", dest);
 
 	//if (!check_fault(soap,soap_call_jpsrv___FeedIndex(soap,dest,"",
 	if (soap_call___jpsrv__FeedIndex(soap,dest,"", &in, &out)) {
-		printf("soap_call___jpsrv__FeedIndex() returned error\n");
+		printf("\n");
 		glite_jpis_unlockFeed(ctx, uniqueid);
+		err.code = EIO;
+		err.desc = "soap_call___jpsrv__FeedIndex() returned error";
+		asprintf(&src, "%s/%s():%d", __FILE__, __FUNCTION__, __LINE__);
+		printf("%s\n", err.desc);
 		goto err;
 	}
 	else {
@@ -126,8 +135,13 @@ printf("MyFeedIndex for %s called\n", dest);
 		glite_jpis_initFeed(ctx, uniqueid, out.feedId, out.feedExpires);
 		glite_jpis_unlockFeed(ctx, uniqueid);
 	}
-	
+
+	return 0;
 err:
+	err.source = src;
+	glite_jp_stack_error(ctx->jpctx, &err);
+	free(src);
 	soap_end(soap);
+	return err.code;
 }
 
