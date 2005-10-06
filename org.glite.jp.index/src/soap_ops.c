@@ -16,6 +16,7 @@
 // uses common types from jpis_H.h (awful)
 #include "ws_ps_typeref.h"
 #include "ws_is_typeref.h"
+#include "context.h"
 
 #define	INDEXED_STRIDE	2	// how often realloc indexed attr result
 				// XXX: 2 is only for debugging, replace with e.g. 100

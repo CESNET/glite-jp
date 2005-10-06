@@ -33,15 +33,19 @@ int main(int argc, char *argv[]) {
 	long int uniqueid;
 	char *ps, *feedid;
 
+	jpctx = NULL;
+	isctx = NULL;
+	conf = NULL;
 	glite_jp_init_context(&jpctx);
-	if (glite_jpis_init_context(&isctx, jpctx) != 0) goto fail;
+	if (glite_jp_get_conf(argc, argv, NULL, &conf) != 0) goto fail;
+	if (glite_jpis_init_context(&isctx, jpctx, conf) != 0) goto fail;
+	if (glite_jpis_init_db(isctx) != 0) goto fail;
 
 	printf("dropping...\n");
-	if (glite_jpis_dropDatabase(jpctx) != 0) goto faildb;
+	if (glite_jpis_dropDatabase(isctx) != 0) goto faildb;
 
 	printf("initializing...\n");
-	if (glite_jp_get_conf(argc, argv, NULL, &conf) != 0) goto faildb;
-	if (glite_jpis_initDatabase(jpctx, conf) != 0) goto failconf;
+	if (glite_jpis_initDatabase(isctx) != 0) goto faildb;
 
 	printf("locking...\n");
 	do {
@@ -53,30 +57,33 @@ int main(int argc, char *argv[]) {
 			asprintf(&feedid, "feed://%lu", uniqueid + 3);
 			if (glite_jpis_initFeed(isctx, uniqueid, feedid, (time_t)10000) != 0) {
 				free(feedid);
-				goto failconf;
+				goto faildb;
 			}
 			free(feedid);
 
-			if (glite_jpis_unlockFeed(isctx, uniqueid) != 0) goto failconf;
+			if (glite_jpis_unlockFeed(isctx, uniqueid) != 0) goto faildb;
 		}
 	} while (ret == 0);
 
-	if (glite_jpis_tryReconnectFeed(isctx, uniqueid, time(NULL) + 10) != 0) goto failconf;
+	if (glite_jpis_tryReconnectFeed(isctx, uniqueid, time(NULL) + 10) != 0) goto faildb;
 
-	glite_jp_free_conf(conf);
+	glite_jpis_free_db(isctx);
 	glite_jpis_free_context(isctx);
+	glite_jp_free_conf(conf);
 	glite_jp_free_context(jpctx);
 
 	return 0;
 
-failconf:
-	glite_jp_free_conf(conf);
 faildb:
-	glite_jpis_free_context(isctx);
+	glite_jpis_free_db(isctx);
 fail:
 	printf("failed\n");
-	print_err(jpctx);
-	glite_jp_free_context(jpctx);
+	glite_jpis_free_context(isctx);
+	glite_jp_free_conf(conf);
+	if (jpctx) {
+		print_err(jpctx);
+		glite_jp_free_context(jpctx);
+	}
 
 	return 1;
 #endif

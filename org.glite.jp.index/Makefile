@@ -48,11 +48,11 @@ is_prefix:=jpis_
 ps_prefix:=jpps_
 
 SRCS:= conf.c bones_server.c soap_ops.c soap_ps_calls.c \
-	ws_ps_typeref.c ws_is_typeref.c db_ops.c \
+	ws_ps_typeref.c ws_is_typeref.c db_ops.c context.c \
 	${is_prefix}ServerLib.c \
 	${ps_prefix}ClientLib.c ${ps_prefix}C.c \
 
-EXA_SRCS:=jpis-test.c ${is_prefix}C.c ${is_prefix}Client.c
+EXA_SRCS:=jpis-test.c ${is_prefix}C.c ${is_prefix}Client.c context.c
 
 OBJS:=${SRCS:.c=.o}
 EXA_OBJS:=${EXA_SRCS:.c=.o}
@@ -86,7 +86,7 @@ ${daemon}: ${OBJS}
 ${example}: ${EXA_OBJS}
 	${LINK} -o $@ ${EXA_OBJS} ${GSOAPLIB} ${GLOBUS_LIBS}
 
-jpis-db-internal: jpis-db-internal.o db_ops.o conf.o
+jpis-db-internal: jpis-db-internal.o db_ops.o conf.o context.o
 	${LINK} -o $@ $+ ${COMMONLIB} ${SRVCOMMONLIB} ${GLOBUS_LIBS}
 
 JobProvenanceIS.xh: JobProvenanceIS.wsdl JobProvenanceTypes.wsdl typemap.dat

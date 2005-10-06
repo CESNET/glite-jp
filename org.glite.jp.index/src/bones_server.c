@@ -18,6 +18,7 @@
 #include "conf.h"
 #include "db_ops.h"
 #include "soap_ps_calls.h"
+#include "context.h"
 
 #include "soap_version.h"
 #include "jpis_H.h"
@@ -53,6 +54,7 @@ static struct glite_srvbones_service stab = {
 
 typedef struct {
 	glite_jpis_context_t ctx;
+	glite_jp_is_conf *conf;
 	struct soap *soap;
 } slave_data_t;
 
@@ -71,7 +73,7 @@ static glite_jp_is_conf		*conf;	// Let's make configuration visible to all slave
 
 int main(int argc, char *argv[])
 {
-	int			one = 1,opt,i;
+	int			one = 1,i;
 	edg_wll_GssStatus	gss_code;
 	struct sockaddr_in	a;
 	char			*config_file;
@@ -79,16 +81,21 @@ int main(int argc, char *argv[])
 
 
 	glite_jp_init_context(&ctx);
-	if (glite_jpis_init_context(&isctx, ctx) != 0) {
-		fprintf(stderr, "Connect DB failed: %s (%s)\n", ctx->error->desc, ctx->error->source);
-		glite_jp_free_context(ctx);
-		return 1;
-	}
 
 	/* Read config options/file */
 	// XXX: need add something meaningfull to src/conf.c !
 	config_file = NULL;
 	glite_jp_get_conf(argc, argv, config_file, &conf);
+	glite_jpis_init_context(&isctx, ctx, conf);
+
+	/* connect to DB */
+	if (glite_jpis_init_db(isctx) != 0) {
+		fprintf(stderr, "Connect DB failed: %s (%s)\n", ctx->error->desc, ctx->error->source);
+		glite_jpis_free_context(isctx);
+		glite_jp_free_context(ctx);
+		glite_jp_free_conf(conf);
+		return 1;
+	}
 
 	/* XXX preliminary support for plugins 
 	for (i=0; conf->plugins[i]; i++)
@@ -96,17 +103,21 @@ int main(int argc, char *argv[])
 	*/
 	
 
-	if (glite_jpis_dropDatabase(ctx) != 0) {
+	if (glite_jpis_dropDatabase(isctx) != 0) {
 		fprintf(stderr, "Drop DB failed: %s (%s)\n", ctx->error->desc, ctx->error->source);
+		glite_jpis_free_db(isctx);
 		glite_jpis_free_context(isctx);
 		glite_jp_free_context(ctx);
+		glite_jp_free_conf(conf);
 		return 1;
 	}
 
-	if (glite_jpis_initDatabase(ctx, conf) != 0) {
+	if (glite_jpis_initDatabase(isctx) != 0) {
 		fprintf(stderr, "Init DB failed: %s (%s)\n", ctx->error->desc, ctx->error->source);
+		glite_jpis_free_db(isctx);
 		glite_jpis_free_context(isctx);
 		glite_jp_free_context(ctx);
+		glite_jp_free_conf(conf);
 		return 1;
 	}
 
@@ -169,6 +180,7 @@ int main(int argc, char *argv[])
 	glite_srvbones_run(data_init,&stab,1 /* XXX: entries in stab */,debug);
 
 
+	glite_jpis_free_db(isctx);
 	glite_jp_free_conf(conf);
 	glite_jpis_free_context(isctx);
 	glite_jp_free_context(ctx);
@@ -184,7 +196,8 @@ static int data_init(void **data)
 	long int	uniqueid;
 
 	private = calloc(sizeof(*private), 1);
-	if (glite_jpis_init_context(&private->ctx, ctx) != 0) {
+	glite_jpis_init_context(&private->ctx, ctx, conf);
+	if (glite_jpis_init_db(private->ctx) != 0) {
 		printf("[%d] slave_init(): DB error: %s (%s)\n",getpid(),ctx->error->desc,ctx->error->source);
 		return -1;
 	}
@@ -201,6 +214,7 @@ static int data_init(void **data)
 				// error during locking
 				printf("[%d] slave_init(): Locking error.\n",getpid());
 				free(PS_URL);
+				glite_jpis_free_db(private->ctx);
 				glite_jpis_free_context(private->ctx);
 				return -1;
 			case ENOTCONN:
@@ -299,6 +313,7 @@ static int newconn(int conn,struct timeval *to,void *data)
 	return 0;
 
 cleanup:
+	glite_jpis_free_db(private->ctx);
 	glite_jpis_free_context(private->ctx);
 	glite_gsplugin_free_context(plugin_ctx);
 	soap_end(soap);
@@ -363,6 +378,7 @@ static int disconn(int conn,struct timeval *to,void *data)
 	slave_data_t		*private = (slave_data_t *)data;
 	struct soap		*soap = private->soap;
 
+	glite_jpis_free_db(private->ctx);
 	glite_jpis_free_context(private->ctx);
 	soap_end(soap); // clean up everything and close socket
 	

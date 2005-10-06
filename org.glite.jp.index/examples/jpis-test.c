@@ -64,7 +64,6 @@ static int check_fault(struct soap *soap,int err) {
 int main(int argc,char *argv[])
 {
 	char	*server = "http://localhost:8902";
-	int	opt;
 	struct soap	*soap = soap_new();
 
 	soap_init(soap);	

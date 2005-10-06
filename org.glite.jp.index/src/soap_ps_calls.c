@@ -11,6 +11,7 @@
 #include "conf.h"
 #include "db_ops.h"
 #include "ws_ps_typeref.h"
+#include "context.h"
 
 #include "stdsoap2.h"
 

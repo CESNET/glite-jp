@@ -24,6 +24,8 @@ typedef struct _glite_jp_is_conf {
 	char	**plugins;		// list of plugin.so's
 
 	glite_jp_is_feed	**feeds;	// null terminated list of feeds
+
+	char	*cs;
 } glite_jp_is_conf;
 
 

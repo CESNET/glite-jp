@@ -56,6 +56,7 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 
 	conf->feeds[1] = NULL;
 
+	conf->cs = getenv("GLITE_JPIS_DB");
 
 	*configuration = conf;
 
