@@ -179,26 +179,70 @@ end:
 }
 
 
-static int get_jobids(glite_jpis_context_t isctx, struct _jpelem__QueryJobs *in, char ***jobids)
+static int get_jobids(struct soap *soap, glite_jpis_context_t isctx, struct _jpelem__QueryJobs *in, char ***jobids)
 {
-	char 			*qa, *qb, *qbase, *query, *jid, **jids;
-	int 			i, ret;
+	char 			*qa, *qb, *qop, *qbase, *query, *jid, **jids;
+	int 			i, j, ret;
 	glite_jp_db_stmt_t	stmt;
+	glite_jp_queryop_t	op;
+	glite_jp_attrval_t	attr;
+
 
 	trio_asprintf(&qbase,"SELECT dg_jobid FROM jobs WHERE ");
 	
 	for (i=0; i < in->__sizeconditions; i++) {
 		if (i == 0) {
-			trio_asprintf(&qa,"jobs.jobid = attr_%|Ss.jobid", 
+			trio_asprintf(&qa,"jobs.jobid = attr_%|Ss.jobid AND (", 
 				str2md5(in->conditions[i]->attr));
 		}
 		else {
-			trio_asprintf(&qb,"%s AND jobs.jobid = attr_%|Ss.jobid", 
+			trio_asprintf(&qb,"%s AND jobs.jobid = attr_%|Ss.jobid AND (", 
 				qa, str2md5(in->conditions[i]->attr));
-			free(qa);
-			qa = qb;
-			qb = NULL;
-		}		
+			free(qa); qa = qb; qb = NULL;
+		}	
+	
+		for (j=0; j < in->conditions[i]->__sizerecord; j++) { 
+			glite_jpis_SoapToQueryOp(in->conditions[i]->record[j]->op, &op);
+			switch (op) {
+				case GLITE_JP_QUERYOP_EQUAL:
+					qop = strdup("=");
+					break;
+				case  GLITE_JP_QUERYOP_UNEQUAL:
+					qop = strdup("!=");
+					break;
+				default:
+					// unsupported query operator
+					goto err;
+					break;
+			}
+			if (in->conditions[i]->record[j]->value->string) {
+				attr.name = in->conditions[i]->attr;
+				attr.value = in->conditions[i]->record[j]->value->string;
+				attr.binary = 0;
+				glite_jpis_SoapToAttrOrig(soap,
+					in->conditions[i]->origin, &(attr.origin));
+				trio_asprintf(&qb,"%s OR attr_%|Ss.value %s %|Ss ",
+					qa, in->conditions[i]->attr, qop,
+					glite_jp_attrval_to_db_index(isctx->jpctx, &attr, 255));
+				free(qop);
+				free(qa); qa = qb; qb = NULL;
+			}
+			else {
+				attr.name = in->conditions[i]->attr;
+				attr.value = in->conditions[i]->record[j]->value->blob->__ptr;
+				attr.binary = 1;
+				attr.size = in->conditions[i]->record[j]->value->blob->__size;
+				glite_jpis_SoapToAttrOrig(soap,
+					in->conditions[i]->origin, &(attr.origin));
+				trio_asprintf(&qb,"%s OR attr_%|Ss.value %s %|Ss ",
+					qa, in->conditions[i]->attr, qop,
+					glite_jp_attrval_to_db_index(isctx->jpctx, &attr, 255));
+				free(qop);
+				free(qa); qa = qb; qb = NULL; 
+			}
+		}
+		trio_asprintf(&qb,"%s)",qa);
+		free(qa); qa = qb; qb = NULL;
 	}
 	trio_asprintf(&query, "%s%s;", qbase, qa);
 	free(qbase);
@@ -365,7 +409,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__QueryJobs(
 		return SOAP_ERR;
 	}
 
-	if ( get_jobids(isctx, in, &jobids) ) {
+	if ( get_jobids(soap, isctx, in, &jobids) ) {
 		return SOAP_ERR;
 	}
 

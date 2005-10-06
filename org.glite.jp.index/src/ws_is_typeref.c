@@ -10,7 +10,7 @@
 #include "ws_ps_typeref.h"
 
 
-static void SoapToQueryOp(const enum jptype__queryOp in, glite_jp_queryop_t *out)
+void glite_jpis_SoapToQueryOp(const enum jptype__queryOp in, glite_jp_queryop_t *out)
 {
         switch ( in )
         {
@@ -24,7 +24,7 @@ static void SoapToQueryOp(const enum jptype__queryOp in, glite_jp_queryop_t *out
         }
 }
 
-static void SoapToAttrOrig(struct soap *soap, const enum jptype__attrOrig *in, glite_jp_attr_orig_t *out)
+void glite_jpis_SoapToAttrOrig(struct soap *soap, const enum jptype__attrOrig *in, glite_jp_attr_orig_t *out)
 {
 	assert(out);
 
@@ -88,7 +88,7 @@ static int SoapToQueryCond(
 
 	for (i=0; i < in->__sizerecord; i++) {
 		qr[i].attr = strdup(in->attr);
-		SoapToQueryOp(in->record[i]->op, &(qr[i].op));
+		glite_jpis_SoapToQueryOp(in->record[i]->op, &(qr[i].op));
 
 		switch (qr[i].op) {
 		case GLITE_JP_QUERYOP_EXISTS:
@@ -107,10 +107,12 @@ static int SoapToQueryCond(
 			break;
 		}
 		
-		SoapToAttrOrig(soap, in->origin, &(qr[i].origin) );
+		glite_jpis_SoapToAttrOrig(soap, in->origin, &(qr[i].origin) );
 	}	
 	
 	*out = qr;
+
+	return 0;
 }
 
 /**
@@ -139,4 +141,6 @@ int glite_jpis_SoapToQueryConds(
 	}
 
 	*out = qr;
+	
+	return 0;
 }
