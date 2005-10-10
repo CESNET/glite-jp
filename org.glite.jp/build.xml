@@ -12,6 +12,9 @@
 
 	Revision history:
 	$Log$
+	Revision 1.7  2005/09/22 16:49:46  valtri
+	More places with dependencies.
+	
 	Revision 1.6  2005/09/22 10:47:58  valtri
 	jp.server-common dependency to build.xml too
 	
@@ -261,7 +264,7 @@
 		</if>
 	</target>
 
-	<target name="server-common" unless="setenvonly" depends="envset" >
+	<target name="server-common" unless="setenvonly" depends="envset, common" >
 		<if>
 			<isset property="small.memory" />
 			<then>
