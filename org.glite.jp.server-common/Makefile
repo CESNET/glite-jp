@@ -34,6 +34,10 @@ COMPILE:=libtool --mode=compile ${CC} ${CPPFLAGS} ${CFLAGS}
 LINK:=libtool --mode=link ${CC} -rpath ${stagedir}/lib ${LDFLAGS} 
 INSTALL:=libtool --mode=install install
 
+GLOBUS_LIBS:=-L${globus_prefix}/lib \
+	-lglobus_common_${nothrflavour} \
+	-lglobus_gssapi_gsi_${nothrflavour}
+
 # FIXME: to use libtool versioning correcty, we should have:
 #
 # current = major + minor + offset
@@ -64,12 +68,17 @@ else
 endif
 
 
-default all: compile
+default all: compile examples
 
 compile: ${LTLIB} ${STATICLIB}
 
 ${LTLIB} ${STATICLIB}: ${OBJS}
 	${LINK} ${version_info} -o $@ ${LOBJS} ${MYSQLIB}
+
+examples: db-test-int
+
+db-test-int: db-test-int.o
+	${LINK} -o $@ $+ ${STATICLIB} ${MYSQLIB} -lglite_jp_common ${GLOBUS_LIBS}
 
 check: 
 	-echo nothing yet
@@ -103,4 +112,4 @@ clean:
 %.o: %.c
 	${COMPILE} -c $< -o $@
 
-.PHONY: default all compile check doc stage dist distsrc distbin install clean
+.PHONY: default all compile examples check doc stage dist distsrc distbin install clean
