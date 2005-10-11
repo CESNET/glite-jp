@@ -102,6 +102,7 @@ distbin:
 	rm -rf tmpbuilddir
 	
 install:
+	-mkdir -p  ${PREFIX}/lib ${PREFIX}/include/${globalprefix}/${jpprefix}
 	${INSTALL} -m 755 ${LTLIB} ${PREFIX}/lib
 	for f in ${HDRS}; do \
 		${INSTALL} -m 644 ${top_srcdir}/interface/"$$f" ${PREFIX}/include/${globalprefix}/${jpprefix}; \
