@@ -34,7 +34,12 @@ GLOBUS_CFLAGS:=-I${globus_prefix}/include/${nothrflavour}
 CPPFLAGS:=-DDEBUG -D_GNU_SOURCE
 DEBUG:=-W -Wall -Wno-unused-parameter -Wno-unused-function -g -O0
 
-CFLAGS:=${CPPFLAGS} ${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${stagedir}/include ${GLOBUS_CFLAGS} -I${mysql_prefix}/include -I${mysql_prefix}/include/mysql
+dotless_soap_ver:=${shell echo ${gsoap_version} | tr -d . }
+GSOAPLIB:=-L${stagedir}/lib -lglite_security_gsoap_plugin_${dotless_soap_ver}_${nothrflavour}
+
+gsoap_bin_prefix:=${shell if [ -x  ${gsoap_prefix}/bin/soapcpp2 ]; then echo ${gsoap_prefix}/bin; else echo ${gsoap_prefix}; fi }
+
+CFLAGS:=${CPPFLAGS} ${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${gsoap_prefix} -I${stagedir}/include ${GLOBUS_CFLAGS} -I${mysql_prefix}/include -I${mysql_prefix}/include/mysql
 LDFLAGS:=-L${stagedir}/lib
 
 LINK:=libtool --mode=link ${CC} ${LDFLAGS} 
@@ -61,8 +66,6 @@ EXA_OBJS:=${EXA_SRCS:.c=.o}
 COMMONLIB:=-lglite_jp_common
 SRVCOMMONLIB:=-lglite_jp_server_common
 BONESLIB:=-lglite_lb_server_bones
-GSOAPLIB:=-lglite_security_gsoap_plugin_${nothrflavour} -lglite_security_gss_${nothrflavour} \
-	-L${gsoap_prefix}/lib -lgsoap${GSOAP_DEBUG} -L${ares_prefix}/lib -lares
 TRIOLIB:=-lglite_lb_trio
 
 ifneq (${mysql_prefix},/usr)
@@ -91,22 +94,22 @@ jpis-db-internal: jpis-db-internal.o db_ops.o conf.o context.o
 
 JobProvenanceIS.xh: JobProvenanceIS.wsdl JobProvenanceTypes.wsdl typemap.dat
 	cp  ${stagedir}/interface/JobProvenanceTypes.wsdl .
-	${gsoap_prefix}/bin/wsdl2h -t ${top_srcdir}/src/typemap.dat -c -o $@ $<
+	${gsoap_bin_prefix}/wsdl2h -t ${top_srcdir}/src/typemap.dat -c -o $@ $<
 	rm -f JobProvenanceTypes.wsdl
 
 JobProvenancePS.xh: %.xh: %.wsdl JobProvenanceTypes.wsdl typemap.dat
 	cp  ${stagedir}/interface/JobProvenanceTypes.wsdl .
-	${gsoap_prefix}/bin/wsdl2h  -t ${top_srcdir}/src/typemap.dat -c -o $@ $<
+	${gsoap_bin_prefix}/wsdl2h  -t ${top_srcdir}/src/typemap.dat -c -o $@ $<
 	rm -f JobProvenanceTypes.wsdl
 
 ${is_prefix}ClientLib.c ${is_prefix}Client.c \
 ${is_prefix}Server.c ${is_prefix}ServerLib.c  \
 ${is_prefix}C.c ${is_prefix}H.h: JobProvenanceIS.xh
-	${gsoap_prefix}/bin/soapcpp2 -n -w -c -p ${is_prefix} JobProvenanceIS.xh
+	${gsoap_bin_prefix}/soapcpp2 -n -w -c -p ${is_prefix} JobProvenanceIS.xh
 
 ${ps_prefix}Client.c ${ps_prefix}ClientLib.c  \
 ${ps_prefix}C.c ${ps_prefix}H.h: JobProvenancePS.xh
-	${gsoap_prefix}/bin/soapcpp2 -n -w -c -p ${ps_prefix} JobProvenancePS.xh
+	${gsoap_bin_prefix}/soapcpp2 -n -w -c -p ${ps_prefix} JobProvenancePS.xh
 
 
 #env_C.c env_Server.c:
@@ -126,7 +129,6 @@ stage: compile
 
 dist: distsrc distbin
 
-# FIXME: just copied from LB
 distsrc:
 	mkdir -p ${top_srcdir}/${package}-${version}
 	cd ${top_srcdir} && GLOBIGNORE="${package}-${version}" && cp -Rf * ${package}-${version}
@@ -140,32 +142,18 @@ distbin:
 	
 install:
 	-mkdir -p ${PREFIX}/bin ${PREFIX}/etc ${PREFIX}/etc/init.d
-	for p in bkserverd bkindex; do \
-		${INSTALL} -m 755 "glite_lb_$$p" "${PREFIX}/bin/glite-lb-$$p"; \
-	done
+	${INSTALL} -m 755 glite-jp-indexd ${PREFIX}/bin; \
 
-	for f in dbsetup.sql index.conf.template; do \
-		${INSTALL} -m 644 ${top_srcdir}/config/"glite-lb-$$f" ${PREFIX}/etc; \
-	done
-
-	${INSTALL} -m 755 ${top_srcdir}/config/startup ${PREFIX}/etc/init.d/glite-lb-bkserverd
+#	${INSTALL} -m 755 ${top_srcdir}/config/startup ${PREFIX}/etc/init.d/glite-jp-indexd
 
 clean:
 
 soap_ops.o bones_server.o simple_server.o: ${is_prefix}H.h ${ps_prefix}H.h
 
-# we have no real config.h but have to force gSoap not to use
-# linux ftime with broken (aka obsolete) DST information
-
-stdsoap2.o: ${gsoap_prefix}/devel/stdsoap2.c
-	test -f config.h || touch config.h
-	@echo 'The following warning "time_t (de)serialization is not MT safe on this platform" is harmless'
-	${CC} -o $@ -c -DHAVE_CONFIG_H ${CFLAGS} ${gsoap_prefix}/devel/stdsoap2.c
-
 soap_ops.o bones_server.o: soap_version.h
 
 soap_version.h:
-	${gsoap_prefix}/bin/soapcpp2 /dev/null
+	${gsoap_bin_prefix}/soapcpp2 /dev/null
 	perl -ne '$$. == 2 && /.*([0-9])\.([0-9])\.([0-9]).*/ && printf "#define GSOAP_VERSION %d%02d%02d\n",$$1,$$2,$$3' soapH.h >$@
 	-rm soapC.cpp soapH.h soapStub.h soapClient.cpp soapServer.cpp soapClientLib.cpp soapServerLib.cpp
 
