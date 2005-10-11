@@ -33,7 +33,7 @@ GLOBUS_CFLAGS:=-I${globus_prefix}/include/${nothrflavour}
 
 DEBUG:=-g -O0  -DDEBUG
 
-CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${stagedir}/include ${GLOBUS_CFLAGS} -I${mysql_prefix}/include -I${mysql_prefix}/include/mysql
+CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${gsoap_prefix} -I${stagedir}/include ${GLOBUS_CFLAGS} -I${mysql_prefix}/include -I${mysql_prefix}/include/mysql
 LDFLAGS:=-L${stagedir}/lib
 
 LINK:=libtool --mode=link ${CC} ${LDFLAGS} 
@@ -63,14 +63,15 @@ SRCS:= bones_server.c soap_ops.c \
 
 EXA_SRCS:=jpps-test.c ${ps_prefix}C.c ${ps_prefix}Client.c
 
+gsoap_bin_prefix:=${shell if [ -x  ${gsoap_prefix}/bin/soapcpp2 ]; then echo ${gsoap_prefix}/bin; else echo ${gsoap_prefix}; fi }
 
 OBJS:=${SRCS:.c=.o}
 EXA_OBJS:=${EXA_SRCS:.c=.o}
 
+dotless_soap_ver:=${shell echo ${gsoap_version} | tr -d . }
 COMMONLIB:=-lglite_jp_common
 BONESLIB:=-lglite_lb_server_bones
-GSOAPLIB:=-lglite_security_gsoap_plugin_${nothrflavour} -lglite_security_gss_${nothrflavour} \
-	-L${gsoap_prefix}/lib -lgsoap${GSOAP_DEBUG} -L${ares_prefix}/lib -lares
+GSOAPLIB:=-L${stagedir}/lib -lglite_security_gsoap_plugin_${dotless_soap_ver}_${nothrflavour} 
 TRIOLIB:=-lglite_jp_trio
 
 ifneq (${mysql_prefix},/usr)
@@ -95,23 +96,23 @@ ${example}: ${EXA_OBJS}
 
 JobProvenancePS.xh: %.xh: %.wsdl JobProvenanceTypes.wsdl typemap.dat
 	cp  ${stagedir}/interface/JobProvenanceTypes.wsdl .
-	${gsoap_prefix}/bin/wsdl2h  -t ${top_srcdir}/src/typemap.dat -c -o $@ $<
+	${gsoap_bin_prefix}/wsdl2h  -t ${top_srcdir}/src/typemap.dat -c -o $@ $<
 	rm -f JobProvenanceTypes.wsdl
 
 JobProvenanceIS.xh: %.xh: %.wsdl JobProvenanceTypes.wsdl typemap.dat
 	cp  ${stagedir}/interface/JobProvenanceTypes.wsdl .
-	${gsoap_prefix}/bin/wsdl2h  -t ${top_srcdir}/src/typemap.dat -c -o $@ $<
+	${gsoap_bin_prefix}/wsdl2h  -t ${top_srcdir}/src/typemap.dat -c -o $@ $<
 	rm -f JobProvenanceTypes.wsdl
 
 
 ${ps_prefix}Client.c ${ps_prefix}ClientLib.c  \
 ${ps_prefix}Server.c ${ps_prefix}ServerLib.c  \
 ${ps_prefix}C.c ${ps_prefix}H.h: JobProvenancePS.xh
-	${gsoap_prefix}/bin/soapcpp2 -n -w -c -p ${ps_prefix} JobProvenancePS.xh
+	${gsoap_bin_prefix}/soapcpp2 -n -w -c -p ${ps_prefix} JobProvenancePS.xh
 
 ${is_prefix}ClientLib.c ${is_prefix}Client.c \
 ${is_prefix}C.c ${is_prefix}H.h: JobProvenanceIS.xh
-	${gsoap_prefix}/bin/soapcpp2 -n -w -c -p ${is_prefix} JobProvenanceIS.xh
+	${gsoap_bin_prefix}/soapcpp2 -n -w -c -p ${is_prefix} JobProvenanceIS.xh
 
 soap_ops.o: ${ps_prefix}ServerLib.c soap_util.c
 
@@ -119,7 +120,7 @@ is_client.o: ${is_prefix}ClientLib.c soap_util.c
 
 env_C.c env_Server.c:
 	touch env.xh
-	${gsoap_prefix}/bin/soapcpp2 -w -c -p env_ env.xh
+	${gsoap_bin_prefix}/soapcpp2 -w -c -p env_ env.xh
 
 #$(SOAP_PREFIX)H.h $(SOAP_PREFIX)C.c: LB.xh
 #        $(GSOAP_BIN_PATH)/soapcpp2 -w -c -p $(SOAP_PREFIX) LB.xh
@@ -170,11 +171,11 @@ simple_server.o soap_ops.o jpps-test.o: ${ps_prefix}H.h
 # we have no real config.h but have to force gSoap not to use
 # linux ftime with broken (aka obsolete) DST information
 
-stdsoap2.o: ${gsoap_prefix}/devel/stdsoap2.c
-	test -f config.h || touch config.h
-	@echo 'The following warning "time_t (de)serialization is not MT safe on this platform" is harmless'
-	${CC} -o $@ -c -DWITH_NONAMESPACES -DHAVE_CONFIG_H ${CFLAGS} ${gsoap_prefix}/devel/stdsoap2.c
-
+# stdsoap2.o: ${gsoap_prefix}/devel/stdsoap2.c
+# 	test -f config.h || touch config.h
+# 	@echo 'The following warning "time_t (de)serialization is not MT safe on this platform" is harmless'
+# 	${CC} -o $@ -c -DWITH_NONAMESPACES -DHAVE_CONFIG_H ${CFLAGS} ${gsoap_prefix}/devel/stdsoap2.c
+# 
 
 glite-jp-tags.la: tags_plugin.lo
 	${SOLINK} -o $@ tags_plugin.lo
@@ -188,6 +189,6 @@ glite-jp-ftpdauth.la: ftpd_auth.lo mysql.lo
 soap_ops.o bones_server.o: soap_version.h
 
 soap_version.h:
-	${gsoap_prefix}/bin/soapcpp2 /dev/null
+	${gsoap_bin_prefix}/soapcpp2 /dev/null
 	perl -ne '$$. == 2 && /.*([0-9])\.([0-9])\.([0-9]).*/ && printf "#define GSOAP_VERSION %d%02d%02d\n",$$1,$$2,$$3' soapH.h >$@
 	-rm soapC.cpp soapH.h soapStub.h soapClient.cpp soapServer.cpp soapClientLib.cpp soapServerLib.cpp 

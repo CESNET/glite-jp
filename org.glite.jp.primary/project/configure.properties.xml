@@ -12,6 +12,9 @@
 
 	Revision history:
 	$Log$
+	Revision 1.4  2005/06/03 11:56:49  akrenek
+	make it build with the new ftp backend
+	
 	Revision 1.3  2004/11/22 13:55:30  dimeglio
 	First version of this file
 	Use central subsystem definition
@@ -46,6 +49,7 @@ globus_prefix=${with.globus.prefix}
 expat_prefix=${with.expat.prefix}
 ares_prefix=${with.ares.prefix}
 gsoap_prefix=${with.gsoap.prefix}
+gsoap_version=${ext.gsoap.version}
 mysql_prefix=${with.mysql.prefix}
 mysql_version=${ext.mysql.version}
 thrflavour=${with.globus.thr.flavor}
