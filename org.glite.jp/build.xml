@@ -12,6 +12,9 @@
 
 	Revision history:
 	$Log$
+	Revision 1.8  2005/10/10 11:07:09  valtri
+	Make autobuilds happy.
+	
 	Revision 1.7  2005/09/22 16:49:46  valtri
 	More places with dependencies.
 	
@@ -200,6 +203,42 @@
 
 	<!-- component targets definitions tag = do not remove = -->
 
+	<target name="security.gsoap-plugin" unless="setenvonly" depends="envset">
+		<if>
+			<isset property="small.memory"/>
+			<then>
+				<exec dir="${security.subsystem.dir}" executable="${antExec}" failonerror="${failonerror}">
+					<arg line="gsoap-plugin -Dtarget=${target} -Dsmall.memory=true -Dbootstrap=${bootstrap} -Dfailonerror=${failonerror} -Ddo.cvs.tag=${do.cvs.tag}"/>
+				</exec>
+			</then>
+			<else>
+				<ant dir="${security.subsystem.dir}"
+        				target="gsoap-plugin"
+        				inheritall="false" >
+        				<property name="target" value="${target}"/>
+				</ant>
+			</else>
+		</if>
+ 	</target>
+
+	<target name="lb.server-bones" unless="setenvonly" depends="envset">
+		<if>
+			<isset property="small.memory"/>
+			<then>
+				<exec dir="${lb.subsystem.dir}" executable="${antExec}" failonerror="${failonerror}">
+					<arg line="server-bones -Dtarget=${target} -Dsmall.memory=true -Dbootstrap=${bootstrap} -Dfailonerror=${failonerror} -Ddo.cvs.tag=${do.cvs.tag}"/>
+				</exec>
+			</then>
+			<else>
+				<ant dir="${lb.subsystem.dir}"
+        				target="server-bones"
+        				inheritall="false" >
+        				<property name="target" value="${target}"/>
+				</ant>
+			</else>
+		</if>
+ 	</target>
+
 	<target name="ws-interface" unless="setenvonly" depends="envset" >
 		<if>
 			<isset property="small.memory" />
@@ -232,7 +271,7 @@
 		</if>
 	</target>
 
-	<target name="index" unless="setenvonly" depends="envset, common, server-common" >
+	<target name="index" unless="setenvonly" depends="envset, common, server-common,security.gsoap-plugin,lb.server-bones" >
 		<if>
 			<isset property="small.memory" />
 			<then>
@@ -248,7 +287,7 @@
 		</if>
 	</target>
 
-	<target name="primary" unless="setenvonly" depends="envset, ws-interface, common, server-common" >
+	<target name="primary" unless="setenvonly" depends="envset, ws-interface, common, server-common,security.gsoap-plugin,lb.server-bones" >
 		<if>
 			<isset property="small.memory" />
 			<then>
