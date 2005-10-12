@@ -191,15 +191,8 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 	trio_asprintf(&qbase,"SELECT dg_jobid FROM jobs WHERE ");
 	
 	for (i=0; i < in->__sizeconditions; i++) {
-		if (i == 0) {
-			trio_asprintf(&qa,"jobs.jobid = attr_%|Ss.jobid AND (", 
-				str2md5(in->conditions[i]->attr));
-		}
-		else {
-			trio_asprintf(&qb,"%s AND jobs.jobid = attr_%|Ss.jobid AND (", 
-				qa, str2md5(in->conditions[i]->attr));
-			free(qa); qa = qb; qb = NULL;
-		}	
+		trio_asprintf(&qa,"%s jobs.jobid = attr_%|Ss.jobid AND (", 
+			(i ? "AND" : ""), str2md5(in->conditions[i]->attr));
 	
 		for (j=0; j < in->conditions[i]->__sizerecord; j++) { 
 			glite_jpis_SoapToQueryOp(in->conditions[i]->record[j]->op, &op);
@@ -221,8 +214,8 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 				attr.binary = 0;
 				glite_jpis_SoapToAttrOrig(soap,
 					in->conditions[i]->origin, &(attr.origin));
-				trio_asprintf(&qb,"%s OR attr_%|Ss.value %s %|Ss ",
-					qa, in->conditions[i]->attr, qop,
+				trio_asprintf(&qb,"%s %s attr_%|Ss.value %s %|Ss ",
+					qa, (j ? "OR" : ""), str2md5(in->conditions[i]->attr), qop,
 					glite_jp_attrval_to_db_index(ctx->jpctx, &attr, 255));
 				free(qop);
 				free(qa); qa = qb; qb = NULL;
@@ -234,8 +227,8 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 				attr.size = in->conditions[i]->record[j]->value->blob->__size;
 				glite_jpis_SoapToAttrOrig(soap,
 					in->conditions[i]->origin, &(attr.origin));
-				trio_asprintf(&qb,"%s OR attr_%|Ss.value %s %|Ss ",
-					qa, in->conditions[i]->attr, qop,
+				trio_asprintf(&qb,"%s %s attr_%|Ss.value %s %|Ss ",
+					qa, (j ? "OR" : ""), str2md5(in->conditions[i]->attr), qop,
 					glite_jp_attrval_to_db_index(ctx->jpctx, &attr, 255));
 				free(qop);
 				free(qa); qa = qb; qb = NULL; 
