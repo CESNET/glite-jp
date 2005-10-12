@@ -70,7 +70,7 @@ int main(int argc,char *argv[])
 	soap_set_namespaces(soap, jpis__namespaces);
 
 	soap_register_plugin(soap,glite_gsplugin);
-
+goto query;
 	// test calls of server functions
 	{
 	// this call is issued by JPPS
@@ -118,6 +118,7 @@ int main(int argc,char *argv[])
 		check_fault(soap,
 			soap_call___jpsrv__UpdateJobs(soap,server,"",&in,&out));
 	}
+query:
 	{
 	// this call is issued by user
 		struct _jpelem__QueryJobs		in;
@@ -133,16 +134,16 @@ int main(int argc,char *argv[])
 		
 		cond = soap_malloc(soap, sizeof(*cond));
 		memset(cond, 0, sizeof(*cond));
-		cond->attr = soap_strdup(soap, "date");
+		cond->attr = soap_strdup(soap, "location");
 		cond->origin = NULL;
 		cond->__sizerecord = 1;
 		cond->record = soap_malloc(soap, sizeof(*(cond->record)));
 
 		rec = soap_malloc(soap, sizeof(*rec));
 		memset(rec, 0, sizeof(*rec));
-		rec->op = jptype__queryOp__GREATER;
+		rec->op = jptype__queryOp__EQUAL;
 		rec->value = soap_malloc(soap, sizeof(*(rec->value)));
-		rec->value->string = soap_strdup(soap, "0");
+		rec->value->string = soap_strdup(soap, "scientific.civ.zcu.cz");
 		rec->value->blob = NULL;
 		
 		*(cond->record) = rec;
