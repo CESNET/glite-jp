@@ -42,7 +42,8 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 	conf->feeds = calloc(2, sizeof(*(conf->feeds)));
 	
 	conf->feeds[0] = calloc(1, sizeof(**(conf->feeds)));
-	conf->feeds[0]->PS_URL = strdup("http://umbar-test.ics.muni.cz:8901");
+//	conf->feeds[0]->PS_URL = strdup("http://umbar.ics.muni.cz:8901");
+	conf->feeds[0]->PS_URL = strdup("http://localhost:8901");
 
 	// all job since Epoche
 	conf->feeds[0]->query = calloc(2,sizeof(*conf->feeds[0]->query));

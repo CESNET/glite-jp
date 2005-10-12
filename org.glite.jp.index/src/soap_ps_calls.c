@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <fcntl.h>
+#include <assert.h>
 
 #include "glite/jp/types.h"
 #include "glite/jp/context.h"
@@ -58,6 +59,48 @@ static void err2fault(const glite_jp_context_t ctx,struct soap *soap)
 	else soap->fault->detail = detail;
 }
 
+
+static int check_fault(struct soap *soap,int err) {
+	struct SOAP_ENV__Detail *detail;
+	struct jptype__genericFault	*f;
+	char	*reason,indent[200] = "  ";
+
+	switch(err) {
+		case SOAP_OK: puts("OK");
+			      break;
+		case SOAP_FAULT:
+		case SOAP_SVR_FAULT:
+			if (soap->version == 2) {
+				detail = soap->fault->SOAP_ENV__Detail;
+				reason = soap->fault->SOAP_ENV__Reason;
+			}
+			else {
+				detail = soap->fault->detail;
+				reason = soap->fault->faultstring;
+			}
+			fputs(reason,stderr);
+			putc('\n',stderr);
+			assert(detail->__type == SOAP_TYPE__genericFault);
+#if GSOAP_VERSION >=20700
+			f = ((struct _genericFault *) detail->fault)
+#else
+			f = ((struct _genericFault *) detail->value)
+#endif
+				-> jpelem__genericFault;
+
+			while (f) {
+				fprintf(stderr,"%s%s: %s (%s)\n",indent,
+						f->source,f->text,f->description);
+				f = f->reason;
+				strcat(indent,"  ");
+			}
+			return -1;
+
+		default: soap_print_fault(soap,stderr);
+			 return -1;
+	}
+	return 0;
+}
 
 
 /*----------------------*/
@@ -120,8 +163,7 @@ printf("MyFeedIndex for %s called\n", dest);
 	in.history = conf->feeds[dest_index]->history;
 	in.continuous = conf->feeds[dest_index]->continuous;
 
-	//if (!check_fault(soap,soap_call_jpsrv___FeedIndex(soap,dest,"",
-	if (soap_call___jpsrv__FeedIndex(soap,dest,"", &in, &out)) {
+	if (check_fault(soap,soap_call___jpsrv__FeedIndex(soap,dest,"", &in, &out)) != 0) {
 		printf("\n");
 		glite_jpis_unlockFeed(ctx, uniqueid);
 		err.code = EIO;
