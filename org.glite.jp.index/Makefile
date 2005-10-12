@@ -35,7 +35,7 @@ CPPFLAGS:=-DDEBUG -D_GNU_SOURCE
 DEBUG:=-W -Wall -Wno-unused-parameter -Wno-unused-function -g -O0
 
 dotless_soap_ver:=${shell echo ${gsoap_version} | tr -d . }
-GSOAPLIB:=-L${stagedir}/lib -lglite_security_gsoap_plugin_${dotless_soap_ver}_${nothrflavour}
+GSOAPLIB:=-L${stagedir}/lib -lglite_security_gsoap_plugin_${dotless_soap_ver}_${nothrflavour} -L${ares_prefix}/lib -lares
 
 gsoap_bin_prefix:=${shell if [ -x  ${gsoap_prefix}/bin/soapcpp2 ]; then echo ${gsoap_prefix}/bin; else echo ${gsoap_prefix}; fi }
 
