@@ -199,6 +199,7 @@ static int data_init(void **data)
 		printf("[%d] slave_init(): DB error: %s (%s)\n",getpid(),ctx->error->desc,ctx->error->source);
 		return -1;
 	}
+
 	private->soap = soap_new();
 	printf("[%d] slave started\n",getpid());
 
@@ -219,6 +220,7 @@ static int data_init(void **data)
 				break;
 			case ENOENT:
 				// no more feeds to initialize
+				*data = (void *) private;
 				return 0;
 			default:
 				// error during locking
