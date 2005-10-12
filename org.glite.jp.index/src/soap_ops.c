@@ -158,8 +158,7 @@ static int checkIndexedConditions(glite_jpis_context_t ctx, struct _jpelem__Quer
 				((i / INDEXED_STRIDE) * INDEXED_STRIDE + 1)  
 				* sizeof(*indexed_attrs));
 		}
-		i++
-		indexed_attrs[i] = strdup(ctx->param_indexed);
+		indexed_attrs[i++] = strdup(ctx->param_indexed);
         }
 
 	for (k=0; k < in->__sizeconditions; k++) {
