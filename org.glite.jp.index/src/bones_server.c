@@ -40,21 +40,23 @@ extern SOAP_NMAC struct Namespace jpis__namespaces[],jpps__namespaces[];
 extern SOAP_NMAC struct Namespace namespaces[] = { {NULL,NULL} };
 // namespaces[] not used here, but need to prevent linker to complain...
 
-static int newconn(int,struct timeval *,void *);
-static int request(int,struct timeval *,void *);
+int newconn(int,struct timeval *,void *);
+int request(int,struct timeval *,void *);
 static int reject(int);
 static int disconn(int,struct timeval *,void *);
-static int data_init(void **data);
+int data_init(void **data);
 
 static struct glite_srvbones_service stab = {
 	"JP Index Server", -1, newconn, request, reject, disconn
 };
 
+/*
 typedef struct {
 	glite_jpis_context_t ctx;
 	glite_jp_is_conf *conf;
 	struct soap *soap;
 } slave_data_t;
+*/
 
 static time_t 		cert_mtime;
 static char 		*server_cert, *server_key, *cadir;
@@ -187,7 +189,7 @@ int main(int argc, char *argv[])
 }
 
 /* slave's init comes here */	
-static int data_init(void **data)
+int data_init(void **data)
 {
 	slave_data_t	*private;
 	long int	uniqueid;
@@ -233,7 +235,7 @@ static int data_init(void **data)
 	} while (1);
 }
 
-static int newconn(int conn,struct timeval *to,void *data)
+int newconn(int conn,struct timeval *to,void *data)
 {
 	slave_data_t     *private = (slave_data_t *)data;
 	struct soap		*soap = private->soap;
@@ -250,7 +252,7 @@ static int newconn(int conn,struct timeval *to,void *data)
 
 	soap_init2(soap,SOAP_IO_KEEPALIVE,SOAP_IO_KEEPALIVE);
 	soap_set_namespaces(soap,jpis__namespaces);
-	soap->user = (void *) ctx;
+	soap->user = (void *) private;
 
 /* not yet: client to JP Storage Server
  * probably wil come to other place, just not forget it....
@@ -325,7 +327,7 @@ cleanup:
 	return ret;
 }
 
-static int request(int conn,struct timeval *to,void *data)
+int request(int conn,struct timeval *to,void *data)
 {
 	slave_data_t		*private = (slave_data_t *)data;
 	struct soap		*soap = private->soap;

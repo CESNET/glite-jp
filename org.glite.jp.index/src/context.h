@@ -17,6 +17,12 @@ typedef struct _glite_jpis_context {
 	void *param_expires;
 } *glite_jpis_context_t;
 
+typedef struct _slave_data_t{
+        glite_jpis_context_t ctx;
+        glite_jp_is_conf *conf;
+        struct soap *soap;
+} slave_data_t;
+
 int glite_jpis_init_context(glite_jpis_context_t *isctx, glite_jp_context_t jpctx, glite_jp_is_conf *conf);
 void glite_jpis_free_context(glite_jpis_context_t ctx);
 #endif
