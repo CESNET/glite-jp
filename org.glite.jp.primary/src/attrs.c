@@ -116,7 +116,7 @@ glite_jpps_get_attrs(glite_jp_context_t ctx,const char *job,char **attr,int natt
 		if (nnames < 0) continue; /* XXX: error ignored */
 
 		if (nnames > 0) {
-			files = realloc(files,nfiles+nnames+1 * sizeof *files);
+			files = realloc(files,(nfiles+nnames+1) * sizeof *files);
 			for (j=0; j<nnames; j++) {
 				files[nfiles].class_idx = i;
 				files[nfiles++].name = names[j];
