@@ -199,13 +199,21 @@ const char *glite_jp_attrval_db_type_index(glite_jp_context_t ctx,const char *at
 	return ap->db_type_index(ap->pctx,attr,len);
 }
 
+/* XXX: UNIX time, should be ISO blahblah */
 time_t glite_jp_attr2time(const char *a)
 {
-	abort();
+	long	t;
+
+	sscanf(a,"%ld",&t);
+	return t;
 }
 
+/* XXX: UNIX time, should be ISO blahblah */
 char * glite_jp_time2attr(time_t t)
 {
-	abort();
+	char	*r;
+
+	trio_asprintf(&r,"%ld",(long) t);
+	return r;
 }
 
