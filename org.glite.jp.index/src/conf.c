@@ -24,10 +24,11 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 	// lb.server/build/jp_job_attrs.h (created when build plugin)
 	// jp.common/interfaces/known_attr.h
 
-	conf->attrs = calloc(4, sizeof(*conf->attrs));
+	conf->attrs = calloc(5, sizeof(*conf->attrs));
 	conf->attrs[0] = strdup("http://egee.cesnet.cz/en/Schema/JP/System:owner");
 	conf->attrs[1] = strdup("http://egee.cesnet.cz/en/Schema/JP/System:jobId");
 	conf->attrs[2] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus");
+	conf->attrs[3] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:user");
 
 	conf->indexed_attrs = calloc(3, sizeof(*conf->indexed_attrs));
 	conf->indexed_attrs[0] = strdup("http://egee.cesnet.cz/en/Schema/JP/System:owner");

@@ -229,7 +229,7 @@ static int get_op(const enum jptype__queryOp in, char **out)
 
 static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpelem__QueryJobs *in, char ***jobids, char *** ps_list)
 {
-	char 			*qa = NULL, *qb = NULL, *qop = NULL,
+	char 			*qa = NULL, *qb = NULL, *qop = NULL, *attr_md5,
 				*qwhere = NULL, *query = NULL, *res[2], 
 				**jids = NULL, **pss = NULL, **attr_tables = NULL;
 	int 			i, j, ret;
@@ -238,12 +238,13 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 
 
 	for (i=0; i < in->__sizeconditions; i++) {
+		attr_md5 = str2md5(in->conditions[i]->attr);
 		trio_asprintf(&qa,"%s jobs.jobid = attr_%|Ss.jobid AND (", 
-			(i ? "AND" : ""), str2md5(in->conditions[i]->attr));
+			(i ? "AND" : ""), attr_md5);
 	
 		for (j=0; j < in->conditions[i]->__sizerecord; j++) { 
 			if (get_op(in->conditions[i]->record[j]->op, &qop)) goto err;
-			add_attr_table(str2md5(in->conditions[i]->attr), &attr_tables);
+			add_attr_table(attr_md5, &attr_tables);
 
 			if (in->conditions[i]->record[j]->value->string) {
 				attr.name = in->conditions[i]->attr;
@@ -252,7 +253,7 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 				glite_jpis_SoapToAttrOrig(soap,
 					in->conditions[i]->origin, &(attr.origin));
 				trio_asprintf(&qb,"%s %s attr_%|Ss.value %s \"%|Ss\" ",
-					qa, (j ? "OR" : ""), str2md5(in->conditions[i]->attr), qop,
+					qa, (j ? "OR" : ""), attr_md5, qop,
 					glite_jp_attrval_to_db_index(ctx->jpctx, &attr, 255));
 				free(qop);
 				free(qa); qa = qb; qb = NULL;
@@ -265,11 +266,12 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 				glite_jpis_SoapToAttrOrig(soap,
 					in->conditions[i]->origin, &(attr.origin));
 				trio_asprintf(&qb,"%s %s attr_%|Ss.value %s \"%|Ss\" ",
-					qa, (j ? "OR" : ""), str2md5(in->conditions[i]->attr), qop,
+					qa, (j ? "OR" : ""), attr_md5, qop,
 					glite_jp_attrval_to_db_index(ctx->jpctx, &attr, 255));
 				free(qop);
 				free(qa); qa = qb; qb = NULL; 
 			}
+			free(attr_md5);
 		}
 		trio_asprintf(&qb,"%s)",qa);
 		free(qa); qa = qb; qb = NULL;
@@ -279,7 +281,7 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 	qa = strdup("");
 
 	for (i=0; (attr_tables && attr_tables[i]); i++) {
-		trio_asprintf(&qb,"%s, %s", qa, attr_tables[i]);
+		trio_asprintf(&qb,"%s, attr_%s", qa, attr_tables[i]);
 		free(qa); qa = qb; qb = NULL;
 	}
 

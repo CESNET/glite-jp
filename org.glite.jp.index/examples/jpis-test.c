@@ -63,7 +63,8 @@ static int check_fault(struct soap *soap,int err) {
 
 int main(int argc,char *argv[])
 {
-	char	*server = "http://localhost:8902";
+	//char	*server = "http://localhost:8902";
+	char	*server = "http://localhost:10005";
 	struct soap	*soap = soap_new();
 
 	soap_init(soap);	
@@ -134,7 +135,7 @@ query:
 		
 		cond = soap_malloc(soap, sizeof(*cond));
 		memset(cond, 0, sizeof(*cond));
-		cond->attr = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/JP/System:owner");
+		cond->attr = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus");
 		cond->origin = NULL;
 		cond->__sizerecord = 1;
 		cond->record = soap_malloc(soap, sizeof(*(cond->record)));
@@ -143,7 +144,7 @@ query:
 		memset(rec, 0, sizeof(*rec));
 		rec->op = jptype__queryOp__EQUAL;
 		rec->value = soap_malloc(soap, sizeof(*(rec->value)));
-		rec->value->string = soap_strdup(soap, "/O=CESNET/O=Masaryk University/CN=Milos Mulac");
+		rec->value->string = soap_strdup(soap, "Cancelled");
 		rec->value->blob = NULL;
 		
 		*(cond->record) = rec;
@@ -153,9 +154,9 @@ query:
 		in.attributes = soap_malloc(soap,
 			in.__sizeattributes *
 			sizeof(*(in.attributes)));
-		in.attributes[0] = soap_strdup(soap, "owner");
-		in.attributes[1] = soap_strdup(soap, "date");
-		in.attributes[2] = soap_strdup(soap, "location");
+		in.attributes[0] = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/JP/System:owner");
+		in.attributes[1] = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/JP/System:jobId");
+		in.attributes[2] = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus");
 
 		memset(&out, 0, sizeof(out));
 
