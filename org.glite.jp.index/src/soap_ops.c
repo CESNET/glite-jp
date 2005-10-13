@@ -194,13 +194,13 @@ static void add_attr_table(char *new, char ***attr_tables)
 {
 	int	i;
 	
-	for (i=0; (*attr_tables && *attr_tables[i]); i++) {
-		if (!strcmp(*attr_tables[i], new)) return;
+	for (i=0; (*attr_tables && (*attr_tables)[i]); i++) {
+		if (!strcmp((*attr_tables)[i], new)) return;
 	}
 
 	*attr_tables = realloc((*attr_tables), (i+2) * sizeof(**attr_tables));
-	*attr_tables[i] = strdup(new);
-	*attr_tables[i+1] = NULL;
+	(*attr_tables)[i] = strdup(new);
+	(*attr_tables)[i+1] = NULL;
 }	
 
 /* transform soap enum queryOp to mysql quivalent */
@@ -282,9 +282,8 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 		trio_asprintf(&qb,"%s, %s", qa, attr_tables[i]);
 		free(qa); qa = qb; qb = NULL;
 	}
-// XXX : memory destroyed somewhere (add_attr_table commented out too :(
-	trio_asprintf(&query, "SELECT dg_jobid FROM jobs%s WHERE %s;", qa, qwhere);
-//trio_asprintf(&query, "SELECT dg_jobid FROM jobs%s WHERE %s;", ",attr_d5189de027922f81005951e6efe0efd5", qwhere);
+
+	trio_asprintf(&query, "SELECT dg_jobid,ps FROM jobs%s WHERE %s;", qa, qwhere);
 	free(qwhere);
 	free(qa);
 	
@@ -314,6 +313,7 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 	} 
 
 	if ( ret < 0 ) goto err;
+
 	glite_jp_db_freestmt(&stmt);	
 
 	*jobids = jids;
