@@ -79,12 +79,12 @@ int fb_from_db(void *ctx,const char *str,glite_jp_attrval_t *attr)
 	switch (str[0]) {
 		case 'B':
 			attr->value = malloc(osize = strlen(str) * 3/4 + 4);
-			attr->size = base64_decode(str,attr->value+2,osize);
+			attr->size = base64_decode(str,str+2,osize);
 			assert(attr->size >= 0);
 			attr->binary = 1;
 			break;
 		case 'S':
-			attr->value = strdup(attr->value + 2);
+			attr->value = strdup(str + 2);
 			attr->size = 0;
 			attr->binary = 0;
 			break;
