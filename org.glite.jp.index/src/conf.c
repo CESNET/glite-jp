@@ -19,14 +19,18 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 
 
 	conf = calloc(1, sizeof(*conf));
+	
+	// prefixes & attributes defined in:
+	// lb.server/build/jp_job_attrs.h (created when build plugin)
+	// jp.common/interfaces/known_attr.h
 
 	conf->attrs = calloc(4, sizeof(*conf->attrs));
-	conf->attrs[0] = strdup("http://egee.cesnet.cz/en/WSDL/jp-system:owner");
-	conf->attrs[1] = strdup("http://egee.cesnet.cz/en/WSDL/jp-system:jobId");
+	conf->attrs[0] = strdup("http://egee.cesnet.cz/en/Schema/JP/System:owner");
+	conf->attrs[1] = strdup("http://egee.cesnet.cz/en/Schema/JP/System:jobId");
 	conf->attrs[2] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus");
 
 	conf->indexed_attrs = calloc(3, sizeof(*conf->indexed_attrs));
-	conf->indexed_attrs[0] = strdup("http://egee.cesnet.cz/en/WSDL/jp-system:owner");
+	conf->indexed_attrs[0] = strdup("http://egee.cesnet.cz/en/Schema/JP/System:owner");
 	conf->indexed_attrs[1] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus");
 
 	// XXX: some plugin names should come here in future
