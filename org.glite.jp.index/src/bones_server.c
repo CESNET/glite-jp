@@ -63,7 +63,7 @@ static char 		*server_cert, *server_key, *cadir;
 static gss_cred_id_t 	mycred = GSS_C_NO_CREDENTIAL;
 static char 		*mysubj;
 
-static char 		*port = "8902";
+static char 		*port = GLITE_JPIS_DEFAULT_PORT_STR;
 static int 		debug = 1;
 
 static glite_jp_context_t	ctx;

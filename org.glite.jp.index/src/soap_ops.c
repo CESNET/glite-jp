@@ -85,6 +85,8 @@ static int updateJob(glite_jpis_context_t ctx, struct jptype__jobRecord *jobAttr
 
 	if (jobAttrs->remove) assert(*(jobAttrs->remove) == 0);
 
+	if ((ret = glite_jpis_lazyInsertJob(ctx, jobAttrs->jobid)) != 0) return ret;
+
 	for (iattrs = 0; iattrs < jobAttrs->__sizeattributes; iattrs++) {
 		attr = jobAttrs->attributes[iattrs];
 		glite_jpis_SoapToAttrVal(&av, attr);

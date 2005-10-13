@@ -129,6 +129,7 @@ void glite_jpis_SoapToAttrVal(glite_jp_attrval_t *av, const struct jptype__attrV
 		av->size =attr->value->blob->__size ;
 	} else {
 		av->size = -1;
+		av->value = attr->value->string;
 	}
 	SoapToAttrOrig(&av->origin, attr->origin);
 	av->origin_detail = attr->originDetail;

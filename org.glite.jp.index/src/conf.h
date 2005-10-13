@@ -6,6 +6,7 @@
 
 #include <glite/jp/types.h>
 
+#define GLITE_JPIS_DEFAULT_PORT_STR "8902"
 
 typedef struct _glite_jp_is_feed {
 	char    		*PS_URL;	//URLs of Primary Storage servers

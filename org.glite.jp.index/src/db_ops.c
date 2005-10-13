@@ -453,6 +453,19 @@ int glite_jpis_init_db(glite_jpis_context_t isctx) {
 		GLITE_JP_DB_TYPE_VARCHAR, NULL, &isctx->param_indexed,  sizeof(isctx->param_indexed), &isctx->param_indexed_len);
 	if ((ret = glite_jp_db_prepare(jpctx, "SELECT name FROM attrs WHERE (indexed=1)", &isctx->select_info_attrs_indexed, NULL, myres)) != 0) goto fail;
 
+	// sql command: check for job with jobid
+	glite_jp_db_create_params(&myparam, 1,
+		GLITE_JP_DB_TYPE_CHAR, &isctx->param_jobid, &isctx->param_jobid_len);
+	if ((glite_jp_db_prepare(jpctx, "SELECT jobid FROM jobs WHERE jobid=?", &isctx->select_jobid_stmt, myparam, NULL)) != 0) goto fail;
+
+	// sql command: insert the job
+	glite_jp_db_create_params(&myparam, 3,
+		GLITE_JP_DB_TYPE_CHAR, &isctx->param_jobid, &isctx->param_jobid_len,
+		GLITE_JP_DB_TYPE_VARCHAR, &isctx->param_dg_jobid, &isctx->param_dg_jobid_len,
+		GLITE_JP_DB_TYPE_VARCHAR, &isctx->param_ps, &isctx->param_ps_len);
+	// XXX: as attribute?
+	if ((glite_jp_db_prepare(jpctx, "INSERT INTO jobs (jobid, dg_jobid, ownerid, ps) VALUES (?, ?, 'XXX: unknown', ?)", &isctx->insert_job_stmt, myparam, NULL)) != 0) goto fail;
+
 	return 0;
 
 fail:	
@@ -470,6 +483,8 @@ void glite_jpis_free_db(glite_jpis_context_t ctx) {
 	glite_jp_db_freestmt(&ctx->update_state_feed_stmt);
 	glite_jp_db_freestmt(&ctx->update_error_feed_stmt);
 	glite_jp_db_freestmt(&ctx->select_info_attrs_indexed);
+	glite_jp_db_freestmt(&ctx->select_jobid_stmt);
+	glite_jp_db_freestmt(&ctx->insert_job_stmt);
 	glite_jp_db_close(ctx->jpctx);
 }
 
@@ -568,6 +583,25 @@ int glite_jpis_insertAttrVal(glite_jpis_context_t ctx, const char *jobid, glite_
 		return ctx->jpctx->error->code;
 	}
 	free(sql);
+
+	return 0;
+}
+
+
+int glite_jpis_lazyInsertJob(glite_jpis_context_t ctx, const char *jobid) {
+	int ret;
+
+	lprintf("%s\n", __FUNCTION__);
+
+	switch (ret = glite_jp_db_execute(ctx->select_jobid_stmt)) {
+	case -1: return ctx->jpctx->error->code;
+	case 0: 
+		lprintf("inserting jobid '%s'\n", jobid);
+		if (glite_jp_db_execute(ctx->insert_job_stmt) != 1) return ctx->jpctx->error->code;
+		break;
+	case 1: lprintf("jobid '%s' found\n", jobid); break;
+	default: assert(ret != 1); break;
+	}
 
 	return 0;
 }
