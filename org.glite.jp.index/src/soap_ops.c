@@ -76,7 +76,7 @@ static void err2fault(const glite_jp_context_t ctx,struct soap *soap)
 #define CONTEXT_FROM_SOAP(soap,ctx) glite_jpis_context_t	ctx = (glite_jpis_context_t) ((slave_data_t *) (soap->user))->ctx
 
 
-static int updateJob(glite_jpis_context_t ctx, struct jptype__jobRecord *jobAttrs) {
+static int updateJob(glite_jpis_context_t ctx, const char *feedid, struct jptype__jobRecord *jobAttrs) {
 	glite_jp_attrval_t av;
 	struct jptype__attrValue *attr;
 	int ret, iattrs;
@@ -85,7 +85,7 @@ static int updateJob(glite_jpis_context_t ctx, struct jptype__jobRecord *jobAttr
 
 	if (jobAttrs->remove) assert(*(jobAttrs->remove) == 0);
 
-	if ((ret = glite_jpis_lazyInsertJob(ctx, jobAttrs->jobid)) != 0) return ret;
+	if ((ret = glite_jpis_lazyInsertJob(ctx, feedid, jobAttrs->jobid, jobAttrs->owner)) != 0) return ret;
 
 	for (iattrs = 0; iattrs < jobAttrs->__sizeattributes; iattrs++) {
 		attr = jobAttrs->attributes[iattrs];
@@ -107,6 +107,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__UpdateJobs(
 	int 		status, done;
 	CONTEXT_FROM_SOAP(soap, ctx);
 	glite_jp_context_t jpctx = ctx->jpctx;
+	char *err;
 
 	// XXX: test client in examples/jpis-test
 	//      sends to this function some data for testing
@@ -118,7 +119,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__UpdateJobs(
 	strncpy(ctx->param_feedid, feedid, sizeof(ctx->param_feedid) - 1);
 	if ((ret = glite_jp_db_execute(ctx->select_info_feed_stmt)) != 1) {
 		fprintf(stderr, "can't get info about '%s', returned %d records: %s (%s)\n", feedid, ret, jpctx->error->desc, jpctx->error->source);
-		return SOAP_FAULT;
+		goto fail;
 	}
 	// update status, if needed (only oring)
 	status = ctx->param_state;
@@ -127,16 +128,23 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__UpdateJobs(
 		ctx->param_state |= done;
 		if ((ret = glite_jp_db_execute(ctx->update_state_feed_stmt)) != 1) {
 			fprintf(stderr, "can't update state of '%s', returned %d records: %s (%s)\n", feedid, ret, jpctx->error->desc, jpctx->error->source);
-			return SOAP_FAULT;
+			goto fail;
 		}
 	}
 
 	// insert all attributes
 	for (ijobs = 0; ijobs < jpelem__UpdateJobs->__sizejobAttributes; ijobs++) {
-		if (updateJob(ctx, jpelem__UpdateJobs->jobAttributes[ijobs]) != 0) return SOAP_FAULT;
+		if (updateJob(ctx, feedid, jpelem__UpdateJobs->jobAttributes[ijobs]) != 0) goto fail;
 	}
 
 	return SOAP_OK;
+
+fail:
+// TODO: bubble up
+	err = glite_jp_error_chain(ctx->jpctx);
+	printf("%s:%s\n", __FUNCTION__, err);
+	free(err);
+	return SOAP_FAULT;
 }
 
 

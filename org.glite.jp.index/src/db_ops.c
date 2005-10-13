@@ -386,6 +386,9 @@ int glite_jpis_dropDatabase(glite_jpis_context_t ctx) {
 	// drop feeds and atributes
 	if (glite_jp_db_execstmt(jpctx, "DELETE FROM attrs", NULL) == -1) goto fail;
 	if (glite_jp_db_execstmt(jpctx, "DELETE FROM feeds", NULL) == -1) goto fail;
+	if (glite_jp_db_execstmt(jpctx, "DELETE FROM jobs", NULL) == -1) goto fail;
+	if (glite_jp_db_execstmt(jpctx, "DELETE FROM users", NULL) == -1) goto fail;
+	if (glite_jp_db_execstmt(jpctx, "DELETE FROM acls", NULL) == -1) goto fail;
 
 	return 0;
 
@@ -459,12 +462,13 @@ int glite_jpis_init_db(glite_jpis_context_t isctx) {
 	if ((glite_jp_db_prepare(jpctx, "SELECT jobid FROM jobs WHERE jobid=?", &isctx->select_jobid_stmt, myparam, NULL)) != 0) goto fail;
 
 	// sql command: insert the job
-	glite_jp_db_create_params(&myparam, 3,
+	glite_jp_db_create_params(&myparam, 4,
 		GLITE_JP_DB_TYPE_CHAR, &isctx->param_jobid, &isctx->param_jobid_len,
 		GLITE_JP_DB_TYPE_VARCHAR, &isctx->param_dg_jobid, &isctx->param_dg_jobid_len,
-		GLITE_JP_DB_TYPE_VARCHAR, &isctx->param_ps, &isctx->param_ps_len);
+		GLITE_JP_DB_TYPE_CHAR, &isctx->param_ownerid, &isctx->param_ownerid_len,
+		GLITE_JP_DB_TYPE_CHAR, &isctx->param_feedid, &isctx->param_feedid_len);
 	// XXX: as attribute?
-	if ((glite_jp_db_prepare(jpctx, "INSERT INTO jobs (jobid, dg_jobid, ownerid, ps) VALUES (?, ?, 'XXX: unknown', ?)", &isctx->insert_job_stmt, myparam, NULL)) != 0) goto fail;
+	if ((glite_jp_db_prepare(jpctx, "INSERT INTO jobs (jobid, dg_jobid, ownerid, ps) VALUES (?, ?, ?, (SELECT source FROM feeds WHERE feedid=?))", &isctx->insert_job_stmt, myparam, NULL)) != 0) goto fail;
 
 	return 0;
 
@@ -531,7 +535,7 @@ int glite_jpis_initFeed(glite_jpis_context_t ctx, long int uniqueid, char *feedI
 
 	memset(ctx->param_feedid, 0, sizeof(ctx->param_feedid));
 	strncpy(ctx->param_feedid, feedId, sizeof(ctx->param_feedid) - 1);
-	ctx->param_feedid_len = strlen(ctx->param_feedid) + 1;
+	ctx->param_feedid_len = strlen(ctx->param_feedid);
 	glite_jp_db_set_time(ctx->param_expires, feedExpires);
 	ctx->param_uniqueid = uniqueid;
 
@@ -588,8 +592,9 @@ int glite_jpis_insertAttrVal(glite_jpis_context_t ctx, const char *jobid, glite_
 }
 
 
-int glite_jpis_lazyInsertJob(glite_jpis_context_t ctx, const char *jobid) {
+int glite_jpis_lazyInsertJob(glite_jpis_context_t ctx, const char *feedid, const char *jobid, const char *owner) {
 	int ret;
+	char *md5_jobid;
 
 	lprintf("%s\n", __FUNCTION__);
 
@@ -597,6 +602,20 @@ int glite_jpis_lazyInsertJob(glite_jpis_context_t ctx, const char *jobid) {
 	case -1: return ctx->jpctx->error->code;
 	case 0: 
 		lprintf("inserting jobid '%s'\n", jobid);
+		memset(ctx->param_jobid, 0, sizeof(ctx->param_jobid));
+		memset(ctx->param_dg_jobid, 0, sizeof(ctx->param_dg_jobid));
+		memset(ctx->param_feedid, 0, sizeof(ctx->param_feedid));
+		memset(ctx->param_ownerid, 0, sizeof(ctx->param_ownerid));
+		md5_jobid = str2md5(jobid);
+		strncpy(ctx->param_dg_jobid, jobid, sizeof(ctx->param_dg_jobid));
+		strncpy(ctx->param_jobid, md5_jobid, sizeof(ctx->param_jobid));
+		strncpy(ctx->param_feedid, feedid, sizeof(ctx->param_feedid));
+		strncpy(ctx->param_ownerid, owner, sizeof(ctx->param_ownerid));
+		ctx->param_jobid_len = strlen(ctx->param_jobid);
+		ctx->param_dg_jobid_len = strlen(ctx->param_dg_jobid);
+		ctx->param_feedid_len = strlen(ctx->param_feedid);
+		ctx->param_ownerid_len = strlen(ctx->param_ownerid);
+		free(md5_jobid);
 		if (glite_jp_db_execute(ctx->insert_job_stmt) != 1) return ctx->jpctx->error->code;
 		break;
 	case 1: lprintf("jobid '%s' found\n", jobid); break;

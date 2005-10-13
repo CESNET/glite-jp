@@ -166,6 +166,7 @@ printf("MyFeedIndex for %s called\n", dest);
 	in.history = conf->feeds[dest_index]->history;
 	in.continuous = conf->feeds[dest_index]->continuous;
 	in.destination = ctx->hname;
+	printf("%s:%s\n", __FUNCTION__, ctx->hname);
 
 	if (check_fault(soap,soap_call___jpsrv__FeedIndex(soap,dest,"", &in, &out)) != 0) {
 		printf("\n");
