@@ -193,7 +193,7 @@ int main(int argc,char *argv[])
    	 else if (!strcasecmp(argv[1],"FeedIndex")) {
 		char  	*ap[2] = {
 			"http://egee.cesnet.cz/en/Schema/LB/Attributes:RB",
-			"http://egee.cesnet.cz/en/WSDL/jp-system:owner"
+			"http://egee.cesnet.cz/en/Schema/JP/System:owner"
 		};
 
 		struct jptype__stringOrBlob vals[] = {
@@ -203,7 +203,7 @@ int main(int argc,char *argv[])
 
 		struct jptype__primaryQuery	q[] = {
 			{ 
-				"http://egee.cesnet.cz/en/WSDL/jp-system:owner",
+				"http://egee.cesnet.cz/en/Schema/JP/System:owner",
 				jptype__queryOp__EQUAL,
 				NULL, vals, NULL
 			},
