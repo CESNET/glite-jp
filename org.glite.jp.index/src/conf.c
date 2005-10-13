@@ -20,19 +20,15 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 
 	conf = calloc(1, sizeof(*conf));
 
-	conf->attrs = calloc(8, sizeof(*conf->attrs));
-	conf->attrs[0] = strdup("owner");
-	conf->attrs[1] = strdup("status");
-	conf->attrs[2] = strdup("location");
-	conf->attrs[3] = strdup("jobid");
-	conf->attrs[4] = strdup("user");
-	conf->attrs[5] = strdup("tag");
-	conf->attrs[6] = strdup("host");
+	conf->attrs = calloc(3, sizeof(*conf->attrs));
+	conf->attrs[0] = strdup("http://egee.cesnet.cz/en/WSDL/jp-system:owner");
+	conf->attrs[1] = strdup("http://egee.cesnet.cz/en/WSDL/jp-system:jobId");
+	conf->attrs[2] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus");
 
 	conf->indexed_attrs = calloc(4, sizeof(*conf->indexed_attrs));
 	conf->indexed_attrs[0] = strdup("owner");
 	conf->indexed_attrs[1] = strdup("user");
-	conf->indexed_attrs[2] = strdup("location");
+	conf->indexed_attrs[2] = strdup("finalStatus");
 
 	// XXX: some plugin names should come here in future
 	conf->plugins = NULL;
