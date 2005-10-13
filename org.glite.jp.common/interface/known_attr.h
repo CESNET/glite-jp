@@ -2,7 +2,7 @@
 #define __GLITE_JP_KNOWN_ATTR
 
 /** Namespace of JP system attributes */
-#define GLITE_JP_SYSTEM_NS	"http://egee.cesnet.cz/en/WSDL/jp-system"
+#define GLITE_JP_SYSTEM_NS	"http://egee.cesnet.cz/en/Schema/JP/System"
 
 /** Job owner, as specified with RegisterJob JPPS operation */
 #define GLITE_JP_ATTR_OWNER	GLITE_JP_SYSTEM_NS ":owner" 
