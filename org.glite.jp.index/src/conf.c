@@ -47,7 +47,7 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 	// all job since Epoche
 	conf->feeds[0]->query = calloc(2,sizeof(*conf->feeds[0]->query));
 	conf->feeds[0]->query[0] = calloc(2,sizeof(**conf->feeds[0]->query));
-	conf->feeds[0]->query[0][0].attr = strdup(""http://egee.cesnet.cz/en/Schema/JP/System:regtime");
+	conf->feeds[0]->query[0][0].attr = strdup("http://egee.cesnet.cz/en/Schema/JP/System:regtime");
 	conf->feeds[0]->query[0][0].op = GLITE_JP_QUERYOP_GREATER;
 	conf->feeds[0]->query[0][0].value = strdup("0");
 
