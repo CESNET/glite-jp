@@ -83,6 +83,7 @@
 			Used for both feeding JP index server from primary storage
 			and to answer user queries on index server.
 			<elem name="jobid" type="xsd:string">ID of the job.</elem>
+			<elem name="owner" type="xsd:string">Job owner.</elem>
 			<elem name="attributes" type="attrValue" optional="yes" list="yes">
 				Attribute values, required by query/feed and available right now.
 			</elem>
