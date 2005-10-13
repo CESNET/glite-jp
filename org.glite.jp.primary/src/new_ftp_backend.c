@@ -2089,7 +2089,7 @@ int glite_jppsbe_store_feed(
 
 	memset(&err,0,sizeof err);
 
-	qlist, alist = stmt = aux = e = NULL;
+	qlist = alist = stmt = aux = e = NULL;
 
 	for (i=0; feed->attrs[i]; i++) {
 		char	*e;
