@@ -372,8 +372,9 @@ static int get_attr(struct soap *soap, glite_jpis_context_t ctx, char *jobid, ch
 		av = realloc(av, (i+1) * sizeof(*av));
 		av[i] = soap_malloc(soap, sizeof(*av[i]));
 
+		memset(&jav,0,sizeof(jav));
 		if (glite_jp_attrval_from_db(ctx->jpctx, fv, &jav)) goto err;
-		av[i]->name = soap_strdup(soap, jav.name);
+		av[i]->name = soap_strdup(soap, attr_name);
 		if (jav.binary) {
 			av[i]->value->blob = soap_malloc(soap, sizeof(*(av[i]->value->blob)));
 			av[i]->value->blob->__ptr = soap_malloc(soap, jav.size);
@@ -384,10 +385,12 @@ static int get_attr(struct soap *soap, glite_jpis_context_t ctx, char *jobid, ch
 		else {
 			av[i]->value->string = soap_strdup(soap, jav.value);
 		}
-		av[i]->timestamp = jav.timestamp;
-		glite_jpis_AttrOrigToSoap(soap, jav.origin, &origin);
-		av[i]->origin = *origin; free(origin);
-		av[i]->originDetail = soap_strdup(soap, jav.origin_detail);		
+// XXX: load timestamp and origin from DB
+// need to add columns to DB
+//		av[i]->timestamp = jav.timestamp;
+//		glite_jpis_AttrOrigToSoap(soap, jav.origin, &origin);
+//		av[i]->origin = *origin; free(origin);
+//		av[i]->originDetail = soap_strdup(soap, jav.origin_detail);		
 
 		i++;
 		freeAttval_t(jav);
@@ -428,7 +431,7 @@ static int get_attrs(struct soap *soap, glite_jpis_context_t ctx, char *jobid, s
 		if (get_attr(soap, ctx, jobid, in->attributes[j], &jr) ) goto err;
 		if (jr.__sizeattributes > 0) {
 			av = realloc(av, (size + jr.__sizeattributes) * sizeof(*av));
-			memcpy(av[size], jr.attributes, jr.__sizeattributes);
+			memcpy(av[size], jr.attributes, jr.__sizeattributes * sizeof(*av));
 			size += jr.__sizeattributes;
 			free(jr.attributes);
 		}
