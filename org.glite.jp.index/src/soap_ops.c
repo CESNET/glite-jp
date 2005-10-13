@@ -140,7 +140,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__UpdateJobs(
 
 static int checkIndexedConditions(glite_jpis_context_t ctx, struct _jpelem__QueryJobs *in)
 {
-	char 			**indexed_attrs;
+	char 			**indexed_attrs = NULL;
 	int			i, j, k, ret;
 
 
@@ -155,7 +155,7 @@ static int checkIndexedConditions(glite_jpis_context_t ctx, struct _jpelem__Quer
 	while (glite_jp_db_fetch(ctx->select_info_attrs_indexed) == 0) {
 		if (!(i % INDEXED_STRIDE)) {
 			indexed_attrs = realloc(indexed_attrs, 
-				((i / INDEXED_STRIDE) * INDEXED_STRIDE + 1)  
+				((i / INDEXED_STRIDE + 1) * INDEXED_STRIDE)  
 				* sizeof(*indexed_attrs));
 		}
 		indexed_attrs[i++] = strdup(ctx->param_indexed);
@@ -288,12 +288,12 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 	while ( (ret = glite_jp_db_fetchrow(stmt, res)) > 0 ) {
 		if (!(i % JOBIDS_STRIDE)) {
                         jids = realloc(jids,
-                                ((i / JOBIDS_STRIDE) * JOBIDS_STRIDE + 2)
+                                ((i / JOBIDS_STRIDE + 1) * JOBIDS_STRIDE + 1)
                                 * sizeof(*jids));
                 }
 		if (!(i % JOBIDS_STRIDE)) {
                         pss = realloc(pss,
-                                ((i / JOBIDS_STRIDE) * JOBIDS_STRIDE + 2)
+                                ((i / JOBIDS_STRIDE + 1) * JOBIDS_STRIDE + 1)
                                 * sizeof(*pss));
                 }
 		jids[i] = res[0];
