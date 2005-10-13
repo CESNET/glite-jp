@@ -28,6 +28,27 @@ static int check_other_soap(glite_jp_context_t ctx)
 	return 0;
 }
 
+static check_fault(glite_jp_context_t ctx,struct soap *soap,int ec)
+{
+	glite_jp_error_t	err;
+	char	buf[1000] = "unknown fault";
+
+	switch (ec) {
+		case SOAP_OK: return 0;
+		default: 
+			err.code = EIO;
+			err.source = __FUNCTION__;
+			err.desc = buf;
+			if (soap->fault) snprintf(buf,sizeof buf,"%s %s\n",
+				soap->fault->faultcode,
+				soap->fault->faultstring);
+			buf[999] = 0;
+			glite_jp_stack_error(ctx,&err);
+			return err.code;
+	}
+}
+
+
 int glite_jpps_single_feed(
 		glite_jp_context_t ctx,
 		const char *feed,
@@ -96,6 +117,7 @@ int glite_jpps_multi_feed(
 		int njobs,
 		const char *destination,
 		char **jobs,
+		char **owners,
 		glite_jp_attrval_t **attrs)
 {
 	int	i,j;
@@ -126,6 +148,7 @@ int glite_jpps_multi_feed(
 
 		in.jobAttributes[i] = jr = malloc(sizeof *jr);
 		jr->jobid = jobs[i];
+		jr->owner = owners[i];
 
 		jr->__sizeattributes = jp2s_attrValues(ctx->other_soap,
 			attrs[i],
@@ -136,20 +159,8 @@ int glite_jpps_multi_feed(
 		jr->primaryStorage = &ctx->myURL;
 	}
 
-	if (soap_call___jpsrv__UpdateJobs(ctx->other_soap,destination,"",
-		&in,&out
-	)) {
-		char	buf[1000];
-		err.code = EIO;
-		err.source = __FUNCTION__;
-		err.desc = buf;
-		snprintf(buf,sizeof buf,"%s %s\n",
-				ctx->other_soap->fault->faultcode,
-				ctx->other_soap->fault->faultstring);
-		buf[999] = 0;
-		glite_jp_stack_error(ctx,&err);
-	}
-
+	check_fault(ctx,ctx->other_soap,
+		soap_call___jpsrv__UpdateJobs(ctx->other_soap,destination,"", &in,&out));
 	for (i=0; i<njobs; i++) {
 		jr = in.jobAttributes[i];
 		attrValues_free(ctx->other_soap,jr->attributes,jr->__sizeattributes);

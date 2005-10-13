@@ -1884,12 +1884,14 @@ int glite_jppsbe_query(
 		if (cmask & 1) {
 			/* XXX: owner always first */
 			metadata[owner_idx].value = qres[1];
+			metadata[owner_idx].origin = GLITE_JP_ATTR_ORIG_SYSTEM;
 			qres[1] = NULL;
 		}
 		if (cmask & 2) {
 			int	qi = cmask == 2 ? 1 : 2;
 			time_t	t = glite_jp_db_dbtotime(qres[qi]);
 			metadata[reg_idx].value = glite_jp_time2attr(t);
+			metadata[reg_idx].origin = GLITE_JP_ATTR_ORIG_SYSTEM;
 			free(qres[qi]);
 			qres[qi] = NULL;
 		}
@@ -1913,8 +1915,6 @@ int glite_jppsbe_query(
 		glite_jp_stack_error(ctx,&err);
 		goto cleanup;
 	}
-
-	/* FIXME: unfinished */
 
 cleanup:
 	free(where);

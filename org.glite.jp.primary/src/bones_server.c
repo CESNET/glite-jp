@@ -298,7 +298,11 @@ static int request(int conn,struct timeval *to,void *data)
 		return 0;
 	}
 
-	glite_jp_run_deferred(ctx);
+	if (glite_jp_run_deferred(ctx)) {
+		char	*e;
+		fprintf(stderr,"[%d] %s\n",getpid(),e = glite_jp_error_chain(ctx));
+		free(e);
+	}
 	return 0;
 }
 

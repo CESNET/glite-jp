@@ -18,6 +18,7 @@ struct jpfeed {
 /* jobs stacked for feed */
 	int	njobs;
 	char	**jobs;
+	char	**owners;
 	glite_jp_attrval_t	**job_attrs;
 
 /* next feed */
