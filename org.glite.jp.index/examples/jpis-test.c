@@ -134,7 +134,7 @@ query:
 		
 		cond = soap_malloc(soap, sizeof(*cond));
 		memset(cond, 0, sizeof(*cond));
-		cond->attr = soap_strdup(soap, "location");
+		cond->attr = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/JP/System:owner");
 		cond->origin = NULL;
 		cond->__sizerecord = 1;
 		cond->record = soap_malloc(soap, sizeof(*(cond->record)));
@@ -143,7 +143,7 @@ query:
 		memset(rec, 0, sizeof(*rec));
 		rec->op = jptype__queryOp__EQUAL;
 		rec->value = soap_malloc(soap, sizeof(*(rec->value)));
-		rec->value->string = soap_strdup(soap, "scientific.civ.zcu.cz");
+		rec->value->string = soap_strdup(soap, "/O=CESNET/O=Masaryk University/CN=Milos Mulac");
 		rec->value->blob = NULL;
 		
 		*(cond->record) = rec;
