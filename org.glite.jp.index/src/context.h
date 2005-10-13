@@ -15,6 +15,8 @@ typedef struct _glite_jpis_context {
 	char param_feedid[33], param_ps[256], param_indexed[256];
 	unsigned long param_ps_len, param_feedid_len, param_indexed_len;
 	void *param_expires;
+
+	char *hname;
 } *glite_jpis_context_t;
 
 typedef struct _slave_data_t{

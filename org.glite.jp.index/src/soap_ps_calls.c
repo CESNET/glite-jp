@@ -4,6 +4,7 @@
 
 #include "glite/jp/types.h"
 #include "glite/jp/context.h"
+#include "glite/security/glite_gsplugin.h"
 
 #include "jpps_H.h"
 #include "jpps_.nsmap"
@@ -129,12 +130,14 @@ int MyFeedIndex(glite_jpis_context_t ctx, glite_jp_is_conf *conf, long int uniqu
 	int 					i, dest_index;
 	struct soap             		*soap = soap_new();
 	glite_jp_error_t err;
-	char *src;
+	char *src, hname[512];
 
 printf("MyFeedIndex for %s called\n", dest);
 
 	soap_init(soap);
         soap_set_namespaces(soap,jpps__namespaces);
+// TODO
+	soap_register_plugin(soap,glite_gsplugin);
 
 	memset(&in, 0, sizeof(in));
 	memset(&err, 0, sizeof(err));
@@ -162,6 +165,7 @@ printf("MyFeedIndex for %s called\n", dest);
 
 	in.history = conf->feeds[dest_index]->history;
 	in.continuous = conf->feeds[dest_index]->continuous;
+	in.destination = ctx->hname;
 
 	if (check_fault(soap,soap_call___jpsrv__FeedIndex(soap,dest,"", &in, &out)) != 0) {
 		printf("\n");

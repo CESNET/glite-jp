@@ -11,7 +11,7 @@ typedef struct _glite_jp_is_feed {
 	char    		*PS_URL;	//URLs of Primary Storage servers
 	glite_jp_query_rec_t    **query;        // query to Primary Server (aka filter)
 	int     		history, 	// type of query
-				continuous;	
+				continuous;
 } glite_jp_is_feed;
 
 
@@ -25,7 +25,7 @@ typedef struct _glite_jp_is_conf {
 
 	glite_jp_is_feed	**feeds;	// null terminated list of feeds
 
-	char	*cs;
+	char	*cs, *port;
 } glite_jp_is_conf;
 
 

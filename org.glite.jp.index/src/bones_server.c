@@ -138,6 +138,7 @@ int main(int argc, char *argv[])
 
 	setsockopt(stab.conn,SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
 
+	if (conf->port) port = conf->port;
 	a.sin_family = AF_INET;
 	a.sin_addr.s_addr = INADDR_ANY;
 	a.sin_port = htons(atoi(port));
