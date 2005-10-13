@@ -350,24 +350,26 @@ static void freeAttval_t(glite_jp_attrval_t jav)
 static int get_attr(struct soap *soap, glite_jpis_context_t ctx, char *jobid, char *attr_name, struct jptype__jobRecord *out)
 {
 	glite_jp_attrval_t		jav;
-	struct jptype__attrValue	**av;
+	struct jptype__attrValue	**av = NULL;;
 	enum jptype__attrOrig		*origin;
-	char 				*query, *fv;
+	char 				*query, *fv, *jobid_md5, *attr_md5;
 	int 				i, ret;
 	glite_jp_db_stmt_t      	stmt;
 
 
-	trio_asprintf(&query,"SELECT full_value FROM attr_%|Ss WHERE jobid = %s",
-		attr_name, jobid);
+	jobid_md5 = str2md5(jobid);
+	attr_md5 = str2md5(attr_name);
+	trio_asprintf(&query,"SELECT full_value FROM attr_%|Ss WHERE jobid = \"%s\"",
+		attr_md5, jobid_md5);
+	free(attr_md5);
+	free(jobid_md5);
 
 	if ((ret = glite_jp_db_execstmt(ctx->jpctx, query, &stmt)) < 0) goto err;
 	free(query);
 
 	i = 0;
-	do {
-		if ( (ret = glite_jp_db_fetchrow(stmt, &fv) < 0) ) goto err;
-		i++;	
-		av = realloc(av, i * sizeof(*av));
+	while ( (ret = glite_jp_db_fetchrow(stmt, &fv)) > 0 ) {	
+		av = realloc(av, (i+1) * sizeof(*av));
 		av[i] = soap_malloc(soap, sizeof(*av[i]));
 
 		if (glite_jp_attrval_from_db(ctx->jpctx, fv, &jav)) goto err;
@@ -387,8 +389,10 @@ static int get_attr(struct soap *soap, glite_jpis_context_t ctx, char *jobid, ch
 		av[i]->origin = *origin; free(origin);
 		av[i]->originDetail = soap_strdup(soap, jav.origin_detail);		
 
+		i++;
 		freeAttval_t(jav);
-	} while (ret);
+	} 
+	if (ret < 0) goto err;
 	
 	glite_jp_db_freestmt(&stmt);	
 	(*out).__sizeattributes = i;
@@ -407,7 +411,7 @@ err:
 static int get_attrs(struct soap *soap, glite_jpis_context_t ctx, char *jobid, struct _jpelem__QueryJobs *in, struct jptype__jobRecord **out)
 {
 	struct jptype__jobRecord 	jr;
-	struct jptype__attrValue	**av;
+	struct jptype__attrValue	**av = NULL;
 	int 				j, size;
 
 
@@ -422,10 +426,12 @@ static int get_attrs(struct soap *soap, glite_jpis_context_t ctx, char *jobid, s
 	size = 0;
 	for (j=0; in->__sizeattributes; j++) {
 		if (get_attr(soap, ctx, jobid, in->attributes[j], &jr) ) goto err;
-		av = realloc(av, (size + jr.__sizeattributes) * sizeof(*av));
-		memcpy(av[size], jr.attributes, jr.__sizeattributes);
-		size += jr.__sizeattributes;
-		free(jr.attributes);
+		if (jr.__sizeattributes > 0) {
+			av = realloc(av, (size + jr.__sizeattributes) * sizeof(*av));
+			memcpy(av[size], jr.attributes, jr.__sizeattributes);
+			size += jr.__sizeattributes;
+			free(jr.attributes);
+		}
 	} 
 	(*out)->__sizeattributes = size;
 	(*out)->attributes = soap_malloc( soap, size *sizeof(*((*out)->attributes)) );
@@ -444,8 +450,8 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__QueryJobs(
 	struct _jpelem__QueryJobsResponse *out)
 {
 	CONTEXT_FROM_SOAP(soap, ctx);
-	struct jptype__jobRecord	**jr;
-	char				**jobids, **ps_list;
+	struct jptype__jobRecord	**jr = NULL;
+	char				**jobids = NULL, **ps_list = NULL;
 	int 				i, size;
 
 
