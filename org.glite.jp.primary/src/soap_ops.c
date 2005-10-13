@@ -280,6 +280,23 @@ static void s2jp_query(const struct jptype__primaryQuery *in, glite_jp_query_rec
 	else out->origin = GLITE_JP_ATTR_ORIG_ANY;
 }
 
+
+static int check_sane_feed(glite_jp_context_t ctx,struct _jpelem__FeedIndex *in)
+{
+	glite_jp_error_t	err;
+	memset(&err,0,sizeof err);
+	err.source = __FUNCTION__;
+	err.code = EINVAL;
+
+	if (!in->destination) {
+		err.desc = "destination required";
+		return glite_jp_stack_error(ctx,&err);
+	}
+
+	return 0;
+}
+
+
 SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__FeedIndex(
 		struct soap *soap,
 		struct _jpelem__FeedIndex *in,
@@ -303,6 +320,12 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__FeedIndex(
 	int	i;
 
 	glite_jp_clear_error(ctx);
+
+	if (check_sane_feed(ctx,in)) {
+		err2fault(ctx,soap);
+		ret = SOAP_FAULT;
+		goto cleanup;
+	}
 
 	memcpy(attrs,in->attributes,sizeof *attrs * in->__sizeattributes);
 	for (i = 0; i<in->__sizeconditions; i++) s2jp_query(in->conditions[i],qry+i);
