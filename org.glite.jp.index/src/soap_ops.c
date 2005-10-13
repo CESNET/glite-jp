@@ -179,42 +179,69 @@ end:
 }
 
 
+/* adds attr table name to the list (null terminated) , iff unigue */
+static void add_attr_table(char *new, char ***attr_tables) 
+{
+	int	i;
+	
+	for (i=0; (*attr_tables && *attr_tables[i]); i++) {
+		if (!strcmp(*attr_tables[i], new)) return;
+	}
+
+//	*attr_tables = realloc((*attr_tables), (i+2) * sizeof(**attr_tables));
+//	*attr_tables[i] = strdup(new);
+//	*attr_tables[i+1] = NULL;
+}	
+
+/* transform soap enum queryOp to mysql quivalent */
+static int get_op(const enum jptype__queryOp in, char **out)
+{			
+	char 			*qop;
+	glite_jp_queryop_t      op;
+
+	glite_jpis_SoapToQueryOp(in, &op);
+	switch (op) {
+		case GLITE_JP_QUERYOP_EQUAL:
+			qop = strdup("=");
+			break;
+		case  GLITE_JP_QUERYOP_UNEQUAL:
+			qop = strdup("!=");
+			break;
+		default:
+			// unsupported query operator
+			return(1);
+			break;
+	}
+
+	*out = qop;
+	return(0);
+}
+
 static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpelem__QueryJobs *in, char ***jobids, char *** ps_list)
 {
-	char 			*qa, *qb, *qop, *qbase, *query, *res[2], **jids, **pss;
+	char 			*qa = NULL, *qb = NULL, *qop = NULL,
+				*qwhere = NULL, *query = NULL, *res[2], 
+				**jids = NULL, **pss = NULL, **attr_tables = NULL;
 	int 			i, j, ret;
 	glite_jp_db_stmt_t	stmt;
-	glite_jp_queryop_t	op;
 	glite_jp_attrval_t	attr;
 
 
-	trio_asprintf(&qbase,"SELECT dg_jobid FROM jobs WHERE ");
-	
 	for (i=0; i < in->__sizeconditions; i++) {
 		trio_asprintf(&qa,"%s jobs.jobid = attr_%|Ss.jobid AND (", 
 			(i ? "AND" : ""), str2md5(in->conditions[i]->attr));
 	
 		for (j=0; j < in->conditions[i]->__sizerecord; j++) { 
-			glite_jpis_SoapToQueryOp(in->conditions[i]->record[j]->op, &op);
-			switch (op) {
-				case GLITE_JP_QUERYOP_EQUAL:
-					qop = strdup("=");
-					break;
-				case  GLITE_JP_QUERYOP_UNEQUAL:
-					qop = strdup("!=");
-					break;
-				default:
-					// unsupported query operator
-					goto err;
-					break;
-			}
+			if (get_op(in->conditions[i]->record[j]->op, &qop)) goto err;
+			add_attr_table(str2md5(in->conditions[i]->attr), &attr_tables);
+
 			if (in->conditions[i]->record[j]->value->string) {
 				attr.name = in->conditions[i]->attr;
 				attr.value = in->conditions[i]->record[j]->value->string;
 				attr.binary = 0;
 				glite_jpis_SoapToAttrOrig(soap,
 					in->conditions[i]->origin, &(attr.origin));
-				trio_asprintf(&qb,"%s %s attr_%|Ss.value %s %|Ss ",
+				trio_asprintf(&qb,"%s %s attr_%|Ss.value %s \"%|Ss\" ",
 					qa, (j ? "OR" : ""), str2md5(in->conditions[i]->attr), qop,
 					glite_jp_attrval_to_db_index(ctx->jpctx, &attr, 255));
 				free(qop);
@@ -227,7 +254,7 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 				attr.size = in->conditions[i]->record[j]->value->blob->__size;
 				glite_jpis_SoapToAttrOrig(soap,
 					in->conditions[i]->origin, &(attr.origin));
-				trio_asprintf(&qb,"%s %s attr_%|Ss.value %s %|Ss ",
+				trio_asprintf(&qb,"%s %s attr_%|Ss.value %s \"%|Ss\" ",
 					qa, (j ? "OR" : ""), str2md5(in->conditions[i]->attr), qop,
 					glite_jp_attrval_to_db_index(ctx->jpctx, &attr, 255));
 				free(qop);
@@ -237,8 +264,18 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 		trio_asprintf(&qb,"%s)",qa);
 		free(qa); qa = qb; qb = NULL;
 	}
-	trio_asprintf(&query, "%s%s;", qbase, qa);
-	free(qbase);
+
+	qwhere = qa; 
+	qa = strdup("");
+
+	for (i=0; (attr_tables && attr_tables[i]); i++) {
+		trio_asprintf(&qb,"%s, %s", qa, attr_tables[i]);
+		free(qa); qa = qb; qb = NULL;
+	}
+// XXX : memory destroyed somewhere (add_attr_table commented out too :(
+	//trio_asprintf(&query, "SELECT dg_jobid FROM jobs%s WHERE %s;", qa, qwhere);
+trio_asprintf(&query, "SELECT dg_jobid FROM jobs%s WHERE %s;", ",attr_d5189de027922f81005951e6efe0efd5", qwhere);
+	free(qwhere);
 	free(qa);
 	
 	// XXX: add where's for attr origin (not clear now whether stored in separate column
@@ -248,8 +285,7 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 	free(query);
 
 	i = 0;
-	do {
-		if ( (ret = glite_jp_db_fetchrow(stmt, res) < 0) ) goto err;
+	while ( (ret = glite_jp_db_fetchrow(stmt, res)) > 0 ) {
 		if (!(i % JOBIDS_STRIDE)) {
                         jids = realloc(jids,
                                 ((i / JOBIDS_STRIDE) * JOBIDS_STRIDE + 2)
@@ -265,7 +301,9 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 		pss[i] = res[1];
 		pss[i+1] = NULL;
 		i++;	
-	} while (ret);
+	} 
+
+	if ( ret < 0 ) goto err;
 	glite_jp_db_freestmt(&stmt);	
 
 	*jobids = jids;
@@ -275,7 +313,9 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 	
 err:
 	free(query);
+	for (i=0; (pss && pss[i]); i++) free(pss[i]);
 	free(pss);
+	for (i=0; (jids && jids[i]); i++) free(jids[i]);
 	free(jids);
 	glite_jp_db_freestmt(&stmt);
 
@@ -392,19 +432,13 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__QueryJobs(
 	struct _jpelem__QueryJobsResponse *out)
 {
 	CONTEXT_FROM_SOAP(soap, ctx);
-//	slave_data_t			*slave = (slave_data_t *) soap->user;
-//	glite_jpis_context_t		ctx = (glite_jpis_context_t) slave->ctx;
-//        glite_jp_context_t 		jpctx = ctx->jpctx;
-//	glite_jp_query_rec_t		**qr;
 	struct jptype__jobRecord	**jr;
 	char				**jobids, **ps_list;
 	int 				i, size;
 
 
 	puts(__FUNCTION__);
-//	if ( glite_jpis_SoapToQueryConds(soap, in->__sizeconditions, in->conditions, &qr) ) {
-//		return SOAP_ERR;
-//	}
+	memset(out, 0, sizeof(*out));
 
 	if ( checkIndexedConditions(ctx, in) ) {
 		fprintf(stderr, "No indexed attribute in query\n");
@@ -415,10 +449,10 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__QueryJobs(
 		return SOAP_ERR;
 	}
 
-	for (i=0; jobids[i]; i++);
+	for (i=0; (jobids && jobids[i]); i++);
 	size = i;
 	jr = soap_malloc(soap, size * sizeof(*jr));
-	for (i=0; jobids[i]; i++) {
+	for (i=0; (jobids && jobids[i]); i++) {
 		if ( get_attrs(soap, ctx, jobids[i], in, &(jr[i])) ) {
 			return SOAP_ERR;
 		}	
