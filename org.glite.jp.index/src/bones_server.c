@@ -254,19 +254,9 @@ int newconn(int conn,struct timeval *to,void *data)
 	soap_set_namespaces(soap,jpis__namespaces);
 	soap->user = (void *) private;
 
-/* not yet: client to JP Storage Server
- * probably wil come to other place, just not forget it....
-	ctx->other_soap = soap_new();
-	soap_init(ctx->other_soap);
-	soap_set_namespaces(ctx->other_soap,jpps__namespaces);
-*/
-
-
 	glite_gsplugin_init_context(&plugin_ctx);
 	plugin_ctx->connection = calloc(1,sizeof *plugin_ctx->connection);
-	soap_register_plugin_arg(soap,glite_gsplugin,plugin_ctx);
 
-/* now we probably no not play AAA game, but useful in future */
 	switch (edg_wll_gss_watch_creds(server_cert,&cert_mtime)) {
 		case 0: break;
 		case 1: if (!edg_wll_gss_acquire_cred_gsi(server_cert,server_key,
@@ -290,7 +280,8 @@ int newconn(int conn,struct timeval *to,void *data)
 
 		edg_wll_gss_get_error(&gss_code,"",&et);
 
-		printf("[%d] GSS connection accept failed: %s\nClosing connection.\n", getpid(), et);
+		fprintf(stderr,"[%d] GSS connection accept failed: %s\nClosing connection.\n",getpid(),et);
+		free(et);
 		ret = 1;
 		goto cleanup;
 	}
@@ -316,11 +307,16 @@ int newconn(int conn,struct timeval *to,void *data)
 	if (client_name != GSS_C_NO_NAME) gss_release_name(&min_stat, &client_name);
 	if (token.value) gss_release_buffer(&min_stat, &token);
 
+	soap_register_plugin_arg(soap,glite_gsplugin,plugin_ctx);
+
 	return 0;
 
 cleanup:
+/*
+	- done in disconnect 
 	glite_jpis_free_db(private->ctx);
 	glite_jpis_free_context(private->ctx);
+*/
 	glite_gsplugin_free_context(plugin_ctx);
 	soap_end(soap);
 
