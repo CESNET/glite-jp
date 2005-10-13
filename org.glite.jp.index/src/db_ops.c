@@ -467,8 +467,13 @@ int glite_jpis_init_db(glite_jpis_context_t isctx) {
 		GLITE_JP_DB_TYPE_VARCHAR, &isctx->param_dg_jobid, &isctx->param_dg_jobid_len,
 		GLITE_JP_DB_TYPE_CHAR, &isctx->param_ownerid, &isctx->param_ownerid_len,
 		GLITE_JP_DB_TYPE_CHAR, &isctx->param_feedid, &isctx->param_feedid_len);
-	// XXX: as attribute?
 	if ((glite_jp_db_prepare(jpctx, "INSERT INTO jobs (jobid, dg_jobid, ownerid, ps) VALUES (?, ?, ?, (SELECT source FROM feeds WHERE feedid=?))", &isctx->insert_job_stmt, myparam, NULL)) != 0) goto fail;
+
+	// sql command: insert the user
+	glite_jp_db_create_params(&myparam, 2,
+		GLITE_JP_DB_TYPE_CHAR, &isctx->param_ownerid, &isctx->param_ownerid_len,
+		GLITE_JP_DB_TYPE_VARCHAR, &isctx->param_cert, &isctx->param_cert_len);
+	if ((glite_jp_db_prepare(jpctx, "INSERT INTO users (userid, cert_subj) VALUES (?, ?)", &isctx->insert_user_stmt, myparam, NULL)) != 0) goto fail;
 
 	return 0;
 
@@ -489,6 +494,7 @@ void glite_jpis_free_db(glite_jpis_context_t ctx) {
 	glite_jp_db_freestmt(&ctx->select_info_attrs_indexed);
 	glite_jp_db_freestmt(&ctx->select_jobid_stmt);
 	glite_jp_db_freestmt(&ctx->insert_job_stmt);
+	glite_jp_db_freestmt(&ctx->insert_user_stmt);
 	glite_jp_db_close(ctx->jpctx);
 }
 
@@ -572,12 +578,14 @@ int glite_jpis_tryReconnectFeed(glite_jpis_context_t ctx, long int uniqueid, tim
 
 
 int glite_jpis_insertAttrVal(glite_jpis_context_t ctx, const char *jobid, glite_jp_attrval_t *av) {
-	char *sql, *table, *value, *full_value;
+	char *sql, *table, *value, *full_value, *md5_jobid;
 
 	table = glite_jpis_attr_name2id(av->name);
 	value = glite_jp_attrval_to_db_index(ctx->jpctx, av, INDEX_LENGTH);
 	full_value = glite_jp_attrval_to_db_full(ctx->jpctx, av);
-	asprintf(&sql, SQLCMD_INSERT_ATTRVAL, table, jobid, value, full_value);
+	md5_jobid = str2md5(jobid);
+	asprintf(&sql, SQLCMD_INSERT_ATTRVAL, table, md5_jobid, value, full_value);
+	free(md5_jobid);
 	free(table);
 	free(value);
 	free(full_value);
@@ -594,33 +602,44 @@ int glite_jpis_insertAttrVal(glite_jpis_context_t ctx, const char *jobid, glite_
 
 int glite_jpis_lazyInsertJob(glite_jpis_context_t ctx, const char *feedid, const char *jobid, const char *owner) {
 	int ret;
-	char *md5_jobid;
+	char *md5_jobid = NULL, *md5_cert = NULL;
 
 	lprintf("%s\n", __FUNCTION__);
 
 	switch (ret = glite_jp_db_execute(ctx->select_jobid_stmt)) {
 	case -1: return ctx->jpctx->error->code;
-	case 0: 
-		lprintf("inserting jobid '%s'\n", jobid);
+	case 0:
+		md5_jobid = str2md5(jobid);
+		md5_cert = str2md5(owner);
+		lprintf("%s:inserting user %s\n", __FUNCTION__, owner);
+		lprintf("%s: inserting jobid %s\n", __FUNCTION__, jobid);
 		memset(ctx->param_jobid, 0, sizeof(ctx->param_jobid));
 		memset(ctx->param_dg_jobid, 0, sizeof(ctx->param_dg_jobid));
 		memset(ctx->param_feedid, 0, sizeof(ctx->param_feedid));
 		memset(ctx->param_ownerid, 0, sizeof(ctx->param_ownerid));
-		md5_jobid = str2md5(jobid);
+		memset(ctx->param_cert, 0, sizeof(ctx->param_cert));
 		strncpy(ctx->param_dg_jobid, jobid, sizeof(ctx->param_dg_jobid));
 		strncpy(ctx->param_jobid, md5_jobid, sizeof(ctx->param_jobid));
 		strncpy(ctx->param_feedid, feedid, sizeof(ctx->param_feedid));
-		strncpy(ctx->param_ownerid, owner, sizeof(ctx->param_ownerid));
+		strncpy(ctx->param_ownerid, md5_cert, sizeof(ctx->param_ownerid));
+		strncpy(ctx->param_cert, owner, sizeof(ctx->param_cert));
 		ctx->param_jobid_len = strlen(ctx->param_jobid);
 		ctx->param_dg_jobid_len = strlen(ctx->param_dg_jobid);
 		ctx->param_feedid_len = strlen(ctx->param_feedid);
 		ctx->param_ownerid_len = strlen(ctx->param_ownerid);
-		free(md5_jobid);
-		if (glite_jp_db_execute(ctx->insert_job_stmt) != 1) return ctx->jpctx->error->code;
+		ctx->param_cert_len = strlen(ctx->param_cert);
+		if (glite_jp_db_execute(ctx->insert_job_stmt) != 1) goto fail;
+//		if (glite_jp_db_execute(ctx->insert_user_stmt) != 1) goto fail;
 		break;
 	case 1: lprintf("jobid '%s' found\n", jobid); break;
 	default: assert(ret != 1); break;
 	}
 
+	free(md5_jobid);
+	free(md5_cert);
 	return 0;
+fail:
+	free(md5_jobid);
+	free(md5_cert);
+	return ctx->jpctx->error->code;
 }
