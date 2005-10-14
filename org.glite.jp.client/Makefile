@@ -36,8 +36,8 @@ GLOBUS_CFLAGS:=-I${globus_prefix}/include/${nothrflavour}
 
 DEBUG:=-g -O0 -DDEBUG
 
-CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${stagedir}/include ${GLOBUS_CFLAGS}
-LDFLAGS:=-L${stagedir}/lib
+CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${gsoap_prefix} -I${stagedir}/include ${GLOBUS_CFLAGS} -I${libtar}/include
+LDFLAGS:=-L${stagedir}/lib -L${libtar}/lib
 
 LINK:=libtool --mode=link ${CC} ${LDFLAGS} 
 LTCOMPILE:=libtool --mode=compile ${CC} ${CFLAGS}
@@ -63,8 +63,10 @@ wsprefix:=jpps_
 SRCS:=jpimporter.c ${wsprefix}ClientLib.c ${wsprefix}C.c
 OBJS:=${SRCS:.c=.o}
 
-GSOAPLIB:=-lglite_security_gsoap_plugin_${nothrflavour} -lglite_security_gss_${nothrflavour} \
-	-L${gsoap_prefix}/lib -lgsoap${GSOAP_DEBUG} -L${ares_prefix}/lib -lares
+gsoap_bin_prefix:=${shell if [ -x  ${gsoap_prefix}/bin/soapcpp2 ]; then echo ${gsoap_prefix}/bin; else echo ${gsoap_prefix}; fi }
+dotless_gsoap_ver:=${shell echo ${gsoap_version} | tr -d . }
+GSOAPLIB:=-lglite_security_gsoap_plugin_${dotless_gsoap_ver}_${nothrflavour} 
+
 LBMAILDIRLIB:=-lglite_lb_maildir
 
 version_info=-version-info `echo ${version} | cut -d. -f1,2 | tr . :`
@@ -76,37 +78,37 @@ compile: ${daemon} ${LIB} ${EXAMPLES}
 examples: ${EXAMPLES}
 
 ${LIB}: ${LIBOBJS}
-	${LINK} ${version_info} -o $@ ${LIBLOBJS} -rpath ${glite_location}/lib ${LBMAILDIRLIB}
+	${LINK} ${version_info} -o $@ ${LIBLOBJS} -rpath ${glite_location}/lib ${LBMAILDIRLIB} -ltar
 
 ${daemon}: ${OBJS}
 	${LINK} -o $@ ${OBJS} ${LBMAILDIRLIB} ${GSOAPLIB} ${GLOBUS_LIBS}
 
 ${EXAMPLES}: ${LIB}
 ${EXAMPLES}: %: %.o
-	${LINK} -o $@ $< ${LIB} -ltar ${LBMAILDIRLIB} 
+	${LINK} -o $@ $< ${LIB} ${LBMAILDIRLIB} 
 
 
 
 JobProvenancePS.xh: %.xh: %.wsdl JobProvenanceTypes.wsdl typemap.dat
 	cp  ${stagedir}/interface/JobProvenanceTypes.wsdl .
-	${gsoap_prefix}/bin/wsdl2h  -t ${top_srcdir}/src/typemap.dat -c -o $@ $<
+	${gsoap_bin_prefix}/wsdl2h  -t ${top_srcdir}/src/typemap.dat -c -o $@ $<
 	rm -f JobProvenanceTypes.wsdl
 
 ${wsprefix}Client.c ${wsprefix}ClientLib.c  \
 ${wsprefix}C.c ${wsprefix}H.h: JobProvenancePS.xh
-	${gsoap_prefix}/bin/soapcpp2 -n -w -c -p ${wsprefix} JobProvenancePS.xh
+	${gsoap_bin_prefix}/soapcpp2 -n -w -c -p ${wsprefix} JobProvenancePS.xh
 
 env_C.c env_Server.c:
 	touch env.xh
 	cp  ${jpproject}/JobProvenanceTypes.wsdl .
-	${gsoap_prefix}/bin/wsdl2h  -t ${top_srcdir}/src/typemap.dat -c -o env.xh JobProvenanceTypes.wsdl
+	${gsoap_bin_prefix}/wsdl2h  -t ${top_srcdir}/src/typemap.dat -c -o env.xh JobProvenanceTypes.wsdl
 	rm -f JobProvenanceTypes.wsdl
-	${gsoap_prefix}/bin/soapcpp2 -w -c -p env_ env.xh
+	${gsoap_bin_prefix}/soapcpp2 -w -c -p env_ env.xh
 
 ${OBJS}: ${wsprefix}H.h soap_version.h
 
 soap_version.h:
-	${gsoap_prefix}/bin/soapcpp2 /dev/null
+	${gsoap_bin_prefix}/soapcpp2 /dev/null
 	perl -ne '$$. == 2 && /.*([0-9])\.([0-9])\.([0-9]).*/ && printf "#define GSOAP_VERSION %d%02d%02d\n",$$1,$$2,$$3' soapH.h >$@
 	-rm soapC.cpp soapH.h soapStub.h soapClient.cpp soapServer.cpp soapClientLib.cpp soapServerLib.cpp
 
