@@ -16,19 +16,21 @@ page.
 Source code, executables, dependences
 -------------------------------------
 
-JP-IS CVS module name is org.glite.jp.index. It depends on common libraries
-for JP (module org.glite.jp.common) and implements interfaces defined in
-org.glite.jp.ws-interface. It is also based on org.glite.lb.server-bones.
+JP-IS CVS module name is org.glite.jp.index. It depends on common JP libraries
+(module org.glite.jp.common, org.glite.jp.server-common) and implements 
+interfaces defined in org.glite.jp.ws-interface. It is also based on 
+org.glite.lb.server-bones.
 
 JP-IS consist from one stand-alone daemon (glite-jp-indexd) which is
-using MySQL database (default name: jpis1).
+using MySQL database. Default db name is jpis1, all access is granted to
+user jpis.
 
 JP-IS interactions:
 
-- JP primary storage - feeding of data from primary storage to the IS according
-  particular IS instance administrator needs (expressed by IS configuration)
+- JP primary storage - feedins data from primary storage to the IS according
+  to particular IS instance administrator needs (expressed by IS configuration)
 
-- JP-IS user query interface - implements IS service for end users
+- IS user query interface - implements IS service for end users
 
 - admin interface - intended for admin tools (management and
   on-the-fly configuration changes)
@@ -38,11 +40,12 @@ Release notes
 ------------- 
 
 - In this release configuration of JP-IS is rather limited. Parts of
-  configuration are hard-coded.
+  configuration are hard-coded (src/conf.c)
 
 - Debug outputs are on and directed to xxxxx file.
 
-- No admin tools implemented yet.
+- No admin tools are implemented yet.
+
 
 Installation
 ------------
@@ -54,6 +57,7 @@ Installation
 
 - customize startup script /etc/init.d/glite-jp-indexd (see below)
   and set up service startup using this script
+
 
 Configuration
 ------------- 
@@ -69,11 +73,25 @@ GLITE_JPIS_PORT - used port (default 8902)
 GLITE_JPIS_DB	- database connection string (default jpis/@localhost:jpis1)
 
 
-For other parameters to be configurable in close future and its
-current hard-coded values please see files org.glite.jp.index/src/conf.[ch]
+Other parameters will be configurable in close future. Its
+current hard-coded values are in org.glite.jp.index/src/conf.[ch]
 
 
 Testing 
 -------
 
-See examples/jpis-test.c file.
+For testing purposes, simple program is included. It is located in
+examples/jpis-test.c and is installed in RPM. It works in three
+steps:
+
+1) it simulates response from primary storage, making appropriate
+   changes in database. (inserts feedid).
+
+2) it calls updateJobs wsdl call, normally invoked by JP-PS, and
+   send some data to JP-IS which stores them im database.
+
+3) it calls queryJobs wsdl call, normally called by user program,
+   obtaining previously inserted data.
+
+
+
