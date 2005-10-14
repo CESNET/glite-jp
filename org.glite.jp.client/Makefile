@@ -69,7 +69,10 @@ GSOAPLIB:=-lglite_security_gsoap_plugin_${dotless_gsoap_ver}_${nothrflavour}
 
 LBMAILDIRLIB:=-lglite_lb_maildir
 
-version_info=-version-info `echo ${version} | cut -d. -f1,2 | tr . :`
+offset=0
+version_info:=-version-info ${shell \
+	perl -e '$$,=":"; @F=split "\\.","${version}"; print $$F[0]+$$F[1]+${offset},$$F[2],$$F[1]' }
+
 
 default all: compile
 
