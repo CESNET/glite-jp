@@ -106,7 +106,7 @@ int main(int argc,char *argv[])
 				goto end;
 			}
 			
-			if (glite_jp_db_execstmt(isctx,
+			if (glite_jp_db_execstmt(ctx,
 		                INSERT, &stmt) < 0) goto end;
 		end:
 			glite_jpis_free_context(isctx);
@@ -123,6 +123,7 @@ int main(int argc,char *argv[])
 		{
 			rec = soap_malloc(soap,  sizeof(*rec));
 			rec->jobid = soap_strdup(soap, "https://localhost:7846/pokus");
+			rec->owner = soap_strdup(soap, "OwnerName");
 			rec->__sizeprimaryStorage = 0;
 			rec->primaryStorage = NULL;
 			rec->__sizeattributes = 2;
