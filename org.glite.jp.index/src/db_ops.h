@@ -17,6 +17,12 @@
 #define GLITE_JP_IS_STATE_ERROR 8
 #define GLITE_JP_IS_STATE_ERROR_STR "8"
 
+#define GLITE_JPIS_PARAM(DEST, DEST_LEN, SRC) do { \
+	(DEST)[sizeof((DEST)) - 1] = '\0'; \
+	strncpy((DEST), (SRC), sizeof((DEST)) - 1); \
+	(DEST_LEN) = strlen((SRC)); \
+} while(0)
+
 
 char *glite_jpis_attr_name2id(const char *name);
 

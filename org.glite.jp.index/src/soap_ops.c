@@ -114,8 +114,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__UpdateJobs(
 
 	// get info about the feed
 	feedid = jpelem__UpdateJobs->feedId;
-	memset(ctx->param_feedid, 0, sizeof(ctx->param_feedid));
-	strncpy(ctx->param_feedid, feedid, sizeof(ctx->param_feedid) - 1);
+	GLITE_JPIS_PARAM(ctx->param_feedid, ctx->param_feedid_len, feedid);
 	if ((ret = glite_jp_db_execute(ctx->select_info_feed_stmt)) != 1) {
 		fprintf(stderr, "can't get info about '%s', returned %d records: %s (%s)\n", feedid, ret, jpctx->error->desc, jpctx->error->source);
 		goto fail;

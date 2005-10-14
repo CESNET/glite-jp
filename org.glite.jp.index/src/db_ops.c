@@ -287,8 +287,6 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 		GLITE_JP_DB_TYPE_VARCHAR, type, &type_len);
 	if (glite_jp_db_prepare(jpctx, "INSERT INTO attrs (attrid, name, indexed, type) VALUES (?, ?, ?, ?)", &stmt, param, NULL) != 0) goto fail;
 
-	memset(attrid, 0, sizeof(attrid));
-
 	// attrs table and attrid_* tables
 	attrs = ctx->conf->attrs;
 	i = 0;
@@ -298,17 +296,13 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 
 		// attrid column
 		tmp = glite_jpis_attr_name2id(attrs[i]);
-		strncpy(attrid, tmp, sizeof(attrid) - 1);
+		GLITE_JPIS_PARAM(attrid, attrid_len, tmp);
 		free(tmp);
-		attrid_len = strlen(attrid);
-		// attr name column
-		strncpy(name, attrs[i], sizeof(name) - 1);
-		name_len = strlen(name);
+		GLITE_JPIS_PARAM(name, name_len, attrs[i]);
 		// indexed column
 		indexed = is_indexed(ctx->conf, name);
 		// type column
-		strncpy(type, type_full, sizeof(type) - 1);
-		type_len = strlen(type);
+		GLITE_JPIS_PARAM(type, type_len, type_full);
 		// insert
 		if (glite_jp_db_execute(stmt) == -1) goto fail;
 
@@ -329,13 +323,11 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 	if (glite_jp_db_prepare(jpctx, "INSERT INTO feeds (state, locked, source, condition) VALUES (?, ?, ?, ?)", &stmt, param, NULL) != 0) goto fail;
 	feeds = ctx->conf->feeds;
 	i = 0;
-	memset(source, 0, sizeof(source));
 	while (feeds[i]) {
 		state = (feeds[i]->history ? GLITE_JP_IS_STATE_HIST : 0) |
 		        (feeds[i]->continuous ? GLITE_JP_IS_STATE_CONT : 0);
 		locked = 0;
-		strncpy(source, feeds[i]->PS_URL, sizeof(source) - 1);
-		source_len = strlen(source);
+		GLITE_JPIS_PARAM(source, source_len, feeds[i]->PS_URL);
 		assert(glite_jpis_db_queries_serialize(&conds, &conds_len, feeds[i]->query) == 0);
 		assert(conds_len <= sizeof(dbconds));
 		dbconds_len = conds_len;
@@ -545,9 +537,7 @@ int glite_jpis_initFeed(glite_jpis_context_t ctx, long int uniqueid, char *feedI
 {
 	int ret;
 
-	memset(ctx->param_feedid, 0, sizeof(ctx->param_feedid));
-	strncpy(ctx->param_feedid, feedId, sizeof(ctx->param_feedid) - 1);
-	ctx->param_feedid_len = strlen(ctx->param_feedid);
+	GLITE_JPIS_PARAM(ctx->param_feedid, ctx->param_feedid_len, feedId);
 	glite_jp_db_set_time(ctx->param_expires, feedExpires);
 	ctx->param_uniqueid = uniqueid;
 
@@ -613,20 +603,14 @@ int glite_jpis_lazyInsertJob(glite_jpis_context_t ctx, const char *feedid, const
 	lprintf("%s\n", __FUNCTION__);
 
 	md5_jobid = str2md5(jobid);
-	memset(ctx->param_jobid, 0, sizeof(ctx->param_jobid));
-	strncpy(ctx->param_jobid, md5_jobid, sizeof(ctx->param_jobid) - 1);
-	ctx->param_jobid_len = strlen(ctx->param_jobid);
+	GLITE_JPIS_PARAM(ctx->param_jobid, ctx->param_jobid_len, md5_jobid);
 
 	switch (ret = glite_jp_db_execute(ctx->select_jobid_stmt)) {
 	case 1: lprintf("jobid '%s' found\n", jobid); goto ok0;
 	case 0:
 		lprintf("%s:inserting jobid %s (%s)\n", __FUNCTION__, jobid, md5_jobid);
-		memset(ctx->param_dg_jobid, 0, sizeof(ctx->param_dg_jobid));
-		memset(ctx->param_feedid, 0, sizeof(ctx->param_feedid));
-		strncpy(ctx->param_dg_jobid, jobid, sizeof(ctx->param_dg_jobid) - 1);
-		strncpy(ctx->param_feedid, feedid, sizeof(ctx->param_feedid) - 1);
-		ctx->param_dg_jobid_len = strlen(ctx->param_dg_jobid);
-		ctx->param_feedid_len = strlen(ctx->param_feedid);
+		GLITE_JPIS_PARAM(ctx->param_dg_jobid, ctx->param_dg_jobid_len, jobid);
+		GLITE_JPIS_PARAM(ctx->param_feedid, ctx->param_feedid_len, feedid);
 		if (glite_jp_db_execute(ctx->insert_job_stmt) != 1) goto fail;
 		break;
 	default: assert(ret != 1); break;
@@ -634,17 +618,13 @@ int glite_jpis_lazyInsertJob(glite_jpis_context_t ctx, const char *feedid, const
 ok0:
 
 	md5_cert = str2md5(owner);
-	memset(ctx->param_ownerid, 0, sizeof(ctx->param_ownerid));
-	strncpy(ctx->param_ownerid, md5_cert, sizeof(ctx->param_ownerid) - 1);
-	ctx->param_ownerid_len = strlen(ctx->param_ownerid);
+	GLITE_JPIS_PARAM(ctx->param_ownerid, ctx->param_ownerid_len, md5_cert);
 
 	switch (ret = glite_jp_db_execute(ctx->select_user_stmt)) {
 	case 1: lprintf("%s:jobid '%s' found\n", __FUNCTION__, jobid); goto ok;
 	case 0:
 		lprintf("%s:inserting user %s (%s)\n", __FUNCTION__, owner, md5_cert);
-		memset(ctx->param_cert, 0, sizeof(ctx->param_cert));
-		strncpy(ctx->param_cert, owner, sizeof(ctx->param_cert) - 1);
-		ctx->param_cert_len = strlen(ctx->param_cert);
+		GLITE_JPIS_PARAM(ctx->param_cert, ctx->param_cert_len, owner);
 		if (glite_jp_db_execute(ctx->insert_user_stmt) != 1) goto fail;
 		break;
 	default: assert(ret != 1); break;

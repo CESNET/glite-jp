@@ -7,7 +7,7 @@
 
 #include "jpis_H.h"
 #include "ws_typemap.h"
-#include "ws_ps_typeref.h"
+#include "ws_is_typeref.h"
 
 
 void glite_jpis_SoapToQueryOp(const enum jptype__queryOp in, glite_jp_queryop_t *out)

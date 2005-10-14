@@ -157,3 +157,13 @@ soap_version.h:
 	perl -ne '$$. == 2 && /.*([0-9])\.([0-9])\.([0-9]).*/ && printf "#define GSOAP_VERSION %d%02d%02d\n",$$1,$$2,$$3' soapH.h >$@
 	-rm soapC.cpp soapH.h soapStub.h soapClient.cpp soapServer.cpp soapClientLib.cpp soapServerLib.cpp
 
+db_ops.h: context.h
+context.h: conf.h
+db_ops.o: db_ops.c conf.h context.h db_ops.h
+context.o: context.c conf.h context.h
+soap_ps_calls.o: soap_ps_calls.c jpps_H.h jpps_.nsmap soap_version.h conf.h db_ops.h ws_ps_typeref.h context.h
+soap_ops.o: soap_ops.c jpis_H.h jpis_.nsmap soap_version.h db_ops.h ws_ps_typeref.h ws_is_typeref.h context.h
+ws_ps_typeref.o: ws_ps_typeref.c jpis_H.h ws_typemap.h ws_ps_typeref.h
+ws_is_typeref.o: ws_is_typeref.c jpis_H.h ws_typemap.h ws_is_typeref.h
+
+.PHONY: default all compile check doc stage dist distsrc distbin install clean
