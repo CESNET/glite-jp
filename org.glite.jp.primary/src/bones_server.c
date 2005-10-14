@@ -225,6 +225,7 @@ static int data_init(void **data)
 	glite_jppsbe_init_slave(ctx);	/* XXX: global but slave's */
 	sleep(10);
 	if (glite_jppsbe_read_feeds(ctx)) fputs(glite_jp_error_chain(ctx),stderr);
+	printf("[%d] slave init done\n",getpid());
 
 	return 0;
 }

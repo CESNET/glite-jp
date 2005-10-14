@@ -63,6 +63,7 @@ int glite_jpps_single_feed(
 		int	done,
 		const char *destination,
 		const char *job,
+		const char *owner,
 		glite_jp_attrval_t const *attrs
 )
 {
@@ -89,6 +90,7 @@ int glite_jpps_single_feed(
 
 	for (i=0; attrs[i].name; i++);
 	jr.jobid = (char *) job; /* XXX: const */
+	jr.owner = owner;
 
 	jr.__sizeattributes = jp2s_attrValues(ctx->other_soap,
 			(glite_jp_attrval_t *) attrs, /* XXX: const */

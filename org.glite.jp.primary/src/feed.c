@@ -23,7 +23,7 @@ extern pid_t	master;
  * seconds before feed expires: should be 
  * XXX: should be configurable, default for real deployment sort of 1 hour
  */
-#define FEED_TTL	120
+#define FEED_TTL	3600
 
 /* XXX: configurable */
 #define BATCH_FEED_SIZE	200
@@ -74,8 +74,16 @@ int full_feed(
 	const char *job,
 	glite_jp_attrval_t **attrs)
 {
-	/* TODO: */
-	abort();
+	int	i,ret;
+	char	**ma;
+
+	for (i=0; feed->attrs[i]; i++);
+	ma = malloc((i+2) * sizeof *ma);
+	ma[0] = GLITE_JP_ATTR_OWNER;
+	memcpy(ma+1,feed->attrs,(i+1) * sizeof *ma);
+	ret = glite_jpps_get_attrs(ctx,job,ma,i+1,attrs);
+	free(ma);
+	return ret;
 }
 
 /* XXX: limit on query size -- I'm lazy to malloc() */
@@ -93,10 +101,12 @@ static int match_feed(
 {
 	int	i,fed;
 	int	qi[QUERY_MAX];
-
+	char	*owner = NULL;
+	glite_jp_attrval_t	meta[QUERY_MAX+1];
 	glite_jp_attrval_t *newattr = NULL;
 
 	glite_jp_clear_error(ctx);
+	memset(meta,0,sizeof meta);
 
 	if (feed->qry) {
 		int	j,complete = 1;
@@ -124,7 +134,6 @@ static int match_feed(
 		 * over multiple invocations of match_feed() for the same job.
 		 */
 		if (!complete) {
-			glite_jp_attrval_t	meta[QUERY_MAX+1];
 			int	qi2[QUERY_MAX];
 
 			memset(meta,0,sizeof meta);
@@ -145,9 +154,11 @@ static int match_feed(
 				return glite_jp_stack_error(ctx,&err);
 			}
 
-			for (i=0; meta[i].name; i++)
+			for (i=0; meta[i].name; i++) {
 				if (!check_qry_item(ctx,feed->qry+qi2[i],meta+i))
 					return 0;
+				if (!strcmp(meta[i].name,GLITE_JP_ATTR_OWNER)) owner = meta[i].value;
+			}
 		}
 	}
 
@@ -156,11 +167,21 @@ static int match_feed(
 	if (!fed) {
 		glite_jp_attrval_t	*a;
 		full_feed(ctx,feed,job,&a);
-		glite_jpps_single_feed(ctx,feed->id,0,feed->destination,job,a);
+		for (i=0; a[i].name && strcmp(a[i].name,GLITE_JP_ATTR_OWNER); i++);
+		owner = a[i].value;
+
+		glite_jpps_single_feed(ctx,feed->id,0,feed->destination,job,owner,a);
 		for (i=0; a[i].name; i++) glite_jp_attrval_free(a+i,0);
 		free(a);
 	}
-	else glite_jpps_single_feed(ctx,feed->id,0,feed->destination,job,attrs);
+	else {
+		if (!owner) {
+			glite_jppsbe_get_job_metadata(ctx,job,meta);
+			for (i=0; meta[i].name && strcmp(meta[i].name,GLITE_JP_ATTR_OWNER); i++);
+		}
+		glite_jpps_single_feed(ctx,feed->id,0,feed->destination,job,owner,attrs);
+	}
+	for (i=0; meta[i].name; i++) glite_jp_attrval_free(meta+i,0);
 	return 0;
 }
 
@@ -232,6 +253,7 @@ int glite_jpps_match_file(
 	void	*bh = NULL;
 	int	ret;
 	struct	jpfeed	*f = ctx->feeds;
+	glite_jp_attrval_t	meta[QUERY_MAX+1];
 
 	int	nvals = 0,j,i;
 	char		**attrs = NULL, **attrs2;
@@ -304,7 +326,10 @@ int glite_jpps_match_file(
 			memset(fattr+j,0,sizeof *fattr);
 
 		}
-		glite_jpps_single_feed(ctx,f->id,0,f->destination,job,fattr);
+		glite_jppsbe_get_job_metadata(ctx,job,meta);
+		for (i=0; meta[i].name && strcmp(meta[i].name,GLITE_JP_ATTR_OWNER); i++);
+		glite_jpps_single_feed(ctx,f->id,0,f->destination,job,meta[i].value,fattr);
+		for (i=0; meta[i].name; i++) glite_jp_attrval_free(meta+i,0);
 		if (!fed) for (i=0; fattr[i].name; i++) glite_jp_attrval_free(fattr+i,0);
 		free(fattr);
 	}
