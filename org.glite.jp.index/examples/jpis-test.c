@@ -71,7 +71,6 @@ int main(int argc,char *argv[])
 	soap_set_namespaces(soap, jpis__namespaces);
 
 	soap_register_plugin(soap,glite_gsplugin);
-goto query;
 	// test calls of server functions
 	{
 	// this call is issued by JPPS
@@ -82,7 +81,9 @@ goto query;
 		memset(&in, 0, sizeof(in));
 		memset(&out, 0, sizeof(out));
 
-		in.feedId = soap_strdup(soap, "12345");
+//XXX : need to register feed with feedid in.feedId in DB
+//this one work only because such feed in conf.c (umbar)
+		in.feedId = soap_strdup(soap, "-PSJ1xMg9Ngd62-Lm-mitg");
 		in.feedDone = false_;
 		in.__sizejobAttributes = 1;
 		in.jobAttributes = soap_malloc(soap, 
@@ -96,30 +97,30 @@ goto query;
 			rec->attributes = soap_malloc(soap,
 				rec->__sizeattributes * sizeof(*(rec->attributes)));
 			rec->attributes[0] = soap_malloc(soap, sizeof(*(rec->attributes[0])));
-			rec->attributes[0]->name = soap_strdup(soap, "owner");
+			rec->attributes[0]->name = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/JP/System:owner");
 			rec->attributes[0]->value =  soap_malloc(soap, sizeof(*(rec->attributes[0]->value)));
-			rec->attributes[0]->value->string = soap_strdup(soap, "Ja");
+			rec->attributes[0]->value->string = soap_strdup(soap, "S:Ja");
 			rec->attributes[0]->value->blob = NULL;
 			rec->attributes[0]->timestamp = 333;
-			rec->attributes[0]->origin = jptype__attrOrig__USER;
+			rec->attributes[0]->origin = jptype__attrOrig__SYSTEM;
 			rec->attributes[0]->originDetail = NULL;
 
 			rec->attributes[1] = soap_malloc(soap, sizeof(*(rec->attributes[1])));
-			rec->attributes[1]->name = soap_strdup(soap, "status");
+			rec->attributes[1]->name = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus");
 			rec->attributes[1]->value =  soap_malloc(soap, sizeof(*(rec->attributes[0]->value)));
-			rec->attributes[1]->value->string = soap_strdup(soap, "Done");
+			rec->attributes[1]->value->string = soap_strdup(soap, "S:Done");
 			rec->attributes[1]->value->blob = NULL;
 			rec->attributes[1]->timestamp = 333;
-			rec->attributes[1]->origin = jptype__attrOrig__USER;
+			rec->attributes[1]->origin = jptype__attrOrig__SYSTEM;
 			rec->attributes[1]->originDetail = NULL;
 
 		}
 		in.jobAttributes[0] = rec;
 
+
 		check_fault(soap,
 			soap_call___jpsrv__UpdateJobs(soap,server,"",&in,&out));
 	}
-query:
 	{
 	// this call is issued by user
 		struct _jpelem__QueryJobs		in;
