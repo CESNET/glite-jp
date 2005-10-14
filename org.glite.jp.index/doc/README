@@ -1,7 +1,7 @@
 Job provenance Index server README
 ==================================
 
-($header$)
+($Header$)
 
 Job provenance and its components 
 ---------------------------------
@@ -42,7 +42,8 @@ Release notes
 - In this release configuration of JP-IS is rather limited. Parts of
   configuration are hard-coded (src/conf.c)
 
-- Debug outputs are on and directed to xxxxx file.
+- Debug outputs are on and directed to /opt/glite/var/log/glite-jp-index.log
+  file.
 
 - No admin tools are implemented yet.
 
@@ -92,6 +93,3 @@ steps:
 
 3) it calls queryJobs wsdl call, normally called by user program,
    obtaining previously inserted data.
-
-
-
