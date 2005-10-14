@@ -148,26 +148,25 @@ fail:
 
 static int checkIndexedConditions(glite_jpis_context_t ctx, struct _jpelem__QueryJobs *in)
 {
-	char 			**indexed_attrs = NULL;
+	char 			**indexed_attrs = NULL, *res;
 	int			i, j, k, ret;
+	glite_jp_db_stmt_t      stmt;
 
 
-	if ((ret = glite_jp_db_execute(ctx->select_info_attrs_indexed)) == -1) {
-		fprintf(stderr, "Error when executing select_info_attrs_indexed, \
-			returned %d records: %s (%s)\n", 
-			ret, ctx->jpctx->error->desc, ctx->jpctx->error->source);
-		return SOAP_FAULT;
-	}
-
+	if ((ret = glite_jp_db_execstmt(ctx->jpctx, 
+		"SELECT name FROM attrs WHERE (indexed=1)", &stmt)) < 0) goto end;
+	
 	i = 0;
-	while (glite_jp_db_fetch(ctx->select_info_attrs_indexed) == 0) {
+        while ( (ret = glite_jp_db_fetchrow(stmt, &res)) > 0 ) {
 		if (!(i % INDEXED_STRIDE)) {
 			indexed_attrs = realloc(indexed_attrs, 
 				((i / INDEXED_STRIDE + 1) * INDEXED_STRIDE)  
 				* sizeof(*indexed_attrs));
 		}
-		indexed_attrs[i++] = strdup(ctx->param_indexed);
+		indexed_attrs[i++] = strdup(res);
+		free(res);
         }
+        if ( ret < 0 ) goto end;
 
 	for (k=0; k < in->__sizeconditions; k++) {
 		for (j=0; j < i; j++) {
@@ -408,12 +407,12 @@ err:
 }
 
 
-/* fills structure jobRecord */
+/* fills structure jobRecord  for a given jobid*/
 static int get_attrs(struct soap *soap, glite_jpis_context_t ctx, char *jobid, struct _jpelem__QueryJobs *in, struct jptype__jobRecord **out)
 {
 	struct jptype__jobRecord 	jr;
 	struct jptype__attrValue	**av = NULL;
-	int 				j, size;
+	int 				i, j, size;
 
 
 	assert(out);
@@ -429,7 +428,9 @@ static int get_attrs(struct soap *soap, glite_jpis_context_t ctx, char *jobid, s
 		if (get_attr(soap, ctx, jobid, in->attributes[j], &jr) ) goto err;
 		if (jr.__sizeattributes > 0) {
 			av = realloc(av, (size + jr.__sizeattributes) * sizeof(*av));
-			memcpy(av[size], jr.attributes, jr.__sizeattributes * sizeof(*av));
+			for (i=0; i<jr.__sizeattributes; i++)
+				av[size+i] = jr.attributes[i];
+			//memcpy(av[size], jr.attributes[0], jr.__sizeattributes * sizeof(*av));
 			size += jr.__sizeattributes;
 			free(jr.attributes);
 		}
