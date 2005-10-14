@@ -22,51 +22,10 @@
 /* insert simulating FeedIndex call */
 #define INSERT "insert into feeds value ('93', '12345', '8', '0' , 'http://localhost:8901', '2005-10-14 10:48:27', 'COND2');" 
 
+static int check_fault(struct soap *soap,int err);
+
 
 	
-static int check_fault(struct soap *soap,int err) {
-	struct SOAP_ENV__Detail *detail;
-	struct jptype__genericFault	*f;
-	char	*reason,indent[200] = "  ";
-
-	switch(err) {
-		case SOAP_OK: puts("OK");
-			      break;
-		case SOAP_FAULT:
-		case SOAP_SVR_FAULT:
-			if (soap->version == 2) {
-				detail = soap->fault->SOAP_ENV__Detail;
-				reason = soap->fault->SOAP_ENV__Reason;
-			}
-			else {
-				detail = soap->fault->detail;
-				reason = soap->fault->faultstring;
-			}
-			fputs(reason,stderr);
-			putc('\n',stderr);
-			assert(detail->__type == SOAP_TYPE__genericFault);
-#if GSOAP_VERSION >=20700
-			f = ((struct _genericFault *) detail->fault)
-#else
-			f = ((struct _genericFault *) detail->value)
-#endif
-				-> jpelem__genericFault;
-
-			while (f) {
-				fprintf(stderr,"%s%s: %s (%s)\n",indent,
-						f->source,f->text,f->description);
-				f = f->reason;
-				strcat(indent,"  ");
-			}
-			return -1;
-
-		default: soap_print_fault(soap,stderr);
-			 return -1;
-	}
-	return 0;
-}
-
-
 int main(int argc,char *argv[])
 {
 	//char	*server = "http://localhost:8902";
@@ -75,12 +34,38 @@ int main(int argc,char *argv[])
 
 	soap_init(soap);	
 	soap_set_namespaces(soap, jpis__namespaces);
-
 	soap_register_plugin(soap,glite_gsplugin);
-//goto query;
-	// test calls of server functions
+
+/*---------------------------------------------------------------------------*/
+	// simulate FeedIndex PS response
 	{
+		glite_jp_db_stmt_t      stmt;
+		glite_jp_context_t      ctx;
+		glite_jpis_context_t	isctx;
+		glite_jp_is_conf        *conf;
+		
+
+		glite_jp_init_context(&ctx);
+		glite_jp_get_conf(0, NULL, NULL, &conf);
+		glite_jpis_init_context(&isctx, ctx, conf);
+		if (glite_jpis_init_db(isctx) != 0) {
+			fprintf(stderr, "Connect DB failed: %s (%s)\n", 
+				ctx->error->desc, ctx->error->source);
+			goto end;
+		}
+		
+		if (glite_jp_db_execstmt(ctx,
+			INSERT, &stmt) < 0) goto end;
+	end:
+		glite_jpis_free_context(isctx);
+		glite_jp_free_context(ctx);
+		glite_jp_free_conf(conf);
+	}
+
+/*---------------------------------------------------------------------------*/
+	// test calls of server functions
 	// this call is issued by JPPS
+	{
 		struct jptype__jobRecord		*rec;
 		struct _jpelem__UpdateJobs 		in;
 		struct _jpelem__UpdateJobsResponse 	out;
@@ -90,29 +75,6 @@ int main(int argc,char *argv[])
 
 		//XXX : need to register feed with feedid in.feedId in DB
 		//	this one work only because such feed in conf.c (umbar)
-		{
-			glite_jp_db_stmt_t      stmt;
-			glite_jp_context_t      ctx;
-			glite_jpis_context_t	isctx;
-			glite_jp_is_conf        *conf;
-			
-
-			glite_jp_init_context(&ctx);
-			glite_jp_get_conf(0, NULL, NULL, &conf);
-			glite_jpis_init_context(&isctx, ctx, conf);
-			if (glite_jpis_init_db(isctx) != 0) {
-				fprintf(stderr, "Connect DB failed: %s (%s)\n", 
-					ctx->error->desc, ctx->error->source);
-				goto end;
-			}
-			
-			if (glite_jp_db_execstmt(ctx,
-		                INSERT, &stmt) < 0) goto end;
-		end:
-			glite_jpis_free_context(isctx);
-			glite_jp_free_context(ctx);
-			glite_jp_free_conf(conf);
-		}
 
 		//in.feedId = soap_strdup(soap, str2md5("http://localhost:8901"));
 		in.feedId = soap_strdup(soap, "12345");
@@ -154,9 +116,10 @@ int main(int argc,char *argv[])
 		check_fault(soap,
 			soap_call___jpsrv__UpdateJobs(soap,server,"",&in,&out));
 	}
-query:
-	{
+
+/*---------------------------------------------------------------------------*/
 	// this call is issued by user
+	{
 		struct _jpelem__QueryJobs		in;
 		struct jptype__indexQuery 		*cond;
 		struct jptype__indexQueryRecord 	*rec;
@@ -211,6 +174,50 @@ query:
 
 	return 0;
 }
+
+
+static int check_fault(struct soap *soap,int err) {
+	struct SOAP_ENV__Detail *detail;
+	struct jptype__genericFault	*f;
+	char	*reason,indent[200] = "  ";
+
+	switch(err) {
+		case SOAP_OK: puts("OK");
+			      break;
+		case SOAP_FAULT:
+		case SOAP_SVR_FAULT:
+			if (soap->version == 2) {
+				detail = soap->fault->SOAP_ENV__Detail;
+				reason = soap->fault->SOAP_ENV__Reason;
+			}
+			else {
+				detail = soap->fault->detail;
+				reason = soap->fault->faultstring;
+			}
+			fputs(reason,stderr);
+			putc('\n',stderr);
+			assert(detail->__type == SOAP_TYPE__genericFault);
+#if GSOAP_VERSION >=20700
+			f = ((struct _genericFault *) detail->fault)
+#else
+			f = ((struct _genericFault *) detail->value)
+#endif
+				-> jpelem__genericFault;
+
+			while (f) {
+				fprintf(stderr,"%s%s: %s (%s)\n",indent,
+						f->source,f->text,f->description);
+				f = f->reason;
+				strcat(indent,"  ");
+			}
+			return -1;
+
+		default: soap_print_fault(soap,stderr);
+			 return -1;
+	}
+	return 0;
+}
+
 
 
 /* XXX: we don't use it */
