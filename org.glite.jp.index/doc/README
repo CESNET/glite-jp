@@ -93,3 +93,5 @@ steps:
 
 3) it calls queryJobs wsdl call, normally called by user program,
    obtaining previously inserted data.
+
+Test query has form (status=Done OR status=Ready) AND (user!=God).
