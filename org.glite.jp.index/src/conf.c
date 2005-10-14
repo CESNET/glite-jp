@@ -24,15 +24,35 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 	// lb.server/build/jp_job_attrs.h (created when build plugin)
 	// jp.common/interfaces/known_attr.h
 
-	conf->attrs = calloc(5, sizeof(*conf->attrs));
+	conf->attrs = calloc(19, sizeof(*conf->attrs));
 	conf->attrs[0] = strdup("http://egee.cesnet.cz/en/Schema/JP/System:owner");
 	conf->attrs[1] = strdup("http://egee.cesnet.cz/en/Schema/JP/System:jobId");
-	conf->attrs[2] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus");
+	conf->attrs[2] = strdup("http://egee.cesnet.cz/en/Schema/JP/System::regtime");
 	conf->attrs[3] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:user");
+	conf->attrs[4] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:aTag");
+	conf->attrs[5] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:eNodes");
+	conf->attrs[6] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:RB");
+	conf->attrs[7] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:CE");
+	conf->attrs[8] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:UIHost");
+	conf->attrs[9] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:CPUTime");
+	conf->attrs[10] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:NProc");
+	conf->attrs[11] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus");
+	conf->attrs[12] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatusDate");
+	conf->attrs[13] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:retryCount");
+	conf->attrs[14] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:jobType");
+	conf->attrs[15] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:nsubjobs");
+	conf->attrs[16] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:lastStatusHistory");
+	conf->attrs[17] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:fullStatusHistory");
 
-	conf->indexed_attrs = calloc(3, sizeof(*conf->indexed_attrs));
+	conf->indexed_attrs = calloc(9, sizeof(*conf->indexed_attrs));
 	conf->indexed_attrs[0] = strdup("http://egee.cesnet.cz/en/Schema/JP/System:owner");
-	conf->indexed_attrs[1] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus");
+	conf->indexed_attrs[1] = strdup("http://egee.cesnet.cz/en/Schema/JP/System:jobId");
+	conf->indexed_attrs[2] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:user");
+	conf->indexed_attrs[3] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus");
+	conf->indexed_attrs[4] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:aTag");
+	conf->indexed_attrs[5] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:UIHost");
+	conf->indexed_attrs[6] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:CE");
+	conf->indexed_attrs[7] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:RB");
 
 	// XXX: some plugin names should come here in future
 	conf->plugins = NULL;
