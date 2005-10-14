@@ -142,9 +142,11 @@ distbin:
 	
 install:
 	-mkdir -p ${PREFIX}/bin ${PREFIX}/etc ${PREFIX}/etc/init.d
+	-mkdir -p ${PREFIX}/share/doc/${package}-${version}
 	${INSTALL} -m 755 glite-jp-indexd ${PREFIX}/bin; \
 
-#	${INSTALL} -m 755 ${top_srcdir}/config/startup ${PREFIX}/etc/init.d/glite-jp-indexd
+	${INSTALL} -m 755 ${top_srcdir}/config/startup ${PREFIX}/etc/init.d/glite-jp-indexd
+	${INSTALL} -m 644 ${top_srcdir}/doc/README ${PREFIX}/share/doc/${package}-${version}
 
 clean:
 
