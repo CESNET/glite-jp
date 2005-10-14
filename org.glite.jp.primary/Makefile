@@ -162,7 +162,10 @@ install:
 		(cd ${top_srcdir}/interface && install -m 644 ${HDRS_I} ${PREFIX}/include/${globalprefix}/${jpprefix}) ; \
 		(cd ${top_srcdir}/src && install -m 644 ${HDRS_S} ${PREFIX}/include/${globalprefix}/${jpprefix}) ; \
 	fi
-
+	for plugin in ${plugins}; do \
+		${INSTALL} -m 755 $$plugin ${PREFIX}/lib; \
+	done
+	${INSTALL} -m 755 ${top_srcdir}/config/startup ${PREFIX}/etc/init.d/glite-jp-primary
 
 clean:
 
