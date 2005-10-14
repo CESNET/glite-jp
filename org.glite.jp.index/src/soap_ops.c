@@ -250,8 +250,8 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 				attr.binary = 0;
 				glite_jpis_SoapToAttrOrig(soap,
 					in->conditions[i]->origin, &(attr.origin));
-				trio_asprintf(&qb,"%s %s attr_%|Ss.value %s \"%|Ss\" ",
-					qa, (j ? "OR" : ""), attr_md5, qop,
+				trio_asprintf(&qb,"%s%sattr_%|Ss.value %s \"%|Ss\"",
+					qa, (j ? " OR " : ""), attr_md5, qop,
 					glite_jp_attrval_to_db_index(ctx->jpctx, &attr, 255));
 				free(qop);
 				free(qa); qa = qb; qb = NULL;
@@ -263,7 +263,7 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 				attr.size = in->conditions[i]->record[j]->value->blob->__size;
 				glite_jpis_SoapToAttrOrig(soap,
 					in->conditions[i]->origin, &(attr.origin));
-				trio_asprintf(&qb,"%s %s attr_%|Ss.value %s \"%|Ss\" ",
+				trio_asprintf(&qb,"%s %s attr_%|Ss.value %s \"%|Ss\"",
 					qa, (j ? "OR" : ""), attr_md5, qop,
 					glite_jp_attrval_to_db_index(ctx->jpctx, &attr, 255));
 				free(qop);
@@ -349,7 +349,7 @@ static int get_attr(struct soap *soap, glite_jpis_context_t ctx, char *jobid, ch
 {
 	glite_jp_attrval_t		jav;
 	struct jptype__attrValue	**av = NULL;;
-	enum jptype__attrOrig		*origin;
+	//enum jptype__attrOrig		*origin;
 	char 				*query, *fv, *jobid_md5, *attr_md5;
 	int 				i, ret;
 	glite_jp_db_stmt_t      	stmt;
@@ -417,7 +417,7 @@ static int get_attrs(struct soap *soap, glite_jpis_context_t ctx, char *jobid, s
 {
 	struct jptype__jobRecord 	jr;
 	struct jptype__attrValue	**av = NULL;
-	int 				i, j, size;
+	int 				j, size;
 
 
 	assert(out);
