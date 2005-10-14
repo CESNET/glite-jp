@@ -4,6 +4,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include <glite/jp/types.h>
 #include <glite/jp/context.h>
@@ -12,6 +13,8 @@
 
 int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf **configuration)
 { 
+	char *ps = NULL;
+
         // read comman line options and configuration file
 	// XXX: use EGEE global configure tools in future...
 
@@ -19,7 +22,11 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 
 
 	conf = calloc(1, sizeof(*conf));
-	
+
+	// configuration from environment	
+	conf->cs = getenv("GLITE_JPIS_DB");
+	conf->port = getenv("GLITE_JPIS_PORT");
+
 	// prefixes & attributes defined in:
 	// lb.server/build/jp_job_attrs.h (created when build plugin)
 	// jp.common/interfaces/known_attr.h
@@ -56,13 +63,19 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 	// XXX: some plugin names should come here in future
 	conf->plugins = NULL;
 
+//	ps = "http://umbar.ics.muni.cz:8901";
+	if (!ps && ((ps = getenv("GLITE_JPIS_PS")) == NULL)) {
+		printf("No JP PrimaryStrorage server specified in $GLITE_JPIS_PS, default feeds skipped.\n");
+		conf->feeds = calloc(1, sizeof(*(conf->feeds)));
+		*configuration = conf;
+		return 0;
+	}
 
 	/* ask for one feed */
 	conf->feeds = calloc(2, sizeof(*(conf->feeds)));
 	
 	conf->feeds[0] = calloc(1, sizeof(**(conf->feeds)));
-//	conf->feeds[0]->PS_URL = strdup("http://umbar.ics.muni.cz:8901");
-	conf->feeds[0]->PS_URL = strdup("http://localhost:8901");
+	conf->feeds[0]->PS_URL = strdup(ps);
 
 	// all job since Epoche
 	conf->feeds[0]->query = calloc(2,sizeof(*conf->feeds[0]->query));
@@ -75,9 +88,6 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 	conf->feeds[0]->continuous = 0;
 
 	conf->feeds[1] = NULL;
-
-	conf->cs = getenv("GLITE_JPIS_DB");
-	conf->port = getenv("GLITE_JPIS_PORT");
 
 	*configuration = conf;
 

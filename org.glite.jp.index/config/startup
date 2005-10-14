@@ -27,30 +27,9 @@ unset creds port
 
 start()
 {
-#	if test -z "$GLITE_USER" ;then
-#		echo 'Error: GLITE_USER is not set'
-#		echo FAILED
-#		return 1
-#	fi
-
-	[ -n "$GLITE_HOST_CERT" -a -n "$GLITE_HOST_KEY" ] &&
-		creds="-c $GLITE_HOST_CERT -k $GLITE_HOST_KEY"
-
-	if test -z "$creds"; then
-		if su - $GLITE_USER -c "test -r /etc/grid-security/hostkey.pem -a -r /etc/grid-security/hostcert.pem"; then
-			echo "$0: WARNING: /etc/grid-security/hostkey.pem readable by $GLITE_USER"
-			creds="-c /etc/grid-security/hostcert.pem -k /etc/grid-security/hostkey.pem"
-		fi
-	fi
-
-#	not used for now
-#	[ -z "$creds" ] && echo $0: WARNING: No credentials specified. Using default lookup which is dangerous. >&2
-
 	echo -n Starting glite-jp-indexd ...
-#	su - $GLITE_USER -c 
-"$GLITE_LOCATION/bin/glite-jp-indexd \
-		" && echo " done" || echo " FAILED"
-#		$creds -i $pidfile $port" 
+	$GLITE_LOCATION/bin/glite-jp-indexd > $GLITE_LOCATION_VAR/log/glite-jp-index.log 2>&1 &
+	echo " done"
 }
 
 stop()
