@@ -1,0 +1,79 @@
+Job provenance Index server README
+==================================
+
+($header$)
+
+Job provenance and its components 
+---------------------------------
+
+This file contains basic administrator's documentation for Job
+provenance (JP) Index server (IS). For Job provenance architecture and
+functionality description please see: EGEE architecture document
+DJRA1.4 - https://edms.cern.ch/document/594698/ chapter 8.4.
+Job provenance interfaces are documented on http://egee.cesnet.cz/en/WSDL/ 
+page.
+
+Source code, executables, dependences
+-------------------------------------
+
+JP-IS CVS module name is org.glite.jp.index. It depends on common libraries
+for JP (module org.glite.jp.common) and implements interfaces defined in
+org.glite.jp.ws-interface. It is also based on org.glite.lb.server-bones.
+
+JP-IS consist from one stand-alone daemon (glite-jp-indexd) which is
+using MySQL database (default name: jpis1).
+
+JP-IS interactions:
+
+- JP primary storage - feeding of data from primary storage to the IS according
+  particular IS instance administrator needs (expressed by IS configuration)
+
+- JP-IS user query interface - implements IS service for end users
+
+- admin interface - intended for admin tools (management and
+  on-the-fly configuration changes)
+
+
+Release notes 
+------------- 
+
+- In this release configuration of JP-IS is rather limited. Parts of
+  configuration are hard-coded.
+
+- Debug outputs are on and directed to xxxxx file.
+
+- No admin tools implemented yet.
+
+Installation
+------------
+
+- database setup
+
+  The JP-IS server daemon assume prior creation of its database. Simple tool
+  for database creation is org.glite.jp.index/config/dbsetup.sh
+
+- customize startup script /etc/init.d/glite-jp-indexd (see below)
+  and set up service startup using this script
+
+Configuration
+------------- 
+
+Currently configuration is done by environment variables (see also
+startup script template):
+
+GLITE_JPIS_PS   - location of JP-PS server (required parameter)
+                  (for example http://umbar.ics.muni.cz:8901)
+
+GLITE_JPIS_PORT - used port (default 8902)
+
+GLITE_JPIS_DB	- database connection string (default jpis/@localhost:jpis1)
+
+
+For other parameters to be configurable in close future and its
+current hard-coded values please see files org.glite.jp.index/src/conf.[ch]
+
+
+Testing 
+-------
+
+See examples/jpis-test.c file.
