@@ -1,0 +1,108 @@
+#! /bin/sh
+
+#
+# startup script for JP index server
+#
+# environment:
+#	GLITE_JPIS_PS   - required JP PrimaryStorage server
+#                         (for example http://umbar.ics.muni.cz:8901)
+#	GLITE_JPIS_PORT - used port (default 8902)
+#	GLITE_JPIS_DB	- connection string (default jpis/@localhost:jpis1)
+#
+
+GLITE_LOCATION=${GLITE_LOCATION:-/opt/glite}
+GLITE_LOCATION_VAR=${GLITE_LOCATION_VAR:-${GLITE_LOCATION}/var}
+
+[ -f /etc/glite.conf ] && . /etc/glite.conf
+[ -f $GLITE_LOCATION/etc/glite-wms.conf ] && . $GLITE_LOCATION/etc/glite-wms.conf
+[ -f $HOME/.glite.conf ] && . $HOME/.glite.conf
+
+[ -f $GLITE_LOCATION/etc/jpis.conf ] && . $GLITE_LOCATION/etc/jpis.conf
+[ -f $GLITE_LOCATION_VAR/etc/jpis.conf ] && . $GLITE_LOCATION_VAR/etc/jpis.conf
+
+[ -n "$GLITE_JPIS_SERVER_PIDFILE" ] && pidfile=$GLITE_JPIS_SERVER_PIDFILE ||
+	pidfile=$GLITE_LOCATION_VAR/glite-jp-indexd.pid
+
+unset creds port
+
+start()
+{
+#	if test -z "$GLITE_USER" ;then
+#		echo 'Error: GLITE_USER is not set'
+#		echo FAILED
+#		return 1
+#	fi
+
+	[ -n "$GLITE_HOST_CERT" -a -n "$GLITE_HOST_KEY" ] &&
+		creds="-c $GLITE_HOST_CERT -k $GLITE_HOST_KEY"
+
+	if test -z "$creds"; then
+		if su - $GLITE_USER -c "test -r /etc/grid-security/hostkey.pem -a -r /etc/grid-security/hostcert.pem"; then
+			echo "$0: WARNING: /etc/grid-security/hostkey.pem readable by $GLITE_USER"
+			creds="-c /etc/grid-security/hostcert.pem -k /etc/grid-security/hostkey.pem"
+		fi
+	fi
+
+#	not used for now
+#	[ -z "$creds" ] && echo $0: WARNING: No credentials specified. Using default lookup which is dangerous. >&2
+
+	echo -n Starting glite-jp-indexd ...
+#	su - $GLITE_USER -c 
+"$GLITE_LOCATION/bin/glite-jp-indexd \
+		" && echo " done" || echo " FAILED"
+#		$creds -i $pidfile $port" 
+}
+
+stop()
+{
+	echo -n Stopping glite-jp-indexd ...
+	if [ -f $pidfile ]; then
+		pid=`cat $pidfile`
+		kill $pid
+		echo -n Stopping glite-jp-indexd \($pid\) ...
+		try=0
+		while ps p $pid >/dev/null 2>&1; do 
+			sleep 1;
+			try=`expr $try + 1`
+			if [ $try = 20 ]; then
+				echo " giving up after $try retries"
+				return 1
+			fi
+	 	done
+		echo " done"
+		rm -f $pidfile
+	else
+		killall glite-jp-indexd
+#		echo $pidfile does not exist - glite-jp-indexd not running? >&2
+	fi
+	echo done
+}
+
+status()
+{
+	if [ -f $pidfile ]; then
+		pid=`cat $pidfile`
+		if ps p $pid >/dev/null 2>&1; then
+			echo glite-jp-indexd running as $pid 
+			return 0
+		fi
+	else
+		ps xa | grep "glite-jp-indexd" > /dev/null
+		if [ "$?" = 0 ]; then
+			echo glite-jp-indexd running
+			return 0
+		fi
+	fi
+
+	echo glite-jp-indexd not running
+	return 1
+}
+
+case x$1 in
+	xstart)	start;;
+	xstop)	stop;;
+	xrestart) stop; start;;
+	xstatus) status;;
+	x*)	echo usage: $0 start,stop,restart,status >&2
+		exit 1;;
+esac
