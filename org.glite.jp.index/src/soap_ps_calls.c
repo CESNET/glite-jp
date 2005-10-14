@@ -132,7 +132,7 @@ int MyFeedIndex(glite_jpis_context_t ctx, glite_jp_is_conf *conf, long int uniqu
 	glite_jp_error_t err;
 	char *src, hname[512];
 
-printf("MyFeedIndex for %s called\n", dest);
+lprintf("MyFeedIndex for %s called\n", dest);
 
 	soap_init(soap);
         soap_set_namespaces(soap,jpps__namespaces);
@@ -158,7 +158,7 @@ printf("MyFeedIndex for %s called\n", dest);
 			err.code = EINVAL;
 			err.desc = "error during conds conversion";
 			asprintf(&src, "%s/%s():%d", __FILE__, __FUNCTION__, __LINE__);
-			printf("%s\n", src);
+			fprintf(stderr, "%s\n", src);
 			goto err;
 		}
 	}
@@ -166,19 +166,19 @@ printf("MyFeedIndex for %s called\n", dest);
 	in.history = conf->feeds[dest_index]->history;
 	in.continuous = conf->feeds[dest_index]->continuous;
 	in.destination = ctx->hname;
-	printf("%s:%s\n", __FUNCTION__, ctx->hname);
+	fprintf(stderr, "%s:%s\n", __FUNCTION__, ctx->hname);
 
 	if (check_fault(soap,soap_call___jpsrv__FeedIndex(soap,dest,"", &in, &out)) != 0) {
-		printf("\n");
+		fprintf(stderr, "\n");
 		glite_jpis_unlockFeed(ctx, uniqueid);
 		err.code = EIO;
 		err.desc = "soap_call___jpsrv__FeedIndex() returned error";
 		asprintf(&src, "%s/%s():%d", __FILE__, __FUNCTION__, __LINE__);
-		printf("%s\n", err.desc);
+		fprintf(stderr, "%s\n", err.desc);
 		goto err;
 	}
 	else {
-		printf("FeedId: %s\nExpires: %s\n",out.feedId,ctime(&out.feedExpires));
+		lprintf("FeedId: %s\nExpires: %s\n",out.feedId,ctime(&out.feedExpires));
 		glite_jpis_initFeed(ctx, uniqueid, out.feedId, out.feedExpires);
 		glite_jpis_unlockFeed(ctx, uniqueid);
 	}

@@ -81,7 +81,7 @@ static int updateJob(glite_jpis_context_t ctx, const char *feedid, struct jptype
 	struct jptype__attrValue *attr;
 	int ret, iattrs;
 
-	printf("%s: jobid='%s', attrs=%d\n", __FUNCTION__, jobAttrs->jobid, jobAttrs->__sizeattributes);
+	lprintf("%s: jobid='%s', attrs=%d\n", __FUNCTION__, jobAttrs->jobid, jobAttrs->__sizeattributes);
 
 	if (jobAttrs->remove) assert(*(jobAttrs->remove) == 0);
 
@@ -140,7 +140,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__UpdateJobs(
 fail:
 // TODO: bubble up
 	err = glite_jp_error_chain(ctx->jpctx);
-	printf("%s:%s\n", __FUNCTION__, err);
+	fprintf(stderr, "%s:%s\n", __FUNCTION__, err);
 	free(err);
 	return SOAP_FAULT;
 }

@@ -8,6 +8,9 @@
 
 #define GLITE_JPIS_DEFAULT_PORT_STR "8902"
 
+//#define lprintf
+#define lprintf printf
+
 typedef struct _glite_jp_is_feed {
 	char    		*PS_URL;	//URLs of Primary Storage servers
 	glite_jp_query_rec_t    **query;        // query to Primary Server (aka filter)

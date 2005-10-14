@@ -36,9 +36,6 @@
 )"
 #define INDEX_LENGTH 255
 
-//#define lprintf
-#define lprintf printf
-
 #define WORD_SWAP(X) ((((X) >> 8) & 0xFF) | (((X) & 0xFF) << 8))
 #define LONG_SWAP(X) (WORD_SWAP(((X) >> 16) & 0xFFFF) | ((WORD_SWAP(X) & 0xFFFF) << 16))
 #if __BYTE_ORDER == __LITTLE_ENDIAN

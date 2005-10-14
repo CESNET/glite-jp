@@ -28,8 +28,7 @@ static int check_fault(struct soap *soap,int err);
 	
 int main(int argc,char *argv[])
 {
-	//char	*server = "http://localhost:8902";
-	char	*server = "http://localhost:10005";
+	char	*server = "http://localhost:8902";
 	struct soap	*soap = soap_new();
 
 	soap_init(soap);	
