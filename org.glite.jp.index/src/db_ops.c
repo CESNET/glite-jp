@@ -469,12 +469,10 @@ int glite_jpis_init_db(glite_jpis_context_t isctx) {
 		GLITE_JP_DB_TYPE_CHAR, isctx->param_feedid, &isctx->param_feedid_len);
 	if ((glite_jp_db_prepare(jpctx, "INSERT INTO jobs (jobid, dg_jobid, ownerid, ps) VALUES (?, ?, ?, (SELECT source FROM feeds WHERE feedid=?))", &isctx->insert_job_stmt, myparam, NULL)) != 0) goto fail;
 
-#if 0
 	// sql command: check the user
 	glite_jp_db_create_params(&myparam, 1,
 		GLITE_JP_DB_TYPE_CHAR, isctx->param_ownerid, &isctx->param_ownerid_len);
 	if ((glite_jp_db_prepare(jpctx, "SELECT userid FROM users WHERE userid=?", &isctx->select_user_stmt, myparam, NULL)) != 0) goto fail;
-#endif
 
 	// sql command: insert the user
 	glite_jp_db_create_params(&myparam, 2,
@@ -500,7 +498,7 @@ void glite_jpis_free_db(glite_jpis_context_t ctx) {
 	glite_jp_db_freestmt(&ctx->update_error_feed_stmt);
 	glite_jp_db_freestmt(&ctx->select_info_attrs_indexed);
 	glite_jp_db_freestmt(&ctx->select_jobid_stmt);
-//	glite_jp_db_freestmt(&ctx->select_user_stmt);
+	glite_jp_db_freestmt(&ctx->select_user_stmt);
 	glite_jp_db_freestmt(&ctx->insert_job_stmt);
 	glite_jp_db_freestmt(&ctx->insert_user_stmt);
 	glite_jp_db_close(ctx->jpctx);
@@ -634,16 +632,16 @@ int glite_jpis_lazyInsertJob(glite_jpis_context_t ctx, const char *feedid, const
 	default: assert(ret != 1); break;
 	}
 ok0:
-#if 0
+
 	md5_cert = str2md5(owner);
+	memset(ctx->param_ownerid, 0, sizeof(ctx->param_ownerid));
 	strncpy(ctx->param_ownerid, md5_cert, sizeof(ctx->param_ownerid) - 1);
 	ctx->param_ownerid_len = strlen(ctx->param_ownerid);
 
 	switch (ret = glite_jp_db_execute(ctx->select_user_stmt)) {
-	case 1: lprintf("jobid '%s' found\n", jobid); goto ok;
+	case 1: lprintf("%s:jobid '%s' found\n", __FUNCTION__, jobid); goto ok;
 	case 0:
 		lprintf("%s:inserting user %s (%s)\n", __FUNCTION__, owner, md5_cert);
-		memset(ctx->param_ownerid, 0, sizeof(ctx->param_ownerid));
 		memset(ctx->param_cert, 0, sizeof(ctx->param_cert));
 		strncpy(ctx->param_cert, owner, sizeof(ctx->param_cert) - 1);
 		ctx->param_cert_len = strlen(ctx->param_cert);
@@ -651,7 +649,6 @@ ok0:
 		break;
 	default: assert(ret != 1); break;
 	}
-#endif
 
 ok:
 	free(md5_jobid);
