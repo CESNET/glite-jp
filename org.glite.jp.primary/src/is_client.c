@@ -16,13 +16,21 @@
 
 #include "soap_util.c"
 
+extern char *server_key, *server_cert;	/* XXX */
+
 static int check_other_soap(glite_jp_context_t ctx)
 {
+	glite_gsplugin_Context	plugin_ctx;
+
 	if (!ctx->other_soap) {
+		glite_gsplugin_init_context(&plugin_ctx);
+		if (server_key) plugin_ctx->key_filename = strdup(server_key);
+		if (server_cert) plugin_ctx->cert_filename = strdup(server_cert);
+
 		ctx->other_soap = soap_new();
 		soap_init(ctx->other_soap);
 		soap_set_namespaces(ctx->other_soap,jpis__namespaces);
-		soap_register_plugin(ctx->other_soap,glite_gsplugin);
+		soap_register_plugin_arg(ctx->other_soap,glite_gsplugin,plugin_ctx);
 		ctx->other_soap->user = ctx;
 	}
 	return 0;

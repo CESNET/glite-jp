@@ -34,12 +34,12 @@ static struct glite_srvbones_service stab = {
 };
 
 static time_t cert_mtime;
-static char *server_cert, *server_key, *cadir;
-static gss_cred_id_t mycred = GSS_C_NO_CREDENTIAL;
+char *server_cert, *server_key, *cadir;
+gss_cred_id_t mycred = GSS_C_NO_CREDENTIAL;
 static char *mysubj;
 
 static char *port = "8901";
-static int debug = 1;
+static int debug = 0;
 
 static glite_jp_context_t	ctx;
 
@@ -57,15 +57,21 @@ int main(int argc, char *argv[])
 	char	*b_argv[20] = { "backend" },*p_argv[20] = { "plugins" },*com;
 	int	b_argc,p_argc;
 	char	buf[1000];
+	int	slaves = 10;
+	char	*logfile = "/dev/null";
+	char	pidfile[PATH_MAX] = "/var/run/glite-jp-primarystoraged.pid";
+	FILE	*fpid;
 
 	glite_jp_init_context(&ctx);
 	globus_libc_gethostname(buf,sizeof buf);
 	buf[999] = 0;
 	ctx->myURL = buf;
 
+	if (geteuid()) snprintf(pidfile,sizeof pidfile,"%s/glite-jp-primarystoraged.pid",getenv("HOME"));
+
 	b_argc = p_argc = 1;
 
-	while ((opt = getopt(argc,argv,"B:P:a:p:")) != EOF) switch (opt) {
+	while ((opt = getopt(argc,argv,"B:P:a:p:s:dl:i:c:k:")) != EOF) switch (opt) {
 		case 'B':
 			assert(b_argc < 20);
 			if (com = strchr(optarg,',')) *com = 0;
@@ -89,6 +95,17 @@ int main(int argc, char *argv[])
 		case 'p':
 			port = optarg;
 			break;
+		case 'd': debug = 1; break;
+		case 's': slaves = atoi(optarg);
+			  if (slaves <= 0) {
+				  fprintf(stderr,"%s: -s %s: invalid number\n",argv[0],optarg);
+				  exit(1);
+			  }
+			  break;
+		case 'l': logfile = optarg; break;
+		case 'i': strncpy(pidfile,optarg,PATH_MAX); pidfile[PATH_MAX-1] = 0; break;
+		case 'c': server_cert = optarg; break;
+		case 'k': server_key = optarg; break;
 		case '?': fprintf(stderr,"usage: %s: -Bb,val ... -Pplugin.so ...\n"
 					  "b is backend option\n",argv[0]);
 			  exit (1);
@@ -159,10 +176,42 @@ int main(int argc, char *argv[])
 
 	/* XXX: daemonise */
 
+	if (!debug) {
+		int	lfd = open(logfile,O_CREAT|O_TRUNC|O_WRONLY,0600);
+		if (lfd < 0) {
+			fprintf(stderr,"%s: %s: %s\n",argv[0],logfile,strerror(errno));
+			exit(1);
+		}
+		daemon(0,1);
+		dup2(lfd,1);
+		dup2(lfd,2);
+	}
+
 	setpgrp(); /* needs for signalling */
 	master = getpid();
+	fpid = fopen(pidfile,"r");
+	if ( fpid )
+	{
+		int	opid = -1;
 
-	glite_srvbones_set_param(GLITE_SBPARAM_SLAVES_COUNT,1);
+		if ( fscanf(fpid,"%d",&opid) == 1 )
+		{
+			if ( !kill(opid,0) )
+			{
+				fprintf(stderr,"%s: another instance running, pid = %d\n",argv[0],opid);
+				return 1;
+			}
+			else if (errno != ESRCH) { perror("kill()"); return 1; }
+		}
+		fclose(fpid);
+	} else if (errno != ENOENT) { perror(pidfile); return 1; }
+
+	fpid = fopen(pidfile, "w");
+	if (!fpid) { perror(pidfile); return 1; }
+	fprintf(fpid, "%d", getpid());
+	fclose(fpid);
+
+	glite_srvbones_set_param(GLITE_SBPARAM_SLAVES_COUNT,slaves);
 	glite_srvbones_run(data_init,&stab,1 /* XXX: entries in stab */,debug);
 
 	return 0;
@@ -210,6 +259,13 @@ static int newconn(int conn,struct timeval *to,void *data)
 				printf("[%d] reloading credentials\n",getpid()); /* XXX: log */
 				gss_release_cred(&min_stat,&mycred);
 				mycred = newcred;
+
+				/* drop it too, it is recreated and reloads creds when necessary */
+				if (ctx->other_soap) {
+					soap_end(ctx->other_soap);
+					soap_free(ctx->other_soap);
+					ctx->other_soap = NULL;
+				}
 			}
 			break;
 		case -1:
