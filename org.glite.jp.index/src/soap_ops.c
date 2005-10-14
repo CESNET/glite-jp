@@ -233,7 +233,8 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 	glite_jp_db_stmt_t	stmt;
 	glite_jp_attrval_t	attr;
 
-
+	
+	qwhere = strdup("");
 	for (i=0; i < in->__sizeconditions; i++) {
 		attr_md5 = str2md5(in->conditions[i]->attr);
 		trio_asprintf(&qa,"%s jobs.jobid = attr_%|Ss.jobid AND (", 
@@ -268,13 +269,12 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 				free(qop);
 				free(qa); qa = qb; qb = NULL; 
 			}
-			free(attr_md5);
 		}
-		trio_asprintf(&qb,"%s)",qa);
-		free(qa); qa = qb; qb = NULL;
+		trio_asprintf(&qb,"%s %s)", qwhere, qa);
+		free(qa); qwhere = qb; qb = NULL; qa = NULL;
+		free(attr_md5);
 	}
 
-	qwhere = qa; 
 	qa = strdup("");
 
 	for (i=0; (attr_tables && attr_tables[i]); i++) {
@@ -283,6 +283,7 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 	}
 
 	trio_asprintf(&query, "SELECT dg_jobid,ps FROM jobs%s WHERE %s;", qa, qwhere);
+	printf("Incomming QUERY:\n %s\n", query);
 	free(qwhere);
 	free(qa);
 	

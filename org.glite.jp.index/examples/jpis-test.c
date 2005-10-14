@@ -92,7 +92,7 @@ int main(int argc,char *argv[])
 			rec->attributes = soap_malloc(soap,
 				rec->__sizeattributes * sizeof(*(rec->attributes)));
 			rec->attributes[0] = soap_malloc(soap, sizeof(*(rec->attributes[0])));
-			rec->attributes[0]->name = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/JP/System:owner");
+			rec->attributes[0]->name = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/LB/Attributes:user");
 			rec->attributes[0]->value =  soap_malloc(soap, sizeof(*(rec->attributes[0]->value)));
 			rec->attributes[0]->value->string = soap_strdup(soap, "CertSubj");
 			rec->attributes[0]->value->blob = NULL;
@@ -118,7 +118,7 @@ int main(int argc,char *argv[])
 	}
 
 /*---------------------------------------------------------------------------*/
-	// this call is issued by user
+	// this query call issued by user
 	{
 		struct _jpelem__QueryJobs		in;
 		struct jptype__indexQuery 		*cond;
@@ -127,35 +127,68 @@ int main(int argc,char *argv[])
 		int					i, j;
 
 		
-		in.__sizeconditions = 1;
+		in.__sizeconditions = 2;
 		in.conditions = soap_malloc(soap,
 			in.__sizeconditions * 
 			sizeof(*(in.conditions)));
 		
+		// query status
 		cond = soap_malloc(soap, sizeof(*cond));
 		memset(cond, 0, sizeof(*cond));
 		cond->attr = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus");
 		cond->origin = NULL;
-		cond->__sizerecord = 1;
-		cond->record = soap_malloc(soap, sizeof(*(cond->record)));
+		cond->__sizerecord = 2;
+		cond->record = soap_malloc(soap, cond->__sizerecord * sizeof(*(cond->record)));
 
+		// equal to Done
 		rec = soap_malloc(soap, sizeof(*rec));
 		memset(rec, 0, sizeof(*rec));
 		rec->op = jptype__queryOp__EQUAL;
 		rec->value = soap_malloc(soap, sizeof(*(rec->value)));
 		rec->value->string = soap_strdup(soap, "Done");
 		rec->value->blob = NULL;
-		
-		*(cond->record) = rec;
-		*(in.conditions) = cond;
+		cond->record[0] = rec;
 
-		in.__sizeattributes = 3;
+		// OR equal to Ready
+		rec = soap_malloc(soap, sizeof(*rec));
+		memset(rec, 0, sizeof(*rec));
+		rec->op = jptype__queryOp__EQUAL;
+		rec->value = soap_malloc(soap, sizeof(*(rec->value)));
+		rec->value->string = soap_strdup(soap, "Ready");
+		rec->value->blob = NULL;
+		cond->record[1] = rec;
+
+		in.conditions[0] = cond;
+
+		// AND
+		// owner
+		cond = soap_malloc(soap, sizeof(*cond));
+		memset(cond, 0, sizeof(*cond));
+		cond->attr = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/LB/Attributes:user");
+		cond->origin = NULL;
+		cond->__sizerecord = 1;
+		cond->record = soap_malloc(soap, cond->__sizerecord * sizeof(*(cond->record)));
+
+		// not equal to CertSubj
+		rec = soap_malloc(soap, sizeof(*rec));
+		memset(rec, 0, sizeof(*rec));
+		rec->op = jptype__queryOp__UNEQUAL;
+		rec->value = soap_malloc(soap, sizeof(*(rec->value)));
+		rec->value->string = soap_strdup(soap, "God");
+		rec->value->blob = NULL;
+		cond->record[0] = rec;
+
+		in.conditions[1] = cond;
+
+
+		in.__sizeattributes = 4;
 		in.attributes = soap_malloc(soap,
 			in.__sizeattributes *
 			sizeof(*(in.attributes)));
 		in.attributes[0] = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/JP/System:owner");
 		in.attributes[1] = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/JP/System:jobId");
 		in.attributes[2] = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus");
+		in.attributes[3] = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/LB/Attributes:user");
 
 		memset(&out, 0, sizeof(out));
 

@@ -585,7 +585,7 @@ int glite_jpis_insertAttrVal(glite_jpis_context_t ctx, const char *jobid, glite_
 	free(table);
 	free(value);
 	free(full_value);
-	lprintf("%s: sql=%s\n", __FUNCTION__, sql);
+	lprintf("%s(%s): sql=%s\n", __FUNCTION__, av->name, sql);
 	if (glite_jp_db_execstmt(ctx->jpctx, sql, NULL) != 1) {
 		free(sql);
 		return ctx->jpctx->error->code;
