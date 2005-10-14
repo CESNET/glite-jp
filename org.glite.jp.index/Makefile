@@ -57,7 +57,7 @@ SRCS:= conf.c bones_server.c soap_ops.c soap_ps_calls.c \
 	${is_prefix}ServerLib.c \
 	${ps_prefix}ClientLib.c ${ps_prefix}C.c \
 
-EXA_SRCS:=jpis-test.c ${is_prefix}C.c ${is_prefix}Client.c context.c
+EXA_SRCS:=jpis-test.c ${is_prefix}C.c ${is_prefix}Client.c context.c db_ops.c conf.c
 
 OBJS:=${SRCS:.c=.o}
 EXA_OBJS:=${EXA_SRCS:.c=.o}
@@ -87,7 +87,7 @@ ${daemon}: ${OBJS}
 	${LINK} -o $@ -export-dynamic ${OBJS} ${BONESLIB} ${TRIOLIB} ${COMMONLIB} ${GSOAPLIB} ${GLOBUS_LIBS} ${MYSQLIB} ${SRVCOMMONLIB}
 
 ${example}: ${EXA_OBJS}
-	${LINK} -o $@ ${EXA_OBJS} ${GSOAPLIB} ${GLOBUS_LIBS} ${COMMONLIB} ${TRIOLIB}
+	${LINK} -o $@ ${EXA_OBJS} ${GSOAPLIB} ${GLOBUS_LIBS} ${COMMONLIB} ${TRIOLIB} ${MYSQLIB} ${SRVCOMMONLIB}
 
 jpis-db-internal: jpis-db-internal.o db_ops.o conf.o context.o
 	${LINK} -o $@ $+ ${COMMONLIB} ${SRVCOMMONLIB} ${GLOBUS_LIBS}

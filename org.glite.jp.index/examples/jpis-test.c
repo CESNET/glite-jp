@@ -8,14 +8,19 @@
 
 #include "jpis_H.h"
 #include "jpis_.nsmap"
+#include "db_ops.h"
+#include "conf.h"
 
-//#include "jptype_map.h"
 
 #include "soap_version.h"
 #if GSOAP_VERSION <= 20602
 #define soap_call___jpsrv__UpdateJobs soap_call___ns1__UpdateJobs
 #define soap_call___jpsrv__QueryJobs soap_call___ns1__QueryJobs
 #endif
+
+
+/* insert simulating FeedIndex call */
+#define INSERT "insert into feeds value ('93', '12345', '8', '0' , 'http://localhost:8901', '2005-10-14 10:48:27', 'COND2');" 
 
 
 	
@@ -72,7 +77,7 @@ int main(int argc,char *argv[])
 	soap_set_namespaces(soap, jpis__namespaces);
 
 	soap_register_plugin(soap,glite_gsplugin);
-goto query;
+//goto query;
 	// test calls of server functions
 	{
 	// this call is issued by JPPS
@@ -83,8 +88,32 @@ goto query;
 		memset(&in, 0, sizeof(in));
 		memset(&out, 0, sizeof(out));
 
-//XXX : need to register feed with feedid in.feedId in DB
-//this one work only because such feed in conf.c (umbar)
+		//XXX : need to register feed with feedid in.feedId in DB
+		//	this one work only because such feed in conf.c (umbar)
+		{
+			glite_jp_db_stmt_t      stmt;
+			glite_jp_context_t      ctx;
+			glite_jpis_context_t	isctx;
+			glite_jp_is_conf        *conf;
+			
+
+			glite_jp_init_context(&ctx);
+			glite_jp_get_conf(0, NULL, NULL, &conf);
+			glite_jpis_init_context(&isctx, ctx, conf);
+			if (glite_jpis_init_db(isctx) != 0) {
+				fprintf(stderr, "Connect DB failed: %s (%s)\n", 
+					ctx->error->desc, ctx->error->source);
+				goto end;
+			}
+			
+			if (glite_jp_db_execstmt(isctx,
+		                INSERT, &stmt) < 0) goto end;
+		end:
+			glite_jpis_free_context(isctx);
+			glite_jp_free_context(ctx);
+			glite_jp_free_conf(conf);
+		}
+
 		//in.feedId = soap_strdup(soap, str2md5("http://localhost:8901"));
 		in.feedId = soap_strdup(soap, "12345");
 		in.feedDone = false_;
