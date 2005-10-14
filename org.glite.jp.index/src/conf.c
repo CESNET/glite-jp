@@ -44,15 +44,14 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 	conf->attrs[16] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:lastStatusHistory");
 	conf->attrs[17] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:fullStatusHistory");
 
-	conf->indexed_attrs = calloc(9, sizeof(*conf->indexed_attrs));
+	conf->indexed_attrs = calloc(8, sizeof(*conf->indexed_attrs));
 	conf->indexed_attrs[0] = strdup("http://egee.cesnet.cz/en/Schema/JP/System:owner");
 	conf->indexed_attrs[1] = strdup("http://egee.cesnet.cz/en/Schema/JP/System:jobId");
 	conf->indexed_attrs[2] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:user");
 	conf->indexed_attrs[3] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus");
-	conf->indexed_attrs[4] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:aTag");
-	conf->indexed_attrs[5] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:UIHost");
-	conf->indexed_attrs[6] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:CE");
-	conf->indexed_attrs[7] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:RB");
+	conf->indexed_attrs[4] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:UIHost");
+	conf->indexed_attrs[5] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:CE");
+	conf->indexed_attrs[6] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:RB");
 
 	// XXX: some plugin names should come here in future
 	conf->plugins = NULL;
@@ -62,8 +61,8 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 	conf->feeds = calloc(2, sizeof(*(conf->feeds)));
 	
 	conf->feeds[0] = calloc(1, sizeof(**(conf->feeds)));
-	conf->feeds[0]->PS_URL = strdup("http://umbar.ics.muni.cz:8901");
-//	conf->feeds[0]->PS_URL = strdup("http://localhost:8901");
+//	conf->feeds[0]->PS_URL = strdup("http://umbar.ics.muni.cz:8901");
+	conf->feeds[0]->PS_URL = strdup("http://localhost:8901");
 
 	// all job since Epoche
 	conf->feeds[0]->query = calloc(2,sizeof(*conf->feeds[0]->query));

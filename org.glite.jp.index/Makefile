@@ -66,7 +66,7 @@ EXA_OBJS:=${EXA_SRCS:.c=.o}
 COMMONLIB:=-lglite_jp_common
 SRVCOMMONLIB:=-lglite_jp_server_common
 BONESLIB:=-lglite_lb_server_bones
-TRIOLIB:=-lglite_lb_trio
+TRIOLIB:=-lglite_jp_trio
 
 ifneq (${mysql_prefix},/usr)
 	ifeq ($(shell echo ${mysql_version} | cut -d. -f1,2),4.1)
@@ -87,7 +87,7 @@ ${daemon}: ${OBJS}
 	${LINK} -o $@ -export-dynamic ${OBJS} ${BONESLIB} ${TRIOLIB} ${COMMONLIB} ${GSOAPLIB} ${GLOBUS_LIBS} ${MYSQLIB} ${SRVCOMMONLIB}
 
 ${example}: ${EXA_OBJS}
-	${LINK} -o $@ ${EXA_OBJS} ${GSOAPLIB} ${GLOBUS_LIBS}
+	${LINK} -o $@ ${EXA_OBJS} ${GSOAPLIB} ${GLOBUS_LIBS} ${COMMONLIB} ${TRIOLIB}
 
 jpis-db-internal: jpis-db-internal.o db_ops.o conf.o context.o
 	${LINK} -o $@ $+ ${COMMONLIB} ${SRVCOMMONLIB} ${GLOBUS_LIBS}

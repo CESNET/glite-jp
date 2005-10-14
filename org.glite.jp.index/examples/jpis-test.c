@@ -4,6 +4,7 @@
 #include <assert.h>
 
 #include <glite/security/glite_gsplugin.h>
+#include "glite/jp/strmd5.h"
 
 #include "jpis_H.h"
 #include "jpis_.nsmap"
@@ -71,6 +72,7 @@ int main(int argc,char *argv[])
 	soap_set_namespaces(soap, jpis__namespaces);
 
 	soap_register_plugin(soap,glite_gsplugin);
+goto query;
 	// test calls of server functions
 	{
 	// this call is issued by JPPS
@@ -83,7 +85,8 @@ int main(int argc,char *argv[])
 
 //XXX : need to register feed with feedid in.feedId in DB
 //this one work only because such feed in conf.c (umbar)
-		in.feedId = soap_strdup(soap, "-PSJ1xMg9Ngd62-Lm-mitg");
+		//in.feedId = soap_strdup(soap, str2md5("http://localhost:8901"));
+		in.feedId = soap_strdup(soap, "12345");
 		in.feedDone = false_;
 		in.__sizejobAttributes = 1;
 		in.jobAttributes = soap_malloc(soap, 
@@ -99,7 +102,7 @@ int main(int argc,char *argv[])
 			rec->attributes[0] = soap_malloc(soap, sizeof(*(rec->attributes[0])));
 			rec->attributes[0]->name = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/JP/System:owner");
 			rec->attributes[0]->value =  soap_malloc(soap, sizeof(*(rec->attributes[0]->value)));
-			rec->attributes[0]->value->string = soap_strdup(soap, "S:Ja");
+			rec->attributes[0]->value->string = soap_strdup(soap, "CertSubj");
 			rec->attributes[0]->value->blob = NULL;
 			rec->attributes[0]->timestamp = 333;
 			rec->attributes[0]->origin = jptype__attrOrig__SYSTEM;
@@ -108,7 +111,7 @@ int main(int argc,char *argv[])
 			rec->attributes[1] = soap_malloc(soap, sizeof(*(rec->attributes[1])));
 			rec->attributes[1]->name = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus");
 			rec->attributes[1]->value =  soap_malloc(soap, sizeof(*(rec->attributes[0]->value)));
-			rec->attributes[1]->value->string = soap_strdup(soap, "S:Done");
+			rec->attributes[1]->value->string = soap_strdup(soap, "Done");
 			rec->attributes[1]->value->blob = NULL;
 			rec->attributes[1]->timestamp = 333;
 			rec->attributes[1]->origin = jptype__attrOrig__SYSTEM;
@@ -121,12 +124,14 @@ int main(int argc,char *argv[])
 		check_fault(soap,
 			soap_call___jpsrv__UpdateJobs(soap,server,"",&in,&out));
 	}
+query:
 	{
 	// this call is issued by user
 		struct _jpelem__QueryJobs		in;
 		struct jptype__indexQuery 		*cond;
 		struct jptype__indexQueryRecord 	*rec;
 		struct _jpelem__QueryJobsResponse	out;
+		int					i, j;
 
 		
 		in.__sizeconditions = 1;
@@ -145,7 +150,7 @@ int main(int argc,char *argv[])
 		memset(rec, 0, sizeof(*rec));
 		rec->op = jptype__queryOp__EQUAL;
 		rec->value = soap_malloc(soap, sizeof(*(rec->value)));
-		rec->value->string = soap_strdup(soap, "Cancelled");
+		rec->value->string = soap_strdup(soap, "Done");
 		rec->value->blob = NULL;
 		
 		*(cond->record) = rec;
@@ -163,6 +168,15 @@ int main(int argc,char *argv[])
 
 		check_fault(soap,
 			soap_call___jpsrv__QueryJobs(soap, server, "",&in,&out));
+
+		for (j=0; j<out.__sizejobs; j++) {
+			printf("jobid = %s\n",out.jobs[j]->jobid);
+			for (i=0; i<out.jobs[j]->__sizeattributes; i++) {
+				printf("\t%s = %s\n",
+					out.jobs[j]->attributes[i]->name,
+					out.jobs[j]->attributes[i]->value->string);
+			}
+		}
 	} 
 
 	return 0;

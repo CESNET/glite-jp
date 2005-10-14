@@ -367,13 +367,17 @@ static int get_attr(struct soap *soap, glite_jpis_context_t ctx, char *jobid, ch
 	i = 0;
 	while ( (ret = glite_jp_db_fetchrow(stmt, &fv)) > 0 ) {	
 		av = realloc(av, (i+1) * sizeof(*av));
-		av[i] = soap_malloc(soap, sizeof(*av[i]));
+		av[i] = soap_malloc(soap, sizeof(**av));
+		memset(av[i], 0, sizeof(**av));
 
 		memset(&jav,0,sizeof(jav));
 		if (glite_jp_attrval_from_db(ctx->jpctx, fv, &jav)) goto err;
 		av[i]->name = soap_strdup(soap, attr_name);
+		av[i]->value = soap_malloc(soap, sizeof(*(av[i]->value)));
+		memset(av[i]->value, 0, sizeof(*(av[i]->value)));
 		if (jav.binary) {
 			av[i]->value->blob = soap_malloc(soap, sizeof(*(av[i]->value->blob)));
+			memset(av[i]->value->blob, 0, sizeof(*(av[i]->value->blob)));
 			av[i]->value->blob->__ptr = soap_malloc(soap, jav.size);
 			memcpy(av[i]->value->blob->__ptr, jav.value, jav.size);
 			av[i]->value->blob->__size = jav.size;
@@ -424,13 +428,11 @@ static int get_attrs(struct soap *soap, glite_jpis_context_t ctx, char *jobid, s
 
 	/* sizeattributes & attributes */
 	size = 0;
-	for (j=0; in->__sizeattributes; j++) {
+	for (j=0; j < in->__sizeattributes; j++) {
 		if (get_attr(soap, ctx, jobid, in->attributes[j], &jr) ) goto err;
 		if (jr.__sizeattributes > 0) {
 			av = realloc(av, (size + jr.__sizeattributes) * sizeof(*av));
-			for (i=0; i<jr.__sizeattributes; i++)
-				av[size+i] = jr.attributes[i];
-			//memcpy(av[size], jr.attributes[0], jr.__sizeattributes * sizeof(*av));
+			memcpy(&av[size], jr.attributes, jr.__sizeattributes * sizeof(*(jr.attributes)));
 			size += jr.__sizeattributes;
 			free(jr.attributes);
 		}
