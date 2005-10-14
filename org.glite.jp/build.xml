@@ -12,6 +12,9 @@
 
 	Revision history:
 	$Log$
+	Revision 1.9  2005/10/11 20:37:50  akrenek
+	added dependencies on lb.server-bones and security.gsoap-plugin
+	
 	Revision 1.8  2005/10/10 11:07:09  valtri
 	Make autobuilds happy.
 	
@@ -319,12 +322,29 @@
 		</if>
 	</target>
 
+	<target name="client" unless="setenvonly" depends="envset, common" >
+		<if>
+			<isset property="small.memory" />
+			<then>
+				<exec dir="${jp.subsystem.dir}.client" executable="${antExec}" failonerror="${failonerror}">
+					<arg line="${target} &quot;-Dsmall.memory=true&quot; &quot;-Dbootstrap=${bootstrap}&quot; &quot;-Dfailonerror=${failonerror}&quot; &quot;-Ddo.cvs.tag=${do.cvs.tag}&quot;"/>
+				</exec>
+			</then>
+			<else>
+				<ant dir="${jp.subsystem.dir}.client"
+					target="${target}"
+					inheritall="false" />
+			</else>
+		</if>
+	</target>
+
 	<!-- Main proxy -->
 	<target name="buildmodules" depends="envset,
 						ws-interface,
 						common,
 						primary,
 						server-common,
+						client,
 						index">
 		<echo append="true" file="${global.project.dir}/cruisecontrol-stub.xml">
 	&lt;project name="${subsystem.name}" type="post-subsystem" packageName="${global.prefix}-${subsystem.prefix}"/&gt;
