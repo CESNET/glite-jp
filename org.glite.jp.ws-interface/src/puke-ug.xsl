@@ -10,24 +10,38 @@
 
 <xsl:template match="book">
 	<chapter>
-		<title><xsl:value-of select="document('JobProvenancePS.xml')/service/@name"/></title>
+		<title>Job Provenance</title>
 
 		<sect1>
-			<title>Overview</title>
+			<title>Primary Storage -- Overview</title>
 			<xsl:copy-of select="document('JobProvenancePS.xml')/service/doc/*"/>
 		</sect1>
 
 		<sect1>
-			<title>Operations</title>
+			<title>Primary Storage -- Operations</title>
 			<para> <emphasis><xsl:value-of select="document('JobProvenancePS.xml')/service/version"/></emphasis> </para>
 				<!-- xsl:apply-templates select="operations/op" -->
 				<xsl:apply-templates select="document('JobProvenancePS.xml')/service/operations/op">
 					<xsl:sort select="@name"/>
 				</xsl:apply-templates>
 		</sect1>
+
+		<sect1>
+			<title>Index Server -- Overview</title>
+			<xsl:copy-of select="document('JobProvenanceIS.xml')/service/doc/*"/>
+		</sect1>
+
+		<sect1>
+			<title>Index Server -- Operations</title>
+			<para> <emphasis><xsl:value-of select="document('JobProvenanceIS.xml')/service/version"/></emphasis> </para>
+				<!-- xsl:apply-templates select="operations/op" -->
+				<xsl:apply-templates select="document('JobProvenanceIS.xml')/service/operations/op">
+					<xsl:sort select="@name"/>
+				</xsl:apply-templates>
+		</sect1>
 	
 		<sect1>
-			<title>Types</title>
+			<title>JP Common Types</title>
 			<!--xsl:apply-templates select="types"/ -->
 			<para> <emphasis><xsl:value-of select="document('JobProvenanceTypes.xml')/service/version"/></emphasis> </para>
 			<xsl:apply-templates select="document('JobProvenanceTypes.xml')/service/types"/>

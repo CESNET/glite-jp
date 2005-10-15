@@ -11,6 +11,23 @@
 
 	<import namespace="http://glite.org/wsdl/services/jp" location="JobProvenanceTypes.wsdl"/>
 
+	<doc>
+		<para>
+			The Job Provenance (JP) Index Server is a volatile counterpart to the
+			permanent JP Primary Storage.
+			Index servers are populated with subsets of data from Primary storage(s)
+			and indexed according to particular user needs.
+		</para>
+		<para>
+			The interface to Index server contains three logical parts: administraive
+			(control), system and user.
+			The administrative part is used by run-time index server configuration
+			tool, 
+			the system one allows Primary storage(s) to feed data into the Index server,
+			and the user one is available to users for queries.
+		</para>
+	</doc>
+
 	<fault name="genericFault"/>
 
 	<operations>

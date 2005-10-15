@@ -20,7 +20,7 @@ docbookxls:=http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl
 
 WSDL=JobProvenancePS.wsdl JobProvenanceIS.wsdl JobProvenanceTypes.wsdl 
 
-all compile: ${WSDL}
+all compile: ${WSDL} JobProvenance.html
 
 check: 
 	@echo No unit test required for interface-only module.
@@ -45,6 +45,7 @@ install:
 	-mkdir -p ${PREFIX}/${STAGETO}
 	-mkdir -p ${PREFIX}/share/doc/${package}-${version}
 	install -m 644 ${top_srcdir}/LICENSE ${PREFIX}/share/doc/${package}-${version}
+	install -m 644 JobProvenance.html ${PREFIX}/share/doc/${package}-${version}
 #	cd ${top_srcdir}/interface && install -m 644 ${WSDL} ${PREFIX}/${STAGETO}
 	install -m 644 ${WSDL} ${PREFIX}/${STAGETO}
 
@@ -54,7 +55,7 @@ clean:
 %.wsdl: %.xml
 	${XSLTPROC} ../src/puke-wsdl.xsl $< >$@
 
-JobProvenancePS.html: doc.xml JobProvenancePS.xml JobProvenanceTypes.xml puke-ug.xsl
+JobProvenance.html: doc.xml JobProvenancePS.xml JobProvenanceIS.xml JobProvenanceTypes.xml puke-ug.xsl
 	${XSLTPROC} --novalid ../src/puke-ug.xsl $< >doc-html.xml
 	${XMLLINT} --valid --noout doc-html.xml
 	${XSLTPROC} --stringparam  chapter.autolabel 0 ${docbookxls} doc-html.xml >$@
