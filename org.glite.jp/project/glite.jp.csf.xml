@@ -12,6 +12,9 @@
 
 	Revision history:
 	$Log$
+	Revision 1.4.2.1  2005/10/17 09:49:02  akrenek
+	added jp.client module targets
+	
 	Revision 1.4  2005/10/03 17:00:50  valtri
 	Automatically checkout the new module yet.
 	
@@ -204,7 +207,7 @@
 	
 	<!--  All external libraries -->
  	<target name="external" 
- 		description="Install external packages" depends="oscheck"/>
+ 		description="Install external packages" depends="oscheck, libtar, mysql"/>
  	
 	<!-- =====================================================
 		 GLite Middleware jp modules
