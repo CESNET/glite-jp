@@ -12,6 +12,9 @@
 
 	Revision history:
 	$Log$
+	Revision 1.1.1.1  2005/09/15 16:53:25  valtri
+	Initial import of common module for server side. It depends on mysql.
+	
 	Revision 1.4  2005/08/12 10:56:25  mmulac
 	void IS server
 	- seems compiling
@@ -49,7 +52,6 @@ glite_location=${with.glite.location}
 globus_prefix=${with.globus.prefix}
 expat_prefix=${with.expat.prefix}
 gsoap_prefix=${with.gsoap.prefix}
-ares_prefix=${with.ares.prefix}
 mysql_prefix=${with.mysql.prefix}
 mysql_version=${ext.mysql.version}
 thrflavour=${with.globus.thr.flavor}
