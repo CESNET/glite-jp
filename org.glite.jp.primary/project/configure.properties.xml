@@ -12,6 +12,10 @@
 
 	Revision history:
 	$Log$
+	Revision 1.5  2005/10/11 20:49:27  akrenek
+	- detect gsoap
+	- use flavoured gsoap plugin
+	
 	Revision 1.4  2005/06/03 11:56:49  akrenek
 	make it build with the new ftp backend
 	
@@ -47,7 +51,6 @@ version=${module.version}
 glite_location=${with.glite.location}
 globus_prefix=${with.globus.prefix}
 expat_prefix=${with.expat.prefix}
-ares_prefix=${with.ares.prefix}
 gsoap_prefix=${with.gsoap.prefix}
 gsoap_version=${ext.gsoap.version}
 mysql_prefix=${with.mysql.prefix}
