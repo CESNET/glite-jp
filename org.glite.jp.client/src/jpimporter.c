@@ -139,6 +139,8 @@ int main(int argc, char *argv[])
 	char			   *name,
 						pidfile[PATH_MAX] = GLITE_JPIMPORTER_PIDFILE;
 
+	glite_gsplugin_Context	plugin_ctx;
+
 
 	name = strrchr(argv[0],'/');
 	if (name) name++; else name = argv[0];
@@ -239,7 +241,12 @@ int main(int argc, char *argv[])
 	soap = soap_new();
 	soap_init(soap);
 	soap_set_namespaces(soap, jpps__namespaces);
-	soap_register_plugin(soap, glite_gsplugin);
+
+	glite_gsplugin_init_context(&plugin_ctx);
+	if (server_key) plugin_ctx->key_filename = strdup(server_key);
+	if (server_cert) plugin_ctx->cert_filename = strdup(server_cert);
+
+	soap_register_plugin_arg(soap, glite_gsplugin,plugin_ctx);
 
 	if ( (reg_pid = slave(reg_importer, "reg-imp")) < 0 ) {
 		perror("starting reg importer slave");
