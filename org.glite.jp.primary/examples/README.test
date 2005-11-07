@@ -41,8 +41,8 @@ Returns:
 
 Check system attributes known from job registration:
 
-$ ./jpps-test GetJobAttr JOBID http://egee.cesnet.cz/en/WSDL/jp-system:owner
-$ ./jpps-test GetJobAttr JOBID http://egee.cesnet.cz/en/WSDL/jp-system:regtime
+$ ./jpps-test GetJobAttr JOBID http://egee.cesnet.cz/en/Schema/JP/System:owner
+$ ./jpps-test GetJobAttr JOBID http://egee.cesnet.cz/en/Schema/JP/System:regtime
 
 
 Record JP tag:
