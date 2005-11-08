@@ -452,10 +452,9 @@ static int dump_importer(void)
 		if ( !debug ) syslog(LOG_INFO, "Importing LB dump file '%s'\n", msg);
 		ret = soap_call___jpsrv__StartUpload(soap, tab[_jpps].val?:jpps, "", &su_in, &su_out);
 		ret = check_soap_fault(soap, ret);
-		/* XXX: grrrrrrr! test it!!!
-		if ( (ret = check_soap_fault(soap, ret)) ) break;
-		dprintf(("[%s] Destination: %s\n\tCommit before: %s\n", su_out.destination, ctime(&su_out.commitBefore)));
-		*/
+		/* XXX: grrrrrrr! test it!!!*/
+//		if ( (ret = check_soap_fault(soap, ret)) ) break;
+		dprintf(("[%s] Destination: %s\n\tCommit before: %s\n", name, su_out.destination, ctime(&su_out.commitBefore)));
 
 		if ( (fhnd = open(tab[_file].val, O_RDONLY)) < 0 ) {
 			dprintf(("[%s] Can't open dump file: %s\n", name, tab[_file].val));
@@ -463,8 +462,6 @@ static int dump_importer(void)
 			ret = 1;
 			break;
 		}
-		/* XXX: grrrrrrr! remove next line!!! */
-		su_out.destination = "gsiftp://nain.ics.muni.cz:5678/tmp/gsiftp-dump-tst-file";
 		if ( (ret = gftp_put_file(su_out.destination, fhnd)) ) break;
 		close(fhnd);
 		dprintf(("[%s] File sent, commiting the upload\n", name));
