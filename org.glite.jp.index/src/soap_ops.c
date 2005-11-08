@@ -76,16 +76,16 @@ static void err2fault(const glite_jp_context_t ctx,struct soap *soap)
 #define CONTEXT_FROM_SOAP(soap,ctx) glite_jpis_context_t	ctx = (glite_jpis_context_t) ((slave_data_t *) (soap->user))->ctx
 
 
-static int updateJob(glite_jpis_context_t ctx, const char *feedid, struct jptype__jobRecord *jobAttrs) {
+static int updateJob(glite_jpis_context_t ctx, const char *ps, struct jptype__jobRecord *jobAttrs) {
 	glite_jp_attrval_t av;
 	struct jptype__attrValue *attr;
 	int ret, iattrs;
 
-	lprintf("%s: jobid='%s', attrs=%d\n", __FUNCTION__, jobAttrs->jobid, jobAttrs->__sizeattributes);
+	lprintf("jobid='%s', attrs=%d\n", jobAttrs->jobid, jobAttrs->__sizeattributes);
 
 	if (jobAttrs->remove) assert(*(jobAttrs->remove) == 0);
 
-	if ((ret = glite_jpis_lazyInsertJob(ctx, feedid, jobAttrs->jobid, jobAttrs->owner)) != 0) return ret;
+	if ((ret = glite_jpis_lazyInsertJob(ctx, ps, jobAttrs->jobid, jobAttrs->owner)) != 0) return ret;
 	for (iattrs = 0; iattrs < jobAttrs->__sizeattributes; iattrs++) {
 		attr = jobAttrs->attributes[iattrs];
 		glite_jpis_SoapToAttrVal(&av, attr);
@@ -102,7 +102,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__UpdateJobs(
 	struct _jpelem__UpdateJobsResponse *jpelem__UpdateJobsResponse)
 {
 	int 		ret, ijobs;
-	const char 	*feedid;
+	const char 	*feedid, *ps;
 	int 		status, done;
 	CONTEXT_FROM_SOAP(soap, ctx);
 	glite_jp_context_t jpctx = ctx->jpctx;
@@ -111,6 +111,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__UpdateJobs(
 	// XXX: test client in examples/jpis-test
 	//      sends to this function some data for testing
 	puts(__FUNCTION__);
+	ps = NULL;
 
 	// get info about the feed
 	feedid = jpelem__UpdateJobs->feedId;
@@ -119,6 +120,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__UpdateJobs(
 		fprintf(stderr, "can't get info about '%s', returned %d records: %s (%s)\n", feedid, ret, jpctx->error->desc, jpctx->error->source);
 		goto fail;
 	}
+	ps = strdup(ctx->param_ps);
 	// update status, if needed (only oring)
 	status = ctx->param_state;
 	done = jpelem__UpdateJobs->feedDone ? GLITE_JP_IS_STATE_DONE : 0;
@@ -132,12 +134,14 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__UpdateJobs(
 
 	// insert all attributes
 	for (ijobs = 0; ijobs < jpelem__UpdateJobs->__sizejobAttributes; ijobs++) {
-		if (updateJob(ctx, feedid, jpelem__UpdateJobs->jobAttributes[ijobs]) != 0) goto fail;
+		if (updateJob(ctx, ps, jpelem__UpdateJobs->jobAttributes[ijobs]) != 0) goto fail;
 	}
+	free(ps);
 
 	return SOAP_OK;
 
 fail:
+	free(ps);
 // TODO: bubble up
 	err = glite_jp_error_chain(ctx->jpctx);
 	fprintf(stderr, "%s:%s\n", __FUNCTION__, err);

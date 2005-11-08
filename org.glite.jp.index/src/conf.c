@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 #include <glite/jp/types.h>
 #include <glite/jp/context.h>
@@ -12,7 +13,8 @@
 
 
 int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf **configuration)
-{ 
+{
+	char *debug;
 	char *ps = NULL;
 
         // read comman line options and configuration file
@@ -26,6 +28,10 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 	// configuration from environment	
 	conf->cs = getenv("GLITE_JPIS_DB");
 	conf->port = getenv("GLITE_JPIS_PORT");
+	debug = getenv("GLITE_JPIS_DEBUG");
+	conf->debug = (debug != NULL) && (strcmp(debug, "0") != 0);
+	conf->pidfile = getenv("GLITE_JPIS_PIDFILE");
+	conf->logfile = getenv("GLITE_JPIS_LOGFILE");
 
 	// prefixes & attributes defined in:
 	// lb.server/build/jp_job_attrs.h (created when build plugin)
@@ -120,4 +126,14 @@ void glite_jp_free_conf(glite_jp_is_conf *conf)
 	free(conf->plugins);
 	free(conf->feeds);
 	free(conf);
+}
+
+
+void glite_jp_lprintf(const char *source, const char *fmt, ...) {
+	va_list ap;
+
+	printf("%s: ", source);
+	va_start(ap, fmt);
+	vprintf(fmt, ap);
+	va_end(ap);
 }

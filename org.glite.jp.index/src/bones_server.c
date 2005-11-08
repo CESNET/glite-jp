@@ -19,6 +19,7 @@
 #include "db_ops.h"
 #include "soap_ps_calls.h"
 #include "context.h"
+#include "common_server.h"
 
 #include "soap_version.h"
 #include "jpis_H.h"
@@ -97,6 +98,9 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	/* daemonize */
+	if (!conf->debug) glite_jpis_daemonize("glite-jp-indexd", conf->pidfile, conf->logfile);
+
 	/* XXX preliminary support for plugins 
 	for (i=0; conf->plugins[i]; i++)
 		glite_jp_typeplugin_load(ctx,conf->plugins[i]);
@@ -166,8 +170,6 @@ int main(int argc, char *argv[])
 	if ( !edg_wll_gss_acquire_cred_gsi(server_cert, server_key, &mycred, &mysubj, &gss_code)) 
 		fprintf(stderr,"Server idenity: %s\n",mysubj);
 	else fputs("WARNING: Running unauthenticated\n",stderr);
-
-	/* daemonise */
 
 	/* XXX: uncomment after testing phase
 	for (i=0; conf->PS_list[i]; i++);	// count PS we need to contact

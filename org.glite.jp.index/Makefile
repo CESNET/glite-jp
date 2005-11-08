@@ -52,7 +52,7 @@ is_prefix:=jpis_
 ps_prefix:=jpps_
 
 SRCS:= conf.c bones_server.c soap_ops.c soap_ps_calls.c \
-	ws_ps_typeref.c ws_is_typeref.c db_ops.c context.c \
+	ws_ps_typeref.c ws_is_typeref.c db_ops.c context.c common_server.c \
 	${is_prefix}ServerLib.c \
 	${ps_prefix}ClientLib.c ${ps_prefix}C.c \
 
@@ -103,11 +103,11 @@ JobProvenancePS.xh: %.xh: %.wsdl JobProvenanceTypes.wsdl typemap.dat
 
 ${is_prefix}ClientLib.c ${is_prefix}Client.c \
 ${is_prefix}Server.c ${is_prefix}ServerLib.c  \
-${is_prefix}C.c ${is_prefix}H.h: JobProvenanceIS.xh
+${is_prefix}C.c ${is_prefix}H.h ${is_prefix}_Stub.h: JobProvenanceIS.xh
 	${gsoap_bin_prefix}/soapcpp2 -n -w -c -p ${is_prefix} JobProvenanceIS.xh
 
 ${ps_prefix}Client.c ${ps_prefix}ClientLib.c  \
-${ps_prefix}C.c ${ps_prefix}H.h: JobProvenancePS.xh
+${ps_prefix}C.c ${ps_prefix}H.h ${ps_prefix}_Stub.h: JobProvenancePS.xh
 	${gsoap_bin_prefix}/soapcpp2 -n -w -c -p ${ps_prefix} JobProvenancePS.xh
 
 

@@ -9,7 +9,7 @@
 #define GLITE_JPIS_DEFAULT_PORT_STR "8902"
 
 //#define lprintf
-#define lprintf printf
+#define lprintf(args...) glite_jp_lprintf(__FUNCTION__, ##args)
 
 typedef struct _glite_jp_is_feed {
 	char    		*PS_URL;	//URLs of Primary Storage servers
@@ -29,7 +29,8 @@ typedef struct _glite_jp_is_conf {
 
 	glite_jp_is_feed	**feeds;	// null terminated list of feeds
 
-	char	*cs, *port;
+	int debug;
+	char	*cs, *port, *pidfile, *logfile;
 } glite_jp_is_conf;
 
 
@@ -37,5 +38,7 @@ typedef struct _glite_jp_is_conf {
 // read commad line options and configuration file
 int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf **configuration);
 void glite_jp_free_conf(glite_jp_is_conf *conf);
+
+void glite_jp_lprintf(const char *source, const char *fmt, ...);
 
 #endif
