@@ -445,7 +445,7 @@ static int dump_importer(void)
 	} else do {
 		su_in.job = tab[_job].val;
 		su_in.class_ = "urn:org.glite.jp.primary:lb";
-		su_in.name = tab[_file].val;
+		su_in.name = NULL;
 		su_in.commitBefore = 1000 + time(NULL);
 		su_in.contentType = "text/lb";
 		dprintf(("[%s] Importing LB dump file '%s'\n", name, tab[_file].val));

@@ -146,6 +146,7 @@ install:
 	${INSTALL} -m 755 ${daemon} ${PREFIX}/bin
 	${INSTALL} -m 644 ${LIB} ${PREFIX}/lib
 	${INSTALL} -m 644 jpps_upload_files ${PREFIX}/examples/glite-jp-primary-upload_files
+	cd ${top_srcdir}/examples && ${INSTALL} -m 644 glite-jp-importer.sh ${PREFIX}/examples/
 	cd ${top_srcdir}/interface && ${INSTALL} -m 644 ${HDRS} ${PREFIX}/${STAGETO}
 	if [ x${DOSTAGE} = xyes ]; then \
 		cd ${top_srcdir}/interface && ${INSTALL} -m 644 ${STAGE_HDRS} ${PREFIX}/${STAGETO} ; \
