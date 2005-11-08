@@ -13,7 +13,7 @@ BKSERVER_DUMPDIR=/tmp/dump
 # LB maildir for job registration (-J argument)
 BKSERVER_JOBREG_MAILDIR=/tmp/lb_server_jpreg
 
-CERT_ARGS="-c ~/.cert/hostcert.pem -k ~/.cert/hostkey.pem"
+CERT_ARGS="-c /home/valtri/.cert/hostcert.pem -k /home/valtri/.cert/hostkey.pem"
 LB_DUMPDIR=/tmp/lb_server_dump
 BKSERVER_DUMPDIR_OLD=/tmp/dump.old
 LB_EXPORTDIR=/tmp/lb_export
@@ -27,6 +27,8 @@ LOGDIR=/tmp/log
 [ -d $LB_EXPORTDIR ] || mkdir -p $LB_EXPORTDIR
 [ -d $LOGDIR ] || mkdir -p $LOGDIR
 
+echo "Using cert args $CERT_ARGS"
+
 $PREFIX/bin/glite-jp-importer -r $BKSERVER_JOBREG_MAILDIR -d $LB_DUMPDIR $CERT_ARGS -g -p $JBSERVER > $LOGDIR/jp-importer.log 2>&1 &
 
 while [ 1 ]; do
@@ -34,8 +36,12 @@ while [ 1 ]; do
 
   for file in $BKSERVER_DUMPDIR/*; do
     rm -f $LB_EXPORTDIR/*
-    $PREFIX/sbin/glite-lb-lb_dump_exporter -d $file -s $LB_EXPORTDIR -m $LB_DUMPDIR
-    mv $file $BKSERVER_DUMPDIR_OLD
+    if [ -s $file ]; then
+      $PREFIX/sbin/glite-lb-lb_dump_exporter -d $file -s $LB_EXPORTDIR -m $LB_DUMPDIR
+      mv $file $BKSERVER_DUMPDIR_OLD
+    else
+      rm $file
+    fi
   done
 
   sleep 30
