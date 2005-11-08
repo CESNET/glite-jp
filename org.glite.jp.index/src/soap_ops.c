@@ -117,7 +117,9 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__UpdateJobs(
 	feedid = jpelem__UpdateJobs->feedId;
 	GLITE_JPIS_PARAM(ctx->param_feedid, ctx->param_feedid_len, feedid);
 	if ((ret = glite_jp_db_execute(ctx->select_info_feed_stmt)) != 1) {
-		fprintf(stderr, "can't get info about '%s', returned %d records: %s (%s)\n", feedid, ret, jpctx->error->desc, jpctx->error->source);
+		fprintf(stderr, "can't get info about '%s', returned %d records", feedid, ret);
+		if (jpctx->error) fprintf(stderr, ": %s (%s)\n", jpctx->error->desc, jpctx->error->source);
+		else fprintf(stderr, "\n");
 		goto fail;
 	}
 	ps = strdup(ctx->param_ps);
@@ -142,10 +144,12 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__UpdateJobs(
 
 fail:
 	free(ps);
+	if (ctx->jpctx->error) {
 // TODO: bubble up
-	err = glite_jp_error_chain(ctx->jpctx);
-	fprintf(stderr, "%s:%s\n", __FUNCTION__, err);
-	free(err);
+		err = glite_jp_error_chain(ctx->jpctx);
+		fprintf(stderr, "%s:%s\n", __FUNCTION__, err);
+		free(err);
+	}
 	return SOAP_FAULT;
 }
 
