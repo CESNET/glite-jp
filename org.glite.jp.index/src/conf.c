@@ -40,7 +40,7 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 	conf->attrs = calloc(19, sizeof(*conf->attrs));
 	conf->attrs[0] = strdup("http://egee.cesnet.cz/en/Schema/JP/System:owner");
 	conf->attrs[1] = strdup("http://egee.cesnet.cz/en/Schema/JP/System:jobId");
-	conf->attrs[2] = strdup("http://egee.cesnet.cz/en/Schema/JP/System::regtime");
+	conf->attrs[2] = strdup("http://egee.cesnet.cz/en/Schema/JP/System:regtime");
 	conf->attrs[3] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:user");
 	conf->attrs[4] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:aTag");
 	conf->attrs[5] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:eNodes");
