@@ -13,7 +13,12 @@ BKSERVER_DUMPDIR=/tmp/dump
 # LB maildir for job registration (-J argument)
 BKSERVER_JOBREG_MAILDIR=/tmp/lb_server_jpreg
 
-CERT_ARGS="-c /home/valtri/.cert/hostcert.pem -k /home/valtri/.cert/hostkey.pem"
+if [ -z "$X509_USER_CERT" -o -z "$X509_USER_KEY" ]; then
+  echo "Please set X509_USER_CERT and X509_USER_KEY."
+  exit 1
+fi
+
+CERT_ARGS="-c $X509_USER_CERT -k $X509_USER_KEY"
 LB_DUMPDIR=/tmp/lb_server_dump
 BKSERVER_DUMPDIR_OLD=/tmp/dump.old
 LB_EXPORTDIR=/tmp/lb_export
