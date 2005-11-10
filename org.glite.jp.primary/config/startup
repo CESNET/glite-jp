@@ -68,6 +68,7 @@ start()
 
 	echo -n Starting glite-jp-primarystoraged ...
 	su - $GLITE_USER -c " $GLITE_LOCATION/bin/glite-jp-primarystoraged \
+		$GLITE_JP_DEBUG \
 		-P $GLITE_LOCATION/lib/glite-jp-tags.so -P $GLITE_LOCATION/lib/glite_lb_plugin.so \
 		$creds -a '$GLITE_JP_PRIMARY_PEERS' \
 		-i '$pidfile' -p $GLITE_JP_PRIMARY_PORT $GLITE_JP_PRIMARY_SPECIAL \
