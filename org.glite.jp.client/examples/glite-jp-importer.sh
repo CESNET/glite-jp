@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 
 #
 # example script for purging LB and importing the dumps to JP
@@ -35,6 +35,8 @@ LOGDIR=/tmp/log
 echo "Using cert args $CERT_ARGS"
 
 $PREFIX/bin/glite-jp-importer -r $BKSERVER_JOBREG_MAILDIR -d $LB_DUMPDIR $CERT_ARGS -g -p $JBSERVER > $LOGDIR/jp-importer.log 2>&1 &
+JP_PID=$!
+trap "kill $JP_PID; exit 0" SIGINT
 
 while [ 1 ]; do
   $PREFIX/sbin/glite-lb-purge -o 1 -l -m $BKSERVER
