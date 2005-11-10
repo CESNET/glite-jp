@@ -457,6 +457,7 @@ int glite_jppsbe_start_upload(
 	/* XXX authorization done in soap_ops.c */
 
 	/* XXX name length */
+	printf("data_basename: %s\n", data_basename);
 	if (asprintf(&data_basename, "%s%s%s", class,
 		(name != NULL) ? "." : "",
 		(name != NULL) ? name : "") == -1) {
@@ -1773,14 +1774,14 @@ int glite_jppsbe_query(
 	char	*qres[3] = { NULL, NULL, NULL };
 	int	cmask = 0, owner_idx = -1, reg_idx = -1;
 	glite_jp_db_stmt_t	q;
-	glite_jp_attrval_t	metadata[2];
+	glite_jp_attrval_t	metadata[3];
 
 	memset(&err,0,sizeof err);
 	glite_jp_clear_error(ctx);
 	err.source = __FUNCTION__;
 
 	/* XXX: assuming not more than 2 */
-	memset(metadata,0,sizeof metadata);
+	memset(metadata,0, sizeof metadata);
 
 	/* XXX: const discarding is OK */
 	for (i=0;attrs[i]; i++) metadata[i].name = (char *) attrs[i];
