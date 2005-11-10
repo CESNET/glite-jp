@@ -117,13 +117,13 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__UpdateJobs(
 	feedid = jpelem__UpdateJobs->feedId;
 	GLITE_JPIS_PARAM(ctx->param_feedid, ctx->param_feedid_len, feedid);
 	if ((ret = glite_jp_db_execute(ctx->select_info_feed_stmt)) != 1) {
-		fprintf(stderr, "can't get info about '%s', returned %d records", feedid, ret);
+		fprintf(stderr, "can't get info about feed '%s', returned %d records", feedid, ret);
 		if (jpctx->error) fprintf(stderr, ": %s (%s)\n", jpctx->error->desc, jpctx->error->source);
 		else fprintf(stderr, "\n");
 		goto fail;
 	}
 	ps = strdup(ctx->param_ps);
-	// update status, if needed (only oring)
+	// update status, if needed (only orig)
 	status = ctx->param_state;
 	done = jpelem__UpdateJobs->feedDone ? GLITE_JP_IS_STATE_DONE : 0;
 	if ((done != (status & GLITE_JP_IS_STATE_DONE)) && done) {

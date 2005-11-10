@@ -619,7 +619,7 @@ ok0:
 
 	GLITE_JPIS_PARAM(ctx->param_ownerid, ctx->param_ownerid_len, md5_cert);
 	switch (ret = glite_jp_db_execute(ctx->select_user_stmt)) {
-	case 1: lprintf("jobid '%s' found\n", jobid); goto ok;
+	case 1: lprintf("owner '%s' found\n", owner); goto ok;
 	case 0:
 		lprintf("inserting user %s (%s)\n", owner, md5_cert);
 		GLITE_JPIS_PARAM(ctx->param_cert, ctx->param_cert_len, owner);
