@@ -29,7 +29,6 @@ GLITE_JPIS_TEST_PORT=${GLITE_JPIS_TEST_PORT:-"10000"}
 GLITE_JPIS_TEST_PIDFILE=${GLITE_JPIS_TEST_PIDFILE:-"`pwd`/glite-jp-indexd.pid"}
 GLITE_JPIS_TEST_LOGFILE=${GLITE_JPIS_TEST_LOGFILE:-"`pwd`/glite-jp-indexd.log"}
 
-if [ 0 ]; then
 # create database when needed
 if [ -z "$GLITE_JPIS_TEST_DB" ]; then
 	GLITE_JPIS_TEST_DB="jpis/@localhost:jpis1test"
@@ -56,7 +55,6 @@ if [ ! -s "./glite-jp-indexd.pid" ]; then
 	echo "Can't startup index server."
 	[ -z "$db_created" ] || mysqladmin -f $ARGS drop jpis1test
 	exit 1
-fi
 fi
 
 # wait for index server
