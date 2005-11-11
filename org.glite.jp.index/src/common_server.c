@@ -30,7 +30,10 @@ int glite_jpis_daemonize(const char *servername, const char *custom_pidfile, con
 //	printf("logfile: %s\n", logfile ? logfile : custom_logfile);
 	free(logfile);
 
-	daemon(0,1);
+	if (daemon(0,1) == -1) {
+		perror("can't daemonize");
+		return 0;
+	}
 	dup2(lfd,1);
 	dup2(lfd,2);
 

@@ -51,6 +51,8 @@ int main(int argc,char *argv[])
 		glite_jp_get_conf(0, NULL, NULL, &conf);
 		if (default_server) strcpy(server, default_server);
 		else snprintf(server, sizeof(server), "http://localhost:%s", conf->port ? conf->port : GLITE_JPIS_DEFAULT_PORT_STR);
+		printf("JP index server: %s\n", server);
+
 		glite_jpis_init_context(&isctx, ctx, conf);
 		if (glite_jpis_init_db(isctx) != 0) {
 			fprintf(stderr, "Connect DB failed: %s (%s)\n", 

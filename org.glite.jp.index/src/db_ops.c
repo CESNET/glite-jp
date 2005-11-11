@@ -25,14 +25,16 @@
         jobid          CHAR(32)    BINARY NOT NULL,\n\
         value          %s          BINARY NOT NULL,\n\
         full_value     %s          NOT NULL,\n\
+        origin         INT         NOT NULL,\n\
 \n\
         INDEX (jobid),\n\
         INDEX (value)\n\
 );"
-#define SQLCMD_INSERT_ATTRVAL "INSERT INTO " TABLE_PREFIX_DATA "%s (jobid, value, full_value) VALUES (\n\
+#define SQLCMD_INSERT_ATTRVAL "INSERT INTO " TABLE_PREFIX_DATA "%s (jobid, value, full_value, origin) VALUES (\n\
 	'%s',\n\
 	'%s',\n\
-	'%s'\n\
+	'%s',\n\
+	'%d'\n\
 )"
 #define INDEX_LENGTH 255
 
@@ -573,12 +575,14 @@ int glite_jpis_tryReconnectFeed(glite_jpis_context_t ctx, long int uniqueid, tim
 
 int glite_jpis_insertAttrVal(glite_jpis_context_t ctx, const char *jobid, glite_jp_attrval_t *av) {
 	char *sql, *table, *value, *full_value, *md5_jobid;
+	long int origin;
 
 	table = glite_jpis_attr_name2id(av->name);
 	value = glite_jp_attrval_to_db_index(ctx->jpctx, av, INDEX_LENGTH);
 	full_value = glite_jp_attrval_to_db_full(ctx->jpctx, av);
 	md5_jobid = str2md5(jobid);
-	asprintf(&sql, SQLCMD_INSERT_ATTRVAL, table, md5_jobid, value, full_value);
+	origin = av->origin;
+	asprintf(&sql, SQLCMD_INSERT_ATTRVAL, table, md5_jobid, value, full_value, origin);
 	free(md5_jobid);
 	free(table);
 	free(value);

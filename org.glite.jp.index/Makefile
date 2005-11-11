@@ -118,8 +118,8 @@ ${ps_prefix}C.c ${ps_prefix}H.h ${ps_prefix}_Stub.h: JobProvenancePS.xh
 #	rm -f JobProvenanceTypes.wsdl
 #	${gsoap_prefix}/bin/soapcpp2 -w -c -p env_ env.xh
 
-check: 
-	-echo nothing yet
+check:
+	../test/run-test.sh
 
 doc:
 
@@ -168,5 +168,6 @@ soap_ps_calls.o: soap_ps_calls.c jpps_H.h jpps_.nsmap soap_version.h conf.h db_o
 soap_ops.o: soap_ops.c jpis_H.h jpis_.nsmap soap_version.h db_ops.h ws_ps_typeref.h ws_is_typeref.h context.h
 ws_ps_typeref.o: ws_ps_typeref.c jpis_H.h ws_typemap.h ws_ps_typeref.h
 ws_is_typeref.o: ws_is_typeref.c jpis_H.h ws_typemap.h ws_is_typeref.h
+comon_server.o: common_server.c common_server.h
 
 .PHONY: default all compile check doc stage dist distsrc distbin install clean
