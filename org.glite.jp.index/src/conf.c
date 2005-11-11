@@ -71,7 +71,7 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 
 //	ps = "http://umbar.ics.muni.cz:8901";
 	if (!ps && ((ps = getenv("GLITE_JPIS_PS")) == NULL)) {
-		printf("No JP PrimaryStrorage server specified in $GLITE_JPIS_PS, default feeds skipped.\n");
+		printf("No JP PrimaryStrorage server specified in $GLITE_JPIS_PS, default feeds skipped. (not fatal)\n");
 		conf->feeds = calloc(1, sizeof(*(conf->feeds)));
 		*configuration = conf;
 		return 0;
