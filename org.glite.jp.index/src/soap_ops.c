@@ -232,6 +232,7 @@ static int get_op(const enum jptype__queryOp in, char **out)
 	return(0);
 }
 
+/* get all jobids matching the query conditions */
 static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpelem__QueryJobs *in, char ***jobids, char *** ps_list)
 {
 	char 			*qa = NULL, *qb = NULL, *qop = NULL, *attr_md5,
@@ -290,7 +291,12 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 		free(qa); qa = qb; qb = NULL;
 	}
 
-	trio_asprintf(&query, "SELECT dg_jobid,ps FROM jobs%s WHERE %s;", qa, qwhere);
+	if (ctx->conf->no_auth) {
+		trio_asprintf(&query, "SELECT dg_jobid,ps FROM jobs%s WHERE %s;", qa, qwhere);
+	}
+	else {
+		trio_asprintf(&query, "SELECT dg_jobid,ps FROM jobs,users%s WHERE (jobs.ownerid = users.userid AND users.cert_subj='%s') AND %s;", qa, ctx->jpctx->peer, qwhere);
+	}
 	printf("Incomming QUERY:\n %s\n", query);
 	free(qwhere);
 	free(qa);
@@ -470,16 +476,19 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__QueryJobs(
 
 	puts(__FUNCTION__);
 	memset(out, 0, sizeof(*out));
-
+	
+	/* test whether there is any indexed aatribudet in the condition */
 	if ( checkIndexedConditions(ctx, in) ) {
 		fprintf(stderr, "No indexed attribute in query\n");
 		return SOAP_ERR;
 	}
 
+	/* get all jobids matching the conditions */
 	if ( get_jobids(soap, ctx, in, &jobids, &ps_list) ) {
 		return SOAP_ERR;
 	}
 
+	/* get all requested attributes for matching jobids */
 	for (i=0; (jobids && jobids[i]); i++);
 	size = i;
 	jr = soap_malloc(soap, size * sizeof(*jr));
@@ -488,7 +497,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__QueryJobs(
 			return SOAP_ERR;
 		}	
 		// XXX: in prototype we return only first value of PS URL
-		// in future database shoul contain one more table with URLs
+		// in future database should contain one more table with URLs
 		jr[i]->__sizeprimaryStorage = 1;
 		jr[i]->primaryStorage = soap_malloc(soap, sizeof(*(jr[i]->primaryStorage)));
 		jr[i]->primaryStorage[0] = soap_strdup(soap, ps_list[i]);

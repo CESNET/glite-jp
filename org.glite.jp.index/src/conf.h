@@ -29,7 +29,8 @@ typedef struct _glite_jp_is_conf {
 
 	glite_jp_is_feed	**feeds;	// null terminated list of feeds
 
-	int debug;
+	int 	debug;
+	int	no_auth;		// set if you do not want authorization
 	char	*cs, *port, *pidfile, *logfile;
 } glite_jp_is_conf;
 
