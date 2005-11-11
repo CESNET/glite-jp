@@ -21,6 +21,7 @@
 
 /* insert simulating FeedIndex call */
 #define INSERT "insert into feeds value ('93', '12345', '8', '0' , 'http://localhost:8901', '2005-10-14 10:48:27', 'COND2');" 
+#define DELETE "delete from feeds where feedid = '12345';" 
 
 static int check_fault(struct soap *soap,int err);
 
@@ -28,7 +29,9 @@ static int check_fault(struct soap *soap,int err);
 	
 int main(int argc,char *argv[])
 {
-	char	*server = "http://localhost:8902";
+	char *default_server = NULL;
+//	char	*default_server = "http://localhost:8902";
+	char server[512];
 	struct soap	*soap = soap_new();
 
 	soap_init(soap);	
@@ -46,6 +49,8 @@ int main(int argc,char *argv[])
 
 		glite_jp_init_context(&ctx);
 		glite_jp_get_conf(0, NULL, NULL, &conf);
+		if (default_server) strcpy(server, default_server);
+		else snprintf(server, sizeof(server), "http://localhost:%s", conf->port ? conf->port : GLITE_JPIS_DEFAULT_PORT_STR);
 		glite_jpis_init_context(&isctx, ctx, conf);
 		if (glite_jpis_init_db(isctx) != 0) {
 			fprintf(stderr, "Connect DB failed: %s (%s)\n", 
@@ -53,8 +58,8 @@ int main(int argc,char *argv[])
 			goto end;
 		}
 		
-		if (glite_jp_db_execstmt(ctx,
-			INSERT, &stmt) < 0) goto end;
+		if (glite_jp_db_execstmt(ctx, DELETE, &stmt) < 0) goto end;
+		if (glite_jp_db_execstmt(ctx, INSERT, &stmt) < 0) goto end;
 	end:
 		glite_jpis_free_context(isctx);
 		glite_jp_free_context(ctx);
@@ -78,11 +83,13 @@ int main(int argc,char *argv[])
 		//in.feedId = soap_strdup(soap, str2md5("http://localhost:8901"));
 		in.feedId = soap_strdup(soap, "12345");
 		in.feedDone = false_;
-		in.__sizejobAttributes = 1;
+		in.__sizejobAttributes = 2;
 		in.jobAttributes = soap_malloc(soap, 
 			in.__sizejobAttributes * sizeof(*(in.jobAttributes)));
 		{
 			rec = soap_malloc(soap,  sizeof(*rec));
+			memset(rec, 0, sizeof(*rec));
+			rec->jobid = soap_strdup(soap, "https://localhost:7846/pokus1");
 			rec->jobid = soap_strdup(soap, "https://localhost:7846/pokus");
 			{
 				gss_cred_id_t		cred = GSS_C_NO_CREDENTIAL;
@@ -121,6 +128,34 @@ int main(int argc,char *argv[])
 
 		}
 		in.jobAttributes[0] = rec;
+		{
+			rec = soap_malloc(soap,  sizeof(*rec));
+			memset(rec, 0, sizeof(*rec));
+			rec->jobid = soap_strdup(soap, "https://localhost:7846/pokus2");
+			rec->owner = soap_strdup(soap, "OwnerName");
+			rec->__sizeprimaryStorage = 0;
+			rec->primaryStorage = NULL;
+			rec->__sizeattributes = 2;
+			rec->attributes = soap_malloc(soap,
+				rec->__sizeattributes * sizeof(*(rec->attributes)));
+			rec->attributes[0] = soap_malloc(soap, sizeof(*(rec->attributes[0])));
+			rec->attributes[0]->name = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/LB/Attributes:user");
+			rec->attributes[0]->value =  soap_malloc(soap, sizeof(*(rec->attributes[0]->value)));
+			rec->attributes[0]->value->string = soap_strdup(soap, "CertSubj");
+			rec->attributes[0]->value->blob = NULL;
+			rec->attributes[0]->timestamp = 333;
+			rec->attributes[0]->origin = jptype__attrOrig__USER;
+			rec->attributes[0]->originDetail = NULL;
+			rec->attributes[1] = soap_malloc(soap, sizeof(*(rec->attributes[1])));
+			rec->attributes[1]->name = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus");
+			rec->attributes[1]->value =  soap_malloc(soap, sizeof(*(rec->attributes[0]->value)));
+			rec->attributes[1]->value->string = soap_strdup(soap, "Ready");
+			rec->attributes[1]->value->blob = NULL;
+			rec->attributes[1]->timestamp = 333;
+			rec->attributes[1]->origin = jptype__attrOrig__SYSTEM;
+			rec->attributes[1]->originDetail = NULL;
+		}
+		in.jobAttributes[1] = rec;
 
 
 		check_fault(soap,
