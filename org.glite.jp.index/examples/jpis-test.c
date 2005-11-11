@@ -84,7 +84,18 @@ int main(int argc,char *argv[])
 		{
 			rec = soap_malloc(soap,  sizeof(*rec));
 			rec->jobid = soap_strdup(soap, "https://localhost:7846/pokus");
-			rec->owner = soap_strdup(soap, "OwnerName");
+			{
+				gss_cred_id_t		cred = GSS_C_NO_CREDENTIAL;
+				edg_wll_GssStatus	gss_code;
+				char			*subject = NULL;
+
+				if ( edg_wll_gss_acquire_cred_gsi(NULL, NULL, &cred, &subject, &gss_code) ) {
+					printf("Cannot obtain credentials - exiting.\n");
+					return EINVAL;
+				}
+				rec->owner = soap_strdup(soap, subject);
+				free(subject);
+			}
 			rec->__sizeprimaryStorage = 0;
 			rec->primaryStorage = NULL;
 			rec->__sizeattributes = 2;
