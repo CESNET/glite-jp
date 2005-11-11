@@ -83,7 +83,7 @@ static int updateJob(glite_jpis_context_t ctx, const char *ps, struct jptype__jo
 
 	lprintf("jobid='%s', attrs=%d\n", jobAttrs->jobid, jobAttrs->__sizeattributes);
 
-	if (jobAttrs->remove) assert(*(jobAttrs->remove) == 0);
+	if (jobAttrs->remove) assert(*(jobAttrs->remove) == false_);
 
 	if ((ret = glite_jpis_lazyInsertJob(ctx, ps, jobAttrs->jobid, jobAttrs->owner)) != 0) return ret;
 	for (iattrs = 0; iattrs < jobAttrs->__sizeattributes; iattrs++) {
