@@ -292,10 +292,10 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 	}
 
 	if (ctx->conf->no_auth) {
-		trio_asprintf(&query, "SELECT dg_jobid,ps FROM jobs%s WHERE %s;", qa, qwhere);
+		trio_asprintf(&query, "SELECT DISTINCT dg_jobid,ps FROM jobs%s WHERE %s;", qa, qwhere);
 	}
 	else {
-		trio_asprintf(&query, "SELECT dg_jobid,ps FROM jobs,users%s WHERE (jobs.ownerid = users.userid AND users.cert_subj='%s') AND %s;", qa, ctx->jpctx->peer, qwhere);
+		trio_asprintf(&query, "SELECT DISTINCT dg_jobid,ps FROM jobs,users%s WHERE (jobs.ownerid = users.userid AND users.cert_subj='%s') AND %s;", qa, ctx->jpctx->peer, qwhere);
 	}
 	printf("Incomming QUERY:\n %s\n", query);
 	free(qwhere);
