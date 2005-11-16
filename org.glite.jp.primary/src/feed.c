@@ -74,14 +74,20 @@ int full_feed(
 	const char *job,
 	glite_jp_attrval_t **attrs)
 {
-	int	i,ret;
-	char	**ma;
+	int	i,ret,no_owner = 1;
+	char	**ma = NULL;
 
-	for (i=0; feed->attrs[i]; i++);
-	ma = malloc((i+2) * sizeof *ma);
-	ma[0] = GLITE_JP_ATTR_OWNER;
-	memcpy(ma+1,feed->attrs,(i+1) * sizeof *ma);
-	ret = glite_jpps_get_attrs(ctx,job,ma,i+1,attrs);
+	for (i=0; feed->attrs[i]; i++)
+		if (!strcmp(feed->attrs[i],GLITE_JP_ATTR_OWNER)) no_owner = 0;
+
+	if (no_owner) {
+		ma = malloc((i+2) * sizeof *ma);
+		ma[0] = GLITE_JP_ATTR_OWNER;
+		memcpy(ma+1,feed->attrs,(i+1) * sizeof *ma);
+	}
+	ret = glite_jpps_get_attrs(ctx,job,
+			no_owner ? ma : feed->attrs,
+			i+no_owner,attrs);
 	free(ma);
 	return ret;
 }
