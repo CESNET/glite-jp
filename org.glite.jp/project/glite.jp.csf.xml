@@ -12,6 +12,12 @@
 
 	Revision history:
 	$Log$
+	Revision 1.4.2.1  2005/10/17 09:49:02  akrenek
+	added jp.client module targets
+	
+	Revision 1.4  2005/10/03 17:00:50  valtri
+	Automatically checkout the new module yet.
+	
 	Revision 1.3  2004/12/10 09:46:41  akrenek
 	included ws-interface
 	
@@ -138,6 +144,10 @@
 			<equals arg1="${org.glite.jp.server-common.version}" arg2="HEAD" />
 		</condition>
 
+		<condition property="client.head">
+			<equals arg1="${org.glite.jp.client.version}" arg2="HEAD" />
+		</condition>
+
 	</target>
 
     	<presetdef name="cvs-co">
@@ -197,7 +207,7 @@
 	
 	<!--  All external libraries -->
  	<target name="external" 
- 		description="Install external packages" depends="oscheck"/>
+ 		description="Install external packages" depends="oscheck, libtar, mysql"/>
  	
 	<!-- =====================================================
 		 GLite Middleware jp modules
@@ -245,6 +255,16 @@
 			tag="${org.glite.jp.primary.version}" />
 	</target>
 
+	<!-- client -->
+	<target name="client" depends="evaluate.cvs.tags, get.client.head, get.client.tag"/>
+	<target name="get.client.head" if="client.head">
+		<cvs-co package="org.glite.jp.client" />
+	</target>
+	<target name="get.client.tag" unless="client.head">
+		<cvs-co package="org.glite.jp.client"
+			tag="${org.glite.jp.client.version}" />
+	</target>
+
 	<!-- server-common -->
 	<target name="server-common" depends="evaluate.cvs.tags, get.server-common.head, get.server-common.tag"/>
 	<target name="get.server-common.head" if="server-common.head">
@@ -259,6 +279,8 @@
  	<target name="project" depends="server-common,
 					ws-interface,
 					common,
+					client,
+					server-common,
 					index,
 					primary" />
     

@@ -141,7 +141,8 @@ distbin:
         
 install:
 	-mkdir -p ${PREFIX}/${STAGETO}
-	-mkdir -p ${PREFIX}/bin
+	-mkdir -p ${PREFIX}/bin 
+	-mkdir -p ${PREFIX}/lib
 	-mkdir -p ${PREFIX}/examples
 	${INSTALL} -m 755 ${daemon} ${PREFIX}/bin
 	${INSTALL} -m 644 ${LIB} ${PREFIX}/lib

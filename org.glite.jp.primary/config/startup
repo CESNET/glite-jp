@@ -16,7 +16,7 @@ GLITE_LOCATION_VAR=${GLITE_LOCATION_VAR:-${GLITE_LOCATION}/var}
 
 unset creds
 
-GLITE_JP_PRIMARY_PORT=8901
+test -n "$GLITE_JP_PRIMARY_PORT" ||  GLITE_JP_PRIMARY_PORT=8901
 
 start()
 {
@@ -30,10 +30,15 @@ start()
 		echo FAILED
 		return 1
 	fi
+	if test -z "$GLITE_JP_PRIMARY_PEERS" ;then
+		echo 'Error: incomplete configuration (GLITE_JP_PRIMARY_PEERS is not set)'
+		echo FAILED
+		return 1
+	fi
 	if test -z "$GLITE_JP_PRIMARY_FTP_PORT" -o \
 		-z "$GLITE_JP_PRIMARY_INTERNAL" -o -z "$GLITE_JP_PRIMARY_EXTERNAL" ;then
 		echo 'Error: incomplete configuration (GLITE_JP_PRIMARY_FTP_PORT,' \
-			'GLITE_JP_PRIMARY_INTERNAL, or GLITE_JP_PRIMARY_EXTERNAL is not set'
+			'GLITE_JP_PRIMARY_INTERNAL, or GLITE_JP_PRIMARY_EXTERNAL is not set)'
 		echo FAILED
 		return 1
 	fi
@@ -63,16 +68,20 @@ start()
 
 	echo -n Starting glite-jp-primarystoraged ...
 	su - $GLITE_USER -c " $GLITE_LOCATION/bin/glite-jp-primarystoraged \
-		$creds -i '$pidfile'
+		-P $GLITE_LOCATION/lib/glite-jp-tags.so -P $GLITE_LOCATION/lib/glite_lb_plugin.so \
+		$creds -a '$GLITE_JP_PRIMARY_PEERS' \
+		-i '$pidfile' -p $GLITE_JP_PRIMARY_PORT $GLITE_JP_PRIMARY_SPECIAL \
 		-BI,'$GLITE_JP_PRIMARY_INTERNAL' -BE,'$GLITE_JP_PRIMARY_EXTERNAL' \
 		${GLITE_JP_PRIMARY_DBCS_OPTION} " && echo " done" || echo " FAILED"
 
 	echo -n Starting JP gridftp server ...
 	su - $GLITE_USER -c "X509_USER_CERT=\"$X509_USER_CERT\" \
 		X509_USER_KEY=\"$X509_USER_KEY\" \
+		GLITE_USER=\"$GLITE_USER\" \
+		FTPBE_INT_PREFIX=\"$GLITE_JP_PRIMARY_INTERNAL\" \
 		LD_PRELOAD=$GLITE_LOCATION/lib/glite-jp-ftpdauth.so \
-		$GLOBUS_LOCATION/sbin/in.ftpd -a -S -p $GLITE_JP_PRIMARY_FTP_PORT & \
-		pid=\$!; sleep 2; kill -0 \$pid" && echo " done" || echo " FAILED"
+		$GLOBUS_LOCATION/sbin/in.ftpd -a -s -p $GLITE_JP_PRIMARY_FTP_PORT & \
+		pid=\$!; echo \$pid > $pidfile.ftpd; sleep 2; true kill -0 \$pid" && echo " done" || echo " FAILED"
 }
 
 stop()
@@ -96,31 +105,48 @@ stop()
 		echo "$pidfile" does not exist - glite-jp-primarystoraged not running? >&2
 		return 1
 	fi
-}
+	if [ -f "$pidfile.ftpd" ]; then
+		pid=`cat "$pidfile.ftpd"`
+		kill $pid
+		echo -n Stopping JP ftp server \($pid\) ...
+		try=0
+		while ps p $pid >/dev/null 2>&1; do 
+			sleep 1;
+			try=`expr $try + 1`
+			if [ $try = 20 ]; then
+				echo " giving up after $try retries"
+				return 1
+			fi
+	 	done
+		echo " done"
+		rm -f "$pidfile.ftpd"
+	else
+		echo "$pidfile.ftpd" does not exist - JP ftp server not running? >&2
+		return 1
+	fi
 
-	# XXX
-	echo >&2 'stopping JP gridftp server not implemented yet'
-	return 1
+	return 0
 }
 
 status()
 {
-	# XXX pidfile
+	retval=0
+	# XXX pidfile?
         if netstat -an --inet | grep "^tcp .* 0.0.0.0:${GLITE_JP_PRIMARY_PORT} .*LISTEN" >/dev/null 2>&1 ;then
         echo glite-jp-primarystoraged running 
         else
         echo glite-jp-primarystoraged not running
-        return 1
+        retval=1
         fi
 
         if netstat -an --inet | grep "^tcp .* 0.0.0.0:${GLITE_JP_PRIMARY_FTP_PORT} .*LISTEN" >/dev/null 2>&1 ;then
         echo JP gridftp server running 
         else
         echo JP gridftp server not running
-        return 1
+        retval=1
         fi
 
-	return 0
+	return $retval
 }
 
 case x$1 in

@@ -76,9 +76,9 @@ TRIOLIB:=-lglite_jp_trio
 
 ifneq (${mysql_prefix},/usr)
 	ifeq ($(shell echo ${mysql_version} | cut -d. -f1,2),4.1)
-		MYSQLIB := -L${mysql_prefix}/lib/mysql -lmysqlclient
+		MYSQLIB := -L${mysql_prefix}/lib/mysql -lmysqlclient -lz
         else
-		MYSQLIB := -L${mysql_prefix}/lib -lmysqlclient
+		MYSQLIB := -L${mysql_prefix}/lib -lmysqlclient -lz
         endif
 else
 	MYSQLIB := -lmysqlclient
@@ -166,6 +166,9 @@ install:
 		${INSTALL} -m 755 $$plugin ${PREFIX}/lib; \
 	done
 	${INSTALL} -m 755 ${top_srcdir}/config/startup ${PREFIX}/etc/init.d/glite-jp-primary
+	${INSTALL} -m 755 ${top_srcdir}/config/glite-jp-primary-dbsetup.sql ${PREFIX}/etc
+	${INSTALL} -m 755 ${top_srcdir}/config/glite-jp-primary-dbsetup.sh ${PREFIX}/etc
+	${INSTALL} -m 644 ${top_srcdir}/examples/sample_job  ${PREFIX}/examples/glite-jp-primary-sample_job.lb
 
 clean:
 
