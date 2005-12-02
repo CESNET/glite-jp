@@ -31,7 +31,10 @@ typedef struct _glite_jp_is_conf {
 
 	int 	debug;
 	int	no_auth;		// set if you do not want authorization
-	char	*cs, *port, *pidfile, *logfile;
+	char	*cs, 			// database contact string
+		*port,			// server port
+		*pidfile,
+		*logfile;
 } glite_jp_is_conf;
 
 
