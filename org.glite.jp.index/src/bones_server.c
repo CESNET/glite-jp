@@ -254,6 +254,8 @@ int newconn(int conn,struct timeval *to,void *data)
 
 
 	soap_init2(soap,SOAP_IO_KEEPALIVE,SOAP_IO_KEEPALIVE);
+	soap_set_omode(soap, SOAP_IO_BUFFER);	// set buffered response
+						// buffer set to SOAP_BUFLEN (default = 8k)
 	soap_set_namespaces(soap,jpis__namespaces);
 	soap->user = (void *) private;
 
