@@ -29,8 +29,8 @@ VPATH=${top_srcdir}/src:${top_srcdir}/examples:${top_srcdir}/project$:${top_srcd
 GLOBUS_LIBS:=-L${globus_prefix}/lib \
 	-lglobus_common_${nothrflavour} \
 	-lglobus_gssapi_gsi_${nothrflavour} \
-	-lglobus_ftp_client_gcc32dbg \
-	-lglobus_ftp_control_gcc32dbg
+	-lglobus_ftp_client_${nothrflavour} \
+	-lglobus_ftp_control_${nothrflavour}
 
 GLOBUS_CFLAGS:=-I${globus_prefix}/include/${nothrflavour}
 
@@ -80,15 +80,18 @@ compile: ${daemon} ${LIB} ${EXAMPLES}
 
 examples: ${EXAMPLES}
 
+# XXX: should depend on -ltar but we have no dynamic version so far :-(
 ${LIB}: ${LIBOBJS}
-	${LINK} ${version_info} -o $@ ${LIBLOBJS} -rpath ${glite_location}/lib ${LBMAILDIRLIB} -ltar
+	${LINK} ${version_info} -o $@ ${LIBLOBJS} -rpath ${glite_location}/lib ${LBMAILDIRLIB} 
 
 ${daemon}: ${OBJS}
 	${LINK} -o $@ ${OBJS} ${LBMAILDIRLIB} ${GSOAPLIB} ${GLOBUS_LIBS}
 
 ${EXAMPLES}: ${LIB}
+
+# XXX: -ltar should be in the library
 ${EXAMPLES}: %: %.o
-	${LINK} -o $@ $< ${LIB} ${LBMAILDIRLIB} 
+	${LINK} -o $@ $< ${LIB} ${LBMAILDIRLIB}  -ltar
 
 
 
