@@ -68,10 +68,10 @@ BONESLIB:=-lglite_lb_server_bones
 TRIOLIB:=-lglite_jp_trio
 
 ifneq (${mysql_prefix},/usr)
-	ifeq ($(shell echo ${mysql_version} | cut -d. -f1,2),4.1)
-		MYSQLIB := -L${mysql_prefix}/lib/mysql -lmysqlclient
-	else
+	ifeq ($(shell test -f ${mysql_prefix}/lib/libmysqlclient.a -o -f ${mysql_prefix}/lib/libmysqlclient.so && echo ok),ok)
 		MYSQLIB := -L${mysql_prefix}/lib -lmysqlclient
+	else
+		MYSQLIB := -L${mysql_prefix}/lib/mysql -lmysqlclient
 	endif
 else
 	MYSQLIB := -lmysqlclient
