@@ -67,26 +67,15 @@ SRVCOMMONLIB:=-lglite_jp_server_common
 BONESLIB:=-lglite_lb_server_bones
 TRIOLIB:=-lglite_jp_trio
 
-ifneq (${mysql_prefix},/usr)
-	ifeq ($(shell test -f ${mysql_prefix}/lib/libmysqlclient.a -o -f ${mysql_prefix}/lib/libmysqlclient.so && echo ok),ok)
-		MYSQLIB := -L${mysql_prefix}/lib -lmysqlclient
-	else
-		MYSQLIB := -L${mysql_prefix}/lib/mysql -lmysqlclient
-	endif
-else
-	MYSQLIB := -lmysqlclient
-endif
-
-
 default all: compile
 
 compile: ${daemon} ${example}
 
 ${daemon}: ${OBJS}
-	${LINK} -o $@ -export-dynamic ${OBJS} ${BONESLIB} ${TRIOLIB} ${COMMONLIB} ${GSOAPLIB} ${GLOBUS_LIBS} ${MYSQLIB} ${SRVCOMMONLIB}
+	${LINK} -o $@ -export-dynamic ${OBJS} ${BONESLIB} ${TRIOLIB} ${COMMONLIB} ${GSOAPLIB} ${GLOBUS_LIBS} ${SRVCOMMONLIB}
 
 ${example}: ${EXA_OBJS}
-	${LINK} -o $@ ${EXA_OBJS} ${GSOAPLIB} ${GLOBUS_LIBS} ${COMMONLIB} ${TRIOLIB} ${MYSQLIB} ${SRVCOMMONLIB}
+	${LINK} -o $@ ${EXA_OBJS} ${GSOAPLIB} ${GLOBUS_LIBS} ${COMMONLIB} ${TRIOLIB} ${SRVCOMMONLIB}
 
 jpis-db-internal: jpis-db-internal.o db_ops.o conf.o context.o
 	${LINK} -o $@ $+ ${COMMONLIB} ${SRVCOMMONLIB} ${GLOBUS_LIBS}
@@ -119,7 +108,7 @@ ${ps_prefix}C.c ${ps_prefix}H.h ${ps_prefix}_Stub.h: JobProvenancePS.xh
 #	${gsoap_prefix}/bin/soapcpp2 -w -c -p env_ env.xh
 
 check:
-	../test/run-test.sh
+	# ../test/run-test.sh
 
 doc:
 
