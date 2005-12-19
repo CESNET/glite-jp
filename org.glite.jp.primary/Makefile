@@ -74,10 +74,10 @@ GSOAPLIB:=-L${stagedir}/lib -lglite_security_gsoap_plugin_${dotless_soap_ver}_${
 TRIOLIB:=-lglite_jp_trio
 
 ifneq (${mysql_prefix},/usr)
-	ifeq ($(shell echo ${mysql_version} | cut -d. -f1,2),4.1)
-		MYSQLIB := -L${mysql_prefix}/lib/mysql -lmysqlclient -lz
-        else
+	ifeq ($(shell test -f ${mysql_prefix}/lib/libmysqlclient.a -o -f ${mysql_prefix}/lib/libmysqlclient.so && echo ok),ok)
 		MYSQLIB := -L${mysql_prefix}/lib -lmysqlclient -lz
+        else
+		MYSQLIB := -L${mysql_prefix}/lib/mysql -L${mysql_prefix}/lib -lmysqlclient -lz
         endif
 else
 	MYSQLIB := -lmysqlclient
