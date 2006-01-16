@@ -39,6 +39,6 @@ int glite_jpis_tryReconnectFeed(glite_jpis_context_t ctx, long int uniqueid, tim
 
 int glite_jpis_insertAttrVal(glite_jpis_context_t ctx, const char *jobid, glite_jp_attrval_t *av);
 
-int glite_jpis_lazyInsertJob(glite_jpis_context_t ctx, const char *feedid, const char *jobid, const char *owner);
+int glite_jpis_lazyInsertJob(glite_jpis_context_t ctx, const char *ps, const char *jobid, const char *owner);
 
 #endif

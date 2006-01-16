@@ -12,6 +12,12 @@
 
 	Revision history:
 	$Log$
+	Revision 1.10.2.1  2005/10/20 06:55:15  zsalvet
+	Add libtar and mysql external dependencies.
+	
+	Revision 1.10  2005/10/14 17:23:07  akrenek
+	added jp.client
+	
 	Revision 1.9  2005/10/11 20:37:50  akrenek
 	added dependencies on lb.server-bones and security.gsoap-plugin
 	
@@ -306,7 +312,7 @@
 		</if>
 	</target>
 
-	<target name="server-common" unless="setenvonly" depends="envset, common" >
+	<target name="server-common" unless="setenvonly" depends="envset, mysql, common" >
 		<if>
 			<isset property="small.memory" />
 			<then>
@@ -322,7 +328,7 @@
 		</if>
 	</target>
 
-	<target name="client" unless="setenvonly" depends="envset, common" >
+	<target name="client" unless="setenvonly" depends="envset, libtar, common" >
 		<if>
 			<isset property="small.memory" />
 			<then>

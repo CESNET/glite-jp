@@ -12,6 +12,15 @@
 
 	Revision history:
 	$Log$
+	Revision 1.5  2005/11/23 08:24:23  zsalvet
+	Add jp.client component.
+	
+	Revision 1.4.2.2  2005/10/20 06:55:15  zsalvet
+	Add libtar and mysql external dependencies.
+	
+	Revision 1.4.2.1  2005/10/17 09:49:02  akrenek
+	added jp.client module targets
+	
 	Revision 1.4  2005/10/03 17:00:50  valtri
 	Automatically checkout the new module yet.
 	
@@ -145,6 +154,10 @@
 			<equals arg1="${org.glite.jp.server-common.version}" arg2="HEAD" />
 		</condition>
 
+		<condition property="client.head">
+			<equals arg1="${org.glite.jp.client.version}" arg2="HEAD" />
+		</condition>
+
 	</target>
 
     	<presetdef name="cvs-co">
@@ -204,7 +217,7 @@
 	
 	<!--  All external libraries -->
  	<target name="external" 
- 		description="Install external packages" depends="oscheck"/>
+ 		description="Install external packages" depends="oscheck, libtar, mysql"/>
  	
 	<!-- =====================================================
 		 GLite Middleware jp modules
@@ -276,6 +289,8 @@
  	<target name="project" depends="server-common,
 					ws-interface,
 					common,
+					client,
+					server-common,
 					index,
 					primary,
 					client" />

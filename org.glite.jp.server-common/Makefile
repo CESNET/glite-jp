@@ -15,7 +15,6 @@ globus_prefix=/opt/globus
 nothrflavour=gcc32
 thrflavour=gcc32pthr
 expat_prefix=/opt/expat
-ares_prefix=/opt/ares
 gsoap_prefix=/software/gsoap-2.6
 
 CC=gcc
@@ -56,10 +55,10 @@ OBJS:=${SRCS:.c=.o}
 LOBJS:=${OBJS:.o=.lo}
 
 ifneq (${mysql_prefix},/usr)
-	ifeq ($(shell echo ${mysql_version} | cut -d. -f1,2),4.1)
-		MYSQLIB := -L${mysql_prefix}/lib/mysql -lmysqlclient
-	else
+	ifeq ($(shell test -f ${mysql_prefix}/lib/libmysqlclient.a -o -f ${mysql_prefix}/lib/libmysqlclient.so && echo ok),ok)
 		MYSQLIB := -L${mysql_prefix}/lib -lmysqlclient
+	else
+		MYSQLIB := -L${mysql_prefix}/lib/mysql -lmysqlclient
 	endif
 else
 	MYSQLIB := -lmysqlclient

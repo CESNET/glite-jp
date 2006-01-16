@@ -64,7 +64,7 @@ LB server like this:
 is stored in the /tmp/lb_server_jpreg directory.)
 
 Then you should run the jpimporter daemon on the same host:
-./glite-jp-importer -k <hostcert> -k <hostkey> -p jpps.server.address:8900 -r /tmp/lb_server_jpreg -d /tmp/lb_server_jpdump
+./glite-jp-importer -c <hostcert> -k <hostkey> -p jpps.server.address:8900 -r /tmp/lb_server_jpreg -d /tmp/lb_server_jpdump
 
 (Every job registration anounced in /tmp/lb_server_jpreg directory will be sent
 to the JP PS at the address jpps.server.address:8900.)

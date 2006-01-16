@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 #include <glite/jp/types.h>
 #include <glite/jp/context.h>
@@ -12,7 +13,8 @@
 
 
 int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf **configuration)
-{ 
+{
+	char *debug;
 	char *ps = NULL;
 
         // read comman line options and configuration file
@@ -26,6 +28,11 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 	// configuration from environment	
 	conf->cs = getenv("GLITE_JPIS_DB");
 	conf->port = getenv("GLITE_JPIS_PORT");
+	debug = getenv("GLITE_JPIS_DEBUG");
+	conf->debug = (debug != NULL) && (strcmp(debug, "0") != 0);
+	conf->no_auth = 0;				// check authorization
+	conf->pidfile = getenv("GLITE_JPIS_PIDFILE");
+	conf->logfile = getenv("GLITE_JPIS_LOGFILE");
 
 	// prefixes & attributes defined in:
 	// lb.server/build/jp_job_attrs.h (created when build plugin)
@@ -34,7 +41,7 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 	conf->attrs = calloc(19, sizeof(*conf->attrs));
 	conf->attrs[0] = strdup("http://egee.cesnet.cz/en/Schema/JP/System:owner");
 	conf->attrs[1] = strdup("http://egee.cesnet.cz/en/Schema/JP/System:jobId");
-	conf->attrs[2] = strdup("http://egee.cesnet.cz/en/Schema/JP/System::regtime");
+	conf->attrs[2] = strdup("http://egee.cesnet.cz/en/Schema/JP/System:regtime");
 	conf->attrs[3] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:user");
 	conf->attrs[4] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:aTag");
 	conf->attrs[5] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:eNodes");
@@ -65,7 +72,7 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 
 //	ps = "http://umbar.ics.muni.cz:8901";
 	if (!ps && ((ps = getenv("GLITE_JPIS_PS")) == NULL)) {
-		printf("No JP PrimaryStrorage server specified in $GLITE_JPIS_PS, default feeds skipped.\n");
+		printf("No JP PrimaryStrorage server specified in $GLITE_JPIS_PS, default feeds skipped. (not fatal)\n");
 		conf->feeds = calloc(1, sizeof(*(conf->feeds)));
 		*configuration = conf;
 		return 0;
@@ -120,4 +127,14 @@ void glite_jp_free_conf(glite_jp_is_conf *conf)
 	free(conf->plugins);
 	free(conf->feeds);
 	free(conf);
+}
+
+
+void glite_jp_lprintf(const char *source, const char *fmt, ...) {
+	va_list ap;
+
+	printf("%s: ", source);
+	va_start(ap, fmt);
+	vprintf(fmt, ap);
+	va_end(ap);
 }

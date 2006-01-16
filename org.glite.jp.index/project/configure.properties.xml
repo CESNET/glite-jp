@@ -12,6 +12,18 @@
 
 	Revision history:
 	$Log$
+	Revision 1.5.2.1  2005/11/03 17:46:53  mmulac
+	ares to c-ares migration
+	 - use dynamic library of c-ares, instead of ares static lib
+	 - ares clean up (now should be mentioned only in modules that really need it)
+	 - patch for security.gsoap-plugin not yet in CVS (sent to interation list)
+	   I do not know what will happen when one try to mix ares with c-ares libs
+	   => weird things may arise!
+	
+	Revision 1.5  2005/10/11 20:45:45  akrenek
+	- detect gsoap stuff
+	- install what should be installed
+	
 	Revision 1.4  2005/08/12 10:56:25  mmulac
 	void IS server
 	- seems compiling
@@ -50,7 +62,6 @@ globus_prefix=${with.globus.prefix}
 expat_prefix=${with.expat.prefix}
 gsoap_prefix=${with.gsoap.prefix}
 gsoap_version=${ext.gsoap.version}
-ares_prefix=${with.ares.prefix}
 mysql_prefix=${with.mysql.prefix}
 mysql_version=${ext.mysql.version}
 thrflavour=${with.globus.thr.flavor}

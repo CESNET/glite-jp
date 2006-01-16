@@ -12,6 +12,18 @@
 
 	Revision history:
 	$Log$
+	Revision 1.5.2.1  2005/11/03 17:46:53  mmulac
+	ares to c-ares migration
+	 - use dynamic library of c-ares, instead of ares static lib
+	 - ares clean up (now should be mentioned only in modules that really need it)
+	 - patch for security.gsoap-plugin not yet in CVS (sent to interation list)
+	   I do not know what will happen when one try to mix ares with c-ares libs
+	   => weird things may arise!
+	
+	Revision 1.5  2005/10/11 20:49:27  akrenek
+	- detect gsoap
+	- use flavoured gsoap plugin
+	
 	Revision 1.4  2005/06/03 11:56:49  akrenek
 	make it build with the new ftp backend
 	
@@ -47,7 +59,6 @@ version=${module.version}
 glite_location=${with.glite.location}
 globus_prefix=${with.globus.prefix}
 expat_prefix=${with.expat.prefix}
-ares_prefix=${with.ares.prefix}
 gsoap_prefix=${with.gsoap.prefix}
 gsoap_version=${ext.gsoap.version}
 mysql_prefix=${with.mysql.prefix}

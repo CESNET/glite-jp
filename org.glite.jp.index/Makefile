@@ -15,7 +15,6 @@ globus_prefix=/opt/globus
 nothrflavour=gcc32
 thrflavour=gcc32pthr
 expat_prefix=/opt/expat
-ares_prefix=/opt/ares
 gsoap_prefix=/software/gsoap-2.6
 
 CC=gcc
@@ -35,7 +34,7 @@ CPPFLAGS:=-DDEBUG -D_GNU_SOURCE
 DEBUG:=-W -Wall -Wno-unused-parameter -Wno-unused-function -g -O0
 
 dotless_soap_ver:=${shell echo ${gsoap_version} | tr -d . }
-GSOAPLIB:=-L${stagedir}/lib -lglite_security_gsoap_plugin_${dotless_soap_ver}_${nothrflavour} -L${ares_prefix}/lib -lares
+GSOAPLIB:=-L${stagedir}/lib -lglite_security_gsoap_plugin_${dotless_soap_ver}_${nothrflavour}
 
 gsoap_bin_prefix:=${shell if [ -x  ${gsoap_prefix}/bin/soapcpp2 ]; then echo ${gsoap_prefix}/bin; else echo ${gsoap_prefix}; fi }
 
@@ -53,7 +52,7 @@ is_prefix:=jpis_
 ps_prefix:=jpps_
 
 SRCS:= conf.c bones_server.c soap_ops.c soap_ps_calls.c \
-	ws_ps_typeref.c ws_is_typeref.c db_ops.c context.c \
+	ws_ps_typeref.c ws_is_typeref.c db_ops.c context.c common_server.c \
 	${is_prefix}ServerLib.c \
 	${ps_prefix}ClientLib.c ${ps_prefix}C.c \
 
@@ -68,26 +67,15 @@ SRVCOMMONLIB:=-lglite_jp_server_common
 BONESLIB:=-lglite_lb_server_bones
 TRIOLIB:=-lglite_jp_trio
 
-ifneq (${mysql_prefix},/usr)
-	ifeq ($(shell echo ${mysql_version} | cut -d. -f1,2),4.1)
-		MYSQLIB := -L${mysql_prefix}/lib/mysql -lmysqlclient
-	else
-		MYSQLIB := -L${mysql_prefix}/lib -lmysqlclient
-	endif
-else
-	MYSQLIB := -lmysqlclient
-endif
-
-
 default all: compile
 
 compile: ${daemon} ${example}
 
 ${daemon}: ${OBJS}
-	${LINK} -o $@ -export-dynamic ${OBJS} ${BONESLIB} ${TRIOLIB} ${COMMONLIB} ${GSOAPLIB} ${GLOBUS_LIBS} ${MYSQLIB} ${SRVCOMMONLIB}
+	${LINK} -o $@ -export-dynamic ${OBJS} ${BONESLIB} ${TRIOLIB} ${COMMONLIB} ${GSOAPLIB} ${GLOBUS_LIBS} ${SRVCOMMONLIB}
 
 ${example}: ${EXA_OBJS}
-	${LINK} -o $@ ${EXA_OBJS} ${GSOAPLIB} ${GLOBUS_LIBS} ${COMMONLIB} ${TRIOLIB} ${MYSQLIB} ${SRVCOMMONLIB}
+	${LINK} -o $@ ${EXA_OBJS} ${GSOAPLIB} ${GLOBUS_LIBS} ${COMMONLIB} ${TRIOLIB} ${SRVCOMMONLIB}
 
 jpis-db-internal: jpis-db-internal.o db_ops.o conf.o context.o
 	${LINK} -o $@ $+ ${COMMONLIB} ${SRVCOMMONLIB} ${GLOBUS_LIBS}
@@ -104,11 +92,11 @@ JobProvenancePS.xh: %.xh: %.wsdl JobProvenanceTypes.wsdl typemap.dat
 
 ${is_prefix}ClientLib.c ${is_prefix}Client.c \
 ${is_prefix}Server.c ${is_prefix}ServerLib.c  \
-${is_prefix}C.c ${is_prefix}H.h: JobProvenanceIS.xh
+${is_prefix}C.c ${is_prefix}H.h ${is_prefix}_Stub.h: JobProvenanceIS.xh
 	${gsoap_bin_prefix}/soapcpp2 -n -w -c -p ${is_prefix} JobProvenanceIS.xh
 
 ${ps_prefix}Client.c ${ps_prefix}ClientLib.c  \
-${ps_prefix}C.c ${ps_prefix}H.h: JobProvenancePS.xh
+${ps_prefix}C.c ${ps_prefix}H.h ${ps_prefix}_Stub.h: JobProvenancePS.xh
 	${gsoap_bin_prefix}/soapcpp2 -n -w -c -p ${ps_prefix} JobProvenancePS.xh
 
 
@@ -119,8 +107,8 @@ ${ps_prefix}C.c ${ps_prefix}H.h: JobProvenancePS.xh
 #	rm -f JobProvenanceTypes.wsdl
 #	${gsoap_prefix}/bin/soapcpp2 -w -c -p env_ env.xh
 
-check: 
-	-echo nothing yet
+check:
+	# ../test/run-test.sh
 
 doc:
 
@@ -169,5 +157,6 @@ soap_ps_calls.o: soap_ps_calls.c jpps_H.h jpps_.nsmap soap_version.h conf.h db_o
 soap_ops.o: soap_ops.c jpis_H.h jpis_.nsmap soap_version.h db_ops.h ws_ps_typeref.h ws_is_typeref.h context.h
 ws_ps_typeref.o: ws_ps_typeref.c jpis_H.h ws_typemap.h ws_ps_typeref.h
 ws_is_typeref.o: ws_is_typeref.c jpis_H.h ws_typemap.h ws_is_typeref.h
+comon_server.o: common_server.c common_server.h
 
 .PHONY: default all compile check doc stage dist distsrc distbin install clean

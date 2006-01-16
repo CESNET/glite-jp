@@ -1,0 +1,85 @@
+<?xml version="1.0"?>
+
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+targetNamespace="http://www.w3schools.com"
+xmlns="http://www.w3schools.com"
+elementFormDefault="qualified">
+
+
+<!-- Simple types -->
+<xs:element name="attr" type="xs:string"/>
+<xs:element name="string" type="xs:string"/>
+<xs:element name="blob" type="xs:base64Binary"/>
+
+
+<!-- Enumeration types -->
+<xs:element name="orig">
+  <xs:simpleType>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="SYSTEM"/>
+      <xs:enumeration value="USER"/>
+      <xs:enumeration value="USER"/>
+    </xs:restriction>
+  </xs:simpleType>
+</xs:element>
+
+<xs:element name="op">
+  <xs:simpleType>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="EQUAL"/>
+      <xs:enumeration value="UNEQUAL"/>
+      <xs:enumeration value="LESS"/>
+      <xs:enumeration value="GREATER"/>
+      <xs:enumeration value="WITHIN"/>
+      <xs:enumeration value="EXISTS"/>
+    </xs:restriction>
+  </xs:simpleType>
+</xs:element>
+
+
+<!-- Complex types -->
+<xs:element name="attrs">
+  <xs:complexType>
+    <xs:sequence>
+      <xs:element ref="attr" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:element>
+
+<xs:element name="value">
+  <xs:complexType>
+    <xs:choice>
+      <xs:element ref="string" minOccurs="1" maxOccurs="1"/>
+      <xs:element ref="blob" minOccurs="1" maxOccurs="1"/>
+    </xs:choice>
+  </xs:complexType>
+</xs:element>
+
+<xs:element name="record">
+  <xs:complexType mixed="true">
+    <xs:sequence>
+      <xs:element ref="op" minOccurs="1" maxOccurs="1"/>
+      <xs:element ref="value" minOccurs="0" maxOccurs="2"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:element>
+
+<xs:element name="query">
+  <xs:complexType mixed="true">
+    <xs:sequence>
+      <xs:element ref="attr" minOccurs="1" maxOccurs="1"/>
+      <xs:element ref="orig" minOccurs="0" maxOccurs="1"/>
+      <xs:element ref="record" minOccurs="1" maxOccurs="1"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:element>
+
+<xs:element name="jpis_client_config">
+  <xs:complexType mixed="true">
+    <xs:sequence>
+      <xs:element ref="query" minOccurs="1" maxOccurs="1"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:element>
+
+</xs:schema>
