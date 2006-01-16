@@ -1,0 +1,78 @@
+1. JPPS standalone
+
+1.1 job registration
+1.1.1 basic functionality
+- call RegisterJob 
+* call GetJobAttributes owner to verify
+
+1.1.2 AuthZ check
+* call GetJobAttributes with different credentials - should fail
+
+1.2 tag recording
+- call RecordTag
+* call GetJobAttributes to verify
+- record and retrieve more values of the same tag
+
+1.3 file upload
+
+1.3.1 basic functionality
+- call StartUpload, LB dump file type
+* check with GetJobFiles -- shoud return nothing
+- upload via ftp 
+- call CommitUpload
+* check with GetJobFiles -- should return URL
+- retrieve and check the file
+
+1.3.1 AuthZ checks 
+(should fail)
+* call GetJobFiles with different credentials
+
+* StartUpload with different credentials
+
+- StartUpload
+* ftp upload with different credentials 
+
+* ftp GET with different credentials
+
+1.3.2 cleanup
+(not implemented yet)
+- call StartUpload, short timeout
+- upload via ftp
+(don't call CommitUpload)
+* uploaded file should be purged after timeout
+
+2. LB plugin 
+TODO
+
+
+3. JPPS-JPIS interaction (feeds)
+
+set of queries (how many?) with different "triggering conditions":
+- on job registration
+- on LB file upload
+- on RecordTag
+
+corresponding sets of jobs to each query, each containing jobs which match
+and which don't 
+
+3.1 single batch feed
+- upload jobs
+- start feed
+* check IS contents (jobs and expected attr values)
+
+3.2 single incremental feed
+- register feed
+- upload jobs one by one
+* check IS contents (matching jobs should turn up, others not)
+
+3.3 multiple feeds at time
+TODO
+
+
+3.x PS-IS AuthZ
+TODO, if any
+
+
+4. IS queries
+
+...
