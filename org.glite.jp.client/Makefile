@@ -15,7 +15,6 @@ globus_prefix=/opt/globus
 nothrflavour=gcc32
 thrflavour=gcc32pthr
 expat_prefix=/opt/expat
-ares_prefix=/opt/ares
 gsoap_prefix=/software/gsoap-2.6
 
 CC=gcc
@@ -29,8 +28,8 @@ VPATH=${top_srcdir}/src:${top_srcdir}/examples:${top_srcdir}/project$:${top_srcd
 GLOBUS_LIBS:=-L${globus_prefix}/lib \
 	-lglobus_common_${nothrflavour} \
 	-lglobus_gssapi_gsi_${nothrflavour} \
-	-lglobus_ftp_client_gcc32dbg \
-	-lglobus_ftp_control_gcc32dbg
+	-lglobus_ftp_client_${nothrflavour} \
+	-lglobus_ftp_control_${nothrflavour}
 
 GLOBUS_CFLAGS:=-I${globus_prefix}/include/${nothrflavour}
 
@@ -80,15 +79,18 @@ compile: ${daemon} ${LIB} ${EXAMPLES}
 
 examples: ${EXAMPLES}
 
+# XXX: should depend on -ltar but we have no dynamic version so far :-(
 ${LIB}: ${LIBOBJS}
-	${LINK} ${version_info} -o $@ ${LIBLOBJS} -rpath ${glite_location}/lib ${LBMAILDIRLIB} -ltar
+	${LINK} ${version_info} -o $@ ${LIBLOBJS} -rpath ${glite_location}/lib ${LBMAILDIRLIB} 
 
 ${daemon}: ${OBJS}
 	${LINK} -o $@ ${OBJS} ${LBMAILDIRLIB} ${GSOAPLIB} ${GLOBUS_LIBS}
 
 ${EXAMPLES}: ${LIB}
+
+# XXX: -ltar should be in the library
 ${EXAMPLES}: %: %.o
-	${LINK} -o $@ $< ${LIB} ${LBMAILDIRLIB} 
+	${LINK} -o $@ $< ${LIB} ${LBMAILDIRLIB}  -ltar
 
 
 
@@ -141,11 +143,13 @@ distbin:
         
 install:
 	-mkdir -p ${PREFIX}/${STAGETO}
-	-mkdir -p ${PREFIX}/bin
+	-mkdir -p ${PREFIX}/bin 
+	-mkdir -p ${PREFIX}/lib
 	-mkdir -p ${PREFIX}/examples
 	${INSTALL} -m 755 ${daemon} ${PREFIX}/bin
 	${INSTALL} -m 644 ${LIB} ${PREFIX}/lib
 	${INSTALL} -m 644 jpps_upload_files ${PREFIX}/examples/glite-jp-primary-upload_files
+	cd ${top_srcdir}/examples && ${INSTALL} -m 755 glite-jp-importer.sh ${PREFIX}/examples/
 	cd ${top_srcdir}/interface && ${INSTALL} -m 644 ${HDRS} ${PREFIX}/${STAGETO}
 	if [ x${DOSTAGE} = xyes ]; then \
 		cd ${top_srcdir}/interface && ${INSTALL} -m 644 ${STAGE_HDRS} ${PREFIX}/${STAGETO} ; \

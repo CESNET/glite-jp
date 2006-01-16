@@ -15,7 +15,6 @@ globus_prefix=/opt/globus
 nothrflavour=gcc32
 thrflavour=gcc32pthr
 expat_prefix=/opt/expat
-ares_prefix=/opt/ares
 gsoap_prefix=/software/gsoap-2.6
 
 CC=gcc
@@ -32,7 +31,12 @@ DEBUG:=-g -O0
 CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${stagedir}/include \
 	${GLOBUSINC}
 
-LINK:=libtool --mode=link ${CC} ${LDFLAGS} -rpath ${stagedir}/lib
+offset=0
+version_info:=-version-info ${shell \
+	perl -e '$$,=":"; @F=split "\\.","${version}"; print $$F[0]+$$F[1]+${offset},$$F[2],$$F[1]' }
+
+
+LINK:=libtool --mode=link ${CC} ${LDFLAGS} -rpath ${stagedir}/lib ${version_info}
 LINKXX:=libtool --mode=link ${CXX} ${LDFLAGS} 
 INSTALL:=libtool --mode=install install
 COMPILE:=libtool --mode=compile ${CC} ${CFLAGS}
@@ -43,7 +47,6 @@ SRCS:=context.c strmd5.c attr.c
 OBJS:=${SRCS:.c=.lo}
 
 commonlib:= libglite_jp_common.la
-
 
 TRIO_OBJS:=escape.o trio.o strio.o
 TRIO_LIB:=libglite_jp_trio.la

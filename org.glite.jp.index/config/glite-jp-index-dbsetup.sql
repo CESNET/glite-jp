@@ -60,7 +60,8 @@ create table users (
 #create table attr_<attrid> (
 #        jobid		char(32)	binary not null,
 #        value		varchar(255) 	binary not null,
-#	 full_value	mediumblob	not null,
+#        full_value	mediumblob	not null,
+#        origin		int		not null,
 #
 #        index (jobid),
 #        index (value)

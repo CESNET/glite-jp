@@ -3,12 +3,6 @@
 #
 # startup script for JP index server
 #
-# environment:
-#	GLITE_JPIS_PS   - required JP PrimaryStorage server
-#                         (for example http://umbar.ics.muni.cz:8901)
-#	GLITE_JPIS_PORT - used port (default 8902)
-#	GLITE_JPIS_DB	- connection string (default jpis/@localhost:jpis1)
-#
 
 GLITE_LOCATION=${GLITE_LOCATION:-/opt/glite}
 GLITE_LOCATION_VAR=${GLITE_LOCATION_VAR:-${GLITE_LOCATION}/var}
@@ -20,15 +14,17 @@ GLITE_LOCATION_VAR=${GLITE_LOCATION_VAR:-${GLITE_LOCATION}/var}
 [ -f $GLITE_LOCATION/etc/jpis.conf ] && . $GLITE_LOCATION/etc/jpis.conf
 [ -f $GLITE_LOCATION_VAR/etc/jpis.conf ] && . $GLITE_LOCATION_VAR/etc/jpis.conf
 
-[ -n "$GLITE_JPIS_SERVER_PIDFILE" ] && pidfile=$GLITE_JPIS_SERVER_PIDFILE ||
-	pidfile=$GLITE_LOCATION_VAR/glite-jp-indexd.pid
+[ -n "$GLITE_JPIS_PIDFILE" ] || export GLITE_JPIS_PIDFILE=$GLITE_LOCATION_VAR/glite-jp-indexd.pid
+[ -n "$GLITE_JPIS_LOGFILE" ] || export GLITE_JPIS_LOGFILE=$GLITE_LOCATION_VAR/log/glite-jp-indexd.log
+pidfile="$GLITE_JPIS_PIDFILE"
+logfile="$GLITE_JPIS_LOGFILE"
 
 unset creds port
 
 start()
 {
 	echo -n Starting glite-jp-indexd ...
-	$GLITE_LOCATION/bin/glite-jp-indexd > $GLITE_LOCATION_VAR/log/glite-jp-index.log 2>&1 &
+	$GLITE_LOCATION/bin/glite-jp-indexd
 	echo " done"
 }
 
@@ -51,8 +47,8 @@ stop()
 		echo " done"
 		rm -f $pidfile
 	else
-		killall glite-jp-indexd
-#		echo $pidfile does not exist - glite-jp-indexd not running? >&2
+		echo $pidfile does not exist - glite-jp-indexd not running? >&2
+		return 1
 	fi
 	echo done
 }
@@ -63,12 +59,6 @@ status()
 		pid=`cat $pidfile`
 		if ps p $pid >/dev/null 2>&1; then
 			echo glite-jp-indexd running as $pid 
-			return 0
-		fi
-	else
-		ps xa | grep "glite-jp-indexd" > /dev/null
-		if [ "$?" = 0 ]; then
-			echo glite-jp-indexd running
 			return 0
 		fi
 	fi

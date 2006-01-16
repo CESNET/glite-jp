@@ -15,7 +15,6 @@ globus_prefix=/opt/globus
 nothrflavour=gcc32
 thrflavour=gcc32pthr
 expat_prefix=/opt/expat
-ares_prefix=/opt/ares
 gsoap_prefix=/software/gsoap-2.6
 
 CC=gcc
@@ -30,8 +29,14 @@ CPPFLAGS:=-I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${stagedir}/includ
 CFLAGS:=${DEBUG} -D_GNU_SOURCE
 LDFLAGS:=-L${stagedir}/lib
 
+offset=0
+version_info:=-version-info ${shell \
+	perl -e '$$,=":"; @F=split "\\.","${version}"; print $$F[0]+$$F[1]+${offset},$$F[2],$$F[1]' }
+
+
 COMPILE:=libtool --mode=compile ${CC} ${CPPFLAGS} ${CFLAGS}
 LINK:=libtool --mode=link ${CC} -rpath ${stagedir}/lib ${LDFLAGS} 
+LIBLINK:=${LINK} ${version_info}
 INSTALL:=libtool --mode=install install
 
 GLOBUS_LIBS:=-L${globus_prefix}/lib \
@@ -39,16 +44,6 @@ GLOBUS_LIBS:=-L${globus_prefix}/lib \
 	-lglobus_gssapi_gsi_${nothrflavour}
 
 TRIOLIB:=-lglite_lb_trio
-
-# FIXME: to use libtool versioning correcty, we should have:
-#
-# current = major + minor + offset
-# revision = patch
-# age = minor
-#
-# where offset is a sum of maximal released minor's of all previous major's
-# 
-version_info=-version-info `echo ${version} | cut -d. -f1,2 | tr . :`
 
 STATICLIB:=libglite_jp_server_common.a
 LTLIB:=libglite_jp_server_common.la
@@ -60,10 +55,10 @@ OBJS:=${SRCS:.c=.o}
 LOBJS:=${OBJS:.o=.lo}
 
 ifneq (${mysql_prefix},/usr)
-	ifeq ($(shell echo ${mysql_version} | cut -d. -f1,2),4.1)
-		MYSQLIB := -L${mysql_prefix}/lib/mysql -lmysqlclient
-	else
+	ifeq ($(shell test -f ${mysql_prefix}/lib/libmysqlclient.a -o -f ${mysql_prefix}/lib/libmysqlclient.so && echo ok),ok)
 		MYSQLIB := -L${mysql_prefix}/lib -lmysqlclient
+	else
+		MYSQLIB := -L${mysql_prefix}/lib/mysql -lmysqlclient
 	endif
 else
 	MYSQLIB := -lmysqlclient
@@ -75,7 +70,7 @@ default all: compile examples
 compile: ${LTLIB} ${STATICLIB}
 
 ${LTLIB} ${STATICLIB}: ${OBJS}
-	${LINK} ${version_info} -o $@ ${LOBJS} ${MYSQLIB}
+	${LIBLINK} ${version_info} -o $@ ${LOBJS} ${MYSQLIB}
 
 examples: db-test-int
 

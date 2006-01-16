@@ -25,14 +25,16 @@
         jobid          CHAR(32)    BINARY NOT NULL,\n\
         value          %s          BINARY NOT NULL,\n\
         full_value     %s          NOT NULL,\n\
+        origin         INT         NOT NULL,\n\
 \n\
         INDEX (jobid),\n\
         INDEX (value)\n\
 );"
-#define SQLCMD_INSERT_ATTRVAL "INSERT INTO " TABLE_PREFIX_DATA "%s (jobid, value, full_value) VALUES (\n\
+#define SQLCMD_INSERT_ATTRVAL "INSERT INTO " TABLE_PREFIX_DATA "%s (jobid, value, full_value, origin) VALUES (\n\
 	'%s',\n\
 	'%s',\n\
-	'%s'\n\
+	'%s',\n\
+	'%d'\n\
 )"
 #define INDEX_LENGTH 255
 
@@ -422,10 +424,11 @@ int glite_jpis_init_db(glite_jpis_context_t isctx) {
 
 	// sql command: get info about the feed (via feedid)
 	glite_jp_db_create_params(&myparam, 1, GLITE_JP_DB_TYPE_CHAR, isctx->param_feedid, &isctx->param_feedid_len);
-	glite_jp_db_create_results(&myres, 2,
+	glite_jp_db_create_results(&myres, 3,
 		GLITE_JP_DB_TYPE_INT, NULL, &isctx->param_uniqueid,
-		GLITE_JP_DB_TYPE_INT, NULL, &isctx->param_state);
-	if ((ret = glite_jp_db_prepare(jpctx, "SELECT uniqueid, state FROM feeds WHERE (feedid=?)", &isctx->select_info_feed_stmt, myparam, myres)) != 0) goto fail;
+		GLITE_JP_DB_TYPE_INT, NULL, &isctx->param_state,
+		GLITE_JP_DB_TYPE_VARCHAR, NULL, isctx->param_ps, sizeof(isctx->param_ps), &isctx->param_ps_len);
+	if ((ret = glite_jp_db_prepare(jpctx, "SELECT uniqueid, state, source FROM feeds WHERE (feedid=?)", &isctx->select_info_feed_stmt, myparam, myres)) != 0) goto fail;
 
 	// sql command: update state of the feed (via uniqueid)
 	glite_jp_db_create_params(&myparam, 2, 
@@ -572,17 +575,19 @@ int glite_jpis_tryReconnectFeed(glite_jpis_context_t ctx, long int uniqueid, tim
 
 int glite_jpis_insertAttrVal(glite_jpis_context_t ctx, const char *jobid, glite_jp_attrval_t *av) {
 	char *sql, *table, *value, *full_value, *md5_jobid;
+	long int origin;
 
 	table = glite_jpis_attr_name2id(av->name);
 	value = glite_jp_attrval_to_db_index(ctx->jpctx, av, INDEX_LENGTH);
 	full_value = glite_jp_attrval_to_db_full(ctx->jpctx, av);
 	md5_jobid = str2md5(jobid);
-	asprintf(&sql, SQLCMD_INSERT_ATTRVAL, table, md5_jobid, value, full_value);
+	origin = av->origin;
+	asprintf(&sql, SQLCMD_INSERT_ATTRVAL, table, md5_jobid, value, full_value, origin);
 	free(md5_jobid);
 	free(table);
 	free(value);
 	free(full_value);
-	lprintf("%s(%s): sql=%s\n", __FUNCTION__, av->name, sql);
+	lprintf("(%s) sql=%s\n", av->name, sql);
 	if (glite_jp_db_execstmt(ctx->jpctx, sql, NULL) != 1) {
 		free(sql);
 		return ctx->jpctx->error->code;
@@ -593,34 +598,34 @@ int glite_jpis_insertAttrVal(glite_jpis_context_t ctx, const char *jobid, glite_
 }
 
 
-int glite_jpis_lazyInsertJob(glite_jpis_context_t ctx, const char *feedid, const char *jobid, const char *owner) {
+int glite_jpis_lazyInsertJob(glite_jpis_context_t ctx, const char *ps, const char *jobid, const char *owner) {
 	int ret;
 	char *md5_jobid = NULL, *md5_cert = NULL;
 
-	lprintf("%s\n", __FUNCTION__);
+	lprintf("\n");
 
 	md5_jobid = str2md5(jobid);
+	md5_cert = str2md5(owner);
 	GLITE_JPIS_PARAM(ctx->param_jobid, ctx->param_jobid_len, md5_jobid);
-
 	switch (ret = glite_jp_db_execute(ctx->select_jobid_stmt)) {
 	case 1: lprintf("jobid '%s' found\n", jobid); goto ok0;
 	case 0:
-		lprintf("%s:inserting jobid %s (%s)\n", __FUNCTION__, jobid, md5_jobid);
+		lprintf("inserting jobid %s (%s)\n", jobid, md5_jobid);
+
 		GLITE_JPIS_PARAM(ctx->param_dg_jobid, ctx->param_dg_jobid_len, jobid);
-		GLITE_JPIS_PARAM(ctx->param_feedid, ctx->param_feedid_len, feedid);
+		GLITE_JPIS_PARAM(ctx->param_ownerid, ctx->param_ownerid_len, md5_cert);
+		GLITE_JPIS_PARAM(ctx->param_ps, ctx->param_ps_len, ps);
 		if (glite_jp_db_execute(ctx->insert_job_stmt) != 1) goto fail;
 		break;
 	default: assert(ret != 1); break;
 	}
 ok0:
 
-	md5_cert = str2md5(owner);
 	GLITE_JPIS_PARAM(ctx->param_ownerid, ctx->param_ownerid_len, md5_cert);
-
 	switch (ret = glite_jp_db_execute(ctx->select_user_stmt)) {
-	case 1: lprintf("%s:jobid '%s' found\n", __FUNCTION__, jobid); goto ok;
+	case 1: lprintf("owner '%s' found\n", owner); goto ok;
 	case 0:
-		lprintf("%s:inserting user %s (%s)\n", __FUNCTION__, owner, md5_cert);
+		lprintf("inserting user %s (%s)\n", owner, md5_cert);
 		GLITE_JPIS_PARAM(ctx->param_cert, ctx->param_cert_len, owner);
 		if (glite_jp_db_execute(ctx->insert_user_stmt) != 1) goto fail;
 		break;

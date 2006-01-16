@@ -108,9 +108,15 @@ int glite_jpps_single_feed(
 		err.code = EIO;
 		err.source = __FUNCTION__;
 		err.desc = buf;
-		snprintf(buf,sizeof buf,"%s %s\n",
+		memset(buf, 0, sizeof(buf));
+		if (ctx->other_soap->fault) {
+			snprintf(buf,sizeof buf,"%s %s\n",
 				ctx->other_soap->fault->faultcode,
 				ctx->other_soap->fault->faultstring);
+		}
+		else {
+			sprintf(buf,"No detailed error description (JP IS not running?)\n");
+		}
 		buf[999] = 0;
 		glite_jp_stack_error(ctx,&err);
 	}

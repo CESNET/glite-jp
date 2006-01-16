@@ -12,6 +12,10 @@
 
 	Revision history:
 	$Log$
+	Revision 1.5  2005/10/11 20:45:45  akrenek
+	- detect gsoap stuff
+	- install what should be installed
+	
 	Revision 1.4  2005/08/12 10:56:25  mmulac
 	void IS server
 	- seems compiling
@@ -50,7 +54,6 @@ globus_prefix=${with.globus.prefix}
 expat_prefix=${with.expat.prefix}
 gsoap_prefix=${with.gsoap.prefix}
 gsoap_version=${ext.gsoap.version}
-ares_prefix=${with.ares.prefix}
 mysql_prefix=${with.mysql.prefix}
 mysql_version=${ext.mysql.version}
 thrflavour=${with.globus.thr.flavor}

@@ -139,6 +139,8 @@ int main(int argc, char *argv[])
 	char			   *name,
 						pidfile[PATH_MAX] = GLITE_JPIMPORTER_PIDFILE;
 
+	glite_gsplugin_Context	plugin_ctx;
+
 
 	name = strrchr(argv[0],'/');
 	if (name) name++; else name = argv[0];
@@ -239,7 +241,12 @@ int main(int argc, char *argv[])
 	soap = soap_new();
 	soap_init(soap);
 	soap_set_namespaces(soap, jpps__namespaces);
-	soap_register_plugin(soap, glite_gsplugin);
+
+	glite_gsplugin_init_context(&plugin_ctx);
+	if (server_key) plugin_ctx->key_filename = strdup(server_key);
+	if (server_cert) plugin_ctx->cert_filename = strdup(server_cert);
+
+	soap_register_plugin_arg(soap, glite_gsplugin,plugin_ctx);
 
 	if ( (reg_pid = slave(reg_importer, "reg-imp")) < 0 ) {
 		perror("starting reg importer slave");
@@ -438,17 +445,16 @@ static int dump_importer(void)
 	} else do {
 		su_in.job = tab[_job].val;
 		su_in.class_ = "urn:org.glite.jp.primary:lb";
-		su_in.name = tab[_file].val;
+		su_in.name = NULL;
 		su_in.commitBefore = 1000 + time(NULL);
 		su_in.contentType = "text/lb";
 		dprintf(("[%s] Importing LB dump file '%s'\n", name, tab[_file].val));
 		if ( !debug ) syslog(LOG_INFO, "Importing LB dump file '%s'\n", msg);
 		ret = soap_call___jpsrv__StartUpload(soap, tab[_jpps].val?:jpps, "", &su_in, &su_out);
 		ret = check_soap_fault(soap, ret);
-		/* XXX: grrrrrrr! test it!!!
-		if ( (ret = check_soap_fault(soap, ret)) ) break;
-		dprintf(("[%s] Destination: %s\n\tCommit before: %s\n", su_out.destination, ctime(&su_out.commitBefore)));
-		*/
+		/* XXX: grrrrrrr! test it!!!*/
+//		if ( (ret = check_soap_fault(soap, ret)) ) break;
+		dprintf(("[%s] Destination: %s\n\tCommit before: %s\n", name, su_out.destination, ctime(&su_out.commitBefore)));
 
 		if ( (fhnd = open(tab[_file].val, O_RDONLY)) < 0 ) {
 			dprintf(("[%s] Can't open dump file: %s\n", name, tab[_file].val));
@@ -456,8 +462,6 @@ static int dump_importer(void)
 			ret = 1;
 			break;
 		}
-		/* XXX: grrrrrrr! remove next line!!! */
-		su_out.destination = "gsiftp://nain.ics.muni.cz:5678/tmp/gsiftp-dump-tst-file";
 		if ( (ret = gftp_put_file(su_out.destination, fhnd)) ) break;
 		close(fhnd);
 		dprintf(("[%s] File sent, commiting the upload\n", name));

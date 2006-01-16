@@ -15,7 +15,6 @@ globus_prefix=/opt/globus
 nothrflavour=gcc32
 thrflavour=gcc32pthr
 expat_prefix=/opt/expat
-ares_prefix=/opt/ares
 gsoap_prefix=/software/gsoap-2.6
 
 CC=gcc
@@ -75,10 +74,10 @@ GSOAPLIB:=-L${stagedir}/lib -lglite_security_gsoap_plugin_${dotless_soap_ver}_${
 TRIOLIB:=-lglite_jp_trio
 
 ifneq (${mysql_prefix},/usr)
-	ifeq ($(shell echo ${mysql_version} | cut -d. -f1,2),4.1)
-		MYSQLIB := -L${mysql_prefix}/lib/mysql -lmysqlclient
+	ifeq ($(shell test -f ${mysql_prefix}/lib/libmysqlclient.a -o -f ${mysql_prefix}/lib/libmysqlclient.so && echo ok),ok)
+		MYSQLIB := -L${mysql_prefix}/lib -lmysqlclient -lz
         else
-		MYSQLIB := -L${mysql_prefix}/lib -lmysqlclient
+		MYSQLIB := -L${mysql_prefix}/lib/mysql -L${mysql_prefix}/lib -lmysqlclient -lz
         endif
 else
 	MYSQLIB := -lmysqlclient
@@ -166,6 +165,9 @@ install:
 		${INSTALL} -m 755 $$plugin ${PREFIX}/lib; \
 	done
 	${INSTALL} -m 755 ${top_srcdir}/config/startup ${PREFIX}/etc/init.d/glite-jp-primary
+	${INSTALL} -m 755 ${top_srcdir}/config/glite-jp-primary-dbsetup.sql ${PREFIX}/etc
+	${INSTALL} -m 755 ${top_srcdir}/config/glite-jp-primary-dbsetup.sh ${PREFIX}/etc
+	${INSTALL} -m 644 ${top_srcdir}/examples/sample_job  ${PREFIX}/examples/glite-jp-primary-sample_job.lb
 
 clean:
 

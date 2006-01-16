@@ -73,6 +73,11 @@ GLITE_JPIS_PORT - used port (default 8902)
 
 GLITE_JPIS_DB	- database connection string (default jpis/@localhost:jpis1)
 
+GLITE_JPIS_LOGFILE - log file
+
+GLITE_JPIS_PIDFILE - pid file
+
+GLITE_JPIS_DEBUG   - don't daemonize
 
 Other parameters will be configurable in close future. Its
 current hard-coded values are in org.glite.jp.index/src/conf.[ch]

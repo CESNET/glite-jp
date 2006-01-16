@@ -1,0 +1,59 @@
+0. install glite-jp-primary package
+
+1. create MySQL database of the service, preferably using 
+   ${GLITE_LOCATION}/etc/glite-jp-primary-dbsetup.sh
+   (the script prompts two times for MySQL root password)
+
+2. create a directory where JPPS files will be stored and configure
+   gridftp server so that this directory is accessible via gridftp
+
+3. create the configuration file $GLITE_LOCATION/etc/jp.conf, it should
+   contain /bin/sh syntax assignment to the following variables (or they
+   have to be set in the environment of the startup script by other means:
+
+	GLITE_USER	the unix user running the service
+
+	GLOBUS_LOCATION	where is Globus installed
+
+	GLITE_JP_PRIMARY_FTP_PORT
+			port for the ftp JPPS interface (bulk file transfers)
+
+	GLITE_JP_PRIMARY_INTERNAL
+			directory where the JPPS files are stored (local path)
+
+	GLITE_JP_PRIMARY_EXTERNAL
+			URL prefix which is mapped by gridftp to the directory,
+			eg. gsiftp://this.host.name:$GLITE_JP_PRIMARY_FTP_PORT/some/directory
+			
+			
+	GLITE_JP_PRIMARY_PEERS
+			file with list (one per line) of X509 certificate subjects of "trusted peers", i.e. L&B servers which may upload data to this JPPS
+	
+
+4. start the service with 
+	$GLITE_LOCATION/etc/init.d/glite-jp-primary start
+
+
+5. This step taints the database with testing data. Don't do it if it is an issue.
+It is not necessary for the service operation, it's just checking its basic functionality.
+
+$ JOB=https://scientific.civ.zcu.cz:9200/1Yjk3Wlaspl07y45iX8Tng
+$ TEST=$GLITE_LOCATION/examples/glite-jp-primary-test
+$ export X5O9_USER_PROXY=/some/proxy.pem	# must be among $GLITE_JP_PRIMARY_PEERS
+
+$ $TEST registerjob $JOB '/the/job/owner/x509/cert'
+
+$ $TEST startupload "urn:org.glite.jp.primary:lb" 1 text/plain
+	responds with destination gsiftp url
+
+$ globus-url-copy file:///$GLITE_LOCATION/examples/glite-jp-primary-sample_job.lb $DESTINATION_URL
+
+$ $TEST commitupload $DESTINATION_URL
+
+$ $TEST getjobattr $JOB http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus
+
+The command should output:
+
+        Waiting FILE    Mon Oct 10 23:48:47 2005
+
+--

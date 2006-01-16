@@ -74,14 +74,20 @@ int full_feed(
 	const char *job,
 	glite_jp_attrval_t **attrs)
 {
-	int	i,ret;
-	char	**ma;
+	int	i,ret,no_owner = 1;
+	char	**ma = NULL;
 
-	for (i=0; feed->attrs[i]; i++);
-	ma = malloc((i+2) * sizeof *ma);
-	ma[0] = GLITE_JP_ATTR_OWNER;
-	memcpy(ma+1,feed->attrs,(i+1) * sizeof *ma);
-	ret = glite_jpps_get_attrs(ctx,job,ma,i+1,attrs);
+	for (i=0; feed->attrs[i]; i++)
+		if (!strcmp(feed->attrs[i],GLITE_JP_ATTR_OWNER)) no_owner = 0;
+
+	if (no_owner) {
+		ma = malloc((i+2) * sizeof *ma);
+		ma[0] = GLITE_JP_ATTR_OWNER;
+		memcpy(ma+1,feed->attrs,(i+1) * sizeof *ma);
+	}
+	ret = glite_jpps_get_attrs(ctx,job,
+			no_owner ? ma : feed->attrs,
+			i+no_owner,attrs);
 	free(ma);
 	return ret;
 }
@@ -99,7 +105,7 @@ static int match_feed(
 		const glite_jp_attrval_t attrs[] 
 )
 {
-	int	i,fed;
+	int	i,fed,ret = 0;
 	int	qi[QUERY_MAX];
 	char	*owner = NULL;
 	glite_jp_attrval_t	meta[QUERY_MAX+1];
@@ -140,23 +146,27 @@ static int match_feed(
 			j=0;
 			for (i=0; feed->qry[i].attr; i++) if (!qi[i]) {
 				assert(j<QUERY_MAX);
-				meta[j].name = feed->qry[i].attr;
+				meta[j].name = strdup(feed->qry[i].attr);
 				qi2[j] = i;
 				j++;
 			}
 
 			if (glite_jppsbe_get_job_metadata(ctx,job,meta)) {
 				glite_jp_error_t	err;
+
 				memset(&err,0,sizeof err);
 				err.code = EIO;
 				err.source = __FUNCTION__;
 				err.desc = "complete query";
-				return glite_jp_stack_error(ctx,&err);
+				ret = glite_jp_stack_error(ctx,&err);
+				goto cleanup;
 			}
 
 			for (i=0; meta[i].name; i++) {
-				if (!check_qry_item(ctx,feed->qry+qi2[i],meta+i))
-					return 0;
+				if (!check_qry_item(ctx,feed->qry+qi2[i],meta+i)) {
+					ret = 0;
+					goto cleanup;
+				}
 				if (!strcmp(meta[i].name,GLITE_JP_ATTR_OWNER)) owner = meta[i].value;
 			}
 		}
@@ -181,8 +191,10 @@ static int match_feed(
 		}
 		glite_jpps_single_feed(ctx,feed->id,0,feed->destination,job,owner,attrs);
 	}
+
+cleanup:
 	for (i=0; meta[i].name; i++) glite_jp_attrval_free(meta+i,0);
-	return 0;
+	return ret;
 }
 
 /* TODO: overit, ze do dalsich atributu se leze az kdyz matchuji metadata
