@@ -6,33 +6,108 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <getopt.h>
+#include <unistd.h>
+
 
 #include <glite/jp/types.h>
 #include <glite/jp/context.h>
 #include "conf.h"
+#include "db_ops.h"
+
+
+static const char *get_opt_string = "dc:k:C:V:nm:p:i:o:";
+
+static struct option opts[] = {
+	{"debug",       0, NULL,	'd'},
+//	{"cert",	1, NULL,	'c'},
+//	{"key",		1, NULL,	'k'},
+//	{"CAdir",       1, NULL,	'C'},
+//	{"VOMSdir",     1, NULL,	'V'},
+	{"noauth",      0, NULL,	'n'},
+	{"mysql",       1, NULL,	'm'},
+	{"port",	1, NULL,	'p'},
+	{"pidfile",     1, NULL,	'i'},
+	{"logfile",     1, NULL,	'o'},
+	{NULL,		0, NULL,	0}
+};
+
+
+
+static void usage(char *me) 
+{
+	fprintf(stderr,"usage: %s [option]\n"
+		"\t-d, --debug\t don't run as daemon, additional diagnostics\n"
+//		"\t-k, --key\t private key file\n" 
+//		"\t-c, --cert\t certificate file\n"
+//		"\t-C, --CAdir\t trusted certificates directory\n"
+//		"\t-V, --VOMSdir\t trusted VOMS servers certificates directory\n"
+		"\t-n, --noauth\t don't check user identity with result owner\n"
+		"\t-m, --mysql\t database connect string\n"
+		"\t-p, --port\t port to listen\n"
+		"\t-i, --pidfile\t file to store master pid\n"
+		"\t-o, --logfile\t file to store logs\n"
+		"\n"
+	,me);
+}
 
 
 int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf **configuration)
 {
-	char *debug;
-	char *ps = NULL;
-
-        // read comman line options and configuration file
-	// XXX: use EGEE global configure tools in future...
-
+	char 			*env, *ps = NULL;
+	int			opt;
 	glite_jp_is_conf	*conf;
 
 
 	conf = calloc(1, sizeof(*conf));
 
-	// configuration from environment	
-	conf->cs = getenv("GLITE_JPIS_DB");
-	conf->port = getenv("GLITE_JPIS_PORT");
-	debug = getenv("GLITE_JPIS_DEBUG");
-	conf->debug = (debug != NULL) && (strcmp(debug, "0") != 0);
-	conf->no_auth = 0;				// check authorization
-	conf->pidfile = getenv("GLITE_JPIS_PIDFILE");
-	conf->logfile = getenv("GLITE_JPIS_LOGFILE");
+
+	while ((opt = getopt_long(argc,argv,get_opt_string,opts,NULL)) != EOF) switch (opt) {
+		case 'd': conf->debug = 1; break;
+//		case 'c': server_cert = optarg; break;
+//		case 'k': server_key = optarg; break;
+//		case 'C': cadir = optarg; break;
+//		case 'V': vomsdir = optarg; break;
+		case 'n': conf->no_auth = 1; break;
+		case 'm': conf->cs = optarg; break;
+		case 'p': conf->port = optarg; break;
+		case 'i': conf->pidfile = optarg; break;
+		case 'o': conf->logfile = optarg; break;
+		default : usage(argv[0]); exit(0); break;
+	}
+
+	// *** legacy configuration from environment ***********************
+	//
+	if (!conf->debug) {
+        	env = getenv("GLITE_JPIS_DEBUG");
+        	conf->debug = (env != NULL) && (strcmp(env, "0") != 0);
+	}
+
+	if (!conf->cs) {
+		if (env = getenv("GLITE_JPIS_DB")) {
+			conf->cs = env;
+		}
+		else { 
+			fprintf(stderr,"DB contact string not specified! "\
+			 "Using build-in default:  %s \n", GLITE_JP_IS_DEFAULTCS);
+		}
+	}
+	if (!conf->port) {
+		if (env = getenv("GLITE_JPIS_PORT")) {
+			conf->port = env;
+		}
+		else {
+			fprintf(stderr,"JP IS port not specified! "\
+			"Using build-in default:  %s \n", GLITE_JPIS_DEFAULT_PORT_STR);
+		}
+	}
+	if (!conf->pidfile) 
+		conf->pidfile = getenv("GLITE_JPIS_PIDFILE");
+	if (!conf->logfile) 
+		conf->logfile = getenv("GLITE_JPIS_LOGFILE");
+	//
+	// *****************************************************************
+
 
 	// prefixes & attributes defined in:
 	// lb.server/build/jp_job_attrs.h (created when build plugin)

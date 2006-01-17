@@ -3,7 +3,6 @@
 #ifndef _CONF_H
 #define _CONF_H
 
-
 #include <glite/jp/types.h>
 
 #define GLITE_JPIS_DEFAULT_PORT_STR "8902"
@@ -11,13 +10,14 @@
 //#define lprintf
 #define lprintf(args...) glite_jp_lprintf(__FUNCTION__, ##args)
 
+
+
 typedef struct _glite_jp_is_feed {
 	char    		*PS_URL;	//URLs of Primary Storage servers
-	glite_jp_query_rec_t    **query;        // query to Primary Server (aka filter)
+	glite_jp_query_rec_t    **query;	// query to Primary Server (aka filter)
 	int     		history, 	// type of query
 				continuous;
 } glite_jp_is_feed;
-
 
 typedef struct _glite_jp_is_conf {
 	// all I need to get from comman line options and configuration file
