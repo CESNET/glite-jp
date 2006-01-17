@@ -23,7 +23,7 @@
 * check with GetJobFiles -- should return URL
 - retrieve and check the file
 
-1.3.1 AuthZ checks 
+1.3.2 AuthZ checks 
 (should fail)
 * call GetJobFiles with different credentials
 
@@ -34,7 +34,7 @@
 
 * ftp GET with different credentials
 
-1.3.2 cleanup
+1.3.3 cleanup
 (not implemented yet)
 - call StartUpload, short timeout
 - upload via ftp
@@ -68,11 +68,58 @@ and which don't
 3.3 multiple feeds at time
 TODO
 
+3.4 advanced feed features (to be implemented)
+- remove
+- splitted info about one job (check that the PS doesn't duplicate
+  attribute values)
+
 
 3.x PS-IS AuthZ
 TODO, if any
 
 
 4. IS queries
+TBD: insert job sets via JP-IS interaction or directly?
 
-...
+All basic tests:
+- clear IS database
+- insert prepared job set
+- ask queries and check answers
+- clear database
+
+TBD: Is one job set enough?
+
+4.1 simple query
+
+4.2 extended query
+
+4.3 check "origin" behaviour (not implemented yet)
+- queries with origin tag 
+
+4.4 AuthZ checks
+- non owner queries should fail
+- to be implemented: ACLs and its evaluation
+
+4.x IS CLI
+- standalone tests?
+  - prepared config files and command line parameters
+  - check expected QueryJobs contents
+
+5. IS standalone (to be implemented)
+
+5.1 server startup
+
+5.1.1 reboot persistency / configuration vs. database content
+    situations handling
+- prepared config files
+- checking behaviour (how?) after reboot with different config file
+
+5.1.2 registration of PS feeds
+- prepared config files
+- checking appropriate FeedIndex calls
+
+5.2 admin interface
+TODO
+
+5.3 type plugin
+TODO
