@@ -47,6 +47,7 @@ TODO
 
 3. JPPS-JPIS interaction (feeds)
 
+
 set of queries (how many?) with different "triggering conditions":
 - on job registration
 - on LB file upload
@@ -55,23 +56,26 @@ set of queries (how many?) with different "triggering conditions":
 corresponding sets of jobs to each query, each containing jobs which match
 and which don't 
 
+- initial IS release -- single query, so just one set of jobs
+- due to 3.2 no point in pre-loading PS database, use 1.3.1 
+
 3.1 single batch feed
-- upload jobs
+- upload jobs to PS
 - start feed
 * check IS contents (jobs and expected attr values)
 
 3.2 single incremental feed
 - register feed
-- upload jobs one by one
+- upload jobs to PS one by one
 * check IS contents (matching jobs should turn up, others not)
 
 3.3 multiple feeds at time
 TODO
 
 3.4 advanced feed features (to be implemented)
-- remove
+- remove (not implemented in PS yet)
 - splitted info about one job (check that the PS doesn't duplicate
-  attribute values)
+  attribute values) - probably covered in 3.2
 
 
 3.x PS-IS AuthZ
@@ -80,6 +84,7 @@ TODO, if any
 
 4. IS queries
 TBD: insert job sets via JP-IS interaction or directly?
+	- better to populate database directly, independent on previous chain
 
 All basic tests:
 - clear IS database
@@ -88,10 +93,13 @@ All basic tests:
 - clear database
 
 TBD: Is one job set enough?
+	- better to have one complete set
 
 4.1 simple query
+- using CLI
 
 4.2 extended query
+- using CLI
 
 4.3 check "origin" behaviour (not implemented yet)
 - queries with origin tag 
@@ -101,7 +109,7 @@ TBD: Is one job set enough?
 - to be implemented: ACLs and its evaluation
 
 4.x IS CLI
-- standalone tests?
+- standalone tests?	- not now
   - prepared config files and command line parameters
   - check expected QueryJobs contents
 
@@ -115,6 +123,7 @@ TBD: Is one job set enough?
 - checking behaviour (how?) after reboot with different config file
 
 5.1.2 registration of PS feeds
+! already covered by 3
 - prepared config files
 - checking appropriate FeedIndex calls
 
@@ -123,3 +132,6 @@ TODO
 
 5.3 type plugin
 TODO
+
+
+6. Deployment
