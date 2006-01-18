@@ -63,21 +63,39 @@ Installation
 Configuration
 ------------- 
 
-Currently configuration is done by environment variables (see also
-startup script template):
+Currently, configuration is done by a combination of command line options, 
+environment variables (majority of which are substitutional) and 
+hard-coded options.
+
+
+The index server takes the following options:
+
+./glite-jp-indexd [option]
+        -d, --debug      don't run as daemon, additional diagnostics
+        -n, --noauth     don't check user identity with result owner
+        -m, --mysql      database connect string
+        -p, --port       port to listen
+        -i, --pidfile    file to store master pid
+        -o, --logfile    file to store logs
+
+
+which can be substituted (if both set, command line option has priority)
+with env. variables:
+
+GLITE_JPIS_DEBUG   	- if set to "0" don't daemonize (default - deamonize)
+GLITE_JPIS_PORT 	- used port (default 8902)
+GLITE_JPIS_DB		- database connection string 
+			(default jpis/@localhost:jpis1)
+GLITE_JPIS_LOGFILE 	- log file (default for root /var/log/glite-jp-indexd.log
+			non-root user ~/glite-jp-indexd.log)
+GLITE_JPIS_PIDFILE 	- pid file (default for root /var/run/glite-jp-indexd.log
+			non-root user ~/glite-jp-indexd.pid)
+
+
+Parameter which is now configurable only through env. variable is:
 
 GLITE_JPIS_PS   - location of JP-PS server (required parameter)
                   (for example http://umbar.ics.muni.cz:8901)
-
-GLITE_JPIS_PORT - used port (default 8902)
-
-GLITE_JPIS_DB	- database connection string (default jpis/@localhost:jpis1)
-
-GLITE_JPIS_LOGFILE - log file
-
-GLITE_JPIS_PIDFILE - pid file
-
-GLITE_JPIS_DEBUG   - don't daemonize
 
 Other parameters will be configurable in close future. Its
 current hard-coded values are in org.glite.jp.index/src/conf.[ch]
