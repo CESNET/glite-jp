@@ -19,8 +19,9 @@ XMLLINT:=xmllint
 docbookxls:=http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl
 
 WSDL=JobProvenancePS.wsdl JobProvenanceIS.wsdl JobProvenanceTypes.wsdl 
+XSD=JobProvenanceTypes.xsd
 
-all compile: ${WSDL} JobProvenance.html
+all compile: ${WSDL} ${XSD} JobProvenance.html
 
 check: 
 	@echo No unit test required for interface-only module.
@@ -47,13 +48,16 @@ install:
 	install -m 644 ${top_srcdir}/LICENSE ${PREFIX}/share/doc/${package}-${version}
 	install -m 644 JobProvenance.html ${PREFIX}/share/doc/${package}-${version}
 #	cd ${top_srcdir}/interface && install -m 644 ${WSDL} ${PREFIX}/${STAGETO}
-	install -m 644 ${WSDL} ${PREFIX}/${STAGETO}
+	install -m 644 ${WSDL} ${XSD} ${PREFIX}/${STAGETO}
 
 clean:
 	rm -f *.h
 	
-%.wsdl: %.xml
+%.wsdl: %.xml puke-wsdl.xsl
 	${XSLTPROC} ../src/puke-wsdl.xsl $< >$@
+
+%.xsd: %.xml puke-schema.xsl
+	${XSLTPROC} ../src/puke-schema.xsl $< >$@
 
 JobProvenance.html: doc.xml JobProvenancePS.xml JobProvenanceIS.xml JobProvenanceTypes.xml puke-ug.xsl
 	${XSLTPROC} --novalid ../src/puke-ug.xsl $< >doc-html.xml

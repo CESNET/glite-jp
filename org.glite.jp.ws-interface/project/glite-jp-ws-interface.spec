@@ -1,12 +1,12 @@
 Summary:Change me !!!
 Name:glite-jp-ws-interface
 Version:1.1.0
-Release:0_U200510151557
+Release:0_U200512201442
 Copyright:Open Source EGEE License
 Vendor:EU EGEE project
 Group:System/Application
 Prefix:/opt/glite
-BuildArch:i386
+BuildArch:x86_64
 BuildRoot:%{_builddir}/%{name}-%{version}
 Source:glite-jp-ws-interface-1.1.0_bin.tar.gz
 
