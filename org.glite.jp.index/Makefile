@@ -30,16 +30,16 @@ GLOBUS_LIBS:=-L${globus_prefix}/lib \
 
 GLOBUS_CFLAGS:=-I${globus_prefix}/include/${nothrflavour}
 
-CPPFLAGS:=-DDEBUG -D_GNU_SOURCE
 DEBUG:=-W -Wall -Wno-unused-parameter -Wno-unused-function -g -O0
+CPPFLAGS:=-DDEBUG -D_GNU_SOURCE -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${gsoap_prefix} -I${stagedir}/include ${GLOBUS_CFLAGS} -I${mysql_prefix}/include -I${mysql_prefix}/include/mysql -I${gsoap_prefix}/include
+CFLAGS:=${DEBUG}
+LDFLAGS:=-L${stagedir}/lib
 
 dotless_soap_ver:=${shell echo ${gsoap_version} | tr -d . }
 GSOAPLIB:=-L${stagedir}/lib -lglite_security_gsoap_plugin_${dotless_soap_ver}_${nothrflavour}
 
 gsoap_bin_prefix:=${shell if [ -x  ${gsoap_prefix}/bin/soapcpp2 ]; then echo ${gsoap_prefix}/bin; else echo ${gsoap_prefix}; fi }
 
-CFLAGS:=${CPPFLAGS} ${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${gsoap_prefix} -I${stagedir}/include ${GLOBUS_CFLAGS} -I${mysql_prefix}/include -I${mysql_prefix}/include/mysql
-LDFLAGS:=-L${stagedir}/lib
 
 LINK:=libtool --mode=link ${CC} ${LDFLAGS} 
 LINKXX:=libtool --mode=link ${CXX} ${LDFLAGS} 
@@ -47,8 +47,10 @@ INSTALL:=libtool --mode=install install
 
 
 daemon:=glite-jp-indexd
-example:=glite-jpis-test
+# glite-jpis-client not compiled
+examples:=glite-jpis-test
 is_prefix:=jpis_
+is_client_prefix:=jpis_client_
 ps_prefix:=jpps_
 
 SRCS:= conf.c bones_server.c soap_ops.c soap_ps_calls.c \
@@ -56,10 +58,14 @@ SRCS:= conf.c bones_server.c soap_ops.c soap_ps_calls.c \
 	${is_prefix}ServerLib.c \
 	${ps_prefix}ClientLib.c ${ps_prefix}C.c \
 
-EXA_SRCS:=jpis-test.c ${is_prefix}C.c ${is_prefix}Client.c context.c db_ops.c conf.c
+EXA_TEST_SRCS:=jpis-test.c ${is_prefix}C.c ${is_prefix}Client.c context.c db_ops.c conf.c
+EXA_DB_SRCS:=jpis-db-internal.c db_ops.c conf.c context.c
+EXA_CLIENT_SRCS:=jpis-client.c ${is_client_prefix}C.c
 
 OBJS:=${SRCS:.c=.o}
-EXA_OBJS:=${EXA_SRCS:.c=.o}
+EXA_TEST_OBJS:=${EXA_TEST_SRCS:.c=.o}
+EXA_DB_OBJS:=${EXA_DB_SRCS:.c=.o}
+EXA_CLIENT_OBJS:=${EXA_CLIENT_SRCS:.c=.o}
 
 
 COMMONLIB:=-lglite_jp_common
@@ -69,16 +75,19 @@ TRIOLIB:=-lglite_jp_trio
 
 default all: compile
 
-compile: ${daemon} ${example}
+compile: ${daemon} ${examples}
 
 ${daemon}: ${OBJS}
 	${LINK} -o $@ -export-dynamic ${OBJS} ${BONESLIB} ${TRIOLIB} ${COMMONLIB} ${GSOAPLIB} ${GLOBUS_LIBS} ${SRVCOMMONLIB}
 
-${example}: ${EXA_OBJS}
-	${LINK} -o $@ ${EXA_OBJS} ${GSOAPLIB} ${GLOBUS_LIBS} ${COMMONLIB} ${TRIOLIB} ${SRVCOMMONLIB}
+glite-jpis-test: ${EXA_TEST_OBJS}
+	${LINK} -o $@ $+ ${GSOAPLIB} ${GLOBUS_LIBS} ${COMMONLIB} ${TRIOLIB} ${SRVCOMMONLIB}
 
-jpis-db-internal: jpis-db-internal.o db_ops.o conf.o context.o
+jpis-db-internal: ${EXA_DB_OBJS}
 	${LINK} -o $@ $+ ${COMMONLIB} ${SRVCOMMONLIB} ${GLOBUS_LIBS}
+
+glite-jpis-client: ${EXA_CLIENT_OBJS}
+	${LINK} -o $@ $+ ${GSOAPLIB}
 
 JobProvenanceIS.xh: JobProvenanceIS.wsdl JobProvenanceTypes.wsdl typemap.dat
 	cp  ${stagedir}/interface/JobProvenanceTypes.wsdl .
@@ -90,10 +99,20 @@ JobProvenancePS.xh: %.xh: %.wsdl JobProvenanceTypes.wsdl typemap.dat
 	${gsoap_bin_prefix}/wsdl2h  -t ${top_srcdir}/src/typemap.dat -c -o $@ $<
 	rm -f JobProvenanceTypes.wsdl
 
+JobProvenanceISClient.xh: typemap.dat JobProvenanceISClient.xsd JobProvenanceIS.wsdl
+	cp  ${stagedir}/interface/JobProvenance{Types.xsd,Types.wsdl,IS.wsdl} .
+	${gsoap_bin_prefix}/wsdl2h  -t ${top_srcdir}/src/typemap.dat -c -o $@  JobProvenanceIS.wsdl ${top_srcdir}/src/JobProvenanceISClient.xsd
+	rm -f JobProvenance{Types.xsd,Types.wsdl,IS.wsdl}
+
 ${is_prefix}ClientLib.c ${is_prefix}Client.c \
 ${is_prefix}Server.c ${is_prefix}ServerLib.c  \
 ${is_prefix}C.c ${is_prefix}H.h ${is_prefix}_Stub.h: JobProvenanceIS.xh
 	${gsoap_bin_prefix}/soapcpp2 -n -w -c -p ${is_prefix} JobProvenanceIS.xh
+
+${is_client_prefix}ClientLib.c ${is_client_prefix}Client.c \
+${is_client_prefix}Server.c ${is_client_prefix}ServerLib.c  \
+${is_client_prefix}C.c ${is_client_prefix}H.h ${is_client_prefix}_Stub.h: JobProvenanceISClient.xh
+	${gsoap_bin_prefix}/soapcpp2 -n -w -c -p ${is_client_prefix} JobProvenanceISClient.xh
 
 ${ps_prefix}Client.c ${ps_prefix}ClientLib.c  \
 ${ps_prefix}C.c ${ps_prefix}H.h ${ps_prefix}_Stub.h: JobProvenancePS.xh
@@ -114,7 +133,7 @@ doc:
 
 stage: compile
 	${INSTALL} -m 755 ${daemon} ${stagedir}/bin
-	${INSTALL} -m 755 ${example} ${stagedir}/bin
+	${INSTALL} -m 755 ${examples} ${stagedir}/bin
 
 dist: distsrc distbin
 
@@ -158,5 +177,6 @@ soap_ops.o: soap_ops.c jpis_H.h jpis_.nsmap soap_version.h db_ops.h ws_ps_typere
 ws_ps_typeref.o: ws_ps_typeref.c jpis_H.h ws_typemap.h ws_ps_typeref.h
 ws_is_typeref.o: ws_is_typeref.c jpis_H.h ws_typemap.h ws_is_typeref.h
 comon_server.o: common_server.c common_server.h
+jpis-client.o: jpis-client.c ${is_client_prefix}H.h soap_version.h
 
 .PHONY: default all compile check doc stage dist distsrc distbin install clean

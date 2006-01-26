@@ -317,11 +317,6 @@ int newconn(int conn,struct timeval *to,void *data)
 	return 0;
 
 cleanup:
-/*
-	- done in disconnect 
-	glite_jpis_free_db(private->ctx);
-	glite_jpis_free_context(private->ctx);
-*/
 	glite_gsplugin_free_context(plugin_ctx);
 	soap_end(soap);
 
@@ -385,8 +380,9 @@ static int disconn(int conn,struct timeval *to,void *data)
 	slave_data_t		*private = (slave_data_t *)data;
 	struct soap		*soap = private->soap;
 
-	glite_jpis_free_db(private->ctx);
-	glite_jpis_free_context(private->ctx);
+// XXX: belongs to "data_init complement"
+//	glite_jpis_free_db(private->ctx);
+//	glite_jpis_free_context(private->ctx);
 	soap_end(soap); // clean up everything and close socket
 	
 	return 0;

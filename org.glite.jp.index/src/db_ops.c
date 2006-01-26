@@ -34,7 +34,7 @@
 	'%s',\n\
 	'%s',\n\
 	'%s',\n\
-	'%d'\n\
+	'%ld'\n\
 )"
 #define INDEX_LENGTH 255
 
