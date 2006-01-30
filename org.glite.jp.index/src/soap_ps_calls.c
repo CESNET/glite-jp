@@ -73,7 +73,11 @@ static int check_fault(struct soap *soap,int err) {
 		case SOAP_SVR_FAULT:
 			if (soap->version == 2) {
 				detail = soap->fault->SOAP_ENV__Detail;
+#if GSOAP_VERSION >= 20706
+				reason = soap->fault->SOAP_ENV__Reason->SOAP_ENV__Text;
+#else
 				reason = soap->fault->SOAP_ENV__Reason;
+#endif
 			}
 			else {
 				detail = soap->fault->detail;
@@ -82,7 +86,7 @@ static int check_fault(struct soap *soap,int err) {
 			fputs(reason,stderr);
 			putc('\n',stderr);
 			assert(detail->__type == SOAP_TYPE__genericFault);
-#if GSOAP_VERSION >=20700
+#if GSOAP_VERSION >= 20700
 			f = ((struct _genericFault *) detail->fault)
 #else
 			f = ((struct _genericFault *) detail->value)

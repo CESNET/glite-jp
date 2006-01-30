@@ -47,8 +47,7 @@ INSTALL:=libtool --mode=install install
 
 
 daemon:=glite-jp-indexd
-# glite-jpis-client not compiled
-examples:=glite-jpis-test
+examples:=glite-jpis-test glite-jpis-client
 is_prefix:=jpis_
 is_client_prefix:=jpis_client_
 ps_prefix:=jpps_
@@ -60,7 +59,8 @@ SRCS:= conf.c bones_server.c soap_ops.c soap_ps_calls.c \
 
 EXA_TEST_SRCS:=jpis-test.c ${is_prefix}C.c ${is_prefix}Client.c context.c db_ops.c conf.c
 EXA_DB_SRCS:=jpis-db-internal.c db_ops.c conf.c context.c
-EXA_CLIENT_SRCS:=jpis-client.c ${is_client_prefix}C.c
+EXA_CLIENT_SRCS:=jpis-client.c ${is_client_prefix}C.c ${is_client_prefix}Client.c
+#                ${is_prefix}C.c
 
 OBJS:=${SRCS:.c=.o}
 EXA_TEST_OBJS:=${EXA_TEST_SRCS:.c=.o}
@@ -99,24 +99,24 @@ JobProvenancePS.xh: %.xh: %.wsdl JobProvenanceTypes.wsdl typemap.dat
 	${gsoap_bin_prefix}/wsdl2h  -t ${top_srcdir}/src/typemap.dat -c -o $@ $<
 	rm -f JobProvenanceTypes.wsdl
 
-JobProvenanceISClient.xh: typemap.dat JobProvenanceISClient.xsd JobProvenanceIS.wsdl
-	cp  ${stagedir}/interface/JobProvenance{Types.xsd,Types.wsdl,IS.wsdl} .
-	${gsoap_bin_prefix}/wsdl2h  -t ${top_srcdir}/src/typemap.dat -c -o $@  JobProvenanceIS.wsdl ${top_srcdir}/src/JobProvenanceISClient.xsd
-	rm -f JobProvenance{Types.xsd,Types.wsdl,IS.wsdl}
+#JobProvenanceISClient.xh: typemap.dat JobProvenanceISClient.xsd JobProvenanceIS.wsdl
+#	cp  ${stagedir}/interface/JobProvenance{Types.xsd,Types.wsdl,IS.wsdl} .
+#	${gsoap_bin_prefix}/wsdl2h -t ${top_srcdir}/src/typemap.dat -c -o $@ JobProvenanceIS.wsdl ${top_srcdir}/src/JobProvenanceISClient.xsd
+#	rm -f JobProvenance{Types.xsd,Types.wsdl,IS.wsdl}
 
 ${is_prefix}ClientLib.c ${is_prefix}Client.c \
 ${is_prefix}Server.c ${is_prefix}ServerLib.c  \
 ${is_prefix}C.c ${is_prefix}H.h ${is_prefix}_Stub.h: JobProvenanceIS.xh
-	${gsoap_bin_prefix}/soapcpp2 -n -w -c -p ${is_prefix} JobProvenanceIS.xh
+	${gsoap_bin_prefix}/soapcpp2 -n -w -c -p ${is_prefix} $<
 
 ${is_client_prefix}ClientLib.c ${is_client_prefix}Client.c \
 ${is_client_prefix}Server.c ${is_client_prefix}ServerLib.c  \
-${is_client_prefix}C.c ${is_client_prefix}H.h ${is_client_prefix}_Stub.h: JobProvenanceISClient.xh
-	${gsoap_bin_prefix}/soapcpp2 -n -w -c -p ${is_client_prefix} JobProvenanceISClient.xh
+${is_client_prefix}C.c ${is_client_prefix}H.h ${is_client_prefix}_Stub.h: JobProvenanceIS.xh
+	${gsoap_bin_prefix}/soapcpp2 -n -w -c -p ${is_client_prefix} $<
 
 ${ps_prefix}Client.c ${ps_prefix}ClientLib.c  \
 ${ps_prefix}C.c ${ps_prefix}H.h ${ps_prefix}_Stub.h: JobProvenancePS.xh
-	${gsoap_bin_prefix}/soapcpp2 -n -w -c -p ${ps_prefix} JobProvenancePS.xh
+	${gsoap_bin_prefix}/soapcpp2 -n -w -c -p ${ps_prefix} $<
 
 
 #env_C.c env_Server.c:

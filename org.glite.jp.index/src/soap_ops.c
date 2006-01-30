@@ -22,6 +22,10 @@
 				// XXX: 2 is only for debugging, replace with e.g. 100
 #define	JOBIDS_STRIDE	2	// how often realloc matched jobids result
 
+#if GSOAP_VERSION >= 20706
+#define false_ xsd__boolean__false_
+#endif
+
 /*------------------*/
 /* Helper functions */
 /*------------------*/
