@@ -16,9 +16,10 @@
 #include "db_ops.h"
 
 
-static const char *get_opt_string = "dc:k:C:V:nm:p:i:o:";
+static const char *get_opt_string = "s:dc:k:C:V:nm:p:i:o:";
 
 static struct option opts[] = {
+	{"is-server",	1, NULL,	's'},
 	{"debug",       0, NULL,	'd'},
 //	{"cert",	1, NULL,	'c'},
 //	{"key",		1, NULL,	'k'},
@@ -37,6 +38,7 @@ static struct option opts[] = {
 static void usage(char *me) 
 {
 	fprintf(stderr,"usage: %s [option]\n"
+		"\t-s, --ps-server\t primary storage server address (http://hostname:port)\n"
 		"\t-d, --debug\t don't run as daemon, additional diagnostics\n"
 //		"\t-k, --key\t private key file\n" 
 //		"\t-c, --cert\t certificate file\n"
@@ -63,6 +65,7 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 
 
 	while ((opt = getopt_long(argc,argv,get_opt_string,opts,NULL)) != EOF) switch (opt) {
+		case 's': ps = optarg; break;
 		case 'd': conf->debug = 1; break;
 //		case 'c': server_cert = optarg; break;
 //		case 'k': server_key = optarg; break;
@@ -78,6 +81,15 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 
 	// *** legacy configuration from environment ***********************
 	//
+	if (!ps) {
+		if (env = getenv("GLITE_JPIS_PS")) {
+			ps = env;
+		}
+		else { 
+			fprintf(stderr,"No JP PrimaryStrorage server specified, default feeds skipped. (not fatal)\n");
+		}
+	}
+
 	if (!conf->debug) {
         	env = getenv("GLITE_JPIS_DEBUG");
         	conf->debug = (env != NULL) && (strcmp(env, "0") != 0);
@@ -145,9 +157,8 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 	// XXX: some plugin names should come here in future
 	conf->plugins = NULL;
 
-//	ps = "http://umbar.ics.muni.cz:8901";
-	if (!ps && ((ps = getenv("GLITE_JPIS_PS")) == NULL)) {
-		printf("No JP PrimaryStrorage server specified in $GLITE_JPIS_PS, default feeds skipped. (not fatal)\n");
+	if (!ps) {
+		// No JP PrimaryStrorage server specified in $GLITE_JPIS_PS -> skip feeds
 		conf->feeds = calloc(1, sizeof(*(conf->feeds)));
 		*configuration = conf;
 		return 0;
