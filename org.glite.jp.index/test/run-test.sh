@@ -8,6 +8,8 @@
 # configuration:
 #   GLITE_LOCATION..................path to glite SW
 #   GLOBUS_LOCATION.................path to globus SW
+#   GLITE_HOST_CERT.................path to host certificate
+#   GLITE_HOST_KEY..................path to host key
 #   GLITE_JPIS_TEST_PIDFILE.........pidfile (default `pwd`/glite-jp-indexd.pid)
 #   GLITE_JPIS_TEST_LOGFILE.........logfile (default `pwd`/glite-jp-indexd.log)
 #   GLITE_JPIS_TEST_PORT............index server port
@@ -26,11 +28,18 @@ GLITE_LOCATION=${GLITE_LOCATION:-"/opt/glite"}
 
 GLOBUS_LOCATION=${GLOBUS_LOCATION:-"/opt/globus"}
 
-if [ -e "$GLOBUS_LOCATION/bin/grid-proxy-info" ] ;then
-	timeleft=`$GLOBUS_LOCATION/bin/grid-proxy-info 2>&1| grep timeleft| sed 's/^.* //'`
-	if [ "$timeleft" = "0:00:00" -o -z "$timeleft" ]; then 
-		echo "No valid proxy cert found! Aborting."
-		exit 1
+if [ -n "$GLITE_HOST_CERT" -a -n "$GLITE_HOST_KEY" ] ;then
+	X509_USER_CERT="$GLITE_HOST_CERT"
+	X509_USER_KEY="$GLITE_HOST_KEY"
+fi
+
+if [ -z "$X509_USER_CERT" -o -z "$X509_USER_KEY" ] ; then
+	if [ -e "$GLOBUS_LOCATION/bin/grid-proxy-info" ] ; then
+		timeleft=`$GLOBUS_LOCATION/bin/grid-proxy-info 2>&1| grep timeleft| sed 's/^.* //'`
+		if [ "$timeleft" = "0:00:00" -o -z "$timeleft" ]; then 
+			echo "No valid proxy cert found nor X509_USER_CERT/X509_USER_KEY specified! Aborting."
+			exit 1
+		fi
 	fi
 fi
 
@@ -80,6 +89,7 @@ drop_db() {
 
 run_is() {
 	# run index server
+	X509_USER_KEY=${X509_USER_KEY} X509_USER_CERT=${X509_USER_CERT} \
 	$GLITE_LOCATION/stage/bin/glite-jp-indexd -m $GLITE_JPIS_TEST_DB -p $GLITE_JPIS_TEST_PORT \
 			-i ${GLITE_JPIS_TEST_PIDFILE} -o ${GLITE_JPIS_TEST_LOGFILE} $1\
 			2>/dev/null
@@ -112,6 +122,7 @@ kill_is() {
 }
 
 run_test_query() {
+	X509_USER_KEY=${X509_USER_KEY} X509_USER_CERT=${X509_USER_CERT} \
 	$GLITE_LOCATION/stage/examples/glite-jpis-client -q $1 \
 		 -i http://localhost:$GLITE_JPIS_TEST_PORT &>/tmp/result
 	DIFF=`diff --ignore-matching-lines="query: using JPIS" $2 /tmp/result`
@@ -151,6 +162,8 @@ import_db $GLITE_LOCATION/stage/examples/dump1.sql;
 run_test_query $GLITE_LOCATION/stage/examples/simple_query.in $GLITE_LOCATION/stage/examples/simple_query.out;
 drop_db;
 kill_is;
+
+exit 1
 
 echo -n "Complex query test... "
 create_db;
