@@ -99,9 +99,9 @@ JobProvenancePS.xh: %.xh: %.wsdl JobProvenanceTypes.wsdl typemap.dat
 	${gsoap_bin_prefix}/wsdl2h  -t ${top_srcdir}/src/typemap.dat -c -o $@ $<
 	rm -f JobProvenanceTypes.wsdl
 
-#JobProvenanceISClient.xh: typemap.dat JobProvenanceISClient.xsd JobProvenanceIS.wsdl
+#JobProvenanceISClient.xh: typemap.dat JobProvenanceISClientQuery.xsd JobProvenanceIS.wsdl
 #	cp  ${stagedir}/interface/JobProvenance{Types.xsd,Types.wsdl,IS.wsdl} .
-#	${gsoap_bin_prefix}/wsdl2h -t ${top_srcdir}/src/typemap.dat -c -o $@ JobProvenanceIS.wsdl ${top_srcdir}/src/JobProvenanceISClient.xsd
+#	${gsoap_bin_prefix}/wsdl2h -t ${top_srcdir}/src/typemap.dat -c -o $@ JobProvenanceIS.wsdl ${top_srcdir}/src/JobProvenanceISClientQuery.xsd
 #	rm -f JobProvenance{Types.xsd,Types.wsdl,IS.wsdl}
 
 ${is_prefix}ClientLib.c ${is_prefix}Client.c \
@@ -109,6 +109,8 @@ ${is_prefix}Server.c ${is_prefix}ServerLib.c  \
 ${is_prefix}C.c ${is_prefix}H.h ${is_prefix}_Stub.h: JobProvenanceIS.xh
 	${gsoap_bin_prefix}/soapcpp2 -n -w -c -p ${is_prefix} $<
 
+# JobProvenanceISClient.xh should be used, 
+# for now (gsoap-2.7.0) used direct JobProvenanceIS.xh
 ${is_client_prefix}ClientLib.c ${is_client_prefix}Client.c \
 ${is_client_prefix}Server.c ${is_client_prefix}ServerLib.c  \
 ${is_client_prefix}C.c ${is_client_prefix}H.h ${is_client_prefix}_Stub.h: JobProvenanceIS.xh
@@ -132,8 +134,7 @@ check:
 doc:
 
 stage: compile
-	${INSTALL} -m 755 ${daemon} ${stagedir}/bin
-	${INSTALL} -m 755 ${examples} ${stagedir}/bin
+	$(MAKE) install PREFIX=${stagedir}
 
 dist: distsrc distbin
 
@@ -150,12 +151,13 @@ distbin:
 	
 install:
 	-mkdir -p ${PREFIX}/bin ${PREFIX}/etc ${PREFIX}/etc/init.d
-	-mkdir -p ${PREFIX}/share/doc/${package}-${version}
-	${INSTALL} -m 755 glite-jp-indexd ${PREFIX}/bin; \
-	${INSTALL} -m 755 glite-jpis-test ${PREFIX}/bin; \
-
+	-mkdir -p ${PREFIX}/share/doc/${package}-${version} ${PREFIX}/examples
+	-mkdir -p ${PREFIX}/interface
+	${INSTALL} -m 755 ${daemon} ${PREFIX}/bin
 	${INSTALL} -m 755 ${top_srcdir}/config/startup ${PREFIX}/etc/init.d/glite-jp-indexd
+	${INSTALL} -m 755 ${examples} ${PREFIX}/examples
 	${INSTALL} -m 644 ${top_srcdir}/doc/README ${PREFIX}/share/doc/${package}-${version}
+	${INSTALL} -m 644 ${top_srcdir}/interface/JobProvenanceISClientQuery.xsd ${PREFIX}/interface
 
 clean:
 

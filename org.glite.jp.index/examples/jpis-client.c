@@ -211,7 +211,7 @@ static int query_recv(struct soap *soap, int fd, struct _jpisclient__QueryJobs *
 	soap->recvfd = fd;
 	soap_begin_recv(soap);
 	soap_default__jpisclient__QueryJobs(soap, qj);
-	if (!soap_get__jpisclient__QueryJobs(soap, qj, "queryJobs", "indexQuery")) {
+	if (!soap_get__jpisclient__QueryJobs(soap, qj, "QueryJobs", NULL)) {
 		soap_end_recv(soap);
 		soap_end(soap);
 		return EINVAL;
@@ -232,7 +232,7 @@ static int query_dump(struct soap *soap, int fd, struct _jpisclient__QueryJobs *
 	soap->sendfd = fd;
 	soap_begin_send(soap);
 	soap_serialize__jpisclient__QueryJobs(soap, qj);
-	retval = soap_put__jpisclient__QueryJobs(soap, qj, "queryJobs", "indexQuery");
+	retval = soap_put__jpisclient__QueryJobs(soap, qj, "jpisclient:QueryJobs", NULL);
 	soap_end_send(soap);
 
 	return retval;
@@ -351,6 +351,8 @@ int main(int argc, char * const argv[]) {
 	char *server, *example_file, *query_file, *test_file;
 	const char *prog_name;
 	int retval, opt, example_fd, query_fd, test_fd;
+	struct Namespace *namespaces;
+	int i;
 
 	prog_name = server = NULL;
 	example_file = query_file = test_file = NULL;
@@ -362,7 +364,32 @@ int main(int argc, char * const argv[]) {
 	 * For communications with JP IS glite_gsplugin needs to be registered yet.
 	 */
 	soap_init(&soap);
-	soap_set_namespaces(&soap, jpis_client__namespaces);
+
+	/*
+	 * Following code is needed, when we can't combine more XSD/WSDL files
+	 * for using both as client. We direct use structures only from
+	 * JobProvenanceIS.wsdl, just retyped to jpisclient namespace.
+	 *
+	 * So manually add jpisclient to the namespaces.
+	 */
+	for (i = 0; jpis_client__namespaces[i].id; i++)
+		if (strcmp(jpis_client__namespaces[i].id, "jpisclient") == 0) break;
+	if (jpis_client__namespaces[i].id) {
+		/* 
+		 * namespaces hack isn't needed (used two schemas and
+		 * gsoap 2.7.6b)
+		 */
+		namespaces = NULL;
+		soap_set_namespaces(&soap, jpis_client__namespaces);
+	} else {
+		/* perform namespaces hack */
+		namespaces = calloc(i + 2, sizeof(struct Namespace));
+		memcpy(namespaces, jpis_client__namespaces, sizeof(jpis_client__namespaces));
+		namespaces[i].id = "jpisclient";
+		namespaces[i].ns = "http://glite.org/xsd/types/jpisclient";
+		soap_set_namespaces(&soap, namespaces);
+	}
+
 #ifdef SOAP_XML_INDENT
 	soap_omode(&soap, SOAP_XML_INDENT);
 #endif
@@ -486,6 +513,7 @@ cleanup:
 	free(example_file);
 	free(query_file);
 	free(test_file);
+	free(namespaces);
 
 	return retval;
 }
