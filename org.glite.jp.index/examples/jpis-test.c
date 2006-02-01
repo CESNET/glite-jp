@@ -30,7 +30,6 @@ static int check_fault(struct soap *soap,int err);
 int main(int argc,char *argv[])
 {
 	char *default_server = NULL;
-//	char	*default_server = "http://localhost:8902";
 	char server[512];
 	struct soap	*soap = soap_new();
 
@@ -79,10 +78,6 @@ int main(int argc,char *argv[])
 		memset(&in, 0, sizeof(in));
 		memset(&out, 0, sizeof(out));
 
-		//XXX : need to register feed with feedid in.feedId in DB
-		//	this one work only because such feed in conf.c (umbar)
-
-		//in.feedId = soap_strdup(soap, str2md5("http://localhost:8901"));
 		in.feedId = soap_strdup(soap, "12345");
 		in.feedDone = false_;
 		in.__sizejobAttributes = 2;
@@ -92,7 +87,6 @@ int main(int argc,char *argv[])
 			rec = soap_malloc(soap,  sizeof(*rec));
 			memset(rec, 0, sizeof(*rec));
 			rec->jobid = soap_strdup(soap, "https://localhost:7846/pokus1");
-			rec->jobid = soap_strdup(soap, "https://localhost:7846/pokus");
 			{
 				gss_cred_id_t		cred = GSS_C_NO_CREDENTIAL;
 				edg_wll_GssStatus	gss_code;

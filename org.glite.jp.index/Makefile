@@ -22,7 +22,7 @@ CC=gcc
 -include Makefile.inc
 
 
-VPATH=${top_srcdir}/src:${top_srcdir}/examples:${top_srcdir}/test:${top_srcdir}/project:${jpproject}:${stagedir}/interface
+VPATH=${top_srcdir}/src:${top_srcdir}/examples:${top_srcdir}/tests:${top_srcdir}/test:${top_srcdir}/project:${jpproject}:${stagedir}/interface
 
 GLOBUS_LIBS:=-L${globus_prefix}/lib \
 	-lglobus_common_${nothrflavour} \
@@ -48,6 +48,8 @@ INSTALL:=libtool --mode=install install
 
 daemon:=glite-jp-indexd
 examples:=glite-jpis-test glite-jpis-client
+test:=run-test.sh
+test_files:=dump1.sql simple_query.in simple_query.out complex_query.in complex_query.out 
 is_prefix:=jpis_
 is_client_prefix:=jpis_client_
 ps_prefix:=jpps_
@@ -75,7 +77,7 @@ TRIOLIB:=-lglite_jp_trio
 
 default all: compile
 
-compile: ${daemon} ${examples}
+compile: ${daemon} ${examples} copy_tests
 
 ${daemon}: ${OBJS}
 	${LINK} -o $@ -export-dynamic ${OBJS} ${BONESLIB} ${TRIOLIB} ${COMMONLIB} ${GSOAPLIB} ${GLOBUS_LIBS} ${SRVCOMMONLIB}
@@ -88,6 +90,9 @@ jpis-db-internal: ${EXA_DB_OBJS}
 
 glite-jpis-client: ${EXA_CLIENT_OBJS}
 	${LINK} -o $@ $+ ${GSOAPLIB}
+
+copy_tests: ${test} ${test_files}
+	for i in $?; do cp ${top_srcdir}/test/$$i  ${top_srcdir}/build; done
 
 JobProvenanceIS.xh: JobProvenanceIS.wsdl JobProvenanceTypes.wsdl typemap.dat
 	cp  ${stagedir}/interface/JobProvenanceTypes.wsdl .
@@ -134,7 +139,7 @@ check:
 doc:
 
 stage: compile
-	$(MAKE) install PREFIX=${stagedir}
+	${MAKE} PREFIX=${stagedir} DOSTAGE=yes install
 
 dist: distsrc distbin
 
@@ -154,9 +159,12 @@ install:
 	-mkdir -p ${PREFIX}/share/doc/${package}-${version} ${PREFIX}/examples
 	-mkdir -p ${PREFIX}/interface
 	${INSTALL} -m 755 ${daemon} ${PREFIX}/bin
-	${INSTALL} -m 755 ${top_srcdir}/config/startup ${PREFIX}/etc/init.d/glite-jp-indexd
 	${INSTALL} -m 755 ${examples} ${PREFIX}/examples
+	${INSTALL} -m 755 ${top_srcdir}/config/startup ${PREFIX}/etc/init.d/glite-jp-indexd
+	${INSTALL} -m 755 ${top_srcdir}/config/glite-jp-index-dbsetup.sql ${PREFIX}/etc
 	${INSTALL} -m 644 ${top_srcdir}/doc/README ${PREFIX}/share/doc/${package}-${version}
+	${INSTALL} -m 755 ${test} ${PREFIX}/examples
+	${INSTALL} -m 644 ${test_files} ${PREFIX}/examples
 	${INSTALL} -m 644 ${top_srcdir}/interface/JobProvenanceISClientQuery.xsd ${PREFIX}/interface
 
 clean:
