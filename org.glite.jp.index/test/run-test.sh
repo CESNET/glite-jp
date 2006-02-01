@@ -37,9 +37,11 @@ if [ -z "$X509_USER_CERT" -o -z "$X509_USER_KEY" ] ; then
 	if [ -e "$GLOBUS_LOCATION/bin/grid-proxy-info" ] ; then
 		timeleft=`$GLOBUS_LOCATION/bin/grid-proxy-info 2>&1| grep timeleft| sed 's/^.* //'`
 		if [ "$timeleft" = "0:00:00" -o -z "$timeleft" ]; then 
-			echo "No valid proxy cert found nor X509_USER_CERT/X509_USER_KEY specified! Aborting."
+			echo "No valid proxy cert found nor GLITE_HOST_KEY/GLITE_HOST_KEY specified! Aborting."
 			exit 1
 		fi
+	else
+		echo "Can't check proxy cert (grid-proxy-info not found). If you do not have valid proxy certificate, set GLITE_HOST_KEY/GLITE_HOST_KEY - otherwise tests will fail!"
 	fi
 fi
 
