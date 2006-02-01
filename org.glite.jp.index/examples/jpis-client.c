@@ -13,10 +13,13 @@
 
 /* 'jpisclient' as future namespace */
 #define _jpisclient__QueryJobs _jpelem__QueryJobs
+#define _jpisclient__QueryJobsResponse _jpelem__QueryJobsResponse
 #define soap_default__jpisclient__QueryJobs soap_default__jpelem__QueryJobs
 #define soap_get__jpisclient__QueryJobs soap_get__jpelem__QueryJobs
 #define soap_put__jpisclient__QueryJobs soap_put__jpelem__QueryJobs
+#define soap_put__jpisclient__QueryJobsResponse soap_put__jpelem__QueryJobsResponse
 #define soap_serialize__jpisclient__QueryJobs soap_serialize__jpelem__QueryJobs
+#define soap_serialize__jpisclient__QueryJobsResponse soap_serialize__jpelem__QueryJobsResponse
 
 #define DEFAULT_JPIS "http://localhost:8902"
 
@@ -258,6 +261,22 @@ static int query_example_dump(struct soap *soap, int fd) {
 
 
 /*
+ * dump the XML query
+ */
+static int queryresult_dump(struct soap *soap, int fd, struct _jpisclient__QueryJobsResponse *qjr) {
+	int retval;
+
+	soap->sendfd = fd;
+	soap_begin_send(soap);
+	soap_serialize__jpisclient__QueryJobsResponse(soap, qjr);
+	retval = soap_put__jpisclient__QueryJobsResponse(soap, qjr, "jpisclient:QueryJobsResponse", NULL);
+	soap_end_send(soap);
+
+	return retval;
+}
+
+
+/*
  * help screen
  */
 static void usage(const char *prog_name) {
@@ -325,7 +344,7 @@ static int check_fault(struct soap *soap, int err) {
 /*
  * print the data returned from JP IS
  */
-static void queryJobsResponse_print(FILE *out, const struct  _jpelem__QueryJobsResponse *in) {
+static void queryresult_print(FILE *out, const struct  _jpelem__QueryJobsResponse *in) {
 	struct jptype__attrValue *attr;
 	int i, j;
 
@@ -346,7 +365,7 @@ static void queryJobsResponse_print(FILE *out, const struct  _jpelem__QueryJobsR
 
 
 int main(int argc, char * const argv[]) {
-	struct soap soap;
+	struct soap soap, soap_comm;
 	struct _jpisclient__QueryJobs qj;
 	char *server, *example_file, *query_file, *test_file;
 	const char *prog_name;
@@ -359,11 +378,11 @@ int main(int argc, char * const argv[]) {
 	query_fd = example_fd = test_fd = -1;
 	retval = 1;
 
-	/* 
-	 * Soap with registered plugin can't be used for reading XML.
-	 * For communications with JP IS glite_gsplugin needs to be registered yet.
-	 */
 	soap_init(&soap);
+
+#ifdef SOAP_XML_INDENT
+	soap_omode(&soap, SOAP_XML_INDENT);
+#endif
 
 	/*
 	 * Following code is needed, when we can't combine more XSD/WSDL files
@@ -390,14 +409,23 @@ int main(int argc, char * const argv[]) {
 		soap_set_namespaces(&soap, namespaces);
 	}
 
-#ifdef SOAP_XML_INDENT
-	soap_omode(&soap, SOAP_XML_INDENT);
-#endif
+	/* 
+	 * Soap with registered plugin can't be used for reading XML.
+	 * For communications with JP IS glite_gsplugin needs to be registered yet.
+	 */
+	soap_init(&soap_comm);
+	soap_set_namespaces(&soap_comm, jpis_client__namespaces);
+	soap_register_plugin(&soap_comm, glite_gsplugin);
 
 	/* program name */
 	prog_name = strrchr(argv[0], '/');
 	if (prog_name) prog_name++;
 	else prog_name = argv[0];
+
+	if (argc <= 1) {
+		usage(prog_name);
+		goto cleanup;
+	}
 
 	/* handle arguments */
 	while ((opt = getopt_long(argc, argv, get_opt_string, opts, NULL)) != EOF) switch (opt) {
@@ -488,16 +516,18 @@ int main(int argc, char * const argv[]) {
 		 * structure. Just ugly retype to client here.
 		 */
 		if (query_recv(&soap, query_fd, (struct _jpisclient__QueryJobs *)&in) != 0) {
-			fprintf(stderr, "test: Error getting query XML\n");
+			fprintf(stderr, "query: Error getting query XML\n");
 		} else {
 			fprintf(stderr, "query: using JPIS %s\n\n", server);
 			query_print(stderr, &in);
 			fprintf(stderr, "\n");
-			soap_register_plugin(&soap, glite_gsplugin);
-			ret = check_fault(&soap, soap_call___jpsrv__QueryJobs(&soap, server, "", &in, &out));
+			soap_begin(&soap_comm);
+			ret = check_fault(&soap_comm, soap_call___jpsrv__QueryJobs(&soap_comm, server, "", &in, &out));
 			if (ret == 0) {
-				queryJobsResponse_print(stderr, &out);
+				queryresult_print(stderr, &out);
+				queryresult_dump(&soap, STDOUT_FILENO, (struct _jpisclient__QueryJobsResponse *)&out);
 			} else goto cleanup;
+			soap_end(&soap_comm);
 		}
 		soap_end(&soap);
 	}
@@ -506,6 +536,7 @@ int main(int argc, char * const argv[]) {
 
 cleanup:
 	soap_done(&soap);
+	soap_done(&soap_comm);
 	if (example_fd > STDERR_FILENO) close(example_fd);
 	if (query_fd > STDERR_FILENO) close(query_fd);
 	if (test_fd > STDERR_FILENO) close(test_fd);

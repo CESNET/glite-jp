@@ -104,9 +104,9 @@ JobProvenancePS.xh: %.xh: %.wsdl JobProvenanceTypes.wsdl typemap.dat
 	${gsoap_bin_prefix}/wsdl2h  -t ${top_srcdir}/src/typemap.dat -c -o $@ $<
 	rm -f JobProvenanceTypes.wsdl
 
-#JobProvenanceISClient.xh: typemap.dat JobProvenanceISClientQuery.xsd JobProvenanceIS.wsdl
+#JobProvenanceISClient.xh: typemap.dat JobProvenanceISClient.xsd JobProvenanceIS.wsdl
 #	cp  ${stagedir}/interface/JobProvenance{Types.xsd,Types.wsdl,IS.wsdl} .
-#	${gsoap_bin_prefix}/wsdl2h -t ${top_srcdir}/src/typemap.dat -c -o $@ JobProvenanceIS.wsdl ${top_srcdir}/src/JobProvenanceISClientQuery.xsd
+#	${gsoap_bin_prefix}/wsdl2h -t ${top_srcdir}/src/typemap.dat -c -o $@ JobProvenanceIS.wsdl ${top_srcdir}/src/JobProvenanceISClient.xsd
 #	rm -f JobProvenance{Types.xsd,Types.wsdl,IS.wsdl}
 
 ${is_prefix}ClientLib.c ${is_prefix}Client.c \
@@ -165,7 +165,7 @@ install:
 	${INSTALL} -m 644 ${top_srcdir}/doc/README ${PREFIX}/share/doc/${package}-${version}
 	${INSTALL} -m 755 ${test} ${PREFIX}/examples
 	${INSTALL} -m 644 ${test_files} ${PREFIX}/examples
-	${INSTALL} -m 644 ${top_srcdir}/interface/JobProvenanceISClientQuery.xsd ${PREFIX}/interface
+	${INSTALL} -m 644 ${top_srcdir}/interface/JobProvenanceISClient.xsd ${PREFIX}/interface
 
 clean:
 

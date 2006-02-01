@@ -112,7 +112,7 @@ kill_is() {
 }
 
 run_test_query() {
-	$GLITE_LOCATION/stage/bin/glite-jpis-client -q $1 \
+	$GLITE_LOCATION/stage/examples/glite-jpis-client -q $1 \
 		 -i http://localhost:$GLITE_JPIS_TEST_PORT &>/tmp/result
 	DIFF=`diff --ignore-matching-lines="query: using JPIS" $2 /tmp/result`
 	if [ -z "$DIFF" ] ; then
@@ -136,7 +136,7 @@ run_test3() {
 	# run the example
 	numok=`GLITE_JPIS_DB=$GLITE_JPIS_TEST_DB \
 	GLITE_JPIS_PORT=$GLITE_JPIS_TEST_PORT \
-		$GLITE_LOCATION/stage/bin/glite-jpis-test 2>/dev/null| grep "OK" | wc -l`
+		$GLITE_LOCATION/stage/examples/glite-jpis-test 2>/dev/null| grep "OK" | wc -l`
 	if [ "$numok" -eq "2" ]; then
 		echo OK.
 	fi
