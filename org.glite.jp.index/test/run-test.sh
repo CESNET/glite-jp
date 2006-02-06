@@ -5,61 +5,73 @@
 #
 # requires running mysql
 #
-# configuration:
-#   GLITE_LOCATION..................path to glite SW
-#   GLOBUS_LOCATION.................path to globus SW
-#   GLITE_HOST_CERT.................path to host certificate
-#   GLITE_HOST_KEY..................path to host key
-#   GLITE_JPIS_TEST_PIDFILE.........pidfile (default `pwd`/glite-jp-indexd.pid)
-#   GLITE_JPIS_TEST_LOGFILE.........logfile (default `pwd`/glite-jp-indexd.log)
-#   GLITE_JPIS_TEST_PORT............index server port
-#   GLITE_JPIS_TEST_DB..............connection string 
-#                                   (default jpis/@localhost:jpis1test,
-#                                    autocreating the database when empty)
-#   GLITE_JPIS_TEST_ROOT_USER.......root user (default empty)
-#   GLITE_JPIS_TEST_ROOT_PASSWORD...root password (default empty)
-#
 
-# get the configuration
-GLITE_LOCATION=${GLITE_LOCATION:-"/opt/glite"}
-[ -f /etc/glite.conf ] && . /etc/glite.conf
-[ -f $HOME/.glite.conf ] && . $HOME/.glite.conf
-[ -f $GLITE_LOCATION/etc/jpis.conf ] && . $GLITE_LOCATION/etc/jpis.conf
+usage() {
+cat <<EOF
 
-GLOBUS_LOCATION=${GLOBUS_LOCATION:-"/opt/globus"}
+ ./run-test.sh
 
-if [ -n "$GLITE_HOST_CERT" -a -n "$GLITE_HOST_KEY" ] ;then
-	X509_USER_CERT="$GLITE_HOST_CERT"
-	X509_USER_KEY="$GLITE_HOST_KEY"
-fi
+ non-default configuration is possible via following env variables:
+   GLITE_LOCATION..................path to glite SW
+   GLOBUS_LOCATION.................path to globus SW
+   GLITE_HOST_CERT.................path to host certificate
+   GLITE_HOST_KEY..................path to host key
+   GLITE_JPIS_TEST_PIDFILE.........pidfile (default \`pwd\`/glite-jp-indexd.pid)
+   GLITE_JPIS_TEST_LOGFILE.........logfile (default \`pwd\`/glite-jp-indexd.log)
+   GLITE_JPIS_TEST_PORT............index server port
+   GLITE_JPIS_TEST_DB..............connection string 
+                                   (default jpis/@localhost:jpis1test,
+                                    autocreating the database when empty)
+   GLITE_JPIS_TEST_ROOT_USER.......root user for mysqladmin (default empty)
+   GLITE_JPIS_TEST_ROOT_PASSWORD...root password mysqladmin (default empty)
 
-if [ -z "$X509_USER_CERT" -o -z "$X509_USER_KEY" ] ; then
-	if [ -e "$GLOBUS_LOCATION/bin/grid-proxy-info" ] ; then
-		timeleft=`$GLOBUS_LOCATION/bin/grid-proxy-info 2>&1| grep timeleft| sed 's/^.* //'`
-		if [ "$timeleft" = "0:00:00" -o -z "$timeleft" ]; then 
-			echo "No valid proxy cert found nor GLITE_HOST_KEY/GLITE_HOST_KEY specified! Aborting."
-			exit 1
-		fi
-	else
-		echo "Can't check proxy cert (grid-proxy-info not found). If you do not have valid proxy certificate, set GLITE_HOST_KEY/GLITE_HOST_KEY - otherwise tests will fail!"
+EOF
+}
+
+init() {
+	# get the configuration
+	GLITE_LOCATION=${GLITE_LOCATION:-"/opt/glite"}
+	[ -f /etc/glite.conf ] && . /etc/glite.conf
+	[ -f $HOME/.glite.conf ] && . $HOME/.glite.conf
+	[ -f $GLITE_LOCATION/etc/jpis.conf ] && . $GLITE_LOCATION/etc/jpis.conf
+
+	GLOBUS_LOCATION=${GLOBUS_LOCATION:-"/opt/globus"}
+
+	if [ -n "$GLITE_HOST_CERT" -a -n "$GLITE_HOST_KEY" ] ;then
+		X509_USER_CERT="$GLITE_HOST_CERT"
+		X509_USER_KEY="$GLITE_HOST_KEY"
 	fi
-fi
 
-# handle the configuration
-ARGS="-u ${GLITE_JPIS_ROOT_USER:-root}"
-[ -z "$GLITE_JPIS_ROOT_PASSWORD" ] || ARGS="-p ${GLITE_JPIS_ROOT_PASSWORD} $ARGS"
-GLITE_JPIS_TEST_PORT=${GLITE_JPIS_TEST_PORT:-"10000"}
-GLITE_JPIS_TEST_PIDFILE=${GLITE_JPIS_TEST_PIDFILE:-"/tmp/glite-jp-indexd.pid"}
-GLITE_JPIS_TEST_LOGFILE=${GLITE_JPIS_TEST_LOGFILE:-"/tmp/glite-jp-indexd.log"}
+	if [ -z "$X509_USER_CERT" -o -z "$X509_USER_KEY" ] ; then
+		if [ -e "$GLOBUS_LOCATION/bin/grid-proxy-info" ] ; then
+			timeleft=`$GLOBUS_LOCATION/bin/grid-proxy-info 2>&1| \
+				grep timeleft| sed 's/^.* //'`
+			if [ "$timeleft" = "0:00:00" -o -z "$timeleft" ]; then 
+				echo "No valid proxy cert found nor "\
+				"GLITE_HOST_KEY/GLITE_HOST_KEY specified!"\
+				" Aborting."
+				exit 1
+			fi
+		else
+			echo "Can't check proxy cert (grid-proxy-info not found). If you do not have valid proxy certificate, set GLITE_HOST_KEY/GLITE_HOST_KEY - otherwise tests will fail!"
+		fi
+	fi
 
-if [ -z "$GLITE_JPIS_TEST_DB" ]; then
-	GLITE_JPIS_TEST_DB="jpis/@localhost:jpis1test"
-	need_new_db=1;
-fi
-DB_USER=`echo $GLITE_JPIS_TEST_DB| sed 's!/.*$!!'`
-DB_HOST=`echo $GLITE_JPIS_TEST_DB| sed 's!^.*@!!' | sed 's!:.*!!'`
-DB_NAME=`echo $GLITE_JPIS_TEST_DB| sed 's!^.*:!!'`
+	# handle the configuration
+	ARGS="-u ${GLITE_JPIS_TEST_ROOT_USER:-root}"
+	[ -z "$GLITE_JPIS_TEST_ROOT_PASSWORD" ] || ARGS="-p ${GLITE_JPIS_TEST_ROOT_PASSWORD} $ARGS"
+	GLITE_JPIS_TEST_PORT=${GLITE_JPIS_TEST_PORT:-"10000"}
+	GLITE_JPIS_TEST_PIDFILE=${GLITE_JPIS_TEST_PIDFILE:-"/tmp/glite-jp-indexd.pid"}
+	GLITE_JPIS_TEST_LOGFILE=${GLITE_JPIS_TEST_LOGFILE:-"/tmp/glite-jp-indexd.log"}
 
+	if [ -z "$GLITE_JPIS_TEST_DB" ]; then
+		GLITE_JPIS_TEST_DB="jpis/@localhost:jpis1test"
+		need_new_db=1;
+	fi
+	DB_USER=`echo $GLITE_JPIS_TEST_DB| sed 's!/.*$!!'`
+	DB_HOST=`echo $GLITE_JPIS_TEST_DB| sed 's!^.*@!!' | sed 's!:.*!!'`
+	DB_NAME=`echo $GLITE_JPIS_TEST_DB| sed 's!^.*:!!'`
+}
 
 create_db() {
 	# create database when needed
@@ -136,24 +148,33 @@ run_test_query() {
 		echo
 		echo "Expected result:"
 		cat $2
-		echo "Obtained result:"
+		echo "Obtained result (in /tmp/result):"
 		cat /tmp/result
-		rm /tmp/result
 		drop_db;
 		kill_is;
 		exit 1
 	fi
 }
 
-run_test3() {
+run_test_feed() {
 	# run the example
-	numok=`GLITE_JPIS_DB=$GLITE_JPIS_TEST_DB \
-	GLITE_JPIS_PORT=$GLITE_JPIS_TEST_PORT \
+	numok=`X509_USER_KEY=${X509_USER_KEY} X509_USER_CERT=${X509_USER_CERT}\
+		GLITE_JPIS_DB=$GLITE_JPIS_TEST_DB \
+		GLITE_JPIS_PORT=$GLITE_JPIS_TEST_PORT \
 		$GLITE_LOCATION/stage/examples/glite-jpis-test 2>/dev/null| grep "OK" | wc -l`
 	if [ "$numok" -eq "2" ]; then
 		echo OK.
+	else
+		echo FAILED!
 	fi
 }
+
+
+##########################################################################
+#
+
+if [ "$1" ]; then usage; exit 1; fi
+init;
 
 echo
 
@@ -164,8 +185,6 @@ import_db $GLITE_LOCATION/stage/examples/dump1.sql;
 run_test_query $GLITE_LOCATION/stage/examples/simple_query.in $GLITE_LOCATION/stage/examples/simple_query.out;
 drop_db;
 kill_is;
-
-exit 1
 
 echo -n "Complex query test... "
 create_db;
@@ -178,7 +197,7 @@ kill_is;
 echo -n "Feed & query test.... "
 create_db;
 run_is;
-run_test3;
+run_test_feed;
 drop_db;
 kill_is;
 
