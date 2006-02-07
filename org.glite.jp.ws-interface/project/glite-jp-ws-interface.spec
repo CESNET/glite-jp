@@ -1,7 +1,7 @@
 Summary:Change me !!!
 Name:glite-jp-ws-interface
 Version:1.1.0
-Release:0_U200510151557
+Release:0
 Copyright:Open Source EGEE License
 Vendor:EU EGEE project
 Group:System/Application

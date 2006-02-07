@@ -14,8 +14,8 @@ PREFIX=/opt/glite
 VPATH=${top_srcdir}/interface:${top_srcdir}/src
 STAGETO=interface
 
-XSLTPROC=xsltproc
-XMLLINT:=xmllint
+XSLTPROC=xsltproc --nonet
+XMLLINT:=xmllint --nonet
 docbookxls:=http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl
 
 WSDL=JobProvenancePS.wsdl JobProvenanceIS.wsdl JobProvenanceTypes.wsdl 
