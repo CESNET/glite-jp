@@ -140,7 +140,7 @@ run_test_query() {
 	$GLITE_LOCATION/stage/examples/glite-jpis-client -q $1 \
 		 -i http://localhost:$GLITE_JPIS_TEST_PORT &>/tmp/result
 	DIFF=`diff --ignore-matching-lines="query: using JPIS" $2 /tmp/result`
-	if [ -z "$DIFF" ] ; then
+	if [ -z "$DIFF" -a "$?" -eq "0" ] ; then
 		echo "OK."
 		rm /tmp/result
 	else
@@ -150,6 +150,7 @@ run_test_query() {
 		cat $2
 		echo "Obtained result (in /tmp/result):"
 		cat /tmp/result
+		echo
 		drop_db;
 		kill_is;
 		exit 1
@@ -198,6 +199,14 @@ echo -n "Feed & query test.... "
 create_db;
 run_is;
 run_test_feed;
+drop_db;
+kill_is;
+
+echo -n "Authz test........... "
+create_db;
+run_is;
+import_db $GLITE_LOCATION/stage/examples/dump1.sql;
+run_test_query $GLITE_LOCATION/stage/examples/simple_query.in $GLITE_LOCATION/stage/examples/authz.out;
 drop_db;
 kill_is;
 

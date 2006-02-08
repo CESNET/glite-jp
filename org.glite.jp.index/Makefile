@@ -49,7 +49,7 @@ INSTALL:=libtool --mode=install install
 daemon:=glite-jp-indexd
 examples:=glite-jpis-test glite-jpis-client
 test:=run-test.sh
-test_files:=dump1.sql simple_query.in simple_query.out complex_query.in complex_query.out 
+test_files:=dump1.sql simple_query.in simple_query.out complex_query.in complex_query.out authz.out 
 is_prefix:=jpis_
 is_client_prefix:=jpis_client_
 ps_prefix:=jpps_

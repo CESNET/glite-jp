@@ -138,6 +138,17 @@ includes following tests:
 
 	Test query has form (status=Done OR status=Ready) AND (user!=God).
 
+* AuthZ test
+- behaves exactly as simple query, except the fact that the index server
+  does compare query owner with jobs owner. These two differ and result
+  should be empty answer.
+- scenario that checking ownership is swithed off (IS with -n option) is 
+  covered by Simple query test
+- scenario that only user jobs are returned and no others is covered by
+  Feed & query test
+  
+
+
 The testing shell script is highly configurable via environmental varibles.
 Please, run the script (run-test.sh) with '-?' option to get list of all 
 variables and their meaning, if you are not satisfied with default setting.
