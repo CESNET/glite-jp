@@ -16,11 +16,12 @@
 #include "db_ops.h"
 
 
-static const char *get_opt_string = "s:dc:k:C:V:nm:p:i:o:";
+static const char *get_opt_string = "s:dq:c:k:C:V:nm:p:i:o:";
 
 static struct option opts[] = {
 	{"is-server",	1, NULL,	's'},
 	{"debug",       0, NULL,	'd'},
+	{"query-type",	1, NULL,	'q'},
 //	{"cert",	1, NULL,	'c'},
 //	{"key",		1, NULL,	'k'},
 //	{"CAdir",       1, NULL,	'C'},
@@ -40,6 +41,7 @@ static void usage(char *me)
 	fprintf(stderr,"usage: %s [option]\n"
 		"\t-s, --ps-server\t primary storage server address (http://hostname:port)\n"
 		"\t-d, --debug\t don't run as daemon, additional diagnostics\n"
+		"\t-q, --query-type hist/cont/both (default history)\n"
 //		"\t-k, --key\t private key file\n" 
 //		"\t-c, --cert\t certificate file\n"
 //		"\t-C, --CAdir\t trusted certificates directory\n"
@@ -56,7 +58,7 @@ static void usage(char *me)
 
 int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf **configuration)
 {
-	char 			*env, *ps = NULL;
+	char 			*env, *ps = NULL, *qt = NULL;;
 	int			opt;
 	glite_jp_is_conf	*conf;
 
@@ -67,6 +69,7 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 	while ((opt = getopt_long(argc,argv,get_opt_string,opts,NULL)) != EOF) switch (opt) {
 		case 's': ps = optarg; break;
 		case 'd': conf->debug = 1; break;
+		case 'q': qt = optarg; break;
 //		case 'c': server_cert = optarg; break;
 //		case 'k': server_key = optarg; break;
 //		case 'C': cadir = optarg; break;
@@ -177,8 +180,18 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 	conf->feeds[0]->query[0][0].op = GLITE_JP_QUERYOP_GREATER;
 	conf->feeds[0]->query[0][0].value = strdup("0");
 
-	conf->feeds[0]->history = 1;
-	conf->feeds[0]->continuous = 0;
+	if (qt && !strcmp(qt,"both")) {
+		conf->feeds[0]->history = 1;
+		conf->feeds[0]->continuous = 1;
+	}
+	else if (qt && !strcmp(qt,"continuous")) {
+		conf->feeds[0]->history = 0;
+		conf->feeds[0]->continuous = 1;
+	}
+	else {
+		conf->feeds[0]->history = 1;
+		conf->feeds[0]->continuous = 0;
+	}
 
 	conf->feeds[1] = NULL;
 

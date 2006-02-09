@@ -71,7 +71,9 @@ hard-coded options.
 The index server takes the following options:
 
 ./glite-jp-indexd [option]
+	-s, --ps-server  primary storage server address (http://hostname:port)
         -d, --debug      don't run as daemon, additional diagnostics
+	-q, --query-type hist/cont/both (default history)	
         -n, --noauth     don't check user identity with result owner
         -m, --mysql      database connect string
         -p, --port       port to listen
@@ -79,9 +81,11 @@ The index server takes the following options:
         -o, --logfile    file to store logs
 
 
-which can be substituted (if both set, command line option has priority)
+some of which can be substituted (if both set, command line option has priority)
 with env. variables:
 
+GLITE_JPIS_PS		- location of JP-PS server (required parameter)
+                  	(for example http://umbar.ics.muni.cz:8901)
 GLITE_JPIS_DEBUG   	- if set to "0" don't daemonize (default - deamonize)
 GLITE_JPIS_PORT 	- used port (default 8902)
 GLITE_JPIS_DB		- database connection string 
@@ -90,12 +94,6 @@ GLITE_JPIS_LOGFILE 	- log file (default for root /var/log/glite-jp-indexd.log
 			non-root user ~/glite-jp-indexd.log)
 GLITE_JPIS_PIDFILE 	- pid file (default for root /var/run/glite-jp-indexd.log
 			non-root user ~/glite-jp-indexd.pid)
-
-
-Parameter which is now configurable only through env. variable is:
-
-GLITE_JPIS_PS   - location of JP-PS server (required parameter)
-                  (for example http://umbar.ics.muni.cz:8901)
 
 Other parameters will be configurable in close future. Its
 current hard-coded values are in org.glite.jp.index/src/conf.[ch]
