@@ -351,14 +351,16 @@ int request(int conn,struct timeval *to,void *data)
 #endif
 	)
 	{
-		soap_send_fault(soap);
+		soap_send_fault(soap);	// sets soap->keep_alive back to 0 :(
+					// and closes connection
 		if (ctx->error) {
 			/* XXX: shall we die on some errors? */
 			int	err = ctx->error->code;
 			glite_jp_clear_error(ctx);
 			return err;
 		}
-		return 0;
+
+		return ECANCELED;	// let srv_bones know something is wrong					
 	}
 
 	glite_jp_run_deferred(ctx);
