@@ -5,25 +5,24 @@
 #
 
 # job provenance server
-JBSERVER=umbar.ics.muni.cz:8901
+JBSERVER=${JBSERVER:-umbar.ics.muni.cz:8901}
 # bookkeeping server
-BKSERVER=scientific.civ.zcu.cz:9000
+BKSERVER=${BKSERVER:-scientific.civ.zcu.cz:9000}
 # dump directory of bkserver (-D argument)
-BKSERVER_DUMPDIR=/tmp/dump
+BKSERVER_DUMPDIR=${BKSERVER_DUMPDIR:-/tmp/LB/dump}
 # LB maildir for job registration (-J argument)
-BKSERVER_JOBREG_MAILDIR=/tmp/lb_server_jpreg
-
+BKSERVER_JOBREG_MAILDIR=${BKSERVER_JOBREG_MAILDIR:-/tmp/LB/lb_server_jpreg}
 if [ -z "$X509_USER_CERT" -o -z "$X509_USER_KEY" ]; then
   echo "Please set X509_USER_CERT and X509_USER_KEY."
   exit 1
 fi
 
 CERT_ARGS="-c $X509_USER_CERT -k $X509_USER_KEY"
-LB_DUMPDIR=/tmp/lb_server_dump
-BKSERVER_DUMPDIR_OLD=/tmp/dump.old
-LB_EXPORTDIR=/tmp/lb_export
-PREFIX=`dirname $0`/..
-LOGDIR=/tmp/log
+LB_DUMPDIR=${LB_DUMPDIR:-/tmp/LB/lb_server_dump}
+BKSERVER_DUMPDIR_OLD=${BKSERVER_DUMPDIR_OLD:-/tmp/LB/dump.old}
+LB_EXPORTDIR=${LB_EXPORTDIR:-/tmp/LB/lb_export}
+PREFIX=${PREFIX:-`dirname $0`/..}
+LOGDIR=${LOGDIR:-/tmp/LB/log}
 
 
 [ -d $LB_DUMPDIR ] || mkdir -p $LB_DUMPDIR
