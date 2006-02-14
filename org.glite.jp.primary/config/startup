@@ -80,6 +80,7 @@ start()
 		X509_USER_KEY=\"$X509_USER_KEY\" \
 		GLITE_USER=\"$GLITE_USER\" \
 		FTPBE_INT_PREFIX=\"$GLITE_JP_PRIMARY_INTERNAL\" \
+		LD_LIBRARY_PATH=$GLOBUS_LOCATION/lib \
 		LD_PRELOAD=$GLITE_LOCATION/lib/glite-jp-ftpdauth.so \
 		$GLOBUS_LOCATION/sbin/in.ftpd -a -s -p $GLITE_JP_PRIMARY_FTP_PORT & \
 		pid=\$!; echo \$pid > $pidfile.ftpd; sleep 2; true kill -0 \$pid" && echo " done" || echo " FAILED"
