@@ -5,16 +5,25 @@
 #include <errno.h>
 #include <assert.h>
 
+#define SOAP_FMAC1 static
+
 #include "glite/jp/types.h"
 #include "glite/security/glite_gsplugin.h"
 
 #include "feed.h"
 #include "is_client.h"
 
-#include "jpis_ClientLib.c"
+/* same as ClientLib.c, without WITH_NOGLOBAL */
+#define SOAP_FMAC3 static
+#include "jpis_C.c"
+#include "jpis_Client.c"
+
 #include "jpis_.nsmap"
 
 #include "soap_util.c"
+
+#include "soap_env_ctx.h"
+#include "soap_env_ctx.c"
 
 extern char *server_key, *server_cert;	/* XXX */
 
@@ -56,6 +65,18 @@ static check_fault(glite_jp_context_t ctx,struct soap *soap,int ec)
 	}
 }
 
+static struct _glite_jp_soap_env_ctx_t *keep_soap_env_ctx;
+
+#define SWITCH_SOAP_CTX \
+{ \
+	keep_soap_env_ctx = glite_jp_soap_env_ctx; \
+	glite_jp_soap_env_ctx = &my_soap_env_ctx; \
+} \
+
+#define RESTORE_SOAP_CTX \
+{ \
+	glite_jp_soap_env_ctx = keep_soap_env_ctx; \
+} \
 
 int glite_jpps_single_feed(
 		glite_jp_context_t ctx,
@@ -101,6 +122,7 @@ int glite_jpps_single_feed(
 	jr.primaryStorage = &ctx->myURL;
 
 
+	SWITCH_SOAP_CTX
 	if (soap_call___jpsrv__UpdateJobs(ctx->other_soap,destination,"",
 		&in,&out
 	)) {
@@ -120,6 +142,7 @@ int glite_jpps_single_feed(
 		buf[999] = 0;
 		glite_jp_stack_error(ctx,&err);
 	}
+	RESTORE_SOAP_CTX
 
 	attrValues_free(ctx->other_soap,jr.attributes,jr.__sizeattributes);
 
@@ -175,8 +198,10 @@ int glite_jpps_multi_feed(
 		jr->primaryStorage = &ctx->myURL;
 	}
 
+	SWITCH_SOAP_CTX
 	check_fault(ctx,ctx->other_soap,
 		soap_call___jpsrv__UpdateJobs(ctx->other_soap,destination,"", &in,&out));
+	RESTORE_SOAP_CTX
 	for (i=0; i<njobs; i++) {
 		jr = in.jobAttributes[i];
 		attrValues_free(ctx->other_soap,jr->attributes,jr->__sizeattributes);

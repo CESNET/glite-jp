@@ -2,6 +2,8 @@
 #include <fcntl.h>
 #include <assert.h>
 
+#define SOAP_FMAC1	static
+
 #include "glite/jp/types.h"
 #include "glite/jp/context.h"
 #include "glite/jp/attr.h"
@@ -15,10 +17,17 @@
 #include "file_plugin.h"
 #include "builtin_plugins.h"
 
-#include "jpps_ServerLib.c"
+/* the same as ServerLib.c but without WITH_NOGLOBAL which breaks the soap_env_ctx trick */
+#define SOAP_FMAC3 static
+#include "jpps_C.c"
+#include "jpps_Server.c"
+
 #include "jpps_.nsmap"
 
 #include "soap_util.c"
+
+#include "soap_env_ctx.h"
+#include "soap_env_ctx.c"
 
 static struct jptype__genericFault *jp2s_error(struct soap *soap,
 		const glite_jp_error_t *err)
@@ -59,6 +68,12 @@ static void err2fault(const glite_jp_context_t ctx,struct soap *soap)
 }
 
 #define CONTEXT_FROM_SOAP(soap,ctx) glite_jp_context_t	ctx = (glite_jp_context_t) ((soap)->user)
+
+int glite_jpps_srv_init(glite_jp_context_t ctx)
+{
+	glite_jp_soap_env_ctx = &my_soap_env_ctx;
+	return 0;
+}
 
 SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RegisterJob(
 		struct soap *soap,
