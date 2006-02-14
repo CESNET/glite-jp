@@ -273,12 +273,14 @@ int glite_jpps_match_file(
 
 	fprintf(stderr,"%s: %s %s %s\n",__FUNCTION__,job,class,name);
 
+	if (!f) return 0;
 	
-	switch (glite_jpps_fplug_lookup(ctx,class,&pd)) {
+	switch (glite_jpps_fplug_lookup_byclass(ctx,class,&pd)) {
 		case ENOENT: return 0;	/* XXX: shall we complain? */
 		case 0: break;
 		default: return -1;
 	}
+
 
 	for (;f;f=f->next) {
 		attr_union(attrs,f->attrs,&attrs2);
@@ -288,7 +290,7 @@ int glite_jpps_match_file(
 
 	for (pi=0; pd[pi]; pi++) {
 		int	ci;
-		for (ci=0; pd[pi]->uris[ci]; ci++) if (!strcmp(pd[pi]->uris[ci],class)) {
+		for (ci=0; pd[pi]->uris[ci]; ci++) if (!strcmp(pd[pi]->classes[ci],class)) {
 			void	*ph;
 
 			if (!bh && (ret = glite_jppsbe_open_file(ctx,job,pd[pi]->classes[ci],name,O_RDONLY,&bh))) {

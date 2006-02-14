@@ -68,6 +68,6 @@ typedef int (*glite_jpps_fplug_init_t)(
 
 int glite_jpps_fplug_load(glite_jp_context_t ctx,int argc,char **argv);
 int glite_jpps_fplug_lookup(glite_jp_context_t ctx,const char *uri, glite_jpps_fplug_data_t ***plugin_data);
-int glite_jpps_fplug_lookup_byclass(glite_jp_context_t, const char *class,glite_jpps_fplug_data_t ***plugin_data,char **uri);
+int glite_jpps_fplug_lookup_byclass(glite_jp_context_t, const char *class,glite_jpps_fplug_data_t ***plugin_data);
 
 #endif

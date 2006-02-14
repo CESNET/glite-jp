@@ -76,7 +76,7 @@ int glite_jpps_fplug_load(glite_jp_context_t ctx,int argc,char **argv)
 	return 0;
 }
 
-int glite_jpps_fplug_lookup(glite_jp_context_t ctx,const char *uri, glite_jpps_fplug_data_t ***plugin_data)
+static int lookup_common(glite_jp_context_t ctx,const char *uri,const char *class, glite_jpps_fplug_data_t ***plugin_data)
 {
 	int	i;
 
@@ -87,7 +87,7 @@ int glite_jpps_fplug_lookup(glite_jp_context_t ctx,const char *uri, glite_jpps_f
 	memset(&err,0,sizeof err);
 	err.source = __FUNCTION__;
 	err.code = ENOENT;
-	err.desc = (char *) uri;	/* XXX: we don't modify it, believe me, gcc! */
+	err.desc = (char *) (uri ? uri : class);	/* XXX: we don't modify it, believe me, gcc! */
 
 	glite_jp_clear_error(ctx);
 	if (!ctx->plugins) {
@@ -99,7 +99,7 @@ int glite_jpps_fplug_lookup(glite_jp_context_t ctx,const char *uri, glite_jpps_f
 		glite_jpps_fplug_data_t	*p = ctx->plugins[i];
 
 		for (j=0; p->uris && p->uris[j]; j++)
-			if (!strcmp(p->uris[j],uri)) {
+			if ((uri && !strcmp(p->uris[j],uri)) || (class && !strcmp(p->classes[j],class))) {
 				out = realloc(out, (matches+2) * sizeof *out);
 				out[matches++] = p;
 				out[matches] = NULL;
@@ -111,5 +111,15 @@ int glite_jpps_fplug_lookup(glite_jp_context_t ctx,const char *uri, glite_jpps_f
 		return 0;
 	}
 	else return glite_jp_stack_error(ctx,&err);
+}
+
+int glite_jpps_fplug_lookup(glite_jp_context_t ctx,const char *uri, glite_jpps_fplug_data_t ***plugin_data)
+{
+	return lookup_common(ctx,uri,NULL,plugin_data);
+}
+
+int glite_jpps_fplug_lookup_byclass(glite_jp_context_t ctx, const char *class,glite_jpps_fplug_data_t ***plugin_data)
+{
+	return lookup_common(ctx,NULL,class,plugin_data);
 }
 
