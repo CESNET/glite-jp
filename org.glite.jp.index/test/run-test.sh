@@ -79,14 +79,14 @@ create_db() {
 		mysqladmin -f $ARGS drop $DB_NAME > /dev/null 2>&1
 		mysqladmin -f $ARGS create $DB_NAME && \
 		mysql $ARGS -e 'GRANT ALL on $DB_NAME.* to jpis@localhost' && \
-		mysql -u $DB_USER $DB_NAME < $GLITE_LOCATION/stage/etc/glite-jp-index-dbsetup.sql || exit 1
+		mysql -u $DB_USER $DB_NAME < $GLITE_LOCATION/etc/glite-jp-index-dbsetup.sql || exit 1
 		db_created="1"
 	fi
 }
 
 import_db() {
 	# import database
-	mysql -u $DB_USER -h $DB_HOST <$1
+	cat $1 | sed "s/jpis1test/$DB_NAME/" | mysql -u $DB_USER -h $DB_HOST
 	if [ x"$?" != x"0" ]; then
 		echo "FAILED to import database."
 		kill_is;
@@ -104,7 +104,7 @@ drop_db() {
 run_is() {
 	# run index server
 	X509_USER_KEY=${X509_USER_KEY} X509_USER_CERT=${X509_USER_CERT} \
-	$GLITE_LOCATION/stage/bin/glite-jp-indexd -m $GLITE_JPIS_TEST_DB -p $GLITE_JPIS_TEST_PORT \
+	$GLITE_LOCATION/bin/glite-jp-indexd -m $GLITE_JPIS_TEST_DB -p $GLITE_JPIS_TEST_PORT \
 			-i ${GLITE_JPIS_TEST_PIDFILE} -o ${GLITE_JPIS_TEST_LOGFILE} $1\
 			2>/dev/null
 
@@ -131,13 +131,14 @@ run_is() {
 
 kill_is() {
 	# kill the index server
-	kill `cat ${GLITE_JPIS_TEST_PIDFILE}`
-
+	kill `cat ${GLITE_JPIS_TEST_PIDFILE}`;
+	sleep 1;
+	kill -9 `cat ${GLITE_JPIS_TEST_PIDFILE}` 2>/dev/null
 }
 
 run_test_query() {
 	X509_USER_KEY=${X509_USER_KEY} X509_USER_CERT=${X509_USER_CERT} \
-	$GLITE_LOCATION/stage/examples/glite-jpis-client -q $1 \
+	$GLITE_LOCATION/examples/glite-jpis-client -q $1 \
 		 -i http://localhost:$GLITE_JPIS_TEST_PORT &>/tmp/result
 	DIFF=`diff --ignore-matching-lines="query: using JPIS" $2 /tmp/result`
 	if [ -z "$DIFF" -a "$?" -eq "0" ] ; then
@@ -162,7 +163,7 @@ run_test_feed() {
 	numok=`X509_USER_KEY=${X509_USER_KEY} X509_USER_CERT=${X509_USER_CERT}\
 		GLITE_JPIS_DB=$GLITE_JPIS_TEST_DB \
 		GLITE_JPIS_PORT=$GLITE_JPIS_TEST_PORT \
-		$GLITE_LOCATION/stage/examples/glite-jpis-test 2>/dev/null| grep "OK" | wc -l`
+		$GLITE_LOCATION/examples/glite-jpis-test 2>/dev/null| grep "OK" | wc -l`
 	if [ "$numok" -eq "2" ]; then
 		echo OK.
 	else
@@ -182,16 +183,16 @@ echo
 echo -n "Simple query test.... "
 create_db;
 run_is "-n";
-import_db $GLITE_LOCATION/stage/examples/dump1.sql;
-run_test_query $GLITE_LOCATION/stage/examples/simple_query.in $GLITE_LOCATION/stage/examples/simple_query.out;
+import_db $GLITE_LOCATION/examples/dump1.sql;
+run_test_query $GLITE_LOCATION/examples/simple_query.in $GLITE_LOCATION/examples/simple_query.out;
 drop_db;
 kill_is;
 
 echo -n "Complex query test... "
 create_db;
 run_is "-n";
-import_db $GLITE_LOCATION/stage/examples/dump1.sql;
-run_test_query $GLITE_LOCATION/stage/examples/complex_query.in $GLITE_LOCATION/stage/examples/complex_query.out;
+import_db $GLITE_LOCATION/examples/dump1.sql;
+run_test_query $GLITE_LOCATION/examples/complex_query.in $GLITE_LOCATION/examples/complex_query.out;
 drop_db;
 kill_is;
 
@@ -205,8 +206,8 @@ kill_is;
 echo -n "Authz test........... "
 create_db;
 run_is;
-import_db $GLITE_LOCATION/stage/examples/dump1.sql;
-run_test_query $GLITE_LOCATION/stage/examples/simple_query.in $GLITE_LOCATION/stage/examples/authz.out;
+import_db $GLITE_LOCATION/examples/dump1.sql;
+run_test_query $GLITE_LOCATION/examples/simple_query.in $GLITE_LOCATION/examples/authz.out;
 drop_db;
 kill_is;
 
