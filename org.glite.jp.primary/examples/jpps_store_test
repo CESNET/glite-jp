@@ -41,7 +41,7 @@ echodo $jpps GetJobAttr $jobid http://egee.cesnet.cz/en/Schema/JP/System:regtime
 
 
 if [ -f "$dump" ]; then
-	sed "s/_CHANGE_ME_JOBID_/$jobid/" $dump >job.$$
+	sed "s|_CHANGE_ME_JOBID_|$jobid|" $dump >job.$$
 	echodo $jpps StartUpload $jobid urn:org.glite.jp.primary:lb 1234 text/plain >start.$$
 	cat start.$$
 	dest=`grep '^Destination:' start.$$ | cut -d' ' -f2`
@@ -52,6 +52,10 @@ if [ -f "$dump" ]; then
 
 # does not pass authz check -- probably OK
 #	echodo $jpps GetJobFiles $jobid
+
+	lbprefix="http://egee.cesnet.cz/en/Schema/LB/Attributes"
+	echodo $jpps GetJobAttr $jobid "$lbprefix:user"
+	echodo $jpps GetJobAttr $jobid "$lbprefix:finalStatus"
 fi
 
 if [ "x$tags" != x ]; then
