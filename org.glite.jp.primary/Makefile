@@ -113,9 +113,9 @@ ${is_prefix}ClientLib.c ${is_prefix}Client.c \
 ${is_prefix}C.c ${is_prefix}H.h: JobProvenanceIS.xh
 	${gsoap_bin_prefix}/soapcpp2 -n -w -c -p ${is_prefix} JobProvenanceIS.xh
 
-soap_ops.o: ${ps_prefix}ServerLib.c soap_util.c
+soap_ops.o: ${ps_prefix}ServerLib.c soap_util.c soap_env_ctx.c soap_env_ctx.h
 
-is_client.o: ${is_prefix}ClientLib.c soap_util.c
+is_client.o: ${is_prefix}ClientLib.c soap_util.c soap_env_ctx.c soap_env_ctx.h
 
 env_C.c env_Server.c:
 	touch env.xh
