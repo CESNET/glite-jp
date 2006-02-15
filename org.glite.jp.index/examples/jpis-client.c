@@ -30,13 +30,14 @@ SOAP_NMAC struct Namespace namespaces[] = {
 };
 
 static struct option opts[] = {
-	{"index-server",	required_argument,	NULL,	'i'},
-	{"example-file",	optional_argument,	NULL,	'e'},
+	{"index-server",required_argument,	NULL,	'i'},
+	{"example-file",optional_argument,	NULL,	'e'},
 	{"query-file",	optional_argument,	NULL,	'q'},
 	{"test-file",	optional_argument,	NULL,	't'},
+	{"format",	required_argument,	NULL,	'f'},
 	{NULL, 0, NULL, 0}
 };
-static const char *get_opt_string = "i:q:e:t:";
+static const char *get_opt_string = "i:q:e:t:f:";
 
 #define NUMBER_OP 6
 struct {
@@ -51,6 +52,9 @@ struct {
 	{jptype__queryOp__EXISTS, "exists"},
 	{0, "unknown"}
 };
+
+
+typedef enum {FORMAT_XML, FORMAT_HR} format_t;
 
 
 /*
@@ -173,6 +177,27 @@ static void query_example_fill(struct soap *soap, struct _jpisclient__QueryJobs 
 
 
 /*
+ * read the XML query
+ */
+static int query_recv(struct soap *soap, int fd, struct _jpisclient__QueryJobs *qj) {
+	memset(qj, 0, sizeof(*qj));
+
+	soap->recvfd = fd;
+	soap_begin_recv(soap);
+	soap_default__jpisclient__QueryJobs(soap, qj);
+	if (!soap_get__jpisclient__QueryJobs(soap, qj, "QueryJobs", NULL)) {
+		soap_end_recv(soap);
+		soap_end(soap);
+		return EINVAL;
+	}
+	soap_end_recv(soap);
+	soap_free(soap); /* don't destroy the data we want */
+
+	return 0;
+}
+
+
+/*
  * print info from the query soap structure
  */
 static void query_print(FILE *out, const struct _jpisclient__QueryJobs *in) {
@@ -206,27 +231,6 @@ static void query_print(FILE *out, const struct _jpisclient__QueryJobs *in) {
 
 
 /*
- * read the XML query
- */
-static int query_recv(struct soap *soap, int fd, struct _jpisclient__QueryJobs *qj) {
-	memset(qj, 0, sizeof(*qj));
-
-	soap->recvfd = fd;
-	soap_begin_recv(soap);
-	soap_default__jpisclient__QueryJobs(soap, qj);
-	if (!soap_get__jpisclient__QueryJobs(soap, qj, "QueryJobs", NULL)) {
-		soap_end_recv(soap);
-		soap_end(soap);
-		return EINVAL;
-	}
-	soap_end_recv(soap);
-	soap_free(soap); /* don't destroy the data we want */
-
-	return 0;
-}
-
-
-/*
  * dump the XML query
  */
 static int query_dump(struct soap *soap, int fd, struct _jpisclient__QueryJobs *qj) {
@@ -239,6 +243,15 @@ static int query_dump(struct soap *soap, int fd, struct _jpisclient__QueryJobs *
 	soap_end_send(soap);
 
 	return retval;
+}
+
+
+static int query_format(struct soap *soap, format_t format, FILE *f, struct _jpisclient__QueryJobs *qj) {
+	switch (format) {
+	case FORMAT_XML: return query_dump(soap, fileno(f), qj);
+	case FORMAT_HR:  query_print(f, qj); return 0;
+	default: return EINVAL;
+	}
 }
 
 
@@ -261,9 +274,9 @@ static int query_example_dump(struct soap *soap, int fd) {
 
 
 /*
- * dump the XML query
+ * dump the data returned from JP IS
  */
-static int queryresult_dump(struct soap *soap, int fd, struct _jpisclient__QueryJobsResponse *qjr) {
+static int queryresult_dump(struct soap *soap, int fd, const struct _jpisclient__QueryJobsResponse *qjr) {
 	int retval;
 
 	soap->sendfd = fd;
@@ -273,6 +286,38 @@ static int queryresult_dump(struct soap *soap, int fd, struct _jpisclient__Query
 	soap_end_send(soap);
 
 	return retval;
+}
+
+
+/*
+ * print the data returned from JP IS
+ */
+static void queryresult_print(FILE *out, const struct  _jpelem__QueryJobsResponse *in) {
+	struct jptype__attrValue *attr;
+	int i, j;
+
+	fprintf(out, "Result %d jobs:\n", in->__sizejobs);
+	for (j=0; j<in->__sizejobs; j++) {
+		fprintf(out, "\tjobid = %s, owner = %s\n", in->jobs[j]->jobid, in->jobs[j]->owner);
+		for (i=0; i<in->jobs[j]->__sizeattributes; i++) {
+			attr = in->jobs[j]->attributes[i];
+			fprintf(out, "\t\t%s\n", attr->name);
+			fprintf(out, "\t\t\tvalue = ");
+			value_print(out, attr->value);
+			fprintf(out, "\n");
+			fprintf(out, "\t\t\torigin = %d, %s\n", attr->origin, attr->originDetail);
+			fprintf(out, "\t\t\ttime = %s", ctime(&attr->timestamp));
+		}
+	}
+}
+
+
+static int queryresult_format(struct soap *soap, format_t format, FILE *f, const struct  _jpelem__QueryJobsResponse *qj) {
+	switch (format) {
+	case FORMAT_XML: return queryresult_dump(soap, fileno(f), qj);
+	case FORMAT_HR:  queryresult_print(f, qj); return 0;
+	default: return EINVAL;
+	}
 }
 
 
@@ -287,6 +332,7 @@ static void usage(const char *prog_name) {
 	fprintf(stderr, "  -q|--query-file IN_FILE.XML\n");
 	fprintf(stderr, "  -t|--test-file IN_FILE.XML\n");
 	fprintf(stderr, "  -e|--example-file OUT_FILE.XML\n");
+	fprintf(stderr, "  -f|--format xml | human\n");
 }
 
 
@@ -341,29 +387,6 @@ static int check_fault(struct soap *soap, int err) {
 }
 
 
-/*
- * print the data returned from JP IS
- */
-static void queryresult_print(FILE *out, const struct  _jpelem__QueryJobsResponse *in) {
-	struct jptype__attrValue *attr;
-	int i, j;
-
-	fprintf(out, "Result %d jobs:\n", in->__sizejobs);
-	for (j=0; j<in->__sizejobs; j++) {
-		fprintf(out, "\tjobid = %s, owner = %s\n", in->jobs[j]->jobid, in->jobs[j]->owner);
-		for (i=0; i<in->jobs[j]->__sizeattributes; i++) {
-			attr = in->jobs[j]->attributes[i];
-			fprintf(out, "\t\t%s\n", attr->name);
-			fprintf(out, "\t\t\tvalue = ");
-			value_print(out, attr->value);
-			fprintf(out, "\n");
-			fprintf(out, "\t\t\torigin = %d, %s\n", attr->origin, attr->originDetail);
-			fprintf(out, "\t\t\ttime = %s", ctime(&attr->timestamp));
-		}
-	}
-}
-
-
 int main(int argc, char * const argv[]) {
 	struct soap soap, soap_comm;
 	struct _jpisclient__QueryJobs qj;
@@ -372,6 +395,7 @@ int main(int argc, char * const argv[]) {
 	int retval, opt, example_fd, query_fd, test_fd;
 	struct Namespace *namespaces;
 	int i;
+	format_t format = FORMAT_XML;
 
 	prog_name = server = NULL;
 	example_file = query_file = test_file = NULL;
@@ -445,6 +469,10 @@ int main(int argc, char * const argv[]) {
 			free(test_file);
 			test_file = strdup(optarg);
 			break;
+		case 'f':
+			if (strcasecmp(optarg, "xml") == 0) format = FORMAT_XML;
+			else format = FORMAT_HR;
+			break;
 		default:
 			usage(prog_name);
 			goto cleanup;
@@ -475,7 +503,7 @@ int main(int argc, char * const argv[]) {
 		example_file = NULL;
 	}
 	if (test_file) {
-		if (strcmp(test_file, "-") == 0) example_fd = STDOUT_FILENO;
+		if (strcmp(test_file, "-") == 0) test_fd = STDIN_FILENO;
 		else if ((test_fd = open(test_file, 0)) < 0) {
 			fprintf(stderr, "error opening %s: %s\n", test_file, strerror(errno));
 			goto cleanup;
@@ -497,7 +525,7 @@ int main(int argc, char * const argv[]) {
 		if (query_recv(&soap, test_fd, &qj) != 0) {
 			fprintf(stderr, "test: Error getting query XML\n");
 		} else {
-			query_print(stdout, &qj);
+			query_format(&soap, format, stdout, &qj);
 		}
 		soap_end(&soap);
 	}
@@ -524,8 +552,7 @@ int main(int argc, char * const argv[]) {
 			soap_begin(&soap_comm);
 			ret = check_fault(&soap_comm, soap_call___jpsrv__QueryJobs(&soap_comm, server, "", &in, &out));
 			if (ret == 0) {
-				queryresult_print(stderr, &out);
-				queryresult_dump(&soap, STDOUT_FILENO, (struct _jpisclient__QueryJobsResponse *)&out);
+				queryresult_format(&soap, format, stdout, (struct _jpisclient__QueryJobsResponse *)&out);
 			} else goto cleanup;
 			soap_end(&soap_comm);
 		}
