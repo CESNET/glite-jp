@@ -110,7 +110,7 @@ static const char *orig2str(enum jptype__attrOrig orig)
 int main(int argc,char *argv[])
 {
 	char	*server = NULL;
-	int	opt;
+	int	opt,ret = 0;
 	struct soap	*soap = soap_new();
 
 	if (argc < 2) usage(argv[0]); 
@@ -139,7 +139,7 @@ int main(int argc,char *argv[])
 		if (argc != 4) usage(argv[0]);
 		in.job = argv[2];
 		in.owner = argv[3];
-		check_fault(soap,
+		ret = check_fault(soap,
 			soap_call___jpsrv__RegisterJob(soap,server,"",&in,&empty));
 	} else if (!strcasecmp(argv[1], "StartUpload")) {
 		struct _jpelem__StartUpload		in;
@@ -152,8 +152,8 @@ int main(int argc,char *argv[])
 		in.contentType = argv[5];
 
 		if (argc != 6) usage(argv[0]);
-		if (!check_fault(soap,
-				soap_call___jpsrv__StartUpload(soap, server, "",&in,&out)))
+		if (!(ret = check_fault(soap,
+				soap_call___jpsrv__StartUpload(soap, server, "",&in,&out))))
 		{
 			printf("Destination: %s\nCommit before: %s\n", out.destination, ctime(&out.commitBefore));
 		}
@@ -164,8 +164,8 @@ int main(int argc,char *argv[])
 		in.destination = argv[2];
 
 		if (argc != 3) usage(argv[0]);
-		if (!check_fault(soap,
-				soap_call___jpsrv__CommitUpload(soap, server, "",&in,&empty))) {
+		if (!(ret = check_fault(soap,
+				soap_call___jpsrv__CommitUpload(soap, server, "",&in,&empty)))) {
 			/* OK */
 		}
 	} else if (!strcasecmp(argv[1], "RecordTag")) {
@@ -185,8 +185,8 @@ int main(int argc,char *argv[])
 		val.string = argv[4];
 		val.blob = NULL;
 		
-		if (!check_fault(soap,
-				soap_call___jpsrv__RecordTag(soap, server, "",&in, &empty))) {
+		if (!(ret = check_fault(soap,
+				soap_call___jpsrv__RecordTag(soap, server, "",&in, &empty)))) {
 			/* OK */
 		}
 	} 
@@ -224,7 +224,7 @@ int main(int argc,char *argv[])
 
 		in.history = argc >= 3 && !strcasecmp(argv[2],"yes");
 
-		if (!check_fault(soap,soap_call___jpsrv__FeedIndex(soap,server,"",&in,&out)))
+		if (!(ret = check_fault(soap,soap_call___jpsrv__FeedIndex(soap,server,"",&in,&out))))
 		{
 			printf("FeedId: %s\nExpires: %s\n",out.feedId,ctime(&out.feedExpires));
 		}
@@ -249,8 +249,8 @@ int main(int argc,char *argv[])
 		if (argc != 3) usage(argv[0]);
 		in.jobid = argv[2];
 		
-		if (!check_fault(soap,soap_call___jpsrv__GetJobFiles(soap,server,"",
-						&in,&out)))
+		if (!(ret = check_fault(soap,soap_call___jpsrv__GetJobFiles(soap,server,"",
+						&in,&out))))
 		{
 			int	i;
 
@@ -274,7 +274,7 @@ int main(int argc,char *argv[])
 		in.__sizeattributes = 1;
 		in.attributes = &argv[3];
 
-		if (!check_fault(soap,soap_call___jpsrv__GetJobAttributes(soap,server,"",&in,&out)))
+		if (!(ret = check_fault(soap,soap_call___jpsrv__GetJobAttributes(soap,server,"",&in,&out))))
 		{
 			int	i;
 
@@ -290,9 +290,9 @@ int main(int argc,char *argv[])
 		}
 		
 	}
-	else usage(argv[0]);
+	else { usage(argv[0]); ret = 1; }
 
-	return 0;
+	return ret;
 }
 
 
