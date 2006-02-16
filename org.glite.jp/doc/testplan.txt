@@ -64,6 +64,38 @@ and which don't
 - start feed
 * check IS contents (jobs and expected attr values)
 
+1) Start JP primary server
+2) Register job to PS
+	jpps_store_test -o CERT_DN -t "my_tag=car" -s https://localhost:8901
+
+  You should see something like:
+	** ./jpps-test -s https://localhost:8950 RegisterJob
+	https://nonexistent.test.server/jpps_store_test_7199 
+		/O=CESNET/O=Masaryk University/CN=Milos Mulac
+	OK
+	** ./jpps-test -s https://localhost:8950 GetJobAttr
+	https://nonexistent.test.server/jpps_store_test_7199 
+		http://egee.cesnet.cz/en/Schema/JP/System:owner
+	OK
+	Attribute values: /O=CESNET/O=Masaryk University/CN=Milos Mulac   SYSTEM  Thu Feb 16 14:40:02 2006
+	....
+	Attribute values:
+		car     FILE    Thu Feb 16 14:40:02 2006
+
+3) Start JP index server
+4) Check content of IS database
+	mysql -u jpis -e "select * from jobs;" jpis1
+
+  You should get some result, similar to:
+	+----------------------------------+------------------------------------------------------+----------------------------------+-------+------------------------+
+| jobid                            | dg_jobid
+| ownerid                          | aclid | ps                     |
++----------------------------------+------------------------------------------------------+----------------------------------+-------+------------------------+
+| 92eb48c03929587f793e97f895ac958b | https://nonexistent.test.server/jpps_store_test_1273 | 5864429d57da18e4ecf9ea366c6b2c9c | NULL  | https://localhost:8950 |
++----------------------------------+------------------------------------------------------+----------------------------------+-------+------------------------+	
+
+
+
 3.2 single incremental feed
 - register feed
 - upload jobs to PS one by one
