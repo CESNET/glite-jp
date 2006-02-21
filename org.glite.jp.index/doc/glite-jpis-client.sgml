@@ -1,0 +1,186 @@
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
+
+<refentry id='glitejpisclient'>
+	<refmeta>
+		<refentrytitle>glite-jpis-client</refentrytitle>
+		<manvolnum>1</manvolnum>
+	</refmeta>
+
+	<refnamediv id='name'>
+		<refname>glite-jpis-client</refname>
+		<refpurpose>client interface for JP IS</refpurpose>
+	</refnamediv>
+
+	<refsynopsisdiv id='synopsis'>
+		<cmdsynopsis>
+			<command>glite-jpis-client</command>
+
+			<arg><group choice='plain'>
+				<arg>-h</arg>
+				<arg>--help</arg>
+			</group></arg>
+
+			<arg><group choice='plain'>
+				<arg>-i</arg>
+				<arg>--index-server</arg>
+			</group> <replaceable>JPIS:PORT</replaceable></arg>
+
+			<arg><group choice='plain'>
+				<arg>-q</arg>
+				<arg>--query-file</arg>
+			</group> <replaceable>IN_FILE.XML</replaceable></arg>
+
+			<arg><group choice='plain'>
+				<arg>-t</arg>
+				<arg>--test-file</arg>
+			</group> <replaceable>IN_FILE.XML</replaceable></arg>
+
+			<arg><group choice='plain'>
+				<arg>-e</arg>
+				<arg>--example-file</arg>
+			</group> <replaceable>OUT_FILE.XML</replaceable></arg>
+
+			<arg><group choice='plain'>
+				<arg>-f</arg>
+				<arg>--format</arg>
+			</group> <group choice='req'>
+				<arg>xml</arg>
+				<arg>human</arg>
+			</group></arg>
+
+		</cmdsynopsis>
+	</refsynopsisdiv>
+
+	<refsect1>
+		<title>DESCRIPTION</title>
+		<para>
+<command>glite-jpis-client</command> is command line interface for querying
+the Job Provenance Index Server. It takes the XML input, process the QueryJobs
+operation and returns the result in specified format.
+		</para>
+	</refsect1>
+
+	<refsect1>
+		<title>OPTIONS</title>
+
+		<para>
+With no options you get simple usage message as with <option>-h</option>.
+		</para>
+
+		<variablelist>
+			<varlistentry>
+				<term><option>-h</option>|<option>--help</option></term>
+				<listitem><para>
+Displays usage message.
+				</para></listitem>
+			</varlistentry>
+
+			<varlistentry>
+				<term><option>-i</option>|<option>--index-server</option></term>
+				<listitem><para>
+Specifies Job Provenance Index Server as <replaceable>HOST:PORT</replaceable>.
+				</para></listitem>
+			</varlistentry>
+
+			<varlistentry>
+				<term><option>-q</option>|<option>--query-file</option></term>
+				<listitem><para>
+Process the QueryJobs operation. Requires input data in file
+<replaceable>IN_FILE.XML</replaceable>, for using stdin specify
+<option>-</option>.
+				</para><para>
+The input and output data are in XML format with XSD schema, which can be found
+in <filename>JobProvenanceISClient.xsd</filename> (element QueryJobs for input
+and QueryJobsResponse for output).
+				</para></listitem>
+			</varlistentry>
+
+			<varlistentry>
+				<term><option>-t</option>|<option>--test-file</option></term>
+				<listitem><para>
+Test the input data from <replaceable>IN_FILE.XML</replaceable> (or from stdin
+if <option>-</option> is specified) and prints the found content.
+				</para></listitem>
+			</varlistentry>
+
+			<varlistentry>
+				<term><option>-e</option>|<option>--example-file</option></term>
+				<listitem><para>
+Write the example input data to file <replaceable>OUT_FILE.XML</replaceable>
+(or to stdout if <option>-</option> is specified). The XML is valid against XSD
+schema in <filename>JobProvananceISClient.xsd</filename>, formating may vary
+according to used gsoap version.
+				</para></listitem>
+			</varlistentry>
+
+			<varlistentry>
+				<term><option>-f</option>|<option>--format</option></term>
+				<listitem><para>
+Use <replaceable>FORMAT</replaceable> as output format type. You can specify
+<option>xml</option> for interchangeable XML output or <option>human</option>
+for nice looking human readable output.
+				</para></listitem>
+			</varlistentry>
+		</variablelist>
+	</refsect1>
+
+	<refsect1>
+		<title>RETURN VALUE</title>
+		<variablelist>
+			<varlistentry>
+				<term>0</term>
+				<listitem><para>Success.</para></listitem>
+			</varlistentry>
+
+			<varlistentry>
+				<term>-1</term>
+				<listitem><para>Communication error or error from the remote server.</para></listitem>
+			</varlistentry>
+
+			<varlistentry>
+				<term>EINVAL</term>
+				<listitem><para>In most cases XML parsing error.</para></listitem>
+			</varlistentry>
+
+			<varlistentry>
+				<term>other error</term>
+				<listitem><para>Other error from errno.</para></listitem>
+			</varlistentry>
+		</variablelist>
+	</refsect1>
+
+	<refsect1>
+		<title>EXAMPLES</title>
+		<variablelist>
+			<varlistentry>
+				<term><command>glite-jpis-client --example-file query.xml</command></term>
+				<listitem><para>
+Save the example query parameters to file <filename>query.xml</filename>.
+				</para></listitem>
+			</varlistentry>
+
+			<varlistentry>
+				<term><command>glite-jpis-client --query-file query.xml</command></term>
+				<listitem><para>
+Queries the local index server running on default port with the query
+parameters specified in the file <filename>query.xml</filename>.
+				</para></listitem>
+			</varlistentry>
+
+			<varlistentry>
+				<term><command>glite-jpis-client -i localhost:8902 -q - -f human</command></term>
+				<listitem><para>
+Queries the index server running on local host on the port 8902 with the query
+parameters from stdin and show results in non-XML form.
+				</para></listitem>
+			</varlistentry>
+		</variablelist>
+		<para></para>
+	</refsect1>
+
+	<refsect1>
+		<title>SEE ALSO</title>
+		<para>glite-jp-indexd(8)</para>
+	</refsect1>
+
+</refentry>

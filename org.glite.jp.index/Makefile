@@ -22,7 +22,7 @@ CC=gcc
 -include Makefile.inc
 
 
-VPATH=${top_srcdir}/src:${top_srcdir}/examples:${top_srcdir}/tests:${top_srcdir}/test:${top_srcdir}/project:${jpproject}:${stagedir}/interface
+VPATH=${top_srcdir}/src:${top_srcdir}/examples:${top_srcdir}/tests:${top_srcdir}/test:${top_srcdir}/project:${top_srcdir}/doc:${jpproject}:${stagedir}/interface
 
 GLOBUS_LIBS:=-L${globus_prefix}/lib \
 	-lglobus_common_${nothrflavour} \
@@ -50,6 +50,10 @@ daemon:=glite-jp-indexd
 examples:=glite-jpis-test glite-jpis-client
 test:=run-test.sh
 test_files:=dump1.sql simple_query.in simple_query.out complex_query.in complex_query.out authz.out 
+MANS1:=glite-jpis-client.1
+MANS8:=
+MANS:=${MANS1} ${MANS8}
+HTMLS:=glite-jpis-client.html
 is_prefix:=jpis_
 is_client_prefix:=jpis_client_
 ps_prefix:=jpps_
@@ -75,7 +79,7 @@ SRVCOMMONLIB:=-lglite_jp_server_common
 BONESLIB:=-lglite_lb_server_bones
 TRIOLIB:=-lglite_jp_trio
 
-default all: compile
+default all: compile doc
 
 compile: ${daemon} ${examples} copy_tests
 
@@ -136,7 +140,7 @@ ${ps_prefix}C.c ${ps_prefix}H.h ${ps_prefix}_Stub.h: JobProvenancePS.xh
 check:
 	# ../test/run-test.sh
 
-doc:
+doc: ${MANS} ${HTMLS}
 
 stage: compile
 	${MAKE} PREFIX=${stagedir} DOSTAGE=yes install
@@ -162,7 +166,9 @@ install:
 	${INSTALL} -m 755 ${examples} ${PREFIX}/examples
 	${INSTALL} -m 755 ${top_srcdir}/config/startup ${PREFIX}/etc/init.d/glite-jp-indexd
 	${INSTALL} -m 755 ${top_srcdir}/config/glite-jp-index-dbsetup.sql ${PREFIX}/etc
-	${INSTALL} -m 644 ${top_srcdir}/doc/README ${PREFIX}/share/doc/${package}-${version}
+	${INSTALL} -m 644 ${top_srcdir}/doc/README ${HTMLS} ${PREFIX}/share/doc/${package}-${version}
+	${INSTALL} -m 644 ${MANS1} ${PREFIX}/share/man/man1
+#	${INSTALL} -m 644 ${MANS8} ${PREFIX}/share/man/man8
 	${INSTALL} -m 755 ${test} ${PREFIX}/examples
 	${INSTALL} -m 644 ${test_files} ${PREFIX}/examples
 	${INSTALL} -m 644 ${top_srcdir}/interface/JobProvenanceISClient.xsd ${PREFIX}/interface
@@ -188,5 +194,14 @@ ws_ps_typeref.o: ws_ps_typeref.c jpis_H.h ws_typemap.h ws_ps_typeref.h
 ws_is_typeref.o: ws_is_typeref.c jpis_H.h ws_typemap.h ws_is_typeref.h
 comon_server.o: common_server.c common_server.h
 jpis-client.o: jpis-client.c ${is_client_prefix}H.h soap_version.h
+
+%.1: %.sgml
+	docbook2man $<
+
+%.8: %.sgml
+	docbook2man $<
+
+%.html: %.sgml
+	docbook2html $< --nochunks
 
 .PHONY: default all compile check doc stage dist distsrc distbin install clean
