@@ -1,0 +1,196 @@
+\documentclass{egee}
+\usepackage{comment}
+
+\def\LB{L\&B}
+
+\title{Job Provenance Test Plan}
+\author{CESNET EGEE JRA1 team}
+\DocIdentifier{EGEE-JRA1-??}
+\Date{\today}
+\Activity{JRA1: Middleware Engineering and Integration}
+\DocStatus{DRAFT}
+\Dissemination{PUBLIC}
+\DocumentLink{}
+
+\def\req{\noindent\textbf{Prerequisities:}}
+\def\how{\noindent\textbf{How to run:}}
+\def\result{\noindent\textbf{Expected result:}}
+
+\def\path#1{{\normalfont\textsf{#1}}}
+\def\code#1{\texttt{#1}}
+
+\def\todo#1{\textbf{TODO:} #1}
+
+
+\specialcomment{hints}{\par\noindent\textbf{Hints: }\begingroup\slshape}{\endgroup}
+%\includecomment{hints}
+
+\begin{document}
+
+\input{frontmatter}
+\newpage
+\tableofcontents
+\newpage
+
+\section{Rationale}
+\subsection{Glossary}
+\begin{itemize}
+\item JP -- Job Provenance
+\item JPPS -- Job Provenance Primary Storage
+\item JPPSBE -- Job Provenance Primary Storage Back-end
+\item JPIS -- Job Provenance Index Server
+\end{itemize}
+
+\todo{}
+
+\section{Test Coverage}
+\todo{}
+
+%\chapter{Test Cases}
+
+\section{JPPS standalone tests}
+
+\subsection{Job registration}
+
+\subsubsection{Basic functionality}
+- call RegisterJob
+* call GetJobAttributes owner to verify
+
+\subsubsection{AuthZ check}
+* call GetJobAttributes with different credentials - should fail
+
+\subsection{Tag recording}
+- call RecordTag
+* call GetJobAttributes to verify
+- record and retrieve more values of the same tag
+
+\subsection{File upload}
+
+\subsubsection{Basic functionality}
+- call StartUpload, LB dump file type
+* check with GetJobFiles -- shoud return nothing
+- upload via ftp
+- call CommitUpload
+* check with GetJobFiles -- should return URL
+- retrieve and check the file
+
+\subsubsection{AuthZ checks}
+(should fail)
+* call GetJobFiles with different credentials
+
+* StartUpload with different credentials
+
+- StartUpload
+* ftp upload with different credentials
+
+* ftp GET with different credentials
+
+\subsubsection{Cleanup}
+(Foreseen test for feature which is not implemented yet)
+- call StartUpload, short timeout
+- upload via ftp
+(don't call CommitUpload)
+* uploaded file should be purged after timeout
+
+\section{LB plugin}
+\todo{TBD}
+
+\section{JPPS-JPIS interaction (feeds)}
+
+\todo{import this chapter from testplan.txt}
+
+set of queries (how many?) with different "triggering conditions":
+- on job registration
+- on LB file upload
+- on RecordTag
+
+corresponding sets of jobs to each query, each containing jobs which match
+and which don't
+
+- initial IS release -- single query, so just one set of jobs
+- due to 3.2 no point in pre-loading PS database, use 1.3.1
+
+\subsection{Single batch feed}
+- upload jobs to PS
+- start feed
+* check IS contents (jobs and expected attr values)
+
+\subsection{single incremental feed}
+- register feed
+- upload jobs to PS one by one
+* check IS contents (matching jobs should turn up, others not)
+
+\subsection{Multiple feeds at time}
+TODO
+
+\subsection{Advanced feed features (to be implemented)}
+- remove (not implemented in PS yet)
+- splitted info about one job (check that the PS doesn't duplicate
+  attribute values) - probably covered in 3.2
+
+
+\subsection{PS-IS AuthZ}
+TODO, if any
+
+\section{IS queries}
+\todo{Import from org.glite.jp.index/doc/README file}
+
+
+TBD: insert job sets via JP-IS interaction or directly?
+        - better to populate database directly, independent on previous chain
+
+All basic tests:
+- clear IS database
+- insert prepared job set
+- ask queries and check answers
+- clear database
+
+TBD: Is one job set enough?
+        - better to have one complete set
+
+\subsection{Simple query}
+- using CLI
+
+\subsection{Extended query}
+- using CLI
+
+\subsection{Check "origin" behaviour (not implemented yet)}
+- queries with origin tag
+
+\subsection{AuthZ checks}
+- non owner queries should fail
+- to be implemented: ACLs and its evaluation
+
+\subsection{IS CLI}
+- standalone tests?     - not now
+  - prepared config files and command line parameters
+  - check expected QueryJobs contents
+
+\section{IS standalone advanced features}
+\todo{To be implemented}
+
+\subsection{Server startup}
+
+\subsubsection{Reboot persistency / configuration vs. database content}
+    situations handling
+- prepared config files
+- checking behaviour (how?) after reboot with different config file
+
+\subsubsection{Registration of PS feeds}
+! already covered by 3
+- prepared config files
+- checking appropriate FeedIndex calls
+
+\subsection{Admin interface}
+\todo{Admin interface not implemented yet}
+
+\subsection{Type plugin}
+\todo{type plugin tests -- to be designed, future type plugin implementation}
+
+\section{Deployment}
+\todo{tests on JP deployment process}
+\todo{TBD}
+
+
+
+\end{document}
