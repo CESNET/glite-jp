@@ -63,9 +63,8 @@ Installation
 Configuration
 ------------- 
 
-Currently, configuration is done by a combination of command line options, 
-environment variables (majority of which are substitutional) and 
-hard-coded options.
+Currently, configuration is done by command line options,  and 
+some hard-coded options.
 
 
 The index server takes the following options:
@@ -80,23 +79,34 @@ The index server takes the following options:
         -i, --pidfile    file to store master pid
         -o, --logfile    file to store logs
 
+Other parameters will be configurable in close future. Its
+current hard-coded values are in org.glite.jp.index/src/conf.[ch]
 
-some of which can be substituted (if both set, command line option has priority)
-with env. variables:
 
-GLITE_JPIS_PS		- location of JP-PS server (required parameter)
+Starting the daemon
+-------------------
+
+Preferred way of starting the daemon is using start-up script
+(config/startup). It loads glite.conf file (personal version may be stored
+in ~/.glite.conf) where many variables may be set to configure the daemon.
+The script takes following variables:
+
+GLITE_JPIS_PS		- location of JP-PS server (_required parameter_)
                   	(for example http://umbar.ics.muni.cz:8901)
-GLITE_JPIS_DEBUG   	- if set to "0" don't daemonize (default - deamonize)
+GLITE_JPIS_DEBUG   	- setting to '-d' forces the daemon not to daemonize 
+GLITE_JPIS_QT		- defines query type 
+			'hist' ... history query
+			'cont' ... continuaous query
+			'both' ... compination of previous types
+GLITE_JPIS_AUTH		- setting to '-n' forces the daemon not to check
+			authorization
 GLITE_JPIS_PORT 	- used port (default 8902)
 GLITE_JPIS_DB		- database connection string 
 			(default jpis/@localhost:jpis1)
-GLITE_JPIS_LOGFILE 	- log file (default for root /var/log/glite-jp-indexd.log
-			non-root user ~/glite-jp-indexd.log)
-GLITE_JPIS_PIDFILE 	- pid file (default for root /var/run/glite-jp-indexd.log
-			non-root user ~/glite-jp-indexd.pid)
-
-Other parameters will be configurable in close future. Its
-current hard-coded values are in org.glite.jp.index/src/conf.[ch]
+GLITE_JPIS_LOGFILE 	- log file 
+			(default is $GLITE_LOCATION_VAR/log/glite-jp-indexd.log)
+GLITE_JPIS_PIDFILE 	- pid file 
+			(default is $GLITE_LOCATION_VAR/run/glite-jp-indexd.log)
 
 
 Testing 
