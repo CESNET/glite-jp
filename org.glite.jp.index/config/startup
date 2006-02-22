@@ -14,23 +14,78 @@ GLITE_LOCATION_VAR=${GLITE_LOCATION_VAR:-${GLITE_LOCATION}/var}
 [ -f $GLITE_LOCATION/etc/jpis.conf ] && . $GLITE_LOCATION/etc/jpis.conf
 [ -f $GLITE_LOCATION_VAR/etc/jpis.conf ] && . $GLITE_LOCATION_VAR/etc/jpis.conf
 
-[ -n "$GLITE_JPIS_PIDFILE" ] || export GLITE_JPIS_PIDFILE=$GLITE_LOCATION_VAR/glite-jp-indexd.pid
+[ -n "$GLITE_JPIS_PIDFILE" ] || export GLITE_JPIS_PIDFILE=$GLITE_LOCATION_VAR/run/glite-jp-indexd.pid
 [ -n "$GLITE_JPIS_LOGFILE" ] || export GLITE_JPIS_LOGFILE=$GLITE_LOCATION_VAR/log/glite-jp-indexd.log
 pidfile="$GLITE_JPIS_PIDFILE"
-logfile="$GLITE_JPIS_LOGFILE"
+
+test -n "$GLITE_JPIS_PORT" || GLITE_JPIS_PORT=8902
+test -n "$GLITE_JPIS_DB" || GLITE_JPIS_DB=jpis/@localhost:jpis1
+test -n "$GLITE_JPIS_QT" || GLITE_JPIS_QT="both"
+#GLITE_JPIS_AUTH can have '-n' value to force indexd not to check auth
+#GLITE_JPIS_DEBUG can have '-d' value to force indexd not to deamonize
 
 unset creds port
 
 start()
 {
+        if test -z "$GLITE_USER" ;then
+                echo 'Error: GLITE_USER is not set'
+                echo FAILED
+                return 1
+        fi
+        if test -z "$GLOBUS_LOCATION" ;then
+                echo 'Error: GLOBUS_LOCATION is not set'
+                echo FAILED
+                return 1
+        fi
+        if [ -n "$GLITE_HOST_CERT" -a -n "$GLITE_HOST_KEY" ] ;then
+                creds="-c '$GLITE_HOST_CERT' -k '$GLITE_HOST_KEY'"
+                X509_USER_CERT="$GLITE_HOST_CERT"
+                X509_USER_KEY="$GLITE_HOST_KEY"
+        fi
+	if test -z "$creds"; then
+                if su - $GLITE_USER -c "test -r /etc/grid-security/hostkey.pem -a -r /etc/grid-security/hostcert.pem"; then
+                        echo "$0: WARNING: /etc/grid-security/hostkey.pem readable by $GLITE_USER"
+                        creds="-c /etc/grid-security/hostcert.pem -k /etc/grid-security/hostkey.pem"
+                        X509_USER_CERT=/etc/grid-security/hostcert.pem
+                        X509_USER_KEY=/etc/grid-security/hostkey.pem
+                fi
+        fi
+
+
+        [ -z "$creds" ] && echo $0: WARNING: No credentials specified. Using default lookup which is dangerous. >&2
+
+        if test -z "$GLITE_JPIS_PS" ;then
+                echo 'Error: GLITE_JPIS_PS is not set'
+                echo FAILED
+                return 1
+        fi
+if [ ! -d "`dirname $GLITE_JPIS_PIDFILE`" ] 
+then 
+	echo "Directory `dirname $GLITE_JPIS_PIDFILE` does not exist!"
+	exit 1
+fi
+if [ ! -d "`dirname $GLITE_JPIS_LOGFILE`" ]
+then
+	echo "Directory `dirname $GLITE_JPIS_LOGFILE` does not exist!"
+	exit 1
+fi
+
+
+
+
 	echo -n Starting glite-jp-indexd ...
-	$GLITE_LOCATION/bin/glite-jp-indexd
-	echo " done"
+	#su  " $GLITE_LOCATION/bin/glite-jp-indexd \
+	su - $GLITE_USER -c " $GLITE_LOCATION/bin/glite-jp-indexd \
+		-s $GLITE_JPIS_PS $GLITE_JPIS_DEBUG \
+		-q $GLITE_JPIS_QT $GLITE_JPIS_AUTH \
+		-m $GLITE_JPIS_DB -p $GLITE_JPIS_PORT \
+		-i $GLITE_JPIS_PIDFILE -o $GLITE_JPIS_LOGFILE \
+		" && echo " done" || echo " FAILED"
 }
 
 stop()
 {
-	echo -n Stopping glite-jp-indexd ...
 	if [ -f $pidfile ]; then
 		pid=`cat $pidfile`
 		kill $pid
@@ -50,21 +105,29 @@ stop()
 		echo $pidfile does not exist - glite-jp-indexd not running? >&2
 		return 1
 	fi
-	echo done
+	
+	return 0
 }
 
 status()
 {
-	if [ -f $pidfile ]; then
-		pid=`cat $pidfile`
-		if ps p $pid >/dev/null 2>&1; then
-			echo glite-jp-indexd running as $pid 
-			return 0
-		fi
-	fi
+#	if [ -f $pidfile ]; then
+#		pid=`cat $pidfile`
+#		if ps p $pid >/dev/null 2>&1; then
+#			echo glite-jp-indexd running as $pid 
+#			return 0
+#		fi
+#	fi
 
-	echo glite-jp-indexd not running
-	return 1
+	retval=0
+        if netstat -an --inet | grep "^tcp .* 0.0.0.0:${GLITE_JPIS_PORT} .*LISTEN" >/dev/null 2>&1 ;then
+        echo glite-jp-indexd running
+        else
+        echo glite-jp-indexd not running
+        retval=1
+        fi
+
+	return $retval
 }
 
 case x$1 in
