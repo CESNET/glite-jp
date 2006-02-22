@@ -82,47 +82,17 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 		default : usage(argv[0]); exit(0); break;
 	}
 
-	// *** legacy configuration from environment ***********************
-	//
 	if (!ps) {
-		if (env = getenv("GLITE_JPIS_PS")) {
-			ps = env;
-		}
-		else { 
 			fprintf(stderr,"No JP PrimaryStrorage server specified, default feeds skipped. (not fatal)\n");
-		}
 	}
-
-	if (!conf->debug) {
-        	env = getenv("GLITE_JPIS_DEBUG");
-        	conf->debug = (env != NULL) && (strcmp(env, "0") != 0);
-	}
-
 	if (!conf->cs) {
-		if (env = getenv("GLITE_JPIS_DB")) {
-			conf->cs = env;
-		}
-		else { 
 			fprintf(stderr,"DB contact string not specified! "\
 			 "Using build-in default:  %s \n", GLITE_JP_IS_DEFAULTCS);
-		}
 	}
 	if (!conf->port) {
-		if (env = getenv("GLITE_JPIS_PORT")) {
-			conf->port = env;
-		}
-		else {
 			fprintf(stderr,"JP IS port not specified! "\
 			"Using build-in default:  %s \n", GLITE_JPIS_DEFAULT_PORT_STR);
-		}
 	}
-	if (!conf->pidfile) 
-		conf->pidfile = getenv("GLITE_JPIS_PIDFILE");
-	if (!conf->logfile) 
-		conf->logfile = getenv("GLITE_JPIS_LOGFILE");
-	//
-	// *****************************************************************
-
 
 	// prefixes & attributes defined in:
 	// lb.server/build/jp_job_attrs.h (created when build plugin)
