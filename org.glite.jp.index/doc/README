@@ -27,7 +27,7 @@ user jpis.
 
 JP-IS interactions:
 
-- JP primary storage - feedins data from primary storage to the IS according
+- JP primary storage - feedings data from primary storage to the IS according
   to particular IS instance administrator needs (expressed by IS configuration)
 
 - IS user query interface - implements IS service for end users
@@ -96,10 +96,10 @@ GLITE_JPIS_PS		- location of JP-PS server (_required parameter_)
 GLITE_JPIS_DEBUG   	- setting to '-d' forces the daemon not to daemonize 
 GLITE_JPIS_QT		- defines query type 
 			'hist' ... history query
-			'cont' ... continuaous query
-			'both' ... compination of previous types
+			'cont' ... continuous query
+			'both' ... combination of previous types
 GLITE_JPIS_AUTH		- setting to '-n' forces the daemon not to check
-			authorization
+			authorisation
 GLITE_JPIS_PORT 	- used port (default 8902)
 GLITE_JPIS_DB		- database connection string 
 			(default jpis/@localhost:jpis1)

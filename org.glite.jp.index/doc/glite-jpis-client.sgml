@@ -1,9 +1,11 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
 
 <refentry id='glitejpisclient'>
+
 	<refmeta>
 		<refentrytitle>glite-jpis-client</refentrytitle>
 		<manvolnum>1</manvolnum>
+		<refmiscinfo>EU EGEE Project</refmiscinfo>
 	</refmeta>
 
 	<refnamediv id='name'>
@@ -181,6 +183,11 @@ parameters from stdin and show results in non-XML form.
 	<refsect1>
 		<title>SEE ALSO</title>
 		<para>glite-jp-indexd(8)</para>
+	</refsect1>
+
+	<refsect1>
+		<title>AUTHOR</title>
+		<para>EU DataGrid Work Package 1, CESNET group.</para>
 	</refsect1>
 
 </refentry>
