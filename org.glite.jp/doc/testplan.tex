@@ -1,5 +1,5 @@
 \documentclass{egee}
-\usepackage{comment}
+\usepackage{comment,alltt}
 
 \def\LB{L\&B}
 
@@ -99,26 +99,115 @@
 
 \todo{import this chapter from testplan.txt}
 
-set of queries (how many?) with different "triggering conditions":
-- on job registration
-- on LB file upload
-- on RecordTag
+%set of queries (how many?) with different "triggering conditions":
+%- on job registration
+%- on LB file upload
+%- on RecordTag
 
-corresponding sets of jobs to each query, each containing jobs which match
-and which don't
+%corresponding sets of jobs to each query, each containing jobs which match
+%and which don't
 
-- initial IS release -- single query, so just one set of jobs
-- due to 3.2 no point in pre-loading PS database, use 1.3.1
+%- initial IS release -- single query, so just one set of jobs
+%- due to 3.2 no point in pre-loading PS database, use 1.3.1
 
 \subsection{Single batch feed}
-- upload jobs to PS
-- start feed
-* check IS contents (jobs and expected attr values)
+%- upload jobs to PS
+%- start feed
+%* check IS contents (jobs and expected attr values)
+
+\req\ Clean JP-PS and JP-IS database.
+
+\how\
+\begin{enumerate}
+ \item \emph{Start JP primary server}
+ \item \emph{Register job to PS}
+  \begin{alltt}
+    jpps_store_test -o \emph{CERT_DN} -t "my_tag=car" -s https://localhost:8901  
+  \end{alltt}
+  You should see something like:
+  \begin{alltt}
+    ** ./jpps-test -s https://localhost:8901 RegisterJob
+    https://nonexistent.test.server/jpps_store_test_7199
+           /O=CESNET/O=Masaryk University/CN=Milos Mulac
+    OK
+    ** ./jpps-test -s https://localhost:8901 GetJobAttr
+    https://nonexistent.test.server/jpps_store_test_7199
+           http://egee.cesnet.cz/en/Schema/JP/System:owner
+    OK
+    Attribute values: /O=CESNET/O=Masaryk University/CN=Milos Mulac
+           SYSTEM  Thu Feb 16 14:40:02 2006
+    ....
+    Attribute values:
+           car     FILE    Thu Feb 16 14:40:02 2006
+  \end{alltt}
+ \item \emph{Start JP index server, using history query}\\
+  \begin{alltt}
+  ./glite-jp-indexd -s https://localhost:8901 -d -n -q hist 
+  \end{alltt}
+ \item \emph{Check content of IS database}\\
+  \begin{alltt}
+   mysql -u jpis -e "select * from jobs;" jpis1
+  \end{alltt}
+ You should get some result, similar to:
+  \begin{alltt}
+| jobid                            | dg_jobid | 
+ownerid                            | aclid | ps                     |
++------------------------------------------------------------------------+
+| 92eb48c03929587f793e97f895ac958b |https://nonexistent.test.server/jpps_store_test_1273 
+| 5864429d57da18e4ecf9ea366c6b2c9c | NULL  | https://localhost:8950 |
+  \end{alltt}
+\end{enumerate}
+\result{} Expected results in the IS database content check (last step).
+
+
 
 \subsection{single incremental feed}
-- register feed
-- upload jobs to PS one by one
-* check IS contents (matching jobs should turn up, others not)
+%- register feed
+%- upload jobs to PS one by one
+%* check IS contents (matching jobs should turn up, others not)
+
+\req\ Clean JP-PS and JP-IS database.
+
+\how\
+\begin{enumerate}
+ \item \emph{Start JP primary server}
+ \item \emph{Start JP index server, using continuous query}
+  \begin{alltt}
+   ./glite-jp-indexd -s https://localhost:8901 -d -n -q cont
+  \end{alltt}
+ \item \emph{Register job to PS}
+  The same as in previous test case.
+
+ \item \emph{Check output of IS}\\
+  You should see incomming connection logs, and among them
+  several times something like:
+  \begin{alltt}
+    
+   INSERT INTO attr_52942b8c70bab8491ab5d3b9713d79f5 (jobid, value,
+                                        full_value, origin) VALUES (
+     '6f4866f3e4f8204c269449e6924d73c0',
+     'S:/O=CESNET/O=Masaryk University/CN=Milos Mulac',
+     'S:/O=CESNET/O=Masaryk University/CN=Milos Mulac',
+     '1')
+   ....
+  \end{alltt}
+ \item \emph{Check content of IS database}
+ You can look whether the insert from previous step was successful:
+ \begin{alltt}
+  mysql -u jpis -e "select * from
+    attr_52942b8c70bab8491ab5d3b9713d79f5;" jpis1
+ \end{alltt}
+  should return:
+ \begin{alltt}
+| jobid                            | value
+| full_value                                      | origin |
++----------------------------------+-----------------------------------+
+| 76698aabbf5d60dfa5b42c279e1f0e8c | S:/O=CESNET/O=Masaryk University/CN=Milos
+Mulac 
+| S:/O=CESNET/O=Masaryk University/CN=Milos Mulac |      1 |
+ \end{alltt}
+\end{enumerate}
+\result{} Expected database INSERTs in the JP-IS (last two steps).
 
 \subsection{Multiple feeds at time}
 TODO
