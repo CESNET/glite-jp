@@ -50,8 +50,8 @@ daemon:=glite-jp-indexd
 examples:=glite-jpis-test glite-jpis-client
 test:=run-test.sh
 test_files:=dump1.sql simple_query.in simple_query.out complex_query.in complex_query.out authz.out 
-MANS1:=glite-jpis-client.1 glite-jp-indexd.8
-MANS8:=
+MANS1:=glite-jpis-client.1
+MANS8:=glite-jp-indexd.8
 MANS:=${MANS1} ${MANS8}
 HTMLS:=glite-jpis-client.html glite-jp-indexd.html
 is_prefix:=jpis_
@@ -162,13 +162,15 @@ install:
 	-mkdir -p ${PREFIX}/bin ${PREFIX}/etc ${PREFIX}/etc/init.d
 	-mkdir -p ${PREFIX}/share/doc/${package}-${version} ${PREFIX}/examples
 	-mkdir -p ${PREFIX}/interface
+	-mkdir -p ${PREFIX}/share/man/man1
+	-mkdir -p ${PREFIX}/share/man/man8
 	${INSTALL} -m 755 ${daemon} ${PREFIX}/bin
 	${INSTALL} -m 755 ${examples} ${PREFIX}/examples
 	${INSTALL} -m 755 ${top_srcdir}/config/startup ${PREFIX}/etc/init.d/glite-jp-indexd
 	${INSTALL} -m 755 ${top_srcdir}/config/glite-jp-index-dbsetup.sql ${PREFIX}/etc
 	${INSTALL} -m 644 ${top_srcdir}/doc/README ${HTMLS} ${PREFIX}/share/doc/${package}-${version}
 	${INSTALL} -m 644 ${MANS1} ${PREFIX}/share/man/man1
-#	${INSTALL} -m 644 ${MANS8} ${PREFIX}/share/man/man8
+	${INSTALL} -m 644 ${MANS8} ${PREFIX}/share/man/man8
 	${INSTALL} -m 755 ${test} ${PREFIX}/examples
 	${INSTALL} -m 644 ${test_files} ${PREFIX}/examples
 	${INSTALL} -m 644 ${top_srcdir}/interface/JobProvenanceISClient.xsd ${PREFIX}/interface
