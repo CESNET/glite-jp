@@ -159,6 +159,9 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	server_cert = conf->server_cert;
+	server_key = conf->server_key;
+
 	if (!server_cert || !server_key)
 		fprintf(stderr, "%s: WARNING: key or certificate file not specified, "
 				"can't watch them for changes\n",

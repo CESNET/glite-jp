@@ -22,8 +22,8 @@ static struct option opts[] = {
 	{"is-server",	1, NULL,	's'},
 	{"debug",       0, NULL,	'd'},
 	{"query-type",	1, NULL,	'q'},
-//	{"cert",	1, NULL,	'c'},
-//	{"key",		1, NULL,	'k'},
+	{"cert",	1, NULL,	'c'},
+	{"key",		1, NULL,	'k'},
 //	{"CAdir",       1, NULL,	'C'},
 //	{"VOMSdir",     1, NULL,	'V'},
 	{"noauth",      0, NULL,	'n'},
@@ -42,8 +42,8 @@ static void usage(char *me)
 		"\t-s, --ps-server\t primary storage server address (http://hostname:port)\n"
 		"\t-d, --debug\t don't run as daemon, additional diagnostics\n"
 		"\t-q, --query-type hist/cont/both (default history)\n"
-//		"\t-k, --key\t private key file\n" 
-//		"\t-c, --cert\t certificate file\n"
+		"\t-k, --key\t private key file\n" 
+		"\t-c, --cert\t certificate file\n"
 //		"\t-C, --CAdir\t trusted certificates directory\n"
 //		"\t-V, --VOMSdir\t trusted VOMS servers certificates directory\n"
 		"\t-n, --noauth\t don't check user identity with result owner\n"
@@ -70,8 +70,8 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 		case 's': ps = optarg; break;
 		case 'd': conf->debug = 1; break;
 		case 'q': qt = optarg; break;
-//		case 'c': server_cert = optarg; break;
-//		case 'k': server_key = optarg; break;
+		case 'c': conf->server_cert = optarg; break;
+		case 'k': conf->server_key = optarg; break;
 //		case 'C': cadir = optarg; break;
 //		case 'V': vomsdir = optarg; break;
 		case 'n': conf->no_auth = 1; break;

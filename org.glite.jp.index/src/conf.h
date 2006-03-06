@@ -34,7 +34,9 @@ typedef struct _glite_jp_is_conf {
 	char	*cs, 			// database contact string
 		*port,			// server port
 		*pidfile,
-		*logfile;
+		*logfile,
+		*server_cert,
+		*server_key;
 } glite_jp_is_conf;
 
 
