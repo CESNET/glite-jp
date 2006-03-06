@@ -133,15 +133,18 @@ int MyFeedIndex(glite_jpis_context_t ctx, glite_jp_is_conf *conf, long int uniqu
 //	struct xsd__base64Binary		blob;
 	int 					i, dest_index;
 	struct soap             		*soap = soap_new();
+	glite_gsplugin_Context			plugin_ctx;
 	glite_jp_error_t err;
 	char *src, hname[512];
 
 lprintf("MyFeedIndex for %s called\n", dest);
-
+	glite_gsplugin_init_context(&plugin_ctx);
+	if (ctx->conf->server_key) plugin_ctx->key_filename = strdup(ctx->conf->server_key);
+	if (ctx->conf->server_cert) plugin_ctx->cert_filename = strdup(ctx->conf->server_cert);
+	
 	soap_init(soap);
         soap_set_namespaces(soap,jpps__namespaces);
-// TODO
-	soap_register_plugin(soap,glite_gsplugin);
+	soap_register_plugin_arg(soap,glite_gsplugin,plugin_ctx);
 
 	memset(&in, 0, sizeof(in));
 	memset(&err, 0, sizeof(err));
@@ -187,12 +190,18 @@ lprintf("MyFeedIndex for %s called\n", dest);
 		glite_jpis_unlockFeed(ctx, uniqueid);
 	}
 
+	soap_end(soap);
+	soap_done(soap);
+
 	return 0;
+
 err:
 	err.source = src;
 	glite_jp_stack_error(ctx->jpctx, &err);
 	free(src);
 	soap_end(soap);
+	soap_done(soap);
+
 	return err.code;
 }
 
