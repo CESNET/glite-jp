@@ -153,7 +153,7 @@ distbin:
 	rm -rf tmpbuilddir
         
 install:
-	-mkdir -p ${PREFIX}/bin ${PREFIX}/etc ${PREFIX}/examples ${PREFIX}/etc/init.d
+	-mkdir -p ${PREFIX}/bin ${PREFIX}/etc ${PREFIX}/examples ${PREFIX}/etc/init.d  ${PREFIX}/lib
 	${INSTALL} -m 755 ${daemon} ${PREFIX}/bin
 	${INSTALL} -m 755 jpps-test ${PREFIX}/examples/glite-jp-primary-test
 	if [ x${DOSTAGE} = xyes ]; then \
