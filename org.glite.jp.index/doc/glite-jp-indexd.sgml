@@ -128,7 +128,7 @@ Don't check user identity with result owner.
 			<varlistentry>
 				<term><option>-m</option>|<option>--mysql</option></term>
 				<listitem><para>
-Database connect string: <replaceable>USER/PASSWORD@HOST:DBNAME</replaceable> (default: <option>jpis/@localhost:jpis1</option>).
+Database connect string: <replaceable>USER/PASSWORD@HOST:DBNAME</replaceable> (default: <option>jpis/@localhost:jpis</option>).
 				</para></listitem>
 			</varlistentry>
 
@@ -247,7 +247,7 @@ Error (database or network initialisation for example).
 			<varlistentry>
 				<term>configure file for startup script</term>
 				<listitem><programlisting>GLITE_LOCATION_VAR=/opt/glite/var
-GLITE_JPIS_DB=jpis/@localhost:jpis1
+GLITE_JPIS_DB=jpis/@localhost:jpis
 GLITE_JPIS_PORT=8902
 GLITE_JPIS_LOGFILE=$GLITE_LOCATION_VAR/run/glite-jp-indexd.log
 GLITE_JPIS_PIDFILE=$GLITE_LOCATION_VAR/run/glite-jp-indexd.pid

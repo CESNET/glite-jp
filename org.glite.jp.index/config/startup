@@ -19,7 +19,7 @@ GLITE_LOCATION_VAR=${GLITE_LOCATION_VAR:-${GLITE_LOCATION}/var}
 pidfile="$GLITE_JPIS_PIDFILE"
 
 test -n "$GLITE_JPIS_PORT" || GLITE_JPIS_PORT=8902
-test -n "$GLITE_JPIS_DB" || GLITE_JPIS_DB=jpis/@localhost:jpis1
+test -n "$GLITE_JPIS_DB" || GLITE_JPIS_DB=jpis/@localhost:jpis
 test -n "$GLITE_JPIS_QT" || GLITE_JPIS_QT="both"
 #GLITE_JPIS_AUTH can have '-n' value to force indexd not to check auth
 #GLITE_JPIS_DEBUG can have '-d' value to force indexd not to deamonize

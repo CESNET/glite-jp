@@ -9,7 +9,7 @@
 #include "context.h"
 
 
-#define GLITE_JP_IS_DEFAULTCS "jpis/@localhost:jpis1"
+#define GLITE_JP_IS_DEFAULTCS "jpis/@localhost:jpis"
 
 #define GLITE_JP_IS_STATE_HIST 1
 #define GLITE_JP_IS_STATE_CONT 2

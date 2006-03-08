@@ -22,7 +22,7 @@ interfaces defined in org.glite.jp.ws-interface. It is also based on
 org.glite.lb.server-bones.
 
 JP-IS consist from one stand-alone daemon (glite-jp-indexd) which is
-using MySQL database. Default db name is jpis1, all access is granted to
+using MySQL database. Default db name is jpis, all access is granted to
 user jpis.
 
 JP-IS interactions:
@@ -102,7 +102,7 @@ GLITE_JPIS_AUTH		- setting to '-n' forces the daemon not to check
 			authorisation
 GLITE_JPIS_PORT 	- used port (default 8902)
 GLITE_JPIS_DB		- database connection string 
-			(default jpis/@localhost:jpis1)
+			(default jpis/@localhost:jpis)
 GLITE_JPIS_LOGFILE 	- log file 
 			(default is $GLITE_LOCATION_VAR/log/glite-jp-indexd.log)
 GLITE_JPIS_PIDFILE 	- pid file 
