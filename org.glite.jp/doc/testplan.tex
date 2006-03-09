@@ -225,35 +225,101 @@ TODO, if any
 \todo{Import from org.glite.jp.index/doc/README file}
 
 
-TBD: insert job sets via JP-IS interaction or directly?
-        - better to populate database directly, independent on previous chain
+%TBD: insert job sets via JP-IS interaction or directly?
+%        - better to populate database directly, independent on previous chain
+%
+%All basic tests:
+%- clear IS database
+%- insert prepared job set
+%- ask queries and check answers
+%- clear database
+%
+%TBD: Is one job set enough?
+%        - better to have one complete set
+%
 
-All basic tests:
-- clear IS database
-- insert prepared job set
-- ask queries and check answers
-- clear database
+A majority of test from this chapter is automated by shell
+script. The script is located in \texttt{org.glite.jp.index} module
+under \texttt{example/query-tests} directory and called \texttt{run-test.sh}.
+It is available as a part of JP index server RPM package.
 
-TBD: Is one job set enough?
-        - better to have one complete set
+\begin{hints}
+The testing shell script is highly configurable via
+environmental varibles.  Please, run the script (run-test.sh) with
+'-?' option to get list of all variables and their meaning, if you are
+not satisfied with default setting.
+\end{hints}
 
 \subsection{Simple query}
-- using CLI
+This test starts new index server instance, creates testing DB
+and populate it with prepared data sample. Then simple query is given
+to server, answer is checked with supposed return output and
+cleanup is done.
 
-\subsection{Extended query}
-- using CLI
 
-\subsection{Check "origin" behaviour (not implemented yet)}
-- queries with origin tag
+\how\ Run \texttt{run-test.sh}
+
+\begin{hints} 
+The query is in file test/simple\_query.in and has following
+  form: (status=Ready)
+\end{hints}
+
+\subsection{Complex query test}
+This is similar to simple query test, only tested query is more complicated.
+
+\how\ Run \texttt{run-test.sh}
+
+\begin{hints}
+The query is in file test/complex\_query.in and has followhing
+  form: (status=Done OR status=READY) AND (user!=God)
+\end{hints}
+
+\subsection{Feed \& query test}
+This test starts testing index server, feeds it by
+mimicing bahaviour of primary storage server by sending data
+via soap call, and then asks the index server using a complex
+query. After that it checks the responce and does cleanup.
+
+More precise description of steps:
+\begin{enumerate}
+ \item Simulation of response from a primary storage, making appropriate
+   changes in JP-IS database (inserts feedid).
+ \item Invocation of updateJobs wsdl call, normally invoked by JP-PS, and
+   sending this way some data to the JP-IS which stores them in its database.
+ \item Invocation of queryJobs wsdl call, normally called by user
+   program, obtaining previously inserted data. Test query used here has form
+   (status=Done OR status=Ready) AND (user!=God).
+\end{enumerate}
+
+\how\ Run \texttt{run-test.sh}
 
 \subsection{AuthZ checks}
-- non owner queries should fail
-- to be implemented: ACLs and its evaluation
+This test verifies that qeury responses are properly restricted by
+authorization checks. Currently only implicit ACLs are implemented
+inside JP-IS server, so explicit ACLs and its evaluation is to be implemented.
 
-\subsection{IS CLI}
-- standalone tests?     - not now
-  - prepared config files and command line parameters
-  - check expected QueryJobs contents
+There are 3 scenarios to be verified:
+\begin{itemize}
+ \item Authorization (checking ownership) is swithed off (IS with -n
+   option). This scenario is tested by simple query test described above.
+ \item Only user jobs are returned and jobs not owned by the user posing
+   the query are not covered by the query response. This scenario is
+   covered by Feed \& query test described above.
+ \item Check that queries to jobs not owned by the IS user are
+   returning empty response. The same behaviour as simple query test
+   described above but with user credential not matching job
+   owner. This test is implemented by \texttt{run-test.sh} under AuthZ
+   check part.
+\end{itemize}
+
+\subsection{Another supposed tests not implemented yet}
+
+\begin{itemize}
+ \item Check "origin" behaviour -- queries with origin tag
+ \item IS CLI tests -- use prepared config files and command line parameters
+  and check expected QueryJobs contents
+\end{itemize}
+
 
 \section{IS standalone advanced features}
 \todo{To be implemented}
