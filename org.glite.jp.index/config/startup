@@ -15,7 +15,7 @@ GLITE_LOCATION_VAR=${GLITE_LOCATION_VAR:-${GLITE_LOCATION}/var}
 [ -f $GLITE_LOCATION_VAR/etc/jpis.conf ] && . $GLITE_LOCATION_VAR/etc/jpis.conf
 
 [ -n "$GLITE_JPIS_PIDFILE" ] || export GLITE_JPIS_PIDFILE=$GLITE_LOCATION_VAR/glite-jp-indexd.pid
-[ -n "$GLITE_JPIS_LOGFILE" ] || export GLITE_JPIS_LOGFILE=$GLITE_LOCATION_VAR/log/glite-jp-indexd.log
+[ -n "$GLITE_JPIS_LOGFILE" ] || export GLITE_JPIS_LOGFILE=$GLITE_LOCATION_VAR/glite-jp-indexd.log
 pidfile="$GLITE_JPIS_PIDFILE"
 
 test -n "$GLITE_JPIS_PORT" || GLITE_JPIS_PORT=8902
