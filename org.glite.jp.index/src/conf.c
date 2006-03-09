@@ -154,13 +154,17 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 		conf->feeds[0]->history = 1;
 		conf->feeds[0]->continuous = 1;
 	}
-	else if (qt && !strcmp(qt,"continuous")) {
+	else if ( qt && (!strcmp(qt,"continuous") || !strcmp(qt,"cont")) ) {
 		conf->feeds[0]->history = 0;
 		conf->feeds[0]->continuous = 1;
 	}
-	else {
+	else if ( qt && (!strcmp(qt,"history") || !strcmp(qt,"hist")) ) {
 		conf->feeds[0]->history = 1;
 		conf->feeds[0]->continuous = 0;
+	}
+	else {
+		usage(argv[0]);
+		exit(0);
 	}
 
 	conf->feeds[1] = NULL;
