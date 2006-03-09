@@ -1,0 +1,14 @@
+query: using JPIS http://localhost:10000
+
+Conditions:
+	http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus
+		== Ready
+Attributes:
+	http://egee.cesnet.cz/en/Schema/JP/System:owner
+	http://egee.cesnet.cz/en/Schema/JP/System:jobId
+	http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus
+	http://egee.cesnet.cz/en/Schema/LB/Attributes:user
+
+OK
+Result 0 jobs:
+<?xml version="1.0" encoding="UTF-8"?><jpisclient:QueryJobsResponse xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:jptype="http://glite.org/wsdl/types/jp" xmlns:jpsrv="http://glite.org/wsdl/services/jp" xmlns:jpelem="http://glite.org/wsdl/elements/jp" xmlns:jpisclient="http://glite.org/xsd/types/jpisclient"></jpisclient:QueryJobsResponse>
