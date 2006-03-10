@@ -22,7 +22,7 @@ CC=gcc
 -include Makefile.inc
 
 
-VPATH=${top_srcdir}/src:${top_srcdir}/examples:${top_srcdir}/tests:${top_srcdir}/test:${top_srcdir}/project:${top_srcdir}/doc:${jpproject}:${stagedir}/interface
+VPATH=${top_srcdir}/src:${top_srcdir}/examples:${top_srcdir}/examples/query-tests:${top_srcdir}/tests:${top_srcdir}/test:${top_srcdir}/project:${top_srcdir}/doc:${jpproject}:${stagedir}/interface
 
 GLOBUS_LIBS:=-L${globus_prefix}/lib \
 	-lglobus_common_${nothrflavour} \
@@ -96,7 +96,7 @@ glite-jpis-client: ${EXA_CLIENT_OBJS}
 	${LINK} -o $@ $+ ${GSOAPLIB}
 
 copy_tests: ${test} ${test_files}
-	for i in $?; do cp ${top_srcdir}/test/$$i  ${top_srcdir}/build; done
+	for i in $?; do cp ${top_srcdir}/examples/query-tests/$$i  ${top_srcdir}/build; done
 
 JobProvenanceIS.xh: JobProvenanceIS.wsdl JobProvenanceTypes.wsdl typemap.dat
 	cp  ${stagedir}/interface/JobProvenanceTypes.wsdl .
