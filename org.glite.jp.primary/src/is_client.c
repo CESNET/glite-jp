@@ -39,6 +39,8 @@ static int check_other_soap(glite_jp_context_t ctx)
 		ctx->other_soap = soap_new();
 		soap_init(ctx->other_soap);
 		soap_set_namespaces(ctx->other_soap,jpis__namespaces);
+		soap_set_omode(ctx->other_soap, SOAP_IO_BUFFER);	// set buffered response
+                                          		     		// buffer set to SOAP_BUFLEN (default = 8k)
 		soap_register_plugin_arg(ctx->other_soap,glite_gsplugin,plugin_ctx);
 		ctx->other_soap->user = ctx;
 	}

@@ -224,7 +224,7 @@ static int data_init(void **data)
 	printf("[%d] slave started\n",getpid());
 	glite_jpps_srv_init(ctx);
 	glite_jppsbe_init_slave(ctx);	/* XXX: global but slave's */
-	// sleep(10);
+	//sleep(10);
 	if (glite_jppsbe_read_feeds(ctx)) fputs(glite_jp_error_chain(ctx),stderr);
 	printf("[%d] slave init done\n",getpid());
 
@@ -246,6 +246,9 @@ static int newconn(int conn,struct timeval *to,void *data)
 	int	ret = 0;
 
 	soap_init2(soap,SOAP_IO_KEEPALIVE,SOAP_IO_KEEPALIVE);
+        soap_set_omode(soap, SOAP_IO_BUFFER);   // set buffered response
+                                                // buffer set to SOAP_BUFLEN (default = 8k)
+
 	soap_set_namespaces(soap,jpps__namespaces);
 	soap->user = (void *) ctx; /* XXX: one instance per slave */
 
@@ -356,7 +359,8 @@ static int request(int conn,struct timeval *to,void *data)
 		}
 		return ECANCELED;	// let srv_bones know something is wrong
 	}
-
+//printf("Ja cekam %d\n", getpid());
+//sleep(10);
 	if (glite_jp_run_deferred(ctx)) {
 		char	*e;
 		fprintf(stderr,"[%d] %s\n",getpid(),e = glite_jp_error_chain(ctx));
