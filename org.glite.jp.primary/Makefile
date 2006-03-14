@@ -167,7 +167,8 @@ install:
 	done
 	${INSTALL} -m 755 ${top_srcdir}/config/startup ${PREFIX}/etc/init.d/glite-jp-primary
 	${INSTALL} -m 755 ${top_srcdir}/config/glite-jp-primary-dbsetup.sql ${PREFIX}/etc
-	${INSTALL} -m 755 ${top_srcdir}/config/glite-jp-primary-dbsetup.sh ${PREFIX}/etc
+	${INSTALL} -m 755 ${top_srcdir}/config/glite-jp-primary-dbsetup.sh ${PREFIX}/etc	
+	${INSTALL} -m 755 ${top_srcdir}/examples/jpps_store_test ${PREFIX}/examples/glite-jp-primary-store-test
 	for i in ${sample_jobs}; do \
 		${INSTALL} -m 644 ${top_srcdir}/examples/$$i  ${PREFIX}/examples/glite-jp-primary-$$i.lb; \
 	done
