@@ -1,0 +1,101 @@
+#! /bin/sh
+
+GLITE_LOCATION=${GLITE_LOCATION:-/opt/glite}
+GLITE_LOCATION_VAR=${GLITE_LOCATION_VAR:-/var/glite}
+
+[ -f /etc/glite.conf ] && . /etc/glite.conf
+[ -f $GLITE_LOCATION/etc/glite-wms.conf ] && . $GLITE_LOCATION/etc/glite-wms.conf
+
+[ -f $GLITE_LOCATION/etc/lb.conf ] && . $GLITE_LOCATION/etc/lb.conf
+[ -f $GLITE_LOCATION_VAR/etc/lb.conf ] && . $GLITE_LOCATION_VAR/etc/lb.conf
+
+[ -f $HOME/.glite.conf ] && . $HOME/.glite.conf
+
+[ -n "$GLITE_JP_IMPORTER_PIDFILE" ] && pidfile=$GLITE_JP_IMPORTER_PIDFILE ||
+	pidfile=$GLITE_LOCATION_VAR/glite-jp-importer.pid
+
+unset creds port
+
+start()
+{
+	if test -z "$GLITE_USER" ;then
+		echo 'Error: GLITE_USER is not set'
+		echo FAILED
+		return 1
+	fi
+
+	[ -n "$GLITE_HOST_CERT" -a -n "$GLITE_HOST_KEY" ] &&
+		creds="-c $GLITE_HOST_CERT -k $GLITE_HOST_KEY"
+
+	if test -z "$creds"; then
+		if su - $GLITE_USER -c "test -r /etc/grid-security/hostkey.pem -a -r /etc/grid-security/hostcert.pem"; then
+			echo "$0: WARNING: /etc/grid-security/hostkey.pem readable by $GLITE_USER"
+			creds="-c /etc/grid-security/hostcert.pem -k /etc/grid-security/hostkey.pem"
+		fi
+	fi
+
+	[ -z "$creds" ] && echo $0: WARNING: No credentials specified. Using default lookup which is dangerous. >&2
+
+	[ -n "$GLITE_LB_EXPORT_JPREG_MAILDIR" ] && jpreg_maildir="--reg-mdir $GLITE_LB_EXPORT_JPREG_MAILDIR "
+	[ -z "$GLITE_LB_EXPORT_JPDUMP_MAILDIR" ] && GLITE_LB_EXPORT_JPDUMP_MAILDIR=/tmp/jpdump
+	jpdump_maildir="--dump-mdir $GLITE_LB_EXPORT_JPDUMP_MAILDIR "
+	[ -d "$GLITE_LB_EXPORT_JPDUMP_MAILDIR" ] || mkdir "$GLITE_LB_EXPORT_JPDUMP_MAILDIR" && chown $GLITE_USER:$GLITE_GROUP "$GLITE_LB_EXPORT_JPDUMP_MAILDIR"
+	[ -n "$GLITE_LB_EXPORT_JPPS" ] && jpps="--jpps $GLITE_LB_EXPORT_JPPS "
+
+	echo -n Starting glite-jp-importer ...
+	su - $GLITE_USER -c "$GLITE_LOCATION/bin/glite-jp-importer \
+		-i $pidfile $jpreg_maildir$jpdump_maildir$jpps" \
+	&& echo " done" || echo " FAILED"
+}
+
+stop()
+{
+	if [ -f $pidfile ]; then
+		pid=`cat $pidfile`
+		kill $pid
+		echo -n Stopping glite-jp-importer \($pid\) ...
+		try=0
+		while ps p $pid >/dev/null 2>&1; do 
+			sleep 1;
+			try=`expr $try + 1`
+			if [ $try = 20 ]; then
+				echo " giving up after $try retries"
+				return 1
+			fi
+	 	done
+		echo " done"
+		rm -f $pidfile
+	else
+		echo $pidfile does not exist - glite-jp-importer not running? >&2
+		return 1
+	fi
+}
+
+status()
+{
+	retval=0
+
+	if [ -f $pidfile ]; then
+		pid=`cat $pidfile`
+		if ps p $pid >/dev/null 2>&1; then
+			echo glite-jp-importer running as $pid 
+		else
+			echo glite-jp-importer not running
+			retval=1
+		fi
+	else
+		echo glite-jp-importer not running
+		retval=1
+	fi
+
+	return $retval
+}
+
+case x$1 in
+	xstart)	start;;
+	xstop)	stop;;
+	xrestart) stop; start;;
+	xstatus) status;;
+	x*)	echo usage: $0 start,stop,restart,status >&2
+		exit 1;;
+esac
