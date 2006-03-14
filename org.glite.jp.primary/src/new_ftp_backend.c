@@ -1874,9 +1874,15 @@ int glite_jppsbe_query(
 			where,
 			cmask & 1 ? "and u.userid = j.owner" : "");
 
-	if (glite_jp_db_execstmt(ctx,stmt,&q) <= 0) {
+	if ((ret = glite_jp_db_execstmt(ctx,stmt,&q)) < 0) {
 		err.code = EIO;
 		err.desc = "DB call fail";
+		glite_jp_stack_error(ctx,&err);
+		goto cleanup;
+	}
+	else if (ret == 0) {
+		err.code = ENOENT;
+		err.desc = "no matching jobs";
 		glite_jp_stack_error(ctx,&err);
 		goto cleanup;
 	}
