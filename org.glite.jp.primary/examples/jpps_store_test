@@ -18,7 +18,16 @@ echodo()
 	"$@" || exit 1
 }
 
-jpps="./jpps-test"
+if [ -f jpps-test ];
+then
+	jpps="./jpps-test"
+elif [ -f glite-jp-primary-test ]; 
+then
+	jpps="./glite-jp-primary-test"
+else
+	echo "glite-jp-primary-test or jpps-test not found!"
+	exit 1;
+fi
 
 #getopt -s sh o:d:t:s: "$@"
 #set -- `getopt -s sh o:d:t:s: "$@"`
@@ -47,7 +56,7 @@ if [ -f "$dump" ]; then
 	dest=`grep '^Destination:' start.$$ | cut -d' ' -f2`
 	rm start.$$
 	echodo globus-url-copy "file:$PWD/job.$$" $dest 
-	rm job.$$
+#	rm job.$$
 	echodo $jpps CommitUpload "$dest"
 
 # does not pass authz check -- probably OK
