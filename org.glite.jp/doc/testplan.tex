@@ -122,15 +122,22 @@
  \item \emph{Start JP primary server}
  \item \emph{Register job to PS}
   \begin{alltt}
-    jpps_store_test -o \emph{CERT_DN} -t "my_tag=car" -s https://localhost:8901  
+     for j in `seq 1 10`;  
+     do  
+        for i in glite-jp-primary-sample_job*.lb; 
+        do 
+            ./glite-jp-primary-store-test -o  \emph{CERT_DN} 
+                -t "my_tag=car" -s https://localhost:8901 -d $i; 
+        done; 
+     done
   \end{alltt}
   You should see something like:
   \begin{alltt}
-    ** ./jpps-test -s https://localhost:8901 RegisterJob
+    ** ./glite-jp-primary-test -s https://localhost:8901 RegisterJob
     https://nonexistent.test.server/jpps_store_test_7199
            /O=CESNET/O=Masaryk University/CN=Milos Mulac
     OK
-    ** ./jpps-test -s https://localhost:8901 GetJobAttr
+    ** ./glite-jp-primary-test -s https://localhost:8901 GetJobAttr
     https://nonexistent.test.server/jpps_store_test_7199
            http://egee.cesnet.cz/en/Schema/JP/System:owner
     OK
@@ -141,20 +148,19 @@
            car     FILE    Thu Feb 16 14:40:02 2006
   \end{alltt}
  \item \emph{Start JP index server, using history query}\\
-  \begin{alltt}
-  ./glite-jp-indexd -s https://localhost:8901 -d -n -q hist 
-  \end{alltt}
  \item \emph{Check content of IS database}\\
   \begin{alltt}
-   mysql -u jpis -e "select * from jobs;" jpis1
+   mysql -u jpis -e "select * from jobs;" jpis
   \end{alltt}
- You should get some result, similar to:
+ You should get 50 results, similar to:
   \begin{alltt}
-| jobid                            | dg_jobid | 
-ownerid                            | aclid | ps                     |
-+------------------------------------------------------------------------+
-| 92eb48c03929587f793e97f895ac958b |https://nonexistent.test.server/jpps_store_test_1273 
-| 5864429d57da18e4ecf9ea366c6b2c9c | NULL  | https://localhost:8950 |
+| jobid                            | dg_jobid
+| ownerid                          | aclid | ps
++----------------------------------+---------------------------------+
+| 7bd73b18b33410ba605fba99dbdd803f | https://nonexistent.test.server/jpps_store_test_5993
+| 5864429d57da18e4ecf9ea366c6b2c9c | NULL  | https://localhost:18950 |
+...
+50 rows in set (0.00 sec)
   \end{alltt}
 \end{enumerate}
 \result{} Expected results in the IS database content check (last step).
@@ -172,9 +178,6 @@ ownerid                            | aclid | ps                     |
 \begin{enumerate}
  \item \emph{Start JP primary server}
  \item \emph{Start JP index server, using continuous query}
-  \begin{alltt}
-   ./glite-jp-indexd -s https://localhost:8901 -d -n -q cont
-  \end{alltt}
  \item \emph{Register job to PS}
   The same as in previous test case.
 
@@ -191,11 +194,13 @@ ownerid                            | aclid | ps                     |
      '1')
    ....
   \end{alltt}
- \item \emph{Check content of IS database}
- You can look whether the insert from previous step was successful:
+ \item \emph{Check content of IS database}\\
+ Do the same test as in previous test case. It must give you the same
+ result. You can also look whether the insert from previous step was 
+ successful:
  \begin{alltt}
   mysql -u jpis -e "select * from
-    attr_52942b8c70bab8491ab5d3b9713d79f5;" jpis1
+    attr_52942b8c70bab8491ab5d3b9713d79f5;" jpis
  \end{alltt}
   should return:
  \begin{alltt}
