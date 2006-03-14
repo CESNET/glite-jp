@@ -637,7 +637,8 @@ static int run_feed_deferred(glite_jp_context_t ctx,void *feed)
 	else meta[1] = NULL;
 
 	ret = glite_jppsbe_query(ctx,f->meta_qry,meta,f,feed_query_callback);
-	if (!ret) ret = drain_feed(ctx,f,1);
+	if (ret == 0) ret = drain_feed(ctx,f,1);
+	else if (ret == ENOENT) ret = 0; 
 	else drop_jobs(f);
 
 cleanup:
