@@ -45,6 +45,7 @@ daemon:=glite-jp-primarystoraged
 example:=jpps-test
 ps_prefix:=jpps_
 is_prefix:=jpis_
+sample_jobs:=sample_job_aborted  sample_job_cleared  sample_job_tagged_done  sample_job_waiting
 
 plugins:=glite-jp-tags.la glite-jp-ftpdauth.la
 
@@ -167,7 +168,9 @@ install:
 	${INSTALL} -m 755 ${top_srcdir}/config/startup ${PREFIX}/etc/init.d/glite-jp-primary
 	${INSTALL} -m 755 ${top_srcdir}/config/glite-jp-primary-dbsetup.sql ${PREFIX}/etc
 	${INSTALL} -m 755 ${top_srcdir}/config/glite-jp-primary-dbsetup.sh ${PREFIX}/etc
-	${INSTALL} -m 644 ${top_srcdir}/examples/sample_job  ${PREFIX}/examples/glite-jp-primary-sample_job.lb
+	for i in ${sample_jobs}; do \
+		${INSTALL} -m 644 ${top_srcdir}/examples/$$i  ${PREFIX}/examples/glite-jp-primary-$$i.lb; \
+	done
 
 clean:
 
