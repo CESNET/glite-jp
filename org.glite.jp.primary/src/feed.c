@@ -180,7 +180,10 @@ static int match_feed(
 		for (i=0; a[i].name && strcmp(a[i].name,GLITE_JP_ATTR_OWNER); i++);
 		owner = a[i].value;
 
-		glite_jpps_single_feed(ctx,feed->id,0,feed->destination,job,owner,a);
+		/* XXX: better error handling ? */
+		if (!glite_jpps_single_feed(ctx,feed->id,0,feed->destination,job,owner,a))
+			glite_jppsbe_set_fed(ctx,feed->id,job);	/* XXX: on error? */
+
 		for (i=0; a[i].name; i++) glite_jp_attrval_free(a+i,0);
 		free(a);
 	}
@@ -345,7 +348,9 @@ int glite_jpps_match_file(
 
 		}
 		for (i=0; meta[i].name && strcmp(meta[i].name,GLITE_JP_ATTR_OWNER); i++);
-		glite_jpps_single_feed(ctx,f->id,0,f->destination,job,meta[i].value,fattr);
+		if (!glite_jpps_single_feed(ctx,f->id,0,f->destination,job,meta[i].value,fattr) && !fed) 
+			glite_jppsbe_set_fed(ctx,f->id,job);
+
 		if (!fed) for (i=0; fattr[i].name; i++) glite_jp_attrval_free(fattr+i,0);
 		free(fattr);
 	}
@@ -450,7 +455,10 @@ static int drain_feed(glite_jp_context_t ctx, struct jpfeed *f,int done)
 	int	ret = 0;
 	glite_jp_clear_error(ctx);
 	if (f->njobs) {
+		int	i;
 		ret = glite_jpps_multi_feed(ctx,f->id,done,f->njobs,f->destination,f->jobs,f->owners,f->job_attrs);
+
+		if (!ret) for (i=0; i<f->njobs; i++) glite_jppsbe_set_fed(ctx,f->id,f->jobs[i]);
 		drop_jobs(f);
 	}
 	return ret;
