@@ -253,7 +253,7 @@ static void attr_union(char **a, char **b, char ***c)
 		cnt -= j-i-1;
 	}
 	assert(cnt);
-	out[cnt-1] = NULL;
+	out[cnt] = NULL;
 
 	*c = out;
 }
