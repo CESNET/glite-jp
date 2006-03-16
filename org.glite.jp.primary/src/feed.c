@@ -679,15 +679,6 @@ static int register_feed_deferred(glite_jp_context_t ctx,void *feed)
 {
 	struct jpfeed	*f = feed;
 
-/* FIXME:
- * - volatile implementation: should store the registrations in a file
- *   and recover after restart
- * - should communicate the data among all server slaves
-
-	f->next = ctx->feeds;
-	ctx->feeds = f;
- */
-
 	if (glite_jppsbe_store_feed(ctx,f)) fputs(glite_jp_error_chain(ctx),stderr);
 	else kill(-master,SIGUSR1);	/* gracefully terminate slaves 
 				   and let master restart them */
