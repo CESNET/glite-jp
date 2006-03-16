@@ -460,7 +460,7 @@ static int drain_feed(glite_jp_context_t ctx, struct jpfeed *f,int done)
 		int	i;
 		ret = glite_jpps_multi_feed(ctx,f->id,done,f->njobs,f->destination,f->jobs,f->owners,f->job_attrs);
 
-		if (!ret) for (i=0; i<f->njobs; i++) glite_jppsbe_set_fed(ctx,f->id,f->jobs[i]);
+		if (!ret && f->continuous) for (i=0; i<f->njobs; i++) glite_jppsbe_set_fed(ctx,f->id,f->jobs[i]);
 		drop_jobs(f);
 	}
 	return ret;
@@ -662,6 +662,7 @@ int glite_jpps_run_feed(
 	const char *destination,
 	char const * const *attrs,
 	const glite_jp_query_rec_t *qry,
+	int continuous,
 	char **feed_id)
 {
 	struct jpfeed	*f;
@@ -670,6 +671,7 @@ int glite_jpps_run_feed(
 	if (!*feed_id) *feed_id = generate_feedid();
 
        	f = make_jpfeed(destination,attrs,qry,*feed_id,(time_t) 0);
+	f->continuous = continuous;
 	glite_jp_add_deferred(ctx,run_feed_deferred,f);
 
 	return 0;

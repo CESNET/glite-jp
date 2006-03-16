@@ -346,7 +346,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__FeedIndex(
 	for (i = 0; i<in->__sizeconditions; i++) s2jp_query(in->conditions[i],qry+i);
 
 	if (in->history) {
-		if (glite_jpps_run_feed(ctx,in->destination,attrs,qry,&feed_id)) {
+		if (glite_jpps_run_feed(ctx,in->destination,attrs,qry,in->continuous,&feed_id)) {
 			err2fault(ctx,soap);
 			ret = SOAP_FAULT;
 			goto cleanup;
