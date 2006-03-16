@@ -2181,8 +2181,49 @@ int glite_jppsbe_purge_feeds(
 	glite_jp_context_t ctx
 )
 {
-	/* TODO */
-	abort();
+	char	*stmt = NULL,*feed = NULL;
+	char	*expires = glite_jp_db_timetodb(time(NULL));
+	glite_jp_error_t	err;
+	glite_jp_db_stmt_t	q = NULL;
+	int	rows;
+
+	memset(&err,0,sizeof err);
+
+	trio_asprintf(&stmt,"select feedid from feeds where expires < %s",expires);
+
+	if ((rows = glite_jp_db_execstmt(ctx, stmt, &q)) < 0) {
+		err.code = EIO;
+		err.desc = "select from feeds";
+		glite_jp_stack_error(ctx,&err);
+		goto cleanup;
+	}
+
+	while ((rows = glite_jp_db_fetchrow(q,&feed)) > 0) {
+		free(stmt);
+		trio_asprintf(&stmt,"delete from fed_jobs where feedid = '%|Ss'",feed);
+		if ((rows = glite_jp_db_execstmt(ctx, stmt, NULL)) < 0) {
+			err.code = EIO;
+			err.desc = "delete from fed_jobs";
+			glite_jp_stack_error(ctx,&err);
+			goto cleanup;
+		}
+	}
+
+	free(stmt);
+	trio_asprintf(&stmt,"delete from feeds where expires < %s",expires);
+	if ((rows = glite_jp_db_execstmt(ctx, stmt, NULL)) < 0) {
+		err.code = EIO;
+		err.desc = "select from feeds";
+		glite_jp_stack_error(ctx,&err);
+		goto cleanup;
+	}
+
+cleanup:
+	glite_jp_db_freestmt(&q);
+	free(feed);
+	free(stmt);
+	free(expires);
+	return err.code;
 }
 
 
