@@ -2023,13 +2023,16 @@ int glite_jppsbe_set_fed(
 	const char *job
 )
 {
-	char	*stmt = NULL;
-	int	rows;
+	char	*stmt = NULL,*u = NULL;
+	int	rows,ret;
 	glite_jp_error_t	err;
 	memset(&err,0,sizeof err);
 
+	if ((ret = jobid_unique_pathname(ctx,job,&u,NULL,0))) return ret;
+
 	trio_asprintf(&stmt,"insert into fed_jobs(feedid,jobid) "
-		"values ('%|Ss','%|Ss')", feed,job);
+		"values ('%|Ss','%|Ss')", feed,u);
+	free(u);
 
 	if ((rows = glite_jp_db_execstmt(ctx,stmt,NULL)) < 0) {
 		err.source = __FUNCTION__;
@@ -2060,13 +2063,18 @@ int glite_jppsbe_check_fed(
 	int *result
 )
 {
-	char	*stmt = NULL;
-	int	rows;
+	char	*stmt = NULL,*u = NULL;
+	int	rows,ret;
 	glite_jp_error_t	err;
 	memset(&err,0,sizeof err);
+
+	if ((ret = jobid_unique_pathname(ctx,job,&u,NULL,0))) return ret;
+
 	trio_asprintf(&stmt,"select 'x' from fed_jobs "
 			"where jobid = '%|Ss' and feedid = '%|Ss'",
-			job,feed);
+			u,feed);
+
+	free(u);
 
 	if ((rows = glite_jp_db_execstmt(ctx,stmt,NULL)) < 0) {
 		err.source = __FUNCTION__;
