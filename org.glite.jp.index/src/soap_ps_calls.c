@@ -144,6 +144,8 @@ lprintf("MyFeedIndex for %s called\n", dest);
 	
 	soap_init(soap);
         soap_set_namespaces(soap,jpps__namespaces);
+	soap_set_omode(soap, SOAP_IO_BUFFER);   // set buffered response
+                                                // buffer set to SOAP_BUFLEN (default = 8k)	
 	soap_register_plugin_arg(soap,glite_gsplugin,plugin_ctx);
 
 	memset(&in, 0, sizeof(in));
