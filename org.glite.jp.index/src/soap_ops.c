@@ -106,11 +106,11 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__UpdateJobs(
 	struct _jpelem__UpdateJobsResponse *jpelem__UpdateJobsResponse)
 {
 	int 		ret, ijobs;
-	const char 	*feedid, *ps;
+	const char 	*feedid;
 	int 		status, done;
 	CONTEXT_FROM_SOAP(soap, ctx);
 	glite_jp_context_t jpctx = ctx->jpctx;
-	char *err;
+	char *err, *ps;
 
 	// XXX: test client in examples/jpis-test
 	//      sends to this function some data for testing
@@ -140,7 +140,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__UpdateJobs(
 
 	// insert all attributes
 	for (ijobs = 0; ijobs < jpelem__UpdateJobs->__sizejobAttributes; ijobs++) {
-		if (updateJob(ctx, ps, jpelem__UpdateJobs->jobAttributes[ijobs]) != 0) goto fail;
+		if (updateJob(ctx, (const char *) ps, jpelem__UpdateJobs->jobAttributes[ijobs]) != 0) goto fail;
 	}
 	free(ps);
 
@@ -430,6 +430,48 @@ err:
 }
 
 
+/* return owner of job record */
+static int get_owner(glite_jpis_context_t ctx, char *jobid, char **owner)
+{
+	char			*ownerid = NULL, *jobid_md5, *query, *fv = NULL;
+	glite_jp_db_stmt_t     	stmt;
+
+
+	/* get ownerid correspondig to jobid */
+	jobid_md5 = str2md5(jobid);
+	trio_asprintf(&query,"SELECT ownerid FROM jobs WHERE jobid = \"%s\"",
+                jobid_md5);
+        free(jobid_md5);
+
+	if ((glite_jp_db_execstmt(ctx->jpctx, query, &stmt)) < 0) goto err;
+        free(query);
+
+        if (glite_jp_db_fetchrow(stmt, &ownerid) <= 0 ) goto err; 
+	
+	/* DB consistency check - only one record per jobid ! */
+	assert (glite_jp_db_fetchrow(stmt, &fv) <=0); free(fv);
+	
+
+	/* get cert_subj corresponding to ownerid */
+	trio_asprintf(&query,"SELECT cert_subj FROM users WHERE userid = \"%s\"",
+		ownerid);
+
+	if ((glite_jp_db_execstmt(ctx->jpctx, query, &stmt)) < 0) goto err;
+        free(query);
+
+	if (glite_jp_db_fetchrow(stmt, owner) <= 0 ) goto err;
+
+        /* DB consistency check - only one record per userid ! */
+        assert (glite_jp_db_fetchrow(stmt, &fv) <=0); free(fv);
+
+
+	return 0;
+err:
+	free(ownerid);
+	free(query);
+	return 1;
+}
+
 /* fills structure jobRecord  for a given jobid*/
 static int get_attrs(struct soap *soap, glite_jpis_context_t ctx, char *jobid, struct _jpelem__QueryJobs *in, struct jptype__jobRecord **out)
 {
@@ -456,6 +498,7 @@ static int get_attrs(struct soap *soap, glite_jpis_context_t ctx, char *jobid, s
 			free(jr.attributes);
 		}
 	} 
+	if ( get_owner(ctx, jobid, &((*out)->owner)) ) goto err;
 	(*out)->__sizeattributes = size;
 	(*out)->attributes = soap_malloc( soap, size *sizeof(*((*out)->attributes)) );
 	memcpy((*out)->attributes, av, size * sizeof(*((*out)->attributes)) );
