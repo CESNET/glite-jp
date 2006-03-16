@@ -53,6 +53,16 @@ struct {
 	{0, "unknown"}
 };
 
+#define NUMBER_ORIG 3
+struct {
+	enum jptype__attrOrig orig;
+	const char *name;
+} origins[] = {
+	{jptype__attrOrig__SYSTEM, "SYSTEM"},
+	{jptype__attrOrig__USER, "USER"},
+	{jptype__attrOrig__FILE_, "FILE"},
+	{0, "unknown"}
+};
 
 typedef enum {FORMAT_XML, FORMAT_HR} format_t;
 
@@ -294,7 +304,7 @@ static int queryresult_dump(struct soap *soap, int fd, const struct _jpisclient_
  */
 static void queryresult_print(FILE *out, const struct  _jpelem__QueryJobsResponse *in) {
 	struct jptype__attrValue *attr;
-	int i, j;
+	int i, j, k;
 
 	fprintf(out, "Result %d jobs:\n", in->__sizejobs);
 	for (j=0; j<in->__sizejobs; j++) {
@@ -305,8 +315,14 @@ static void queryresult_print(FILE *out, const struct  _jpelem__QueryJobsRespons
 			fprintf(out, "\t\t\tvalue = ");
 			value_print(out, attr->value);
 			fprintf(out, "\n");
-			fprintf(out, "\t\t\torigin = %d, %s\n", attr->origin, attr->originDetail);
-			fprintf(out, "\t\t\ttime = %s", ctime(&attr->timestamp));
+
+			for (k = 0; k <= NUMBER_ORIG; k++)
+				if (origins[k].orig == attr->origin) break;
+			fprintf(out, "\t\t\torigin = %s", origins[k].name);
+			if (attr->originDetail) fprintf(out, ", %s\n", attr->originDetail);
+			else fprintf(out, " (no detail)\n");
+			if (attr->timestamp != (time_t)0)
+				fprintf(out, "\t\t\ttime = %s", ctime(&attr->timestamp));
 		}
 	}
 }

@@ -71,8 +71,6 @@ init() {
 	DB_USER=`echo $GLITE_JPIS_TEST_DB| sed 's!/.*$!!'`
 	DB_HOST=`echo $GLITE_JPIS_TEST_DB| sed 's!^.*@!!' | sed 's!:.*!!'`
 	DB_NAME=`echo $GLITE_JPIS_TEST_DB| sed 's!^.*:!!'`
-
-	GLITE_JPIS_DEBUG=0
 }
 
 create_db() {
@@ -124,11 +122,9 @@ run_is() {
 
 	# wait for index server
 	ret=1
-	i=0
-	while [ x"$ret" != x"0" -a $i -lt 20 ]; do
+	while [ x"$ret" != x"0" ]; do
 		LC_ALL=C netstat -tap 2>/dev/null | grep "\<$GLITE_JPIS_TEST_PORT\>" > /dev/null
 		ret=$?
-		i=$(($i+1))
 		LC_ALL=C sleep 0.1
 	done
 }

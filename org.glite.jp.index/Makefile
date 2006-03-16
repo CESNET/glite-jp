@@ -22,7 +22,7 @@ CC=gcc
 -include Makefile.inc
 
 
-VPATH=${top_srcdir}/src:${top_srcdir}/examples:${top_srcdir}/tests:${top_srcdir}/test:${top_srcdir}/project:${top_srcdir}/doc:${jpproject}:${stagedir}/interface
+VPATH=${top_srcdir}/src:${top_srcdir}/examples:${top_srcdir}/examples/query-tests:${top_srcdir}/tests:${top_srcdir}/test:${top_srcdir}/project:${top_srcdir}/doc:${jpproject}:${stagedir}/interface
 
 GLOBUS_LIBS:=-L${globus_prefix}/lib \
 	-lglobus_common_${nothrflavour} \
@@ -96,7 +96,7 @@ glite-jpis-client: ${EXA_CLIENT_OBJS}
 	${LINK} -o $@ $+ ${GSOAPLIB}
 
 copy_tests: ${test} ${test_files}
-	for i in $?; do cp ${top_srcdir}/test/$$i  ${top_srcdir}/build; done
+	-for i in $?; do cp $$i  ${top_srcdir}/build; done
 
 JobProvenanceIS.xh: JobProvenanceIS.wsdl JobProvenanceTypes.wsdl typemap.dat
 	cp  ${stagedir}/interface/JobProvenanceTypes.wsdl .
@@ -160,7 +160,8 @@ distbin:
 	
 install:
 	-mkdir -p ${PREFIX}/bin ${PREFIX}/etc ${PREFIX}/etc/init.d
-	-mkdir -p ${PREFIX}/share/doc/${package}-${version} ${PREFIX}/examples
+	-mkdir -p ${PREFIX}/share/doc/${package}-${version} 
+	-mkdir -p ${PREFIX}/examples ${PREFIX}/examples/query-tests
 	-mkdir -p ${PREFIX}/interface
 	-mkdir -p ${PREFIX}/share/man/man1
 	-mkdir -p ${PREFIX}/share/man/man8
@@ -171,8 +172,8 @@ install:
 	${INSTALL} -m 644 ${top_srcdir}/doc/README ${HTMLS} ${PREFIX}/share/doc/${package}-${version}
 	${INSTALL} -m 644 ${MANS1} ${PREFIX}/share/man/man1
 	${INSTALL} -m 644 ${MANS8} ${PREFIX}/share/man/man8
-	${INSTALL} -m 755 ${test} ${PREFIX}/examples
-	${INSTALL} -m 644 ${test_files} ${PREFIX}/examples
+	${INSTALL} -m 755 ${test} ${PREFIX}/examples/query-tests
+	${INSTALL} -m 644 ${test_files} ${PREFIX}/examples/query-tests
 	${INSTALL} -m 644 ${top_srcdir}/interface/JobProvenanceISClient.xsd ${PREFIX}/interface
 
 clean:
