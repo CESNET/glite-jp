@@ -252,6 +252,8 @@ static void attr_union(char **a, char **b, char ***c)
 		if (j < cnt && j > i+1) memmove(out+i+1,out+j,(cnt-j) * sizeof *out);
 		cnt -= j-i-1;
 	}
+	assert(cnt);
+	out[cnt-1] = NULL;
 
 	*c = out;
 }
