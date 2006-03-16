@@ -2028,7 +2028,7 @@ int glite_jppsbe_set_fed(
 	glite_jp_error_t	err;
 	memset(&err,0,sizeof err);
 
-	trio_asprintf(&stmt,"insert into fed_job(feedid,jobid) "
+	trio_asprintf(&stmt,"insert into fed_jobs(feedid,jobid) "
 		"values ('%|Ss','%|Ss')", feed,job);
 
 	if ((rows = glite_jp_db_execstmt(ctx,stmt,NULL)) < 0) {
