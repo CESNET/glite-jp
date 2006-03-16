@@ -318,7 +318,7 @@ static void queryresult_print(FILE *out, const struct  _jpelem__QueryJobsRespons
 
 			for (k = 0; k <= NUMBER_ORIG; k++)
 				if (origins[k].orig == attr->origin) break;
-			fprintf(out, "\t\t\torigin = %s", origins[k].name, attr->originDetail);
+			fprintf(out, "\t\t\torigin = %s", origins[k].name);
 			if (attr->originDetail) fprintf(out, ", %s\n", attr->originDetail);
 			else fprintf(out, " (no detail)\n");
 			if (attr->timestamp != (time_t)0)
