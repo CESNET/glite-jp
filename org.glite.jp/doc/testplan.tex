@@ -15,6 +15,8 @@
 \def\req{\noindent\textbf{Prerequisities:}}
 \def\how{\noindent\textbf{How to run:}}
 \def\result{\noindent\textbf{Expected result:}}
+\def\jpps{\noindent\textbf{JP PS log should contain:}}
+\def\jpis{\noindent\textbf{JP IS log should contain:}}
 
 \def\path#1{{\normalfont\textsf{#1}}}
 \def\code#1{\texttt{#1}}
@@ -110,7 +112,7 @@
 %- initial IS release -- single query, so just one set of jobs
 %- due to 3.2 no point in pre-loading PS database, use 1.3.1
 
-\subsection{Single batch feed}
+\subsection{Batch feed}
 %- upload jobs to PS
 %- start feed
 %* check IS contents (jobs and expected attr values)
@@ -166,8 +168,117 @@
 \result{} Expected results in the IS database content check (last step).
 
 
+\subsection{Incremental feed - simple tests}
+%- register feed
+%- upload job to PS 
+%* check PS and IS output
 
-\subsection{single incremental feed}
+\req\ Clean JP-PS and JP-IS database.
+
+\how\
+\begin{enumerate}
+ \item \emph{Start JP primary server}
+ \item \emph{Start JP index server, using continuous query}
+ \item \emph{Registerjob}
+  \begin{alltt}
+	./jpps-test -s https://localhost:18950 RegisterJob 
+	https://nonexistent.test.server/jpps_store_test_6880 "/O=CESNET/O=Masaryk 
+	University/CN=Milos Mulac"
+	OK
+  \end{alltt}
+  \jpps\
+  \begin{alltt}
+	[22004] client DN: /O=CESNET/O=Masaryk University/CN=Milos Mulac
+	__jpsrv__RegisterJob https://nonexistent.test.server/jpps_store_test_6881 
+	/O=CESNET/O=Masaryk University/CN=Milos Mulac
+	feed to https://scientific.civ.zcu.cz:8902, job https://nonexistent.test.server/
+	jpps_store_test_6881
+  \end{alltt}
+  \jpis\
+  \begin{alltt}
+	...
+	[21984] incoming request
+	__jpsrv__UpdateJobs
+	...
+	glite_jpis_lazyInsertJob: owner '/O=CESNET/O=Masaryk University/CN=Milos Mulac'
+	found
+	glite_jpis_insertAttrVal: (http://egee.cesnet.cz/en/Schema/JP/System:owner) 
+	sql=INSERT INTO attr_52942b8c70bab8491ab5d3b9713d79f5 (jobid, value, full_value, 
+	origin) VALUES (
+        '6e436919404778b75cd27eef266190bb',
+        'S:/O=CESNET/O=Masaryk University/CN=Milos Mulac',
+        'S:/O=CESNET/O=Masaryk University/CN=Milos Mulac',
+        '1'
+)
+	glite_jpis_insertAttrVal: (http://egee.cesnet.cz/en/Schema/JP/System:regtime) ...
+	...
+  \end{alltt}
+
+ \item \emph{Start upload}
+  \begin{alltt}
+	./jpps-test -s https://localhost:18950 StartUpload 
+	https://nonexistent.test.server/jpps_store_test_6880 
+	urn:org.glite.jp.primary:lb 1234 text/plain
+	OK
+	Destination: gsiftp://scientific.civ.zcu.cz:8960//home/mulac/jp/internal/
+	data/5864429d57da18e4ecf9ea366c6b2c9c/1889/jpps_store_test_6880/lb
+	Commit before: Sat Mar 17 10:12:48 2007
+  \end{alltt}
+  \jpps\
+  \begin{alltt}
+	[22004] client DN: /O=CESNET/O=Masaryk University/CN=Milos Mulac
+	data_basename: (null)
+  \end{alltt}
+  \jpis\
+	nothing
+ \item \emph{globus-url-copy}
+  \begin{alltt}
+	globus-url-copy file:/home/mulac/src/ORG/org.glite.jp.primary/build/job.6880
+	gsiftp://scientific.civ.zcu.cz:8960//home/mulac/jp/internal/
+	data/5864429d57da18e4ecf9ea366c6b2c9c/1889/jpps_store_test_6880/lb
+  \end{alltt}
+  \jpps\
+	nothing \\
+  \jpis\
+	nothing \\
+  \noindent\textbf{Other:}
+	File specified in gsiftp URL should be created.
+ \item \emph{Commit upload}
+  \begin{alltt}
+	./jpps-test -s https://localhost:18950 CommitUpload 
+	gsiftp://scientific.civ.zcu.cz:8960//home/mulac/jp/internal/data/
+	5864429d57da18e4ecf9ea366c6b2c9c/1889/jpps_store_test_6880/lb
+	OK
+  \end{alltt}
+  \jpps\
+  \begin{alltt}
+	[22004] client DN: /O=CESNET/O=Masaryk University/CN=Milos Mulac
+	glite_jpps_match_file: https://nonexistent.test.server/jpps_store_test_6880 lb (null)
+	lb_plugin: opened 8 events
+	lb_plugin: close OK
+	feed to https://scientific.civ.zcu.cz:8902, job https://nonexistent.test.server/
+	jpps_store_test_6880
+  \end{alltt}
+  \jpis\
+  \begin{alltt}
+	...
+	__jpsrv__UpdateJobs
+	...
+	glite_jpis_insertAttrVal: (http://egee.cesnet.cz/en/Schema/LB/Attributes:CE) 
+	sql=INSERT INTO attr_c47f78255056386d2b3da6d506d1f244 (jobid, value, 
+	full_value, origin) VALUES (
+        '39a0a14f4fc084fbb466728986e5ea2f',
+        'S:destination CE/queue',
+        'S:destination CE/queue',
+        '3'
+	)
+	...
+  \end{alltt}
+
+\result{} Expected results in logs.
+
+
+\subsection{Incremental feed}
 %- register feed
 %- upload jobs to PS one by one
 %* check IS contents (matching jobs should turn up, others not)
