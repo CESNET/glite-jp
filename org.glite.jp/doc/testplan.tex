@@ -55,17 +55,50 @@
 \subsection{Job registration}
 
 \subsubsection{Basic functionality}
-- call RegisterJob
-* call GetJobAttributes owner to verify
+\label{regjob}
+\req Running JPPS
+
+\how
+\begin{itemize}
+\item call RegisterJob operation:
+\begin{verbatim}
+$ jpps-test RegisterJob JOBID OWNER
+\end{verbatim}
+where JOBID and OWNER should be replaced with real values, JOBID should not have
+been registered with JP before.
+
+\item  call GetJobAttributes to verify:
+\begin{verbatim}
+$ jpps-test GetJobAttr JOBID http://egee.cesnet.cz/en/Schema/JP/System:owner
+\end{verbatim}
+\end{itemize}
+\result Should print the OWNER value supplied.
+
 
 \subsubsection{AuthZ check}
-* call GetJobAttributes with different credentials - should fail
+\pre JPPS running, a~job registered with the procedure in~\ref{regjob}
+\how
+Call GetJobAttributes using different user credentials 
+\result 
+Should fail with ``Permission denied'' error
 
 \subsection{Tag recording}
-- call RecordTag
-* call GetJobAttributes to verify
-- record and retrieve more values of the same tag
+\pre JPPS running, a~job registered with the procedure in~\ref{regjob}
+\how 
+\begin{itemize}
+\item Call RecordTag operation:
+\begin{verbatim}
+$ jpps-test  RecordTag JOBID TAGNAME STRINGVALUE
+\end{verbatim}
+\item Call GetJobAttributes to verify
+\begin{verbatim}
+$ jpps-test  GetJobAttr JOBID TAGNAME
+\end{verbatim}
+\end{itemize}
+\result
+The recorded value should be returned.
 
+- record and retrieve more values of the same tag
 \subsection{File upload}
 
 \subsubsection{Basic functionality}
