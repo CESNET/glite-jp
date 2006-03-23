@@ -76,14 +76,14 @@ $ jpps-test GetJobAttr JOBID http://egee.cesnet.cz/en/Schema/JP/System:owner
 
 
 \subsubsection{AuthZ check}
-\pre JPPS running, a~job registered with the procedure in~\ref{regjob}
+\req JPPS running, a~job registered with the procedure in~\ref{regjob}
 \how
 Call GetJobAttributes using different user credentials 
 \result 
 Should fail with ``Permission denied'' error
 
 \subsection{Tag recording}
-\pre JPPS running, a~job registered with the procedure in~\ref{regjob}
+\req JPPS running, a~job registered with the procedure in~\ref{regjob}
 \how 
 \begin{itemize}
 \item Call RecordTag operation:
@@ -307,6 +307,7 @@ The recorded value should be returned.
 	)
 	...
   \end{alltt}
+ \end{enumerate}
 
 \result{} Expected results in logs.
 
