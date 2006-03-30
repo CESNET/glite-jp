@@ -41,7 +41,25 @@
 
 \subsection{Command line interface (CLI)}
 
-\subsection{JP user interface reference}
+\subsection{JP web-service interface reference}
+
+{
+\parindent0pt
+\def\chapter#1{}
+\def\section#1{\subsubsection{#1}}
+\def\subsection#1{\par\medskip\textbf{#1}\par}
+
+\let\odesc=\description
+\let\oedesc=\enddescription
+\renewenvironment{description}{\odesc\itemindent=1em
+\listparindent=2em
+}{\oedesc}
+%\renewenvironment{description}{\list{}{\labelwidth 5cm\leftmargin 5cm}}
+%{\endlist}
+
+\let\null=\relax
+\input jpws
+}
 
 
 

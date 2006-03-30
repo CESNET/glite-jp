@@ -1,0 +1,587 @@
+
+% -------------------------------------------------------------
+% Chapter Job Provenance 
+% ------------------------------------------------------------- 	
+\chapter{Job Provenance}
+\label{id271738}\hypertarget{id271738}{}%
+
+% ------------------------   
+% Section 
+\section{Primary Storage -- Overview}
+\label{id271094}\hypertarget{id271094}{}%
+
+The Job Provenance (JP) Primary Storage Service is responsible to keep the JP data (definition of submitted jobs, execution conditions and environment, and important points of the job life cycle) in a compact and economic form.
+
+The JP Primary storage, as described in section 8.4 of the Architecture deliverable DJRA1.1 {\textless}\url{https://edms.cern.ch/document/594698/}{\textgreater} provides public interfaces for data storing, retrieval based on basic metadata, and registration of Index servers for incremental feed.
+
+Command interface to JP is completely covered by the WS interface covered here. Bulk file transfers are done via specialised protocols, currently gsiftp only.
+
+% ------------------------   
+% Section 
+\section{Primary Storage -- Operations}
+\label{id271756}\hypertarget{id271756}{}%
+
+{\em{CVS revision: \$Header$}}
+\subsection{CommitUpload}
+\label{op:CommitUpload}\hypertarget{op:CommitUpload}{}%
+
+Confirm a successfully finished file apload.
+
+Inputs: 
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string{\ttfamily\itshape{{destination}}}}]\null{}
+Destination URL returned by StartUpload before.
+\end{description}
+\noindent 
+
+Outputs: N/A
+\subsection{FeedIndex}
+\label{op:FeedIndex}\hypertarget{op:FeedIndex}{}%
+
+Request for feeding a JP Index server (issued by this server).
+
+Inputs: 
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string{\ttfamily\itshape{{destination}}}}]\null{}
+Endpoint of the listening index server.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{list of xsd:string{\ttfamily\itshape{{attributes}}}}]\null{}
+Which attributes of jobs is the index server interested in.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{list of \hyperlink{type:primaryQuery}{primaryQuery}{\ttfamily\itshape{{conditions}}}}]\null{}
+Which jobs is the server interested in.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:boolean{\ttfamily\itshape{{history}}}}]\null{}
+Data on jobs stored at PS in the past are required.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:boolean{\ttfamily\itshape{{continuous}}}}]\null{}
+Data on jobs that will arrive in future are required.
+\end{description}
+\noindent 
+
+Outputs: 
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string{\ttfamily\itshape{{feedId}}}}]\null{}
+Unique ID of the created feed session.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:dateTime{\ttfamily\itshape{{feedExpires}}}}]\null{}
+When the session expires.
+\end{description}
+\noindent 
+\subsection{FeedIndexRefresh}
+\label{op:FeedIndexRefresh}\hypertarget{op:FeedIndexRefresh}{}%
+
+Refresh an existing feed session.
+
+Inputs: 
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string{\ttfamily\itshape{{feedId}}}}]\null{}
+Existing feed session ID to be refreshed.
+\end{description}
+\noindent 
+
+Outputs: 
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:dateTime{\ttfamily\itshape{{feedExpires}}}}]\null{}
+New session expiration time.
+\end{description}
+\noindent 
+\subsection{GetJobAttributes}
+\label{op:GetJobAttributes}\hypertarget{op:GetJobAttributes}{}%
+
+Query concrete attributes of a given job.
+
+Inputs: 
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string{\ttfamily\itshape{{jobid}}}}]\null{}
+The job.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{list of xsd:string{\ttfamily\itshape{{attributes}}}}]\null{}
+Which attributes should be retrieved.
+\end{description}
+\noindent 
+
+Outputs: 
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{list of \hyperlink{type:attrValue}{attrValue}{\ttfamily\itshape{{attrValues}}}}]\null{}
+Values of the queried attributes.
+\end{description}
+\noindent 
+\subsection{GetJobFiles}
+\label{op:GetJobFiles}\hypertarget{op:GetJobFiles}{}%
+
+Return URL's of files for a given single job.
+
+Inputs: 
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string{\ttfamily\itshape{{jobid}}}}]\null{}
+The job.
+\end{description}
+\noindent 
+
+Outputs: 
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{list of \hyperlink{type:jppsFile}{jppsFile}{\ttfamily\itshape{{files}}}}]\null{}
+List of the stored files.
+\end{description}
+\noindent 
+\subsection{RecordTag}
+\label{op:RecordTag}\hypertarget{op:RecordTag}{}%
+
+Record an additional user tag.
+
+Inputs: 
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string{\ttfamily\itshape{{jobid}}}}]\null{}
+Job to which the tag is added.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{\hyperlink{type:tagValue}{tagValue}{\ttfamily\itshape{{tag}}}}]\null{}
+Name and value of the tag.
+\end{description}
+\noindent 
+
+Outputs: N/A
+\subsection{RegisterJob}
+\label{op:RegisterJob}\hypertarget{op:RegisterJob}{}%
+
+Register job with the JP primary storage.
+
+Inputs: 
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string{\ttfamily\itshape{{job}}}}]\null{}
+Jobid of the registered job.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string{\ttfamily\itshape{{owner}}}}]\null{}
+Owner of the job (DN of X509 certificate).
+\end{description}
+\noindent 
+
+Outputs: N/A
+\subsection{StartUpload}
+\label{op:StartUpload}\hypertarget{op:StartUpload}{}%
+
+Start uploading a file.
+
+Inputs: 
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string{\ttfamily\itshape{{job}}}}]\null{}
+Jobid to which this file is related.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string{\ttfamily\itshape{{class}}}}]\null{}
+Type of the file (URI). The server must have a plugin handing this type.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string{\ttfamily\itshape{{name}}}}]\null{}
+Name of the file (used to distinguish among more files of the same type).
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:dateTime{\ttfamily\itshape{{commitBefore}}}}]\null{}
+The client promisses to finish the upload before this time.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string{\ttfamily\itshape{{contentType}}}}]\null{}
+MIME type of the file.
+\end{description}
+\noindent 
+
+Outputs: 
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string{\ttfamily\itshape{{destination}}}}]\null{}
+URL where the client should upload the file.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:dateTime{\ttfamily\itshape{{commitBefore}}}}]\null{}
+Server's view on when the upload must be finished.
+\end{description}
+\noindent 
+
+% ------------------------   
+% Section 
+\section{Index Server -- Overview}
+\label{id214261}\hypertarget{id214261}{}%
+
+The Job Provenance (JP) Index Server is a volatile counterpart to the permanent JP Primary Storage. Index servers are populated with subsets of data from Primary storage(s) and indexed according to particular user needs.
+
+The interface to Index server contains three logical parts: administraive (control), system and user. The administrative part is used by run-time index server configuration tool, the system one allows Primary storage(s) to feed data into the Index server, and the user one is available to users for queries.
+
+% ------------------------   
+% Section 
+\section{Index Server -- Operations}
+\label{id214279}\hypertarget{id214279}{}%
+
+{\em{CVS revision: \$Header$}}
+\subsection{AddFeed}
+\label{op:AddFeed}\hypertarget{op:AddFeed}{}%
+
+Called by JP index serve admin tool to ask new primary storage server to feed it. Updates information on PS in index server, according to what JPPS currently knows.
+
+Inputs: 
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{\hyperlink{type:feedSession}{feedSession}{\ttfamily\itshape{{feed}}}}]\null{}
+New feed IS URL, filter and query type.
+\end{description}
+\noindent 
+
+Outputs: N/A
+\subsection{DeleteFeed}
+\label{op:DeleteFeed}\hypertarget{op:DeleteFeed}{}%
+
+Called by JP index serve admin tool to remove one feed session.
+
+Inputs: 
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string{\ttfamily\itshape{{feedId}}}}]\null{}
+ID of feed to be removed.
+\end{description}
+\noindent 
+
+Outputs: N/A
+\subsection{GetFeedIDs}
+\label{op:GetFeedIDs}\hypertarget{op:GetFeedIDs}{}%
+
+Called by JP index serve admin tool to find out IS open feeds
+
+Inputs: 
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{list of \hyperlink{type:feedSession}{feedSession}{\ttfamily\itshape{{feeds}}}}]\null{}
+List of active feeds on IS.
+\end{description}
+\noindent 
+
+Outputs: N/A
+\subsection{QueryJobs}
+\label{op:QueryJobs}\hypertarget{op:QueryJobs}{}%
+
+User query to index server.
+
+Inputs: 
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{list of \hyperlink{type:indexQuery}{indexQuery}{\ttfamily\itshape{{conditions}}}}]\null{}
+Query conditions, similar to LB.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{list of xsd:string{\ttfamily\itshape{{attributes}}}}]\null{}
+Set of attributes to be retrieved directly from index server (if any).
+\end{description}
+\noindent 
+
+Outputs: 
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{list of \hyperlink{type:jobRecord}{jobRecord}{\ttfamily\itshape{{jobs}}}}]\null{}
+List of jobs matching the query.
+\end{description}
+\noindent 
+\subsection{UpdateJobs}
+\label{op:UpdateJobs}\hypertarget{op:UpdateJobs}{}%
+
+Called by JP primary storage as a response to FeedIndex request. Updates information on jobs in index server, according to what JPPS currently knows.
+
+Inputs: 
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string{\ttfamily\itshape{{feedId}}}}]\null{}
+Id of the feed, as returned by JPPS FeedIndex operation.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:boolean{\ttfamily\itshape{{feedDone}}}}]\null{}
+Flag of completed batch feed.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{list of \hyperlink{type:jobRecord}{jobRecord}{\ttfamily\itshape{{jobAttributes}}}}]\null{}
+Attributes per job.
+\end{description}
+\noindent 
+
+Outputs: N/A
+
+% ------------------------   
+% Section 
+\section{JP Common Types}
+\label{id214548}\hypertarget{id214548}{}%
+
+{\em{CVS revision: \$Header$}}
+\subsection{attrOrig}
+\label{type:attrOrig}\hypertarget{type:attrOrig}{}%
+
+Specification of attribute origin.
+
+{\em{Enumeration}} (restriction of xsd:string in WSDL), exactly one of the values must be specified.
+
+Values:
+
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{{\frenchspacing\texttt{{SYSTEM}}}}]\null{}
+JP system value, e.g. job owner.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{{\frenchspacing\texttt{{USER}}}}]\null{}
+Explicitely stored by the user via RecordTag operation.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{{\frenchspacing\texttt{{FILE}}}}]\null{}
+Coming from uploaded file.
+\end{description}
+\noindent \subsection{attrValue}
+\label{type:attrValue}\hypertarget{type:attrValue}{}%
+
+Single value of an attribute.
+
+{\em{Structure}} (sequence complex type in WSDL)
+
+Fields: ( type{\ttfamily\itshape{{name}}} description )
+
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string {\ttfamily\itshape{{name}}}}]\null{}
+Name of the attribute, including namespace.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{\hyperlink{type:stringOrBlob}{stringOrBlob} {\ttfamily\itshape{{value}}}}]\null{}
+(optional) String value.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:dateTime {\ttfamily\itshape{{timestamp}}}}]\null{}
+When this value was recorded.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{\hyperlink{type:attrOrig}{attrOrig} {\ttfamily\itshape{{origin}}}}]\null{}
+Where this value came from.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string {\ttfamily\itshape{{originDetail}}}}]\null{}
+(optional)
+\end{description}
+\noindent \subsection{feedSession}
+\label{type:feedSession}\hypertarget{type:feedSession}{}%
+
+One session between IS and PS (aka feed) charactetristics.
+
+{\em{Structure}} (sequence complex type in WSDL)
+
+Fields: ( type{\ttfamily\itshape{{name}}} description )
+
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string {\ttfamily\itshape{{primaryServer}}}}]\null{}
+URL of primary server.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{list of \hyperlink{type:primaryQuery}{primaryQuery} {\ttfamily\itshape{{condition}}}}]\null{}
+Filter conditions.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:int {\ttfamily\itshape{{history}}}}]\null{}
+Query type.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:int {\ttfamily\itshape{{continuous}}}}]\null{}
+Query type
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string {\ttfamily\itshape{{feedId}}}}]\null{}
+(optional) Unique ID of the feed session.
+\end{description}
+\noindent \subsection{genericFault}
+\label{type:genericFault}\hypertarget{type:genericFault}{}%
+
+
+
+{\em{Structure}} (sequence complex type in WSDL)
+
+Fields: ( type{\ttfamily\itshape{{name}}} description )
+
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string {\ttfamily\itshape{{source}}}}]\null{}
+
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:int {\ttfamily\itshape{{code}}}}]\null{}
+
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string {\ttfamily\itshape{{text}}}}]\null{}
+
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string {\ttfamily\itshape{{description}}}}]\null{}
+(optional)
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{\hyperlink{type:genericFault}{genericFault} {\ttfamily\itshape{{reason}}}}]\null{}
+(optional)
+\end{description}
+\noindent \subsection{indexQuery}
+\label{type:indexQuery}\hypertarget{type:indexQuery}{}%
+
+Single query condition on a job. Similarly to LB, these outer conditions are logically ANDed.
+
+{\em{Structure}} (sequence complex type in WSDL)
+
+Fields: ( type{\ttfamily\itshape{{name}}} description )
+
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string {\ttfamily\itshape{{attr}}}}]\null{}
+Which attribute the condition refers to.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{\hyperlink{type:attrOrig}{attrOrig} {\ttfamily\itshape{{origin}}}}]\null{}
+(optional) Specific attribute origin (if we do care).
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{list of \hyperlink{type:indexQueryRecord}{indexQueryRecord} {\ttfamily\itshape{{record}}}}]\null{}
+List of conditions on attribute attr. These conditions are logically ORed.
+\end{description}
+\noindent \subsection{indexQueryRecord}
+\label{type:indexQueryRecord}\hypertarget{type:indexQueryRecord}{}%
+
+Single condition on an attribute.
+
+{\em{Structure}} (sequence complex type in WSDL)
+
+Fields: ( type{\ttfamily\itshape{{name}}} description )
+
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{\hyperlink{type:queryOp}{queryOp} {\ttfamily\itshape{{op}}}}]\null{}
+Query operation.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{\hyperlink{type:stringOrBlob}{stringOrBlob} {\ttfamily\itshape{{value}}}}]\null{}
+(optional) Value to compare attribute with.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{\hyperlink{type:stringOrBlob}{stringOrBlob} {\ttfamily\itshape{{value2}}}}]\null{}
+(optional) Value to compare attribute with.
+\end{description}
+\noindent \subsection{jobRecord}
+\label{type:jobRecord}\hypertarget{type:jobRecord}{}%
+
+Information on a single job. Used for both feeding JP index server from primary storage and to answer user queries on index server.
+
+{\em{Structure}} (sequence complex type in WSDL)
+
+Fields: ( type{\ttfamily\itshape{{name}}} description )
+
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string {\ttfamily\itshape{{jobid}}}}]\null{}
+ID of the job.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string {\ttfamily\itshape{{owner}}}}]\null{}
+Job owner.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{list of \hyperlink{type:attrValue}{attrValue} {\ttfamily\itshape{{attributes}}}}]\null{}
+(optional) Attribute values, required by query/feed and available right now.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{list of xsd:string {\ttfamily\itshape{{primaryStorage}}}}]\null{}
+(optional) User query only: which primary storage(s) have data on this job.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:boolean {\ttfamily\itshape{{remove}}}}]\null{}
+(optional) UpdateJobs only: this job no longer belongs to the feed. Attribute values are those which caused the change.
+\end{description}
+\noindent \subsection{jppsFile}
+\label{type:jppsFile}\hypertarget{type:jppsFile}{}%
+
+JP primary storage file identification.
+
+{\em{Structure}} (sequence complex type in WSDL)
+
+Fields: ( type{\ttfamily\itshape{{name}}} description )
+
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string {\ttfamily\itshape{{class}}}}]\null{}
+Type of the file (as set on StartUpload).
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string {\ttfamily\itshape{{name}}}}]\null{}
+Name of the file (if there are more of the same type per job).
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string {\ttfamily\itshape{{url}}}}]\null{}
+Where the file is stored on JP primary storage.
+\end{description}
+\noindent \subsection{primaryQuery}
+\label{type:primaryQuery}\hypertarget{type:primaryQuery}{}%
+
+A single condition on job.
+
+{\em{Structure}} (sequence complex type in WSDL)
+
+Fields: ( type{\ttfamily\itshape{{name}}} description )
+
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string {\ttfamily\itshape{{attr}}}}]\null{}
+Attribute name to query.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{\hyperlink{type:queryOp}{queryOp} {\ttfamily\itshape{{op}}}}]\null{}
+Operation.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{\hyperlink{type:attrOrig}{attrOrig} {\ttfamily\itshape{{origin}}}}]\null{}
+(optional) Where the attribute value came from.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{\hyperlink{type:stringOrBlob}{stringOrBlob} {\ttfamily\itshape{{value}}}}]\null{}
+Value to compare the job attribute with.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{\hyperlink{type:stringOrBlob}{stringOrBlob} {\ttfamily\itshape{{value2}}}}]\null{}
+(optional) Another value (for op = WITHIN).
+\end{description}
+\noindent \subsection{queryOp}
+\label{type:queryOp}\hypertarget{type:queryOp}{}%
+
+Operators used in queries. Most are self-explanatory.
+
+{\em{Enumeration}} (restriction of xsd:string in WSDL), exactly one of the values must be specified.
+
+Values:
+
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{{\frenchspacing\texttt{{EQUAL}}}}]\null{}
+
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{{\frenchspacing\texttt{{UNEQUAL}}}}]\null{}
+
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{{\frenchspacing\texttt{{LESS}}}}]\null{}
+
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{{\frenchspacing\texttt{{GREATER}}}}]\null{}
+
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{{\frenchspacing\texttt{{WITHIN}}}}]\null{}
+The attribute is between two specified values.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{{\frenchspacing\texttt{{EXISTS}}}}]\null{}
+The attribute exists (even having a NULL value).
+\end{description}
+\noindent \subsection{stringOrBlob}
+\label{type:stringOrBlob}\hypertarget{type:stringOrBlob}{}%
+
+
+
+{\em{Union}} (choice complex type in WSDL)
+
+Fields: ( type{\ttfamily\itshape{{name}}} description )
+
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string {\ttfamily\itshape{{string}}}}]\null{}
+String value.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:base64Binary {\ttfamily\itshape{{blob}}}}]\null{}
+Binary value.
+\end{description}
+\noindent \subsection{tagValue}
+\label{type:tagValue}\hypertarget{type:tagValue}{}%
+
+A single user-recorded value for a job attribute.
+
+{\em{Structure}} (sequence complex type in WSDL)
+
+Fields: ( type{\ttfamily\itshape{{name}}} description )
+
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{xsd:string {\ttfamily\itshape{{name}}}}]\null{}
+Name of the attribute, including namespace.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{\hyperlink{type:stringOrBlob}{stringOrBlob} {\ttfamily\itshape{{value}}}}]\null{}
+(optional) Value.
+\end{description}
+\noindent 
