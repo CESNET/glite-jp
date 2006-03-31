@@ -17,7 +17,6 @@ GLITE_LOCATION_VAR=${GLITE_LOCATION_VAR:-${GLITE_LOCATION}/var}
 unset creds
 
 test -n "$GLITE_JP_PRIMARY_PORT" ||  GLITE_JP_PRIMARY_PORT=8901
-test -n "$GLITE_JP_PRIMARY_FTP_PORT" ||  GLITE_JP_PRIMARY_FTP_PORT=8950
 
 start()
 {
@@ -83,7 +82,7 @@ start()
 		FTPBE_INT_PREFIX=\"$GLITE_JP_PRIMARY_INTERNAL\" \
 		LD_LIBRARY_PATH=$GLOBUS_LOCATION/lib \
 		LD_PRELOAD=$GLITE_LOCATION/lib/glite-jp-ftpdauth.so \
-		$GLOBUS_LOCATION/sbin/in.ftpd -a -s -p $GLITE_JP_PRIMARY_FTP_PORT & \
+		$GLOBUS_LOCATION/sbin/in.ftpd -Q -W -a -s -p $GLITE_JP_PRIMARY_FTP_PORT & \
 		pid=\$!; echo \$pid > $pidfile.ftpd; sleep 2; true kill -0 \$pid" && echo " done" || echo " FAILED"
 }
 
