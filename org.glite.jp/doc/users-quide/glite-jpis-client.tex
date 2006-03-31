@@ -1,0 +1,93 @@
+% 
+% -------------------------------------------------------------
+% Refentry 
+% ------------------------------------------------------------- 	
+\section*{glite-jpis-client}
+\label{glitejpisclient}\hypertarget{glitejpisclient}{}%
+\label{name}
+
+%\section*{Nom}
+glite-jpis-client --- client interface for JP IS\label{synopsis}
+\subsection*{Synopsis}
+\label{id2455104}
+\begin{list}{}{\setlength{\itemindent}{-\leftmargin}\setlength{\parsep}{0mm}}
+\item\raggedright\texttt{glite-jpis-client [ -h | --help ] [ -i | --index-server  \textit{JPIS:PORT}] [ -q | --query-file  \textit{IN\_FILE.XML}] [ -t | --test-file  \textit{IN\_FILE.XML}] [ -e | --example-file  \textit{OUT\_FILE.XML}] [ -f | --format   {xml | human}]}
+\end{list}
+
+\subsection*{DESCRIPTION}
+\label{id2417458}
+
+{\bfseries{glite-jpis-client}} is command line interface for querying the Job Provenance Index Server. It takes the XML input, process the QueryJobs operation and returns the result in specified format.
+
+\subsection*{OPTIONS}
+\label{id2417597}
+
+With no options you get simple usage message as with {\texttt{{-h}}}.
+
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{{\texttt{{-h}}}\docbooktolatexpipe{}{\texttt{{--help}}}}]\null{}
+Displays usage message.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{{\texttt{{-i}}}\docbooktolatexpipe{}{\texttt{{--index-server}}}}]\null{}
+Specifies Job Provenance Index Server as {\ttfamily\itshape{{HOST:PORT}}}.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{{\texttt{{-q}}}\docbooktolatexpipe{}{\texttt{{--query-file}}}}]\null{}
+Process the QueryJobs operation. Requires input data in file {\ttfamily\itshape{{IN\_FILE.XML}}}, for using stdin specify {\texttt{{-}}}.
+
+The input and output data are in XML format with XSD schema, which can be found in {\texttt{{JobProvenanceISClient.\dbz{}xsd}}} (element QueryJobs for input and QueryJobsResponse for output).
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{{\texttt{{-t}}}\docbooktolatexpipe{}{\texttt{{--test-file}}}}]\null{}
+Test the input data from {\ttfamily\itshape{{IN\_FILE.XML}}} (or from stdin if {\texttt{{-}}} is specified) and prints the found content.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{{\texttt{{-e}}}\docbooktolatexpipe{}{\texttt{{--example-file}}}}]\null{}
+Write the example input data to file {\ttfamily\itshape{{OUT\_FILE.XML}}} (or to stdout if {\texttt{{-}}} is specified). The XML is valid against XSD schema in {\texttt{{JobProvananceISClient.\dbz{}xsd}}}, formating may vary according to used gsoap version.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{{\texttt{{-f}}}\docbooktolatexpipe{}{\texttt{{--format}}}}]\null{}
+Use {\ttfamily\itshape{{FORMAT}}} as output format type. You can specify {\texttt{{xml}}} for interchangeable XML output or {\texttt{{human}}} for nice looking human readable output.
+\end{description}
+\noindent 
+\subsection*{RETURN VALUE}
+\label{id2417767}
+
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{0}]\null{}
+Success.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{-1}]\null{}
+Communication error or error from the remote server.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{EINVAL}]\null{}
+In most cases XML parsing error.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{other error}]\null{}
+Other error from errno.
+\end{description}
+\noindent 
+\subsection*{EXAMPLES}
+\label{id2417822}
+
+\begin{description}
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{{\bfseries{glite-jpis-client --example-file query.xml}}}]\null{}
+Save the example query parameters to file {\texttt{{query.\dbz{}xml}}}.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{{\bfseries{glite-jpis-client --query-file query.xml}}}]\null{}
+Queries the local index server running on default port with the query parameters specified in the file {\texttt{{query.\dbz{}xml}}}.
+% \null and \mbox are tricks to induce different typesetting decisions
+\item[{{\bfseries{glite-jpis-client -i localhost:8902 -q - -f human}}}]\null{}
+Queries the index server running on local host on the port 8902 with the query parameters from stdin and show results in non-XML form.
+\end{description}
+\noindent 
+
+
+\subsection*{SEE ALSO}
+\label{id2418102}
+
+glite-jp-indexd(8)
+
+\subsection*{AUTHOR}
+\label{id2418112}
+
+EU DataGrid Work Package 1, CESNET group.
