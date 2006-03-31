@@ -44,7 +44,7 @@ start()
 
 	echo -n Starting glite-jp-importer ...
 	su - $GLITE_USER -c "$GLITE_LOCATION/bin/glite-jp-importer \
-		-i $pidfile $jpreg_maildir$jpdump_maildir$jpps" \
+		-i $pidfile $jpreg_maildir $jpdump_maildir $jpps $creds" \
 	&& echo " done" || echo " FAILED"
 }
 
