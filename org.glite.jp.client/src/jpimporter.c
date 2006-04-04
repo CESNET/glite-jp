@@ -12,6 +12,7 @@
 #include <errno.h>
 #include <syslog.h>
 #include <fcntl.h>
+#include <libgen.h>
 
 #include "glite/lb/lb_maildir.h"
 #include "glite/security/glite_gsplugin.h"
@@ -66,6 +67,7 @@ static char			   *name;
 static char			   *jpps = GLITE_JPPS;
 static char				reg_mdir[PATH_MAX] = GLITE_REG_IMPORTER_MDIR;
 static char				dump_mdir[PATH_MAX] = GLITE_DUMP_IMPORTER_MDIR;
+static char				*store = NULL;
 static struct soap	   *soap;
 
 static time_t			cert_mtime;
@@ -87,6 +89,7 @@ static struct option opts[] = {
 	{ "dump-mdir",   1, NULL,    'd'},
 	{ "pidfile",     1, NULL,    'i'},
 	{ "poll",        1, NULL,    't'},
+	{ "store",       1, NULL,    's'},
 	{ NULL,          0, NULL,     0}
 };
 
@@ -105,6 +108,7 @@ static void usage(char *me)
 		"\t-d, --dump-mdir    path to the 'LB maildir' subtree for LB dumps\n"
 		"\t-i, --pidfile      file to store master pid\n"
 		"\t-t, --poll         maildir polling interval (in seconds)\n",
+		"\t-s, --store        keep uploaded jobs in this directory\n",
 		me);
 }
 
@@ -157,6 +161,7 @@ int main(int argc, char *argv[])
 		case 'C': cadir = optarg; break;
 		case 'p': jpps = optarg; break;
 		case 't': poll = atoi(optarg); break;
+		case 's': store = optarg; break;
 		case 'r': strcpy(reg_mdir, optarg); break;
 		case 'd': strcpy(dump_mdir, optarg); break;
 		case 'i': strcpy(pidfile, optarg); break;
@@ -187,6 +192,12 @@ int main(int argc, char *argv[])
 		
 	edg_wll_MaildirInit(reg_mdir);
 	edg_wll_MaildirInit(dump_mdir);
+	if (store && *store) {
+		if (mkdir(store, 0750) != 0 && errno != EEXIST) {
+			fprintf(stderr, "Can't create directory %s: %s\n", store, strerror(errno));
+			store = NULL;
+		}
+	}
 
 	if ( !debug ) {
 		if ( daemon(1,0) == -1 ) { perror("deamon()"); exit(1); }
@@ -401,7 +412,9 @@ static int dump_importer(void)
 	static int		readnew = 1;
 	char		   *msg = NULL,
 				   *fname = NULL,
-				   *aux;
+				   *aux,
+				   *bname;
+	char                        fspec[PATH_MAX];
 	int				ret;
 	int				fhnd;
 	msg_pattern_t	tab[] = {
@@ -469,6 +482,20 @@ static int dump_importer(void)
 		ret = soap_call___jpsrv__CommitUpload(soap, tab[_jpps].val?:jpps, "", &cu_in, &empty);
 		if ( (ret = check_soap_fault(soap, ret)) ) break;
 		dprintf(("[%s] Dump upload succesfull\n", name));
+		if (store && *store) {
+			bname = strdup(tab[_file].val);
+			snprintf(fspec, sizeof fspec, "%s/%s", store, basename(bname));
+			free(bname);
+			if (rename(tab[_file].val, fspec) != 0) 
+				fprintf(stderr, "moving %s to %s failed: %s\n", tab[_file].val, fspec, strerror(errno));
+			else
+				dprintf(("[%s] moving %s to %s OK\n", name, tab[_file].val, fspec));
+		} else {
+			if (unlink(tab[_file].val) != 0)
+				fprintf(stderr, "removing %s failed: %s\n", tab[_file].val, strerror(errno));
+			else
+				dprintf(("[%s] %s removed\n", name, tab[_file].val));
+		}
 	} while (0);
 
 	edg_wll_MaildirTransEnd(dump_mdir, fname, ret? LBMD_TRANS_FAILED_RETRY: LBMD_TRANS_OK);
