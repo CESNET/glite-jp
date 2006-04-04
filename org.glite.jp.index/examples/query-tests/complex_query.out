@@ -13,23 +13,4 @@ Attributes:
 	http://egee.cesnet.cz/en/Schema/LB/Attributes:user
 
 OK
-Result 2 jobs:
-	jobid = https://localhost:7846/pokus1, owner = (null)
-		http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus
-			value = Done
-			origin = 0, (null)
-			time = Thu Jan  1 01:00:00 1970
-		http://egee.cesnet.cz/en/Schema/LB/Attributes:user
-			value = CertSubj
-			origin = 0, (null)
-			time = Thu Jan  1 01:00:00 1970
-	jobid = https://localhost:7846/pokus2, owner = (null)
-		http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus
-			value = Ready
-			origin = 0, (null)
-			time = Thu Jan  1 01:00:00 1970
-		http://egee.cesnet.cz/en/Schema/LB/Attributes:user
-			value = CertSubj
-			origin = 0, (null)
-			time = Thu Jan  1 01:00:00 1970
-<?xml version="1.0" encoding="UTF-8"?><jpisclient:QueryJobsResponse xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:jptype="http://glite.org/wsdl/types/jp" xmlns:jpsrv="http://glite.org/wsdl/services/jp" xmlns:jpelem="http://glite.org/wsdl/elements/jp" xmlns:jpisclient="http://glite.org/xsd/types/jpisclient"><jobs><jobid>https://localhost:7846/pokus1</jobid><attributes><name>http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus</name><value><string>Done</string></value><timestamp>1970-01-01T00:00:00Z</timestamp><origin>SYSTEM</origin></attributes><attributes><name>http://egee.cesnet.cz/en/Schema/LB/Attributes:user</name><value><string>CertSubj</string></value><timestamp>1970-01-01T00:00:00Z</timestamp><origin>SYSTEM</origin></attributes><primaryStorage>http://localhost:8901</primaryStorage></jobs><jobs><jobid>https://localhost:7846/pokus2</jobid><attributes><name>http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus</name><value><string>Ready</string></value><timestamp>1970-01-01T00:00:00Z</timestamp><origin>SYSTEM</origin></attributes><attributes><name>http://egee.cesnet.cz/en/Schema/LB/Attributes:user</name><value><string>CertSubj</string></value><timestamp>1970-01-01T00:00:00Z</timestamp><origin>SYSTEM</origin></attributes><primaryStorage>http://localhost:8901</primaryStorage></jobs></jpisclient:QueryJobsResponse>
+<?xml version="1.0" encoding="UTF-8"?><jpisclient:QueryJobsResponse xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:jptype="http://glite.org/wsdl/types/jp" xmlns:jpsrv="http://glite.org/wsdl/services/jp" xmlns:jpelem="http://glite.org/wsdl/elements/jp" xmlns:jpisclient="http://glite.org/xsd/types/jpisclient"><jobs><jobid>https://localhost:7846/pokus1</jobid><owner>/O=CESNET/O=Masaryk University/CN=Milos Mulac</owner><attributes><name>http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus</name><value><string>Done</string></value><timestamp>1969-12-31T23:00:00Z</timestamp><origin>SYSTEM</origin></attributes><attributes><name>http://egee.cesnet.cz/en/Schema/LB/Attributes:user</name><value><string>CertSubj</string></value><timestamp>1969-12-31T23:00:00Z</timestamp><origin>SYSTEM</origin></attributes><primaryStorage>http://localhost:8901</primaryStorage></jobs><jobs><jobid>https://localhost:7846/pokus2</jobid><owner>OwnerName</owner><attributes><name>http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus</name><value><string>Ready</string></value><timestamp>1969-12-31T23:00:00Z</timestamp><origin>SYSTEM</origin></attributes><attributes><name>http://egee.cesnet.cz/en/Schema/LB/Attributes:user</name><value><string>CertSubj</string></value><timestamp>1969-12-31T23:00:00Z</timestamp><origin>SYSTEM</origin></attributes><primaryStorage>http://localhost:8901</primaryStorage></jobs></jpisclient:QueryJobsResponse>
