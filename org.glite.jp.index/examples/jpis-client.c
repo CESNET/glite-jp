@@ -31,9 +31,9 @@ SOAP_NMAC struct Namespace namespaces[] = {
 
 static struct option opts[] = {
 	{"index-server",required_argument,	NULL,	'i'},
-	{"example-file",optional_argument,	NULL,	'e'},
-	{"query-file",	optional_argument,	NULL,	'q'},
-	{"test-file",	optional_argument,	NULL,	't'},
+	{"example-file",required_argument,	NULL,	'e'},
+	{"query-file",	required_argument,	NULL,	'q'},
+	{"test-file",	required_argument,	NULL,	't'},
 	{"format",	required_argument,	NULL,	'f'},
 	{NULL, 0, NULL, 0}
 };
