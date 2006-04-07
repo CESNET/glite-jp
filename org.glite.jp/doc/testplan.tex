@@ -73,15 +73,18 @@ $ jpps-test GetJobAttr JOBID http://egee.cesnet.cz/en/Schema/JP/System:owner
 \end{itemize}
 \result Should print the OWNER value supplied.
 
-
 \subsubsection{AuthZ check}
-\req JPPS running, a~job registered with the procedure in~\ref{regjob}
+\req JPPS running, a~job registered with the procedure in~\ref{regjob} \\
 \how
-Call GetJobAttributes using different user credentials 
+Call GetJobAttributes using different user credentials \\
 \result 
-Should fail with ``Permission denied'' error
+Should fail with ``Permission denied'' error \\
+
 
 \subsection{Tag recording}
+\label{tagreg}
+
+\subsubsection{Basic functionality}
 \req JPPS running, a~job registered with the procedure in~\ref{regjob}
 \how 
 \begin{itemize}
@@ -98,6 +101,14 @@ $ jpps-test  GetJobAttr JOBID TAGNAME
 The recorded value should be returned.
 
 - record and retrieve more values of the same tag
+
+\subsubsection{AuthZ check}
+\req JPPS running, a~job registered with the procedure in~\ref{tagreg} \\
+\how Call RecordTag using different user credentials \\
+\result Should fail with ``Permission denied'' error \\
+
+
+
 \subsection{File upload}
 
 \subsubsection{Basic functionality}
