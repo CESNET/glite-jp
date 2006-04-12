@@ -194,9 +194,21 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RecordTag(
 	CONTEXT_FROM_SOAP(soap,ctx);
 	void	*file_be,*file_p;
 	glite_jpps_fplug_data_t	**pd = NULL;
-	glite_jp_attrval_t	attr[2];
+	glite_jp_attrval_t	attr[2], meta[2];
+
 
 	file_be = file_p = NULL;
+
+	memset(meta,0,sizeof meta);
+        meta[0].name = strdup(GLITE_JP_ATTR_OWNER);
+
+	if (glite_jppsbe_get_job_metadata(ctx,in->jobid,meta)) {
+		goto err;
+	}
+	
+	if (glite_jpps_authz(ctx,SOAP_TYPE___jpsrv__RecordTag,in->jobid,meta[0].value)) {
+		goto err;
+	}
 
 	attr[0].name = in->tag->name;
 	if (in->tag->value->string) {
@@ -250,6 +262,10 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RecordTag(
 
 	free(pd);
 	return SOAP_OK;
+err:
+	glite_jp_attrval_free(meta,0);
+	err2fault(ctx,soap);
+	return SOAP_FAULT;
 }
 
 static void s2jp_qval(const struct jptype__stringOrBlob *in, char **value, int *binary, size_t *size)
@@ -405,9 +421,21 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__GetJobFiles(
 	glite_jp_error_t	err;
 	void	**pd;
 	struct jptype__jppsFile 	**f = NULL;
+	glite_jp_attrval_t	meta[2];
 
 	memset(&err,0,sizeof err);
 	out->__sizefiles = 0;
+
+	memset(meta,0,sizeof meta);
+        meta[0].name = strdup(GLITE_JP_ATTR_OWNER);
+
+	if (glite_jppsbe_get_job_metadata(ctx,in->jobid,meta)) {
+		goto err;
+	}
+	
+	if (glite_jpps_authz(ctx,SOAP_TYPE___jpsrv__GetJobFiles,in->jobid,meta[0].value)) {
+		goto err;
+	}
 
 	for (pd = ctx->plugins; *pd; pd++) {
 		glite_jpps_fplug_data_t	*plugin = *pd;
@@ -452,6 +480,10 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__GetJobFiles(
 	memcpy(out->files,f,out->__sizefiles * sizeof *f);
 
 	return SOAP_OK;
+err:
+	glite_jp_attrval_free(meta,0);
+	err2fault(ctx,soap);
+	return SOAP_FAULT;
 }
 
 SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__GetJobAttributes(
@@ -459,10 +491,21 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__GetJobAttributes(
 		struct _jpelem__GetJobAttributes *in,
 		struct _jpelem__GetJobAttributesResponse *out)
 {
-	glite_jp_attrval_t	*attr;
+	glite_jp_attrval_t	*attr, meta[2];
 	int	i,n;
 
 	CONTEXT_FROM_SOAP(soap,ctx);
+
+	memset(meta,0,sizeof meta);
+        meta[0].name = strdup(GLITE_JP_ATTR_OWNER);
+
+	if (glite_jppsbe_get_job_metadata(ctx,in->jobid,meta)) {
+		goto err;
+	}
+	
+	if (glite_jpps_authz(ctx,SOAP_TYPE___jpsrv__GetJobAttributes,in->jobid,meta[0].value)) {
+		goto err;
+	}
 
 	if (glite_jpps_get_attrs(ctx,in->jobid,
 			in->attributes,
@@ -475,4 +518,8 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__GetJobAttributes(
 	out->__sizeattrValues = jp2s_attrValues(soap,attr,&out->attrValues,1);
 
 	return SOAP_OK;
+err:
+	glite_jp_attrval_free(meta,0);
+	err2fault(ctx,soap);
+	return SOAP_FAULT;
 }
