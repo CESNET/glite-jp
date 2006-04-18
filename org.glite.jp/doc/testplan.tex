@@ -12,11 +12,11 @@
 \Dissemination{PUBLIC}
 \DocumentLink{}
 
-\def\req{\noindent\textbf{Prerequisities:}}
-\def\how{\noindent\textbf{How to run:}}
-\def\result{\noindent\textbf{Expected result:}}
-\def\jpps{\noindent\textbf{JP PS log should contain:}}
-\def\jpis{\noindent\textbf{JP IS log should contain:}}
+\def\req{\noindent\textbf{Prerequisities: }}
+\def\how{\noindent\textbf{How to run: }}
+\def\result{\noindent\textbf{Expected result: }}
+\def\jpps{\noindent\textbf{JP PS log should contain: }}
+\def\jpis{\noindent\textbf{JP IS log should contain: }}
 
 \def\path#1{{\normalfont\textsf{#1}}}
 \def\code#1{\texttt{#1}}
@@ -127,8 +127,57 @@ The recorded value should be returned.
 (don't call CommitUpload)
 * uploaded file should be purged after timeout
 
-\section{LB plugin}
-\todo{TBD}
+\section{\LB\ plugin}
+%\todo{honik}
+\LB\ plugin is a component integrating the \LB\ functionality into JP.
+
+
+\subsection{Standalone tests}
+\LB\ plugin as a standalone component is used for example in the \texttt{glite-lb-statistics} 
+program (part of org.glite.lb.utils). This program reads a dump file of events related to
+one particular job and using the \LB\ plugin it computes the job state and many other job 
+statistics. See the \LB\ testplan for more details.
+
+\subsection{Integrated tests}
+\req JPPS running with the \texttt{-P/path/to/the/glite\_lb\_plugin.so}
+
+\how 
+\begin{itemize}
+\item call GetJobAttributes to get the LB attributes
+\begin{verbatim}
+$ jpps-test GetJobAttr JOBID ATTRIBUTE
+
+where ATTRIBUTE is one of the 
+http://egee.cesnet.cz/en/Schema/LB/Attributes:jobId
+http://egee.cesnet.cz/en/Schema/LB/Attributes:user
+http://egee.cesnet.cz/en/Schema/LB/Attributes:VO
+http://egee.cesnet.cz/en/Schema/LB/Attributes:aTag
+http://egee.cesnet.cz/en/Schema/LB/Attributes:rQType
+http://egee.cesnet.cz/en/Schema/LB/Attributes:eDuration
+http://egee.cesnet.cz/en/Schema/LB/Attributes:eNodes
+http://egee.cesnet.cz/en/Schema/LB/Attributes:eProc
+http://egee.cesnet.cz/en/Schema/LB/Attributes:RB
+http://egee.cesnet.cz/en/Schema/LB/Attributes:CE
+http://egee.cesnet.cz/en/Schema/LB/Attributes:host
+http://egee.cesnet.cz/en/Schema/LB/Attributes:UIHost
+http://egee.cesnet.cz/en/Schema/LB/Attributes:CPUTime
+http://egee.cesnet.cz/en/Schema/LB/Attributes:NProc
+http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus
+http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatusDate
+http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatusReason
+http://egee.cesnet.cz/en/Schema/LB/Attributes:LRMSDoneStatus
+http://egee.cesnet.cz/en/Schema/LB/Attributes:LRMSStatusReason
+http://egee.cesnet.cz/en/Schema/LB/Attributes:retryCount
+http://egee.cesnet.cz/en/Schema/LB/Attributes:additionalReason
+http://egee.cesnet.cz/en/Schema/LB/Attributes:jobType
+http://egee.cesnet.cz/en/Schema/LB/Attributes:nsubjobs
+http://egee.cesnet.cz/en/Schema/LB/Attributes:lastStatusHistory
+http://egee.cesnet.cz/en/Schema/LB/Attributes:fullStatusHistory
+\end{verbatim}
+\end{itemize}
+
+\result Should print the corresponding LB attributes
+
 
 \section{JPPS-JPIS interaction (feeds)}
 
