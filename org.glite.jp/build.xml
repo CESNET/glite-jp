@@ -12,6 +12,10 @@
 
 	Revision history:
 	$Log$
+	Revision 1.11  2006/01/16 17:20:25  mmulac
+	merge from RC15 branch
+	 - compiles
+	
 	Revision 1.10.2.1  2005/10/20 06:55:15  zsalvet
 	Add libtar and mysql external dependencies.
 	
@@ -212,7 +216,7 @@
 
 	<!-- component targets definitions tag = do not remove = -->
 
-	<target name="security.gsoap-plugin" unless="setenvonly" depends="envset">
+	<target name="security.gsoap-plugin" unless="jponly" depends="envset">
 		<if>
 			<isset property="small.memory"/>
 			<then>
@@ -230,7 +234,7 @@
 		</if>
  	</target>
 
-	<target name="lb.server-bones" unless="setenvonly" depends="envset">
+	<target name="lb.server-bones" unless="jponly" depends="envset">
 		<if>
 			<isset property="small.memory"/>
 			<then>
@@ -247,6 +251,13 @@
 			</else>
 		</if>
  	</target>
+
+	<if>
+		<isset property="setenvonly"/>
+	<then>
+		<property name="jponly" value="yes"/>
+		</then>           
+	</if>                   
 
 	<target name="ws-interface" unless="setenvonly" depends="envset" >
 		<if>
