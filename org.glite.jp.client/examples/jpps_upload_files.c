@@ -23,8 +23,8 @@ int main(int argc, char **argv)
 {
 	glite_jpcl_context_t	ctx;
 	char				  **files,
-						   *jobid,
-						   *proxy,
+						   *jobid = NULL,
+						   *proxy = NULL,
 						   *lbmd = NULL,
 						   *jpps = NULL;
 	int						i, j;
@@ -45,6 +45,11 @@ int main(int argc, char **argv)
 	}
 
 	if ( i >= argc ) { usage(); return 1; }
+
+	if ( !proxy && !(proxy = getenv("X509_USER_PROXY")) ) {
+		perror("-p or X509_USER_PROXY must be set!\n");
+		return 1;
+	}
 
 	if ( !(files = calloc(argc-i+1, sizeof(*files))) ) {
 		perror("calloc()");
