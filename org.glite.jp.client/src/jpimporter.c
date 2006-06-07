@@ -109,7 +109,7 @@ static void usage(char *me)
 		"\t-p, --jpps         JP primary service server\n"
 		"\t-r, --reg-mdir     path to the 'LB maildir' subtree for registrations\n"
 		"\t-d, --dump-mdir    path to the 'LB maildir' subtree for LB dumps\n"
-		"\t-d, --sandbox-mdir path to the 'LB maildir' subtree for input/output sandboxes\n"
+		"\t-s, --sandbox-mdir path to the 'LB maildir' subtree for input/output sandboxes\n"
 		"\t-i, --pidfile      file to store master pid\n"
 		"\t-t, --poll         maildir polling interval (in seconds)\n",
 		me);

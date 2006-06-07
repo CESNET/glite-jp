@@ -41,10 +41,11 @@ start()
 	jpdump_maildir="--dump-mdir $GLITE_LB_EXPORT_JPDUMP_MAILDIR "
 	[ -d "$GLITE_LB_EXPORT_JPDUMP_MAILDIR" ] || mkdir "$GLITE_LB_EXPORT_JPDUMP_MAILDIR" && chown $GLITE_USER:$GLITE_GROUP "$GLITE_LB_EXPORT_JPDUMP_MAILDIR"
 	[ -n "$GLITE_LB_EXPORT_JPPS" ] && jpps="--jpps $GLITE_LB_EXPORT_JPPS "
+	[ -n "$GLITE_LB_EXPORT_SANDBOX_MAILDIR" ] && sandbox_maildir="--sandbox-mdir $GLITE_LB_EXPORT_SANDBOX_MAILDIR "
 
 	echo -n Starting glite-jp-importer ...
 	su - $GLITE_USER -c "$GLITE_LOCATION/bin/glite-jp-importer \
-		-i $pidfile $jpreg_maildir $jpdump_maildir $jpps $creds" \
+		-i $pidfile $jpreg_maildir $jpdump_maildir $jpps $sandbox_maildir $creds" \
 	&& echo " done" || echo " FAILED"
 }
 

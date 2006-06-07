@@ -49,6 +49,7 @@ jpimporter daemon usage: glite-jp-importer [option]
                            messages.
         -d, --dump-mdir    path to the 'LB maildir' subtree for LB dumps
                            This directory is scanned for the file upload msgs.
+        -s, --sandbox-mdir path to the 'LB maildir' subtree for input/output sandboxes
         -i, --pidfile      file to store master pid
         -t, --poll         maildir polling interval (in seconds)
                            Specifies the time interval for which the process
