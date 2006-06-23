@@ -23,7 +23,11 @@
   use case scenarios in this document. Technical reference
   documentation for both JP user and JP administrator is included in
   this document too.  This user's guide also contains release notes
-  describing current JP implementation.}
+  describing current JP implementation.
+
+  For actual version of this document see
+  \texttt{http://egee.cesnet.cz/en/JRA1/} web page.
+}
 
 \def\todo#1{\textbf{TODO:} #1}
 
@@ -107,6 +111,10 @@ after preconfigured timeout (one week for example). If a user wants
 any information about such a job before this timeout (or before it
 reach a terminal state) he must use the LB service (please refer to LB
 user's guide). After that timeout he must use the JP service.
+
+For LB configuration please see gLite installation guide. For a
+technical description of LB-JP interactions please see
+\texttt{http://egee.cesnet.cz/en/JRA1/LB-JP-interaction-guide.pdf}.
 
 \subsubsection{JP service location}
 To call JP you need to know JP services address. There are two services:
@@ -227,7 +235,7 @@ one namespace (represented by a prefix in the attribute name).
 
 A namespace is defined by a service (currently we have one for LB and
 one for JP) providing its data to the JP or a user group/experiment
-etc. who wants to attach its own data to the job.
+who wants to attach its own data to the job.
 
 It is expected that UI have preconfigured list of available namespaces
 and XML schema for each namespace (the schema can be automatically
@@ -260,16 +268,21 @@ information is available for job owner only.
 % Podle Ljochy sem nepatøí. Podle mne musí u¾ivatel vìdìt kdy a s èím
 % otravovat administratora (zejména IS).
 
-In general, the page \texttt{http://egee.cesnet.cz/en/JRA1} should
-contain actual versions of JP documentation.
-
-Interfaces (WS):
 \begin{itemize}
- \item In source code tree the WSDLs are located in these files:\\
-  \texttt{org.glite.jp.ws-interface/src/JobProvenanceIS.xml,\\
-  org.glite.jp.ws-interface/src/JobProvenancePS.xml,\\
-  org.glite.jp.ws-interface/src/JobProvenanceTypes.xml
-  } 
+ \item In general, the page \texttt{http://egee.cesnet.cz/en/JRA1} should
+  contain actual versions of JP documentation.
+
+\item Interfaces (WS):
+ \begin{itemize}
+  \item In source code tree the WSDLs are located in these files:\\
+   \texttt{org.glite.jp.ws-interface/src/JobProvenanceIS.xml,\\
+   org.glite.jp.ws-interface/src/JobProvenancePS.xml,\\
+   org.glite.jp.ws-interface/src/JobProvenanceTypes.xml
+   } 
+ \end{itemize}
+ \item Namespaces of attributes -- see section \ref{attributes}
+ \item Job provenance test plan\\
+ \texttt{http://egee.cesnet.cz/en/JRA1/testplan.pdf}
 \end{itemize}
 
 \subsection{Command line interface (CLI)}
