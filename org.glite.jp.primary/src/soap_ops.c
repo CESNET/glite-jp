@@ -91,6 +91,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RegisterJob(
 		return SOAP_FAULT;
 	}
 
+	memset(owner_val, 0, 2 * sizeof(glite_jp_attrval_t));
 	owner_val[0].name = GLITE_JP_ATTR_OWNER;
 	owner_val[0].value = in->owner;
 	owner_val[0].origin = GLITE_JP_ATTR_ORIG_SYSTEM;
@@ -198,6 +199,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RecordTag(
 
 	file_be = file_p = NULL;
 
+	memset(attr, 0, 2 * sizeof(glite_jp_attrval_t));
 	attr[0].name = in->tag->name;
 	if (in->tag->value->string) {
 		attr[0].value = in->tag->value->string;
