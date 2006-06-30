@@ -77,16 +77,15 @@ int main(int argc, char *argv[])
 	int			one = 1,i;
 	edg_wll_GssStatus	gss_code;
 	struct sockaddr_in	a;
-	char			*config_file;
 	glite_jpis_context_t	isctx;
 
 
 	glite_jp_init_context(&ctx);
 
-	/* Read config options/file */
-	// XXX: need add something meaningfull to src/conf.c !
-	config_file = NULL;
-	glite_jp_get_conf(argc, argv, config_file, &conf);
+	if (glite_jp_get_conf(argc, argv, NULL, &conf)) {
+		glite_jp_free_context(ctx);
+		exit(1);
+	}
 	glite_jpis_init_context(&isctx, ctx, conf);
 
 	/* connect to DB */
@@ -184,7 +183,6 @@ int main(int argc, char *argv[])
 	*/
 	/* for dbg - one slave OK */ glite_srvbones_set_param(GLITE_SBPARAM_SLAVES_COUNT,1);
 	glite_srvbones_run(data_init,&stab,1 /* XXX: entries in stab */,debug);
-
 
 	glite_jpis_free_db(isctx);
 	glite_jp_free_conf(conf);

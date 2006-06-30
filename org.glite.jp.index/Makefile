@@ -60,11 +60,11 @@ ps_prefix:=jpps_
 
 SRCS:= conf.c bones_server.c soap_ops.c soap_ps_calls.c \
 	ws_ps_typeref.c ws_is_typeref.c db_ops.c context.c common_server.c \
-	${is_prefix}ServerLib.c \
-	${ps_prefix}ClientLib.c ${ps_prefix}C.c \
+	${is_prefix}Server.c ${is_prefix}C.c\
+	${ps_prefix}ClientLib.c  \
 
-EXA_TEST_SRCS:=jpis-test.c ${is_prefix}C.c ${is_prefix}Client.c context.c db_ops.c conf.c
-EXA_DB_SRCS:=jpis-db-internal.c db_ops.c conf.c context.c
+EXA_TEST_SRCS:=jpis-test.c ${is_prefix}C.c ${is_prefix}Client.c context.c db_ops.c conf.c ws_is_typeref.c
+EXA_DB_SRCS:=jpis-db-internal.c db_ops.c conf.c context.c ws_is_typeref.c
 EXA_CLIENT_SRCS:=jpis-client.c ${is_client_prefix}C.c ${is_client_prefix}Client.c
 #                ${is_prefix}C.c
 
@@ -197,6 +197,7 @@ ws_ps_typeref.o: ws_ps_typeref.c jpis_H.h ws_typemap.h ws_ps_typeref.h
 ws_is_typeref.o: ws_is_typeref.c jpis_H.h ws_typemap.h ws_is_typeref.h
 comon_server.o: common_server.c common_server.h
 jpis-client.o: jpis-client.c ${is_client_prefix}H.h soap_version.h
+conf.o: conf.c ${is_prefix}H.h soap_version.h
 
 %.1: %.sgml
 	docbook2man $<

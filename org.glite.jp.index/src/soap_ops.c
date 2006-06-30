@@ -596,3 +596,14 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__DeleteFeed(
         return SOAP_OK;
 }
 
+
+SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__ServerConfiguration(
+        struct soap *soap,
+        struct _jpelem__ServerConfiguration *in,
+        struct _jpelem__ServerConfigurationResponse *out)
+{
+	// empty, just for deserializer generation
+        puts(__FUNCTION__);
+        return SOAP_OK;
+}
+

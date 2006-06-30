@@ -22,6 +22,7 @@
 #define __jpsrv__AddFeed __ns1__AddFeed
 #define __jpsrv__GetFeeds __ns1__getFeedIDs
 #define __jpsrv__DeleteFeed __ns1__DeleteFeed
+#define __jpsrv__ServerConfiguration __ns1__ServerConfiguration
 
 #endif
 

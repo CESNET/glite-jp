@@ -84,7 +84,7 @@ static int SoapToQueryCond(
 
 
 	assert(in); assert(out);
-	qr = calloc(in->__sizerecord, sizeof(*qr));	
+	qr = calloc(in->__sizerecord + 1, sizeof(*qr));	
 
 	for (i=0; i < in->__sizerecord; i++) {
 		qr[i].attr = strdup(in->attr);
@@ -116,7 +116,7 @@ static int SoapToQueryCond(
 }
 
 /**
- * Translate JP query conditions from soap to C query_rec 
+ * Translate JP index query conditions from soap to C query_rec 
  *
  * \param IN Soap structure
  * \param OUT array of glite_jp_query_rec_t query records
@@ -135,6 +135,78 @@ int glite_jpis_SoapToQueryConds(
 
 	for (i=0; i<size; i++) {
 		if ( SoapToQueryCond(soap, in[i], &(qr[i])) ) {
+			*out = NULL;
+			return 1;
+		}
+	}
+
+	*out = qr;
+	
+	return 0;
+}
+
+
+static int SoapToPrimaryQueryCond(
+        struct soap			*soap,
+        struct jptype__primaryQuery	*in,
+        glite_jp_query_rec_t		**out)
+{
+	glite_jp_query_rec_t	*qr;	
+	int			i;
+
+
+	assert(in); assert(out);
+	qr = calloc(2, sizeof(*qr));	
+
+	qr[0].attr = strdup(in->attr);
+	glite_jpis_SoapToQueryOp(in->op, &(qr[0].op));
+
+	switch (qr[0].op) {
+	case GLITE_JP_QUERYOP_EXISTS:
+		break;
+
+	case GLITE_JP_QUERYOP_WITHIN:
+		SoapToQueryRecordVal(soap, in->value2, &(qr[0].binary), 
+			&(qr[0].size2), &(qr[0].value2));
+		// fall through
+	default:
+		if ( SoapToQueryRecordVal(soap, in->value, &(qr[0].binary), 
+				&(qr[0].size), 	&(qr[0].value)) ) {
+			*out = NULL;
+			return 1;
+		}
+		break;
+	}
+	
+	glite_jpis_SoapToAttrOrig(soap, in->origin, &(qr[0].origin) );
+	
+	*out = qr;
+
+	return 0;
+}
+
+
+
+/**
+ * Translate JP primary query conditions from soap to C query_rec 
+ *
+ * \param IN Soap structure
+ * \param OUT array of glite_jp_query_rec_t query records
+ */
+int glite_jpis_SoapToPrimaryQueryConds(
+        struct soap			*soap,
+	int				size,
+        struct jptype__primaryQuery	**in,
+        glite_jp_query_rec_t		***out)
+{
+	glite_jp_query_rec_t    **qr;
+	int 			i;
+
+	assert(in); assert(out);
+        qr = calloc(size+1, sizeof(*qr));
+
+	for (i=0; i<size; i++) {
+		if ( SoapToPrimaryQueryCond(soap, in[i], &(qr[i])) ) {
 			*out = NULL;
 			return 1;
 		}
