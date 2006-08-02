@@ -22,7 +22,7 @@ CC=gcc
 -include Makefile.inc
 
 
-VPATH=${top_srcdir}/src:${top_srcdir}/examples:${top_srcdir}/tests:${top_srcdir}/test:${top_srcdir}/project:${top_srcdir}/doc:${jpproject}:${stagedir}/interface
+VPATH=${top_srcdir}/src:${top_srcdir}/examples:${top_srcdir}/project:${top_srcdir}/doc:${jpproject}:${stagedir}/interface
 
 GLOBUS_LIBS:=-L${globus_prefix}/lib \
 	-lglobus_common_${nothrflavour} \
