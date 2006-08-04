@@ -40,12 +40,12 @@ int glite_jpis_daemonize(const char *servername, const char *custom_pidfile, con
 	if (!custom_pidfile) {
 		asprintf(&pidfile, "%s/%s.pid", geteuid() == 0 ? "/var/run" : getenv("HOME"), servername);
 	} else {
-		pidfile = NULL;
+		pidfile = strdup(custom_pidfile);
 	}
 //	printf("pidfile: %s\n", pidfile ? pidfile : custom_pidfile);
 	setpgrp(); /* needs for signalling */
 	master = getpid();
-	fpid = fopen(pidfile ? pidfile : custom_pidfile,"r");
+	fpid = fopen(pidfile,"r");
 	if ( fpid )
 	{
 		opid = -1;
@@ -60,13 +60,16 @@ int glite_jpis_daemonize(const char *servername, const char *custom_pidfile, con
 			else if (errno != ESRCH) { perror("kill()"); return 0; }
 		}
 		fclose(fpid);
-	} else if (errno != ENOENT) { perror(pidfile ? pidfile : custom_pidfile); free(pidfile); return 0; }
+	} else if (errno != ENOENT) { perror(pidfile); free(pidfile); return 0; }
 
-	fpid = fopen(pidfile ? pidfile : custom_pidfile, "w");
-	if (!fpid) { perror(pidfile ? pidfile : custom_pidfile); free(pidfile); return 0; }
+	if (((fpid = fopen(pidfile, "w")) == NULL) || 
+	    (fprintf(fpid, "%d", getpid()) <= 0) ||
+	    (fclose(fpid) != 0)) { 
+		perror(pidfile); 
+		free(pidfile); 
+		return 0;
+	}
+
 	free(pidfile);
-	fprintf(fpid, "%d", getpid());
-	fclose(fpid);
-
 	return 1;
 }

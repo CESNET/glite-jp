@@ -365,7 +365,7 @@ int request(int conn,struct timeval *to,void *data)
 	}
 
 	glite_jp_run_deferred(ctx);
-	return 0;
+	return ENOTCONN;
 }
 
 static int reject(int conn)
