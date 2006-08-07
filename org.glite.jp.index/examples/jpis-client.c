@@ -9,6 +9,7 @@
 
 #include "soap_version.h"
 #include "jpis_client_.nsmap"
+#include "common.h"
 
 
 /* 'jpisclient' as future namespace */
@@ -190,6 +191,8 @@ static void query_example_fill(struct soap *soap, struct _jpisclient__QueryJobs 
  * read the XML query
  */
 static int query_recv(struct soap *soap, int fd, struct _jpisclient__QueryJobs *qj) {
+	int i;
+
 	memset(qj, 0, sizeof(*qj));
 
 	soap->recvfd = fd;
@@ -202,6 +205,12 @@ static int query_recv(struct soap *soap, int fd, struct _jpisclient__QueryJobs *
 	}
 	soap_end_recv(soap);
 	soap_free(soap); /* don't destroy the data we want */
+
+	/* strip white-space characters from attributes */
+	for (i = 0; i < qj->__sizeattributes; i++)
+		glite_jpis_trim_soap(soap, &qj->attributes[i]);
+	for (i = 0; i < qj->__sizeconditions; i++)
+		glite_jpis_trim_soap(soap, &qj->conditions[i]->attr);
 
 	return 0;
 }
