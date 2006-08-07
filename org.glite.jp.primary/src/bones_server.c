@@ -367,7 +367,7 @@ static int request(int conn,struct timeval *to,void *data)
 		fprintf(stderr,"[%d] %s\n",getpid(),e = glite_jp_error_chain(ctx));
 		free(e);
 	}
-	return 0;
+	return ENOTCONN;
 }
 
 static int reject(int conn)
