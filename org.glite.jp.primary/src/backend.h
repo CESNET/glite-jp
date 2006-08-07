@@ -4,6 +4,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "feed.h"
+
 int glite_jppsbe_init(
 	glite_jp_context_t ctx,
 	int argc,
