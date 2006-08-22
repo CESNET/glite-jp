@@ -464,10 +464,13 @@ static int dump_importer(void)
 		dprintf(("[%s] Importing LB dump file '%s'\n", name, tab[_file].val));
 		if ( !debug ) syslog(LOG_INFO, "Importing LB dump file '%s'\n", msg);
 		ret = soap_call___jpsrv__StartUpload(soap, tab[_jpps].val?:jpps, "", &su_in, &su_out);
-		ret = check_soap_fault(soap, ret);
-		/* XXX: grrrrrrr! test it!!!*/
-//		if ( (ret = check_soap_fault(soap, ret)) ) break;
+		if ( (ret = check_soap_fault(soap, ret)) ) break;
 		dprintf(("[%s] Destination: %s\n\tCommit before: %s\n", name, su_out.destination, ctime(&su_out.commitBefore)));
+		if (su_out.destination == NULL) {
+			dprintf(("[%s] StartUpload returned NULL destination\n", name));
+			if ( !debug ) syslog(LOG_ERR, "StartUpload returned NULL destination");
+			break;
+		}
 
 		if ( (fhnd = open(tab[_file].val, O_RDONLY)) < 0 ) {
 			dprintf(("[%s] Can't open dump file: %s\n", name, tab[_file].val));
@@ -675,6 +678,7 @@ static int gftp_put_file(const char *url, int fhnd)
 	globus_cond_init(&gCond, GLOBUS_NULL);
 
 	gDone = GLOBUS_FALSE;
+	gError = GLOBUS_FALSE;
 
 	/* do the op */
 	if ( globus_ftp_client_put(
