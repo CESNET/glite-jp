@@ -8,6 +8,6 @@ fi
 
 sed "s|REFERENCE|$1|; s|BASE1|$2|; s|BASE2|$3|; s|BASE3|$4|; s|BASE4|$5|; s|ATLAS|$6|" pch06.jdl-template >pch06.jdl
 
-# glite-wms-job-submit pch06.jdl
+# glite-wms-job-submit -a pch06.jdl
 
 
