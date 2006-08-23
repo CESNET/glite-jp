@@ -6,8 +6,8 @@ if [ -z "$6" ]; then
 	exit 1
 fi
 
-sed "s/REFERENCE/$1/; s/BASE1/$2/; s/BASE2/$3/; s/BASE3/$4/; s/BASE4/$5/; s/ATLAS/$6/" pch06.jdl-template >pch06.jdl
+sed "s|REFERENCE|$1|; s|BASE1|$2|; s|BASE2|$3|; s|BASE3|$4|; s|BASE4|$5|; s|ATLAS|$6|" pch06.jdl-template >pch06.jdl
 
-# glite-job-submit --config-vo voce.conf pch06.jdl
+# glite-wms-job-submit pch06.jdl
 
 

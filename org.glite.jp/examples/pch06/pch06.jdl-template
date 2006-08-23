@@ -2,6 +2,9 @@
 
 type = "dag";
 
+Requirements = other.GlueCEInfoHostname=="skurut17.cesnet.cz";
+LBAddress = "skurut1.cesnet.cz:9000";
+
 stdoutput = "std.out";
 stderror = "std.err";
 outputsandbox = { "std.out", "std.err" };
