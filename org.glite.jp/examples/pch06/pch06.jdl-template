@@ -16,7 +16,8 @@ InputSandbox = {
 	"SANDBOX/reslice",
 	"SANDBOX/softmean",
 	"SANDBOX/slicer",
-	"SANDBOX/convert"
+	"SANDBOX/convert",
+	"SANDBOX/delegates.xml"
 };
 
 nodes = [
