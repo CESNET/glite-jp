@@ -10,6 +10,7 @@ globus-url-copy $1.warp file://$PWD/warp
 globus-url-copy $1.img file://$PWD/anatomy.img
 globus-url-copy $1.hdr file://$PWD/anatomy.hdr
 
+chmod +x reslice
 ./reslice warp resliced
 
 globus-url-copy file://$PWD/resliced.img $1-resliced.img

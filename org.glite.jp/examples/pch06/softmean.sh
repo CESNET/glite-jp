@@ -15,6 +15,7 @@ globus-url-copy $3-resliced.hdr file://$PWD/resliced3.hdr
 globus-url-copy $4-resliced.img file://$PWD/resliced4.img
 globus-url-copy $4-resliced.hdr file://$PWD/resliced4.hdr
 
+chmod +x softmean
 ./softmean atlas.hdr y null resliced1.img resliced2.img resliced3.img resliced4.img
 
 globus-url-copy file://$PWD/atlas.img $5.img

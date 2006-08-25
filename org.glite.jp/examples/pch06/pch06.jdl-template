@@ -5,30 +5,38 @@ type = "dag";
 Requirements = other.GlueCEInfoHostname=="skurut17.cesnet.cz";
 LBAddress = "skurut1.cesnet.cz:9000";
 
-stdoutput = "std.out";
-stderror = "std.err";
-outputsandbox = { "std.out", "std.err" };
-
 nodes = [
 	align1 = [ description = [
 		executable = "align.sh";
 		arguments = "BASE1 REFERENCE";
 		inputsandbox = { "align.sh", "align_warp", "scanheader" };
+		stdoutput = "std.out";
+		stderror = "std.err";
+		outputsandbox = { "std.out", "std.err" };
 	] ];
 	align2 = [ description = [
 		executable = "align.sh";
 		arguments = "BASE2 REFERENCE";
 		inputsandbox = { "align.sh", "align_warp" };
+		stdoutput = "std.out";
+		stderror = "std.err";
+		outputsandbox = { "std.out", "std.err" };
 	] ];
 	align3 = [ description = [
 		executable = "align.sh";
 		arguments = "BASE3 REFERENCE";
 		inputsandbox = { "align.sh", "align_warp" };
+		stdoutput = "std.out";
+		stderror = "std.err";
+		outputsandbox = { "std.out", "std.err" };
 	] ];
 	align4 = [ description = [
 		executable = "align.sh";
 		arguments = "BASE4 REFERENCE";
 		inputsandbox = { "align.sh", "align_warp" };
+		stdoutput = "std.out";
+		stderror = "std.err";
+		outputsandbox = { "std.out", "std.err" };
 	] ];
 
 
@@ -36,59 +44,92 @@ nodes = [
 		executable = "reslice.sh";
 		arguments = "BASE1"; 
 		inputsandbox = { "reslice.sh", "reslice" };
+		stdoutput = "std.out";
+		stderror = "std.err";
+		outputsandbox = { "std.out", "std.err" };
 	] ];
 	reslice2 = [ description = [
 		executable = "reslice.sh";
 		arguments = "BASE2"; 
 		inputsandbox = { "reslice.sh", "reslice" };
+		stdoutput = "std.out";
+		stderror = "std.err";
+		outputsandbox = { "std.out", "std.err" };
 	] ];
 	reslice3 = [ description = [
 		executable = "reslice.sh";
 		arguments = "BASE3"; 
 		inputsandbox = { "reslice.sh", "reslice" };
+		stdoutput = "std.out";
+		stderror = "std.err";
+		outputsandbox = { "std.out", "std.err" };
 	] ];
 	reslice4 = [ description = [
 		executable = "reslice.sh";
 		arguments = "BASE4"; 
 		inputsandbox = { "reslice.sh", "reslice" };
+		stdoutput = "std.out";
+		stderror = "std.err";
+		outputsandbox = { "std.out", "std.err" };
 	] ];
 
 	softmean = [ description = [
 		executable = "softmean.sh";
 		arguments = "BASE1 BASE2 BASE3 BASE4 ATLAS";
 		inputsandbox = { "softmean.sh", "softmean" };
+		stdoutput = "std.out";
+		stderror = "std.err";
+		outputsandbox = { "std.out", "std.err" };
 	] ];
 
 	slicerx = [ description = [
 		executable = "slicer.sh";
 		arguments = "ATLAS x";
 		inputsandbox = { "slicer.sh", "slicer" };
+		stdoutput = "std.out";
+		stderror = "std.err";
+		outputsandbox = { "std.out", "std.err" };
 	] ];
 	slicery = [ description = [
 		executable = "slicer.sh";
 		arguments = "ATLAS y";
 		inputsandbox = { "slicer.sh", "slicer" };
+		stdoutput = "std.out";
+		stderror = "std.err";
+		outputsandbox = { "std.out", "std.err" };
 	] ];
 	slicerz = [ description = [
 		executable = "slicer.sh";
 		arguments = "ATLAS z";
 		inputsandbox = { "slicer.sh", "slicer" };
+		stdoutput = "std.out";
+		stderror = "std.err";
+		outputsandbox = { "std.out", "std.err" };
 	] ];
 
 	convertx = [ description = [
 		executable = "convert.sh"; 
 		arguments = "ATLAS x";
 		inputsandbox = { "convert.sh", "convert", "delegates.xml" };
+		stdoutput = "std.out";
+		stderror = "std.err";
+		outputsandbox = { "std.out", "std.err" };
 	] ];
 	converty = [ description = [
 		executable = "convert.sh"; 
 		arguments = "ATLAS y";
 		inputsandbox = { "convert.sh", "convert", "delegates.xml" };
+		stdoutput = "std.out";
+		stderror = "std.err";
+		outputsandbox = { "std.out", "std.err" };
 	] ];
 	convertz = [ description = [
 		executable = "convert.sh"; 
 		arguments = "ATLAS z";
 		inputsandbox = { "convert.sh", "convert", "delegates.xml" };
+		stdoutput = "std.out";
+		stderror = "std.err";
+		outputsandbox = { "std.out", "std.err" };
 	] ];
 
 ];
