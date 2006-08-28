@@ -6,7 +6,7 @@ hostname -f
 date
 echo $0 $*
 
-globus-url-copy $1-$2.pgm atlas.pgm
+globus-url-copy $1-$2.pgm file://$PWD/atlas.pgm
 
 chmod +x convert
 ./convert atlas.pgm atlas.gif
