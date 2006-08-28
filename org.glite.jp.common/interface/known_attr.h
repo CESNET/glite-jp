@@ -3,6 +3,7 @@
 
 /** Namespace of JP system attributes */
 #define GLITE_JP_SYSTEM_NS	"http://egee.cesnet.cz/en/Schema/JP/System"
+#define GLITE_JP_WORKFLOW_NS	"http://egee.cesnet.cz/en/Schema/JP/Workflow"
 
 /** Job owner, as specified with RegisterJob JPPS operation */
 #define GLITE_JP_ATTR_OWNER	GLITE_JP_SYSTEM_NS ":owner" 
@@ -13,6 +14,10 @@
 /** Timestamp of job registration in JP.
  * Should be almost the same time as registration with LB. */
 #define GLITE_JP_ATTR_REGTIME	GLITE_JP_SYSTEM_NS ":regtime" 
+
+/** Workflow node relationships. */
+#define GLITE_JP_ATTR_WF_ANCESTOR GLITE_JP_WORKFLOW_NS ":ancestor"
+#define GLITE_JP_ATTR_WF_SUCCESSOR GLITE_JP_WORKFLOW_NS ":successor"
 
 /** Attributes derived from LB system data
  * \see jp_job_attrs.h */
