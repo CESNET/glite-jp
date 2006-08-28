@@ -95,7 +95,9 @@ nodes = [
 		{ align3, reslice3 },
 		{ align4, reslice4 },
 		{ { reslice1, reslice2, reslice3, reslice4 }, softmean },
-		{ softmean, { slicerx, slicery, slicerz } },
+		{ softmean, slicerx },
+		{ softmean, slicery },
+		{ softmean, slicerz },
 		{ slicerx, convertx },
 		{ slicery, converty },
 		{ slicerz, convertz }
