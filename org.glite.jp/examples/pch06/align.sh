@@ -39,7 +39,8 @@ globus-url-copy $2.img file://$PWD/reference.img
 globus-url-copy $2.hdr file://$PWD/reference.hdr
 
 ./align_warp reference.img anatomy.img warp -m 12 -q
-echo GLOBAL_MAXIMUM=`./scanheader anatomy.img | grep '^global maximum=' | sed 's/global maximum=//'`
+GLOBAL_MAXIMUM=`./scanheader anatomy.img | grep '^global maximum=' | sed 's/global maximum=//'`
+echo $GLOBAL_MAXIMUM
 
 globus-url-copy file://$PWD/warp $1.warp
 
@@ -50,11 +51,10 @@ init_log_event
 log_event "IPAW_STAGE" "1"
 log_event "IPAW_PROGRAM" "align_warp"
 log_event "IPAW_INPUT" "$1.img"
-log_event "IPAW_INPUT" "$1.hdr"
 log_event "IPAW_INPUT" "$2.img"
-log_event "IPAW_INPUT" "$2.hdr"
 log_event "IPAW_OUTPUT" "$1.warp"
 log_event "IPAW_PARAM" "-m 12"
 log_event "IPAW_PARAM" "-q"
-log_event "IPAW_HEADER" "$GLOBAL_MAXIMUM"
+log_event "IPAW_HEADER" "GLOBAL_MAXIMUM=$GLOBAL_MAXIMUM"
+
 
