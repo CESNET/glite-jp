@@ -101,7 +101,7 @@ jpps-test: ${TEST_OBJS}
 	${LINK} -o $@ ${TEST_OBJS} ${GSOAPLIB}
 
 dag-deps: ${DAG_OBJS}
-	${LINK} -o $@ ${DAG_OBJS} ${classadslib} ${GSOAPLIB}
+	${LINKXX} -o $@ ${DAG_OBJS} ${classadslib} ${GSOAPLIB}
 
 
 JobProvenancePS.xh: %.xh: %.wsdl JobProvenanceTypes.wsdl typemap.dat
