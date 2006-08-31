@@ -430,11 +430,11 @@ static int dump_importer(void)
 
 
 	if ( readnew ) ret = edg_wll_MaildirTransStart(dump_mdir, &msg, &fname);
-	else ret = edg_wll_MaildirRetryTransStart(dump_mdir, (time_t)60, &msg, &fname);
+	else ret = edg_wll_MaildirRetryTransStart(dump_mdir, (time_t)60, (time_t)600, &msg, &fname);
 	if ( !ret ) { 
 		readnew = !readnew;
 		if ( readnew ) ret = edg_wll_MaildirTransStart(dump_mdir, &msg, &fname);
-		else ret = edg_wll_MaildirRetryTransStart(dump_mdir, (time_t)60, &msg, &fname);
+		else ret = edg_wll_MaildirRetryTransStart(dump_mdir, (time_t)60, (time_t)600, &msg, &fname);
 		if ( !ret ) {
 			readnew = !readnew;
 			return 0;
