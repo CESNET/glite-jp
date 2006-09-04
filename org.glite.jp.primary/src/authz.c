@@ -33,7 +33,7 @@ int glite_jpps_authz(glite_jp_context_t ctx,int op,const char *job,const char *o
 		case SOAP_TYPE___jpsrv__GetJobAttributes:
 		case SOAP_TYPE___jpsrv__RecordTag:
 			assert(owner);
-			if (strcmp(owner,ctx->peer)) {
+			if (!ctx->noauth && strcmp(owner,ctx->peer)) {
 				err.desc = "you are not a job owner";
 				glite_jp_stack_error(ctx,&err);
 				return 1;
