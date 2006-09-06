@@ -44,7 +44,6 @@ echo $GLOBAL_MAXIMUM
 
 globus-url-copy file://$PWD/warp $1.warp
 
-globus-url-copy file://$PWD/$$.err $1.align-err
 
 # Log LB user_tags
 init_log_event
@@ -58,3 +57,4 @@ log_event "IPAW_PARAM" "-q"
 log_event "IPAW_HEADER" "GLOBAL_MAXIMUM=$GLOBAL_MAXIMUM"
 
 
+globus-url-copy file://$PWD/$$.err $1.align-err
