@@ -1,9 +1,14 @@
 #! /usr/bin/perl
 
 #
-# first query implementation
+# 1. query:
+# 
+# Find the process that led to Atlas X Graphic / everything that caused Atlas X
+# Graphic to be as it is. This should tell us the new brain images from which
+# the averaged atlas was generated, the warping performed etc.
+#
 # call:
-#   ./query1.pl OUTPUT_FILE_NAME 2>/dev/null
+#   ./query2.pl OUTPUT_FILE_NAME 2>/dev/null
 #
 
 use strict;
@@ -26,7 +31,7 @@ if ($#ARGV + 1 != 1) {
 $output = $ARGV[0];
 
 # debug calls
-$pch::debug = 1;
+$pch::debug = 0;
 my $debug = 0;
 
 #
@@ -79,6 +84,10 @@ foreach my $jobid (@according_jobs) {
 	$according_count++;
 }
 
+foreach my $jobid (@according_jobs) {
+	my @attrs2 = pch::psquery($ps, $jobid, "$pch::jplbtag:IPAW_STAGE");
+	$according_jobs{$jobid} = $attrs2[0];
+}
 
 #
 # queries on result set
@@ -86,7 +95,7 @@ foreach my $jobid (@according_jobs) {
 print "Results\n";
 print "=======\n";
 print "\n";
-foreach my $jobid (keys %according_jobs) {
+foreach my $jobid (sort { $according_jobs{$b} <=> $according_jobs{$a} } keys %according_jobs) {
 	print "jobid $jobid:\n";
 
 	# query & output all desired atributes
