@@ -2,14 +2,15 @@
 
 use Getopt::Std;
 
-getopt('g:s:');
+getopt('g:s:f:');
 $glite = $opt_g ? $opt_g : "$ENV{HOME}/glite/stage";
 $dagids = "$glite/examples/glite-lb-dagids";
 $regjob = "$glite/examples/glite-lb-job_reg";
 $logevent = "$glite/bin/glite-lb-logevent -I";
 
-die "usage: $0 -s bkserver [ -g glite_install_dir ] dump \n" unless $opt_s && $#ARGV == 0;
+die "usage: $0 -s bkserver -f file_prefix [ -g glite_install_dir ] dump \n" unless $opt_s && $opt_f && $#ARGV == 0;
 $server = $opt_s;
+$fprefix = $opt_f;
 
 %omap = 
 (
@@ -147,7 +148,16 @@ sub logit {
 			$k =~ /^DG\.([A-Z]+)\.([A-Z_]+)$/;
 			die "$k: unexpected in $ev\n" unless $1 eq uc $ev;
 			push @opt,'--'.lc $2;
-			push @opt,"'$_->{$k}'";
+			if ($ev eq 'UserTag' && $2 eq 'VALUE' && 
+				($_->{'DG.USERTAG.NAME'} eq 'ipaw_input' || $_->{'DG.USERTAG.NAME'} eq 'ipaw_output')
+			) {
+				my $val = $_->{$k};
+				$val =~ s|.*/|$fprefix|;
+				push @opt,"'$val'";
+			} 
+			else {
+				push @opt,"'$_->{$k}'";
+			}
 		}
 
 	}
