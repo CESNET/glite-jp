@@ -1,14 +1,13 @@
 #! /usr/bin/perl
 
 #
-# 1. query:
-# 
-# Find the process that led to Atlas X Graphic / everything that caused Atlas X
-# Graphic to be as it is. This should tell us the new brain images from which
-# the averaged atlas was generated, the warping performed etc.
+# 2. query:
+#
+# Find the process that led to Atlas X Graphic, excluding everything prior to
+# the averaging of images with softmean.
 #
 # call:
-#   ./query1.pl OUTPUT_FILE_NAME 2>/dev/null
+#   ./query2.pl OUTPUT_FILE_NAME 2>/dev/null
 #
 
 use strict;
@@ -17,6 +16,7 @@ use Data::Dumper;
 
 my $ps='https://skurut1.cesnet.cz:8901';
 my $is='https://skurut1.cesnet.cz:8902';
+my $program_name = "softmean";
 
 my @according_jobs = (); # sequencially jobid list
 my %according_jobs = (); # hash jobid list
@@ -59,17 +59,26 @@ undef @jobs;
 
 
 #
-# collect all jobids (tree browsing)
+# collect all jobids (tree browsing), stop on softmean program
 #
-# better implementation will be: using children attribute on LB:parent
+# note, the browsing tree is really needed here since we explore the workflow
 #
 $according_count = 0;
 foreach my $jobid (@according_jobs) {
-	my @attrs;
+	my (@attrs, @program);
 
 	print "Handling $jobid (position $according_count)\n" if ($debug);
-	@attrs = pch::psquery($ps, $jobid, "$pch::jpwf:ancestor");
 
+	# stop on given program name
+	@program = pch::psquery($ps, $jobid, "$pch::jplbtag:IPAW_PROGRAM");
+	die "More program names of $jobid?" if ($#program > 0);
+	if ($program[0] eq $program_name) { 
+		print "$jobid is $program_name, stop here\n";
+		next;
+	}
+
+	# else browse up
+	@attrs = pch::psquery($ps, $jobid, "$pch::jpwf:ancestor");
 	for my $anc_jobid (@attrs) {
 		print "Considered: $anc_jobid\n" if ($debug);
 		if (!exists $according_jobs{$anc_jobid}) {
