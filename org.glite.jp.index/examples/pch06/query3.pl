@@ -91,8 +91,8 @@ foreach my $jobid (@according_jobs) {
 print "Results\n";
 print "=======\n";
 print "\n";
-foreach my $jobid (sort { $according_jobs{$b}{attributes}{"$pch::jplbtag:IPAW_STAGE"}[0] <=> $according_jobs{$a}{attributes}{"$pch::jplbtag:IPAW_STAGE"}[0] } keys %according_jobs) {
-	my %job = %{$according_jobs{jobid}};
+foreach my $jobid (sort { $according_jobs{$b}{attributes}{"$pch::jplbtag:IPAW_STAGE"}{value}[0] <=> $according_jobs{$a}{attributes}{"$pch::jplbtag:IPAW_STAGE"}{value}[0] } keys %according_jobs) {
+	my %job = %{$according_jobs{$jobid}};
 	my %attributes = %{$job{attributes}};
 	my $stage = $attributes{"$pch::jplbtag:IPAW_STAGE"}{value}[0];
 
@@ -101,10 +101,16 @@ foreach my $jobid (sort { $according_jobs{$b}{attributes}{"$pch::jplbtag:IPAW_ST
 
 		# query & output all desired atributes
 		foreach my $attr (@view_attributes) {
-			my %attr = %{$attributes{$attr}};
 			my $attr_name = $attr; $attr_name =~ s/.*://;
 
-			print "  attr $attr_name: "; print join(", ", @{$attr{value}}); print "\n";
+			print "  attr $attr_name: ";
+			if (exists $attributes{$attr}) {
+				my %attr = %{$attributes{$attr}};
+
+				print join(", ", @{$attr{value}}); print "\n";
+			} else {
+				print "N/A\n";
+			}
 		}
 
 		print "\n";
