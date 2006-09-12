@@ -99,12 +99,17 @@ foreach my $jobid (sort { $according_jobs{$b} <=> $according_jobs{$a} } keys %ac
 	print "jobid $jobid:\n";
 
 	# query & output all desired atributes
-	foreach my $attr ("$pch::jplbtag:IPAW_STAGE", "$pch::jplbtag:IPAW_PROGRAM", "$pch::jplbtag:IPAW_PARAM", "$pch::jplbtag:IPAW_INPUT", "$pch::jplbtag:IPAW_OUTPUT", "$pch::lbattr:CE") {
+	foreach my $attr (@pch::view_attributes) {
 		my @attrs;
 		my $attr_name = $attr; $attr_name =~ s/.*://;
 
 		@attrs = pch::psquery($ps, $jobid, $attr);
-		print "  attr $attr_name: "; print join(", ", @attrs); print "\n";
+		print "  attr $attr_name: "; 
+		if ($attr eq "$pch::jpsys:regtime") {
+			print gmtime(@attrs[0])." (".join(", ", @attrs).")\n";
+		} else {
+			print join(", ", @attrs)."\n";
+		}
 	}
 
 	print "\n";

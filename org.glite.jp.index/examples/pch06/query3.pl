@@ -15,8 +15,7 @@ use Data::Dumper;
 
 my $ps='https://skurut1.cesnet.cz:8901';
 my $is='https://skurut1.cesnet.cz:8902';
-my @view_attributes = ("$pch::jplbtag:IPAW_STAGE", "$pch::jplbtag:IPAW_PROGRAM", "$pch::jplbtag:IPAW_PARAM", "$pch::jplbtag:IPAW_INPUT", "$pch::jplbtag:IPAW_OUTPUT", "$pch::lbattr:CE");
-my @attributes = ("$pch::jpsys:jobId", "$pch::jpwf:ancestor", @view_attributes);
+my @attributes = ("$pch::jpsys:jobId", "$pch::jpwf:ancestor", @pch::view_attributes);
 
 my @according_jobs = (); # sequencially jobid list
 my %according_jobs = (); # hash jobid list
@@ -100,14 +99,18 @@ foreach my $jobid (sort { $according_jobs{$b}{attributes}{"$pch::jplbtag:IPAW_ST
 		print "jobid $jobid:\n";
 
 		# query & output all desired atributes
-		foreach my $attr (@view_attributes) {
+		foreach my $attr (@pch::view_attributes) {
 			my $attr_name = $attr; $attr_name =~ s/.*://;
 
 			print "  attr $attr_name: ";
 			if (exists $attributes{$attr}) {
 				my %attr = %{$attributes{$attr}};
 
-				print join(", ", @{$attr{value}}); print "\n";
+				if ($attr eq "$pch::jpsys:regtime") {
+					print gmtime($attr{value}[0])." (".join(", ", @{$attr{value}}).")\n";
+				} else {
+					print join(", ", @{$attr{value}})."\n";
+				}
 			} else {
 				print "N/A\n";
 			}

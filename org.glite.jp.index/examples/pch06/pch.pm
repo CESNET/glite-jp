@@ -17,6 +17,9 @@ our $jpsys='http://egee.cesnet.cz/en/Schema/JP/System';
 our $jpwf='http://egee.cesnet.cz/en/Schema/JP/Workflow';
 our $jplbtag='http://egee.cesnet.cz/en/WSDL/jp-lbtag';
 
+our @view_attributes=("$pch::jplbtag:IPAW_STAGE", "$pch::jplbtag:IPAW_PROGRAM", "$pch::jplbtag:IPAW_PARAM", "$pch::jplbtag:IPAW_INPUT", "$pch::jplbtag:IPAW_OUTPUT", "$pch::lbattr:CE", "$pch::lbattr:parent", "$pch::jpsys:regtime");
+#"$pch::lbattr:host", # TODO: to index server
+
 our $debug = 0;
 our $err = 0;
 
