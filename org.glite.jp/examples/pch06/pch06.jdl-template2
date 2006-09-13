@@ -1,0 +1,127 @@
+[
+
+type = "dag";
+
+Requirements = other.GlueCEInfoHostname=="skurut17.cesnet.cz";
+LBAddress = "skurut1.cesnet.cz:9000";
+
+InputSandbox = {
+	"SANDBOX/align.sh",
+	"SANDBOX/reslice.sh",
+	"SANDBOX/softmean.sh",
+	"SANDBOX/slicer.sh",
+	"SANDBOX/pgmtoppm.sh",
+	"SANDBOX/pnmtojpeg.sh",
+	"SANDBOX/align_warp",
+	"SANDBOX/scanheader",
+	"SANDBOX/reslice",
+	"SANDBOX/softmean",
+	"SANDBOX/slicer",
+	"SANDBOX/pgmtoppm",
+	"SANDBOX/pnmtojpeg",
+	"SANDBOX/delegates.xml"
+};
+
+nodes = [
+	align1 = [ description = [
+		executable = "align.sh";
+		arguments = "BASE1 REFERENCE";
+	] ];
+	align2 = [ description = [
+		executable = "align.sh";
+		arguments = "BASE2 REFERENCE";
+	] ];
+	align3 = [ description = [
+		executable = "align.sh";
+		arguments = "BASE3 REFERENCE";
+	] ];
+	align4 = [ description = [
+		executable = "align.sh";
+		arguments = "BASE4 REFERENCE";
+	] ];
+
+
+	reslice1 = [ description = [
+		executable = "reslice.sh";
+		arguments = "BASE1"; 
+	] ];
+	reslice2 = [ description = [
+		executable = "reslice.sh";
+		arguments = "BASE2"; 
+	] ];
+	reslice3 = [ description = [
+		executable = "reslice.sh";
+		arguments = "BASE3"; 
+	] ];
+	reslice4 = [ description = [
+		executable = "reslice.sh";
+		arguments = "BASE4"; 
+	] ];
+
+	softmean = [ description = [
+		executable = "softmean.sh";
+		arguments = "BASE1 BASE2 BASE3 BASE4 ATLAS";
+	] ];
+
+	slicerx = [ description = [
+		executable = "slicer.sh";
+		arguments = "ATLAS x";
+	] ];
+	slicery = [ description = [
+		executable = "slicer.sh";
+		arguments = "ATLAS y";
+	] ];
+	slicerz = [ description = [
+		executable = "slicer.sh";
+		arguments = "ATLAS z";
+	] ];
+
+	pgmtoppmx = [ description = [
+		executable = "pgmtoppm.sh"; 
+		arguments = "ATLAS x";
+	] ];
+	pgmtoppmy = [ description = [
+		executable = "pgmtoppm.sh"; 
+		arguments = "ATLAS y";
+	] ];
+	pgmtoppmz = [ description = [
+		executable = "pgmtoppm.sh"; 
+		arguments = "ATLAS z";
+	] ];
+
+	pnmtojpegx = [ description = [
+		executable = "pnmtojpeg.sh"; 
+		arguments = "ATLAS x";
+	] ];
+	pnmtojpegy = [ description = [
+		executable = "pnmtojpeg.sh"; 
+		arguments = "ATLAS y";
+	] ];
+	pnmtojpegz = [ description = [
+		executable = "pnmtojpeg.sh"; 
+		arguments = "ATLAS z";
+	] ];
+
+];
+
+	dependencies = {
+		{ align1, reslice1 },
+		{ align2, reslice2 },
+		{ align3, reslice3 },
+		{ align4, reslice4 },
+		{ { reslice1, reslice2, reslice3, reslice4 }, softmean },
+		{ softmean, slicerx },
+		{ softmean, slicery },
+		{ softmean, slicerz },
+		{ slicerx, pgmtoppmx },
+		{ slicery, pgmtoppmy },
+		{ slicerz, pgmtoppmz },
+		{ pgmtoppmx, pnmtojpegx },
+		{ pgmtoppmy, pnmtojpegy },
+		{ pgmtoppmz, pnmtojpegz }
+
+	};
+
+
+
+];
