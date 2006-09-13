@@ -21,8 +21,7 @@ my $program_name='align_warp';
 my $program_params='-m 12';
 my $runday=1;
 #my $runday=4;
-my @view_attributes = ("$pch::jplbtag:IPAW_STAGE", "$pch::jplbtag:IPAW_PROGRAM", "$pch::jplbtag:IPAW_PARAM", "$pch::jplbtag:IPAW_INPUT", "$pch::jplbtag:IPAW_OUTPUT", "$pch::lbattr:CE");
-my @attributes = ("$pch::jpsys:jobId", "$pch::jpsys:regtime", @view_attributes);
+my @attributes = ("$pch::jpsys:jobId", @pch::view_attributes);
 
 my %according_jobs = (); # hash jobid list
 my $according_count = 0;
@@ -84,7 +83,7 @@ foreach my $jobid (sort { $according_jobs{$b}{attributes}{"$pch::jplbtag:IPAW_ST
 	print "jobid $jobid:\n";
 
 	# output all desired atributes
-	foreach my $attr (@view_attributes) {
+	foreach my $attr (@pch::view_attributes) {
 		my $attr_name = $attr; $attr_name =~ s/.*://;
 
 		print "  attr $attr_name: ";

@@ -76,7 +76,7 @@ foreach my $jobid (@according_jobs) {
 
 	print "Handling $jobid (position $according_count)\n" if ($debug);
 
-	if ($according_jobs{$jobid}{attributes}{"$pch::IPAW_PROGRAM"}[0] eq $end_program_name) {
+	if ($according_jobs{$jobid}{attributes}{"$pch::IPAW_PROGRAM"}{value}[0] eq $end_program_name) {
 		print "It's $end_program_name\n" if $debug;
 		next;
 	}
