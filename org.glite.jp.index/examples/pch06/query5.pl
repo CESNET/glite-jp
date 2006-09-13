@@ -19,7 +19,6 @@ my $ps='https://skurut1.cesnet.cz:8901';
 my $is='https://skurut1.cesnet.cz:8902';
 my $program_name='align_warp';
 my $end_program_name='convert';
-my $atlas_image_program_name='convert';
 my $header="GLOBAL_MAXIMUM=4095"; # test for exact equal (scripts already prepared it)
 
 my @according_jobs = (); # sequencially jobid list
@@ -28,8 +27,8 @@ my $according_count = 0;
 
 
 # debug calls
-$pch::debug = 1;
-my $debug = 1;
+$pch::debug = 0;
+my $debug = 0;
 
 #
 # find out processes with given name and parameters
@@ -49,6 +48,7 @@ foreach my $job (@jobs) {
 	my %attributes = %{$job{attributes}};
 	my $dagjobid = $attributes{"$pch::lbattr:parent"}{value}[0];
 
+	print "Consider DAG $dagjobid\n" if $debug;
 	if (!exists $according_jobs{$dagjobid}) {
 		%job = ();
 		push @according_jobs, $dagjobid;
@@ -58,9 +58,10 @@ foreach my $job (@jobs) {
 			my @value;
 
 			@value = pch::psquery($ps, $dagjobid, $attr);
-			if (defined @value) { $job{attributes}{$attr} = \@value; }
+			if (defined @value) { @{$job{attributes}{$attr}{value}} = @value; }
 		}
 		$according_jobs{$dagjobid} = \%job;
+		print "Added DAG $dagjobid\n" if $debug;
 	}
 }
 undef @jobs;

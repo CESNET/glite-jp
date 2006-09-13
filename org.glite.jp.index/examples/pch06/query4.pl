@@ -20,6 +20,7 @@ my $is='https://skurut1.cesnet.cz:8902';
 my $program_name='align_warp';
 my $program_params='-m 12';
 my $runday=1;
+#my $runday=4;
 my @view_attributes = ("$pch::jplbtag:IPAW_STAGE", "$pch::jplbtag:IPAW_PROGRAM", "$pch::jplbtag:IPAW_PARAM", "$pch::jplbtag:IPAW_INPUT", "$pch::jplbtag:IPAW_OUTPUT", "$pch::lbattr:CE");
 my @attributes = ("$pch::jpsys:jobId", "$pch::jpsys:regtime", @view_attributes);
 

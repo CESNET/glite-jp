@@ -39,8 +39,8 @@ my $debug = 0;
 my @jobs = pch::isquery($is, [
 	["$pch::jplbtag:IPAW_OUTPUT", ['EQUAL', "<string>$output</string>"]],
 ], \@attributes);
-print Dumper(@jobs) if ($debug);
 die "...so exit on error" if ($pch::err);
+print Dumper(@jobs) if ($debug);
 
 #
 # initial set from index server

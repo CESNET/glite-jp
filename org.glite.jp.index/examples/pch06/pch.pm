@@ -10,15 +10,15 @@ package pch;
 use strict;
 use warnings;
 use XML::Twig;
-#use Data::Dumper;
+use Data::Dumper;
 
 our $lbattr='http://egee.cesnet.cz/en/Schema/LB/Attributes';
 our $jpsys='http://egee.cesnet.cz/en/Schema/JP/System';
 our $jpwf='http://egee.cesnet.cz/en/Schema/JP/Workflow';
 our $jplbtag='http://egee.cesnet.cz/en/WSDL/jp-lbtag';
 
-our @view_attributes=("$pch::jplbtag:IPAW_STAGE", "$pch::jplbtag:IPAW_PROGRAM", "$pch::jplbtag:IPAW_PARAM", "$pch::jplbtag:IPAW_INPUT", "$pch::jplbtag:IPAW_OUTPUT", "$pch::lbattr:CE", "$pch::lbattr:parent", "$pch::jpsys:regtime");
-#"$pch::lbattr:host", # TODO: to index server
+our @view_attributes=("$pch::jplbtag:IPAW_STAGE", "$pch::jplbtag:IPAW_PROGRAM", "$pch::jplbtag:IPAW_PARAM", "$pch::jplbtag:IPAW_INPUT", "$pch::jplbtag:IPAW_OUTPUT", "$pch::lbattr:CE", "$pch::lbattr:parent", "$pch::lbattr:host", "$pch::jpsys:regtime");
+
 
 our $debug = 0;
 our $err = 0;
@@ -129,18 +129,29 @@ sub jobs_handler {
 
 	$xmlattribute = $xmljobs->first_child('attributes');
 	while ($xmlattribute) {
+		my ($xmlname, $xmlvalue);
 		my @values = ();
-		my ($xmlname, $xmlvalue, %attribute);
-		%attribute = ();
+		my %attribute = ();
 
 		$xmlname = $xmlattribute->first_child('name');
 		die "No name on '".$xmlattribute->text."'" if (!$xmlname);
+#print $xmljobid->text.": ".$xmlname->text.":\n";
+		if (exists $attributes{$xmlname->text}) {
+			%attribute = %{$attributes{$xmlname->text}};
+		}
+#print "  prev attr: ".Dumper(%attribute)."\n";
+		if (exists $attribute{value}) {
+			@values = @{$attribute{value}};
+		}
+#print "  prev values: ".Dumper(@values)."\n";
 		$xmlvalue = $xmlattribute->first_child('value');
 		while ($xmlvalue) {
+#print "  to add: ".$xmlvalue->text."\n";
 			push @values, $xmlvalue->text;
 			$xmlvalue = $xmlvalue->next_sibling('value');
 		}
-		$attribute{value} = \@values;
+		@{$attribute{value}} = @values;
+#print "  new values: ".Dumper($attribute{value})."\n";
 		$attribute{timestamp} = $xmlattribute->first_child('timestamp')->text;
 		$xmlattribute = $xmlattribute->next_sibling('attributes');
 
