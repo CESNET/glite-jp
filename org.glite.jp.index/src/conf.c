@@ -98,7 +98,7 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 	// lb.server/build/jp_job_attrs.h (created when build plugin)
 	// jp.common/interface/known_attr.h
 
-	conf->attrs = calloc(28, sizeof(*conf->attrs));
+	conf->attrs = calloc(29, sizeof(*conf->attrs));
 	conf->attrs[0] = strdup("http://egee.cesnet.cz/en/Schema/JP/System:owner");
 	conf->attrs[1] = strdup("http://egee.cesnet.cz/en/Schema/JP/System:jobId");
 	conf->attrs[2] = strdup("http://egee.cesnet.cz/en/Schema/JP/System:regtime");
@@ -126,8 +126,9 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 	conf->attrs[24] = strdup("http://egee.cesnet.cz/en/WSDL/jp-lbtag:IPAW_HEADER");
 	conf->attrs[25] = strdup("http://egee.cesnet.cz/en/Schema/JP/Workflow:ancestor");
 	conf->attrs[26] = strdup("http://egee.cesnet.cz/en/Schema/JP/Workflow:successor");
+	conf->attrs[27] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:host");
 
-	conf->indexed_attrs = calloc(10, sizeof(*conf->indexed_attrs));
+	conf->indexed_attrs = calloc(12, sizeof(*conf->indexed_attrs));
 	conf->indexed_attrs[0] = strdup("http://egee.cesnet.cz/en/Schema/JP/System:owner");
 	conf->indexed_attrs[1] = strdup("http://egee.cesnet.cz/en/Schema/JP/System:jobId");
 	conf->indexed_attrs[2] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:user");
@@ -137,6 +138,8 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 	conf->indexed_attrs[6] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:RB");
 	conf->indexed_attrs[7] = strdup("http://egee.cesnet.cz/en/WSDL/jp-lbtag:IPAW_PROGRAM");
 	conf->indexed_attrs[8] = strdup("http://egee.cesnet.cz/en/WSDL/jp-lbtag:IPAW_OUTPUT");
+	conf->indexed_attrs[9] = strdup("http://egee.cesnet.cz/en/Schema/JP/Workflow:successor");
+	conf->indexed_attrs[10] = strdup("http://egee.cesnet.cz/en/Schema/JP/Workflow:ancestor");
 
 	// XXX: some plugin names should come here in future
 	conf->plugins = NULL;
