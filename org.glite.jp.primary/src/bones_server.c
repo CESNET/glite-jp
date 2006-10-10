@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
 
 	b_argc = p_argc = 1;
 
-	while ((opt = getopt(argc,argv,"B:P:a:p:s:dl:i:c:k:")) != EOF) switch (opt) {
+	while ((opt = getopt(argc,argv,"B:P:a:p:s:dl:i:c:k:n")) != EOF) switch (opt) {
 		case 'B':
 			assert(b_argc < 20);
 			if (com = strchr(optarg,',')) *com = 0;
@@ -106,6 +106,7 @@ int main(int argc, char *argv[])
 		case 'i': strncpy(pidfile,optarg,PATH_MAX); pidfile[PATH_MAX-1] = 0; break;
 		case 'c': server_cert = optarg; break;
 		case 'k': server_key = optarg; break;
+		case 'n': ctx->noauth = 1; break;
 		case '?': fprintf(stderr,"usage: %s: -Bb,val ... -Pplugin.so ...\n"
 					  "b is backend option\n",argv[0]);
 			  exit (1);

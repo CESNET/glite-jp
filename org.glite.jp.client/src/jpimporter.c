@@ -12,6 +12,7 @@
 #include <errno.h>
 #include <syslog.h>
 #include <fcntl.h>
+#include <libgen.h>
 
 #include "glite/lb/lb_maildir.h"
 #include "glite/security/glite_gsplugin.h"
@@ -71,6 +72,7 @@ static char		*jpps = GLITE_JPPS;
 static char		reg_mdir[PATH_MAX] = GLITE_REG_IMPORTER_MDIR;
 static char		dump_mdir[PATH_MAX] = GLITE_DUMP_IMPORTER_MDIR;
 static char		sandbox_mdir[PATH_MAX] = GLITE_SANDBOX_IMPORTER_MDIR;
+static char		*store = NULL;
 static struct soap	*soap;
 
 static time_t		cert_mtime;
@@ -93,6 +95,7 @@ static struct option opts[] = {
 	{ "sandbox-mdir",1, NULL,    's'},
 	{ "pidfile",     1, NULL,    'i'},
 	{ "poll",        1, NULL,    't'},
+	{ "store",       1, NULL,    's'},
 	{ NULL,          0, NULL,     0}
 };
 
@@ -112,6 +115,7 @@ static void usage(char *me)
 		"\t-s, --sandbox-mdir path to the 'LB maildir' subtree for input/output sandboxes\n"
 		"\t-i, --pidfile      file to store master pid\n"
 		"\t-t, --poll         maildir polling interval (in seconds)\n",
+		"\t-s, --store        keep uploaded jobs in this directory\n",
 		me);
 }
 
@@ -164,6 +168,7 @@ int main(int argc, char *argv[])
 		case 'C': cadir = optarg; break;
 		case 'p': jpps = optarg; break;
 		case 't': poll = atoi(optarg); break;
+		case 's': store = optarg; break;
 		case 'r': strcpy(reg_mdir, optarg); break;
 		case 'd': strcpy(dump_mdir, optarg); break;
 		case 's': strcpy(sandbox_mdir, optarg); break;
@@ -196,6 +201,12 @@ int main(int argc, char *argv[])
 	edg_wll_MaildirInit(reg_mdir);
 	edg_wll_MaildirInit(dump_mdir);
 	edg_wll_MaildirInit(sandbox_mdir);
+	if (store && *store) {
+		if (mkdir(store, 0750) != 0 && errno != EEXIST) {
+			fprintf(stderr, "Can't create directory %s: %s\n", store, strerror(errno));
+			store = NULL;
+		}
+	}
 
 	if ( !debug ) {
 		if ( daemon(1,0) == -1 ) { perror("deamon()"); exit(1); }
@@ -424,7 +435,9 @@ static int dump_importer(void)
 	static int		readnew = 1;
 	char		   *msg = NULL,
 				   *fname = NULL,
-				   *aux;
+				   *aux,
+				   *bname;
+	char                        fspec[PATH_MAX];
 	int				ret;
 	int				fhnd;
 	msg_pattern_t	tab[] = {
@@ -440,13 +453,13 @@ static int dump_importer(void)
 
 
 	if ( readnew ) ret = edg_wll_MaildirTransStart(dump_mdir, &msg, &fname);
-	else ret = edg_wll_MaildirRetryTransStart(dump_mdir, (time_t)60, &msg, &fname);
+	else ret = edg_wll_MaildirRetryTransStart(dump_mdir, (time_t)60, (time_t)600, &msg, &fname);
 	if ( !ret ) { 
-		readnew = ~readnew;
+		readnew = !readnew;
 		if ( readnew ) ret = edg_wll_MaildirTransStart(dump_mdir, &msg, &fname);
-		else ret = edg_wll_MaildirRetryTransStart(dump_mdir, (time_t)60, &msg, &fname);
+		else ret = edg_wll_MaildirRetryTransStart(dump_mdir, (time_t)60, (time_t)600, &msg, &fname);
 		if ( !ret ) {
-			readnew = ~readnew;
+			readnew = !readnew;
 			return 0;
 		}
 	}
@@ -474,10 +487,13 @@ static int dump_importer(void)
 		dprintf(("[%s] Importing LB dump file '%s'\n", name, tab[_file].val));
 		if ( !debug ) syslog(LOG_INFO, "Importing LB dump file '%s'\n", msg);
 		ret = soap_call___jpsrv__StartUpload(soap, tab[_jpps].val?:jpps, "", &su_in, &su_out);
-		ret = check_soap_fault(soap, ret);
-		/* XXX: grrrrrrr! test it!!!*/
-//		if ( (ret = check_soap_fault(soap, ret)) ) break;
+		if ( (ret = check_soap_fault(soap, ret)) ) break;
 		dprintf(("[%s] Destination: %s\n\tCommit before: %s\n", name, su_out.destination, ctime(&su_out.commitBefore)));
+		if (su_out.destination == NULL) {
+			dprintf(("[%s] StartUpload returned NULL destination\n", name));
+			if ( !debug ) syslog(LOG_ERR, "StartUpload returned NULL destination");
+			break;
+		}
 
 		if ( (fhnd = open(tab[_file].val, O_RDONLY)) < 0 ) {
 			dprintf(("[%s] Can't open dump file: %s\n", name, tab[_file].val));
@@ -492,6 +508,20 @@ static int dump_importer(void)
 		ret = soap_call___jpsrv__CommitUpload(soap, tab[_jpps].val?:jpps, "", &cu_in, &empty);
 		if ( (ret = check_soap_fault(soap, ret)) ) break;
 		dprintf(("[%s] Dump upload succesfull\n", name));
+		if (store && *store) {
+			bname = strdup(tab[_file].val);
+			snprintf(fspec, sizeof fspec, "%s/%s", store, basename(bname));
+			free(bname);
+			if (rename(tab[_file].val, fspec) != 0) 
+				fprintf(stderr, "moving %s to %s failed: %s\n", tab[_file].val, fspec, strerror(errno));
+			else
+				dprintf(("[%s] moving %s to %s OK\n", name, tab[_file].val, fspec));
+		} else {
+			if (unlink(tab[_file].val) != 0)
+				fprintf(stderr, "removing %s failed: %s\n", tab[_file].val, strerror(errno));
+			else
+				dprintf(("[%s] %s removed\n", name, tab[_file].val));
+		}
 	} while (0);
 
 	edg_wll_MaildirTransEnd(dump_mdir, fname, ret? LBMD_TRANS_FAILED_RETRY: LBMD_TRANS_OK);
@@ -764,6 +794,7 @@ static int gftp_put_file(const char *url, int fhnd)
 	globus_cond_init(&gCond, GLOBUS_NULL);
 
 	gDone = GLOBUS_FALSE;
+	gError = GLOBUS_FALSE;
 
 	/* do the op */
 	if ( globus_ftp_client_put(

@@ -80,7 +80,7 @@ static int SoapToQueryCond(
         glite_jp_query_rec_t		**out)
 {
 	glite_jp_query_rec_t	*qr;	
-	int			i;
+	int                     i;
 
 
 	assert(in); assert(out);
