@@ -9,6 +9,10 @@
 #include <getopt.h>
 #include <unistd.h>
 
+/* XXX: makes the stuff build, together with #include "jpis_C.h" 
+ *      but I have no idea whether it works */
+#define SOAP_FMAC3 static
+#define WITH_NOGLOBAL
 
 #include <glite/jp/types.h>
 #include <glite/jp/context.h>
@@ -16,9 +20,11 @@
 #include "db_ops.h"
 #include "ws_is_typeref.h"
 
-#include <stdsoap2.h>
-#include "soap_version.h"
-#include "jpis_H.h"
+//#include <stdsoap2.h>
+//#include "soap_version.h"
+// #include "jpis_H.h"
+
+#include "jpis_C.c"
 
 extern SOAP_NMAC struct Namespace jpis__namespaces[];
 
