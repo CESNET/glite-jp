@@ -115,7 +115,7 @@ static void usage(char *me)
 		"\t-s, --sandbox-mdir path to the 'LB maildir' subtree for input/output sandboxes\n"
 		"\t-i, --pidfile      file to store master pid\n"
 		"\t-t, --poll         maildir polling interval (in seconds)\n",
-		"\t-s, --store        keep uploaded jobs in this directory\n",
+		"\t-S, --store        keep uploaded jobs in this directory\n",
 		me);
 }
 
@@ -168,7 +168,7 @@ int main(int argc, char *argv[])
 		case 'C': cadir = optarg; break;
 		case 'p': jpps = optarg; break;
 		case 't': poll = atoi(optarg); break;
-		case 's': store = optarg; break;
+		case 'S': store = optarg; break;
 		case 'r': strcpy(reg_mdir, optarg); break;
 		case 'd': strcpy(dump_mdir, optarg); break;
 		case 's': strcpy(sandbox_mdir, optarg); break;
@@ -559,11 +559,11 @@ static int sandbox_importer(void)
 
 
 	if ( readnew ) ret = edg_wll_MaildirTransStart(sandbox_mdir, &msg, &fname);
-	else ret = edg_wll_MaildirRetryTransStart(sandbox_mdir, (time_t)60, &msg, &fname);
+	else ret = edg_wll_MaildirRetryTransStart(sandbox_mdir, (time_t)60, (time_t) 600,&msg, &fname);
 	if ( !ret ) { 
 		readnew = ~readnew;
 		if ( readnew ) ret = edg_wll_MaildirTransStart(sandbox_mdir, &msg, &fname);
-		else ret = edg_wll_MaildirRetryTransStart(sandbox_mdir, (time_t)60, &msg, &fname);
+		else ret = edg_wll_MaildirRetryTransStart(sandbox_mdir, (time_t)60, (time_t) 600,&msg, &fname);
 		if ( !ret ) {
 			readnew = ~readnew;
 			return 0;
