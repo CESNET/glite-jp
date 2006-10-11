@@ -95,7 +95,7 @@ static struct option opts[] = {
 	{ "sandbox-mdir",1, NULL,    's'},
 	{ "pidfile",     1, NULL,    'i'},
 	{ "poll",        1, NULL,    't'},
-	{ "store",       1, NULL,    's'},
+	{ "store",       1, NULL,    'S'},
 	{ NULL,          0, NULL,     0}
 };
 
@@ -561,11 +561,11 @@ static int sandbox_importer(void)
 	if ( readnew ) ret = edg_wll_MaildirTransStart(sandbox_mdir, &msg, &fname);
 	else ret = edg_wll_MaildirRetryTransStart(sandbox_mdir, (time_t)60, (time_t) 600,&msg, &fname);
 	if ( !ret ) { 
-		readnew = ~readnew;
+		readnew = !readnew;
 		if ( readnew ) ret = edg_wll_MaildirTransStart(sandbox_mdir, &msg, &fname);
 		else ret = edg_wll_MaildirRetryTransStart(sandbox_mdir, (time_t)60, (time_t) 600,&msg, &fname);
 		if ( !ret ) {
-			readnew = ~readnew;
+			readnew = !readnew;
 			return 0;
 		}
 	}
