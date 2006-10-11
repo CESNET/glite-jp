@@ -1,6 +1,10 @@
 #ifndef _GLITE_STRMD5_H
 #define _GLITE_STRMD5_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ident "$Header$"
 
 /* Compute MD5 sum of the first argument.
@@ -27,6 +31,10 @@ char *str2md5base64(const char *src);
 
 int base64_encode(const void *enc, int enc_size, char *out, int out_max_size);
 int base64_decode(const char *enc,char *out,int out_size);
+
+#ifdef __cplusplus
+};
+#endif
 
 
 #endif /* _GLITE_STRMD5_H */

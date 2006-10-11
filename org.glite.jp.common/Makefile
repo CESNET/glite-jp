@@ -31,6 +31,8 @@ DEBUG:=-g -O0
 CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${stagedir}/include \
 	${GLOBUSINC}
 
+LDFLAGS:=-L${globus_prefix}/lib
+
 offset=0
 version_info:=-version-info ${shell \
 	perl -e '$$,=":"; @F=split "\\.","${version}"; print $$F[0]+$$F[1]+${offset},$$F[2],$$F[1]' }
@@ -52,18 +54,27 @@ TRIO_OBJS:=escape.o trio.o strio.o
 TRIO_LIB:=libglite_jp_trio.la
 TRIO_LOBJS:=${TRIO_OBJS:.o=.lo}
 
+TEST_LIBS:=-L${cppunit}/lib -lcppunit -ldl
+TEST_INC:=-I${cppunit}/include
+
+
 default all: compile
 
-compile: ${commonlib} ${TRIO_LIB}
+compile: ${commonlib} ${TRIO_LIB} 
 
 ${commonlib}: ${OBJS}
-	${LINK} -o $@ ${OBJS}
+	${LINK} -o $@ ${OBJS} -lcrypto_${nothrflavour}
 
 ${TRIO_LIB}: ${TRIO_LOBJS}
 	${LINK} ${version_info} -o $@ ${TRIO_LOBJS} -lm
 
-check: 
-	-echo nothing yet
+check: base64_test type_test
+	./base64_test base64_test.xml
+	./type_test type_test.xml
+
+type_test base64_test: %: %.cpp compile
+	${CXX} -c ${CFLAGS} ${TEST_INC} $<
+	${LINKXX} -o $@ $@.o ${commonlib} ${TRIO_LIB} ${TEST_LIBS} 
 
 doc:
 

@@ -67,7 +67,7 @@ int base64_decode(const char *enc,char *out,int max_out_size)
 	}
 
 	while (*enc && *enc != '=') {
-		bits << 6;
+		bits <<= 6;
 		bits |= b64r[*enc++];
 		shift += 6;
 
@@ -79,14 +79,6 @@ int base64_decode(const char *enc,char *out,int max_out_size)
 		}
 	}
 
-	/* XXX: will it ever happen? */
-	if (shift) {
-		if (out_size >= max_out_size) return -1;
-		bits <<= 8-shift;
-		*out = bits & 0xff;
-		out_size++;
-	}
-	
 	return out_size;
 }
 

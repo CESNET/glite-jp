@@ -47,49 +47,118 @@ static int fb_cmp(void *ctx,const glite_jp_attrval_t *a,const glite_jp_attrval_t
 	return 0;
 }
 
+/* XXX: depends on specific definition of glite_jp_attr_orig_t */
+static char orig_char[] = "ASUF";
+
+/* XXX: don't allocate memory, don't grow more than twice */
+static int escape_colon(const char *in, char *out)
+{
+	int	i,o;
+
+	for (i=o=0; in[i]; i++) switch (in[i]) {
+		case ':': out[o++] = '\\'; out[o++] = ':'; break;
+		case '\\': out[o++] = '\\'; out[o++] = '\\'; break;
+		default: out[o++] = in[i]; break;
+	}
+	out[o] = 0;
+	return o;
+}
+
+/* XXX: read until unescaped colon is found 
+ *      allocates output */
+static char * unescape_colon(const char *in,int *rd)
+{
+	int	i,o;
+	char	*out;
+
+	for (i=o=0; in[i] && in[i] != ':'; i++,o++)
+		if (in[i] == '\\') i++;
+
+	out = malloc(o+1);
+
+	for (i=o=0; in[i] && in[i] != ':'; i++)
+		if (in[i] == '\\') out[o++] = in[++i]; 
+		else out[o++] = in[i];
+
+	out[o] = 0;
+	*rd = i;
+	return out;
+}
+
 static char * fb_to_db_full(void *ctx,const glite_jp_attrval_t *attr)
 {
-	char	*db;
+	
+	int	vsize = attr->binary ? attr->size * 4/3 + 6 : strlen(attr->value)+1,
+		len;
+
+	/* 4x: + \0 + ASUF + BS + %12d */
+	char	*db = malloc(19 + (attr->origin_detail ? 2*strlen(attr->origin_detail) : 0) + vsize);
+
+	if (attr->origin < 0 || attr->origin > GLITE_JP_ATTR_ORIG_FILE) {
+		free(db); return NULL; 
+	}
+	len = sprintf(db,"%c:%d:%c:",attr->binary ? 'B' : 'S',
+		attr->timestamp,orig_char[attr->origin]);
+
+	if (attr->origin_detail) len += escape_colon(attr->origin_detail,db+len);
+	db[len++] = ':';
+
 	if (attr->binary) {
-		int	osize = attr->size * 4/3 + 6;
-		db = malloc(osize);
-		db[0] = 'B'; db[1] = ':';
-		osize = base64_encode(attr->value,attr->size,db+2,osize-3);
-		assert(osize >= 0);
-		db[osize] = 0;
+		vsize = base64_encode(attr->value,attr->size,db+len,vsize-1);
+		if (vsize < 0) { free(db); return NULL; }
+		db[len+vsize] = 0;
 	}
-	else {
-		db = malloc(strlen(attr->value)+3);
-		db[0] = 'S'; db[1] = ':';
-		strcpy(db+2,attr->value);
-	}
+	else strcpy(db+len,attr->value);
+
 	return db;
 }
 
 static char * fb_to_db_index(void *ctx,const glite_jp_attrval_t *attr,int len)
 {
-	char	*db = fb_to_db_full(ctx,attr);
-	if (len < strlen(db)) db[len] = 0;
-	return db;
+	char	*s;
+
+/* XXX: binary values not really handled. Though the formal semantics is not broken */
+	if (attr->binary) return strdup("XXX"); 
+
+	s = strdup(attr->value);
+	if (len < strlen(s)) s[len] = 0;
+	return s;
 }
 
-int fb_from_db(void *ctx,const char *str,glite_jp_attrval_t *attr)
+static int fb_from_db(void *ctx,const char *str,glite_jp_attrval_t *attr)
 {
-	int	osize;
-	switch (str[0]) {
-		case 'B':
-			attr->value = malloc(osize = strlen(str) * 3/4 + 4);
-			attr->size = base64_decode(str,str+2,osize);
-			assert(attr->size >= 0);
-			attr->binary = 1;
-			break;
-		case 'S':
-			attr->value = strdup(str + 2);
-			attr->size = 0;
-			attr->binary = 0;
-			break;
-		default: return EINVAL;
+	int 	p = 2;
+	char	*colon,*cp;
+
+	if (str[0] != 'B' && str[0] != 'S') return EINVAL;
+	attr->binary = str[0] == 'B';
+	cp = attr->value = strdup(str);
+	
+	colon = strchr(cp+p,':');
+	if (!colon) return EINVAL;
+
+	*colon++ = 0;
+	attr->timestamp = (time_t) atol(cp+p);
+	p = colon-cp;
+
+	for (attr->origin = GLITE_JP_ATTR_ORIG_ANY; orig_char[attr->origin] && orig_char[attr->origin] != cp[p]; attr->origin++);
+	if (!orig_char[attr->origin]) return EINVAL;
+
+	p += 2;
+	if (cp[p] == ':') attr->origin_detail = NULL;
+	else {
+		int	r;
+		attr->origin_detail = unescape_colon(cp+p,&r);
+		p += r;
 	}
+	if (cp[p++] != ':') return EINVAL;
+
+	if (attr->binary) {
+		attr->size = base64_decode(str+p,attr->value,strlen(str));
+		if (attr->size < 0) return EINVAL;
+	}
+	else strcpy(attr->value,str+p);
+
 	return 0;
 }
 

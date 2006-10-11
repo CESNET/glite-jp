@@ -1,6 +1,10 @@
 #ifndef __GLITE_JP_ATTR
 #define __GLITE_JP_ATTR
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void glite_jp_attrval_free(glite_jp_attrval_t *,int);
 void glite_jp_attrval_copy(glite_jp_attrval_t *,const glite_jp_attrval_t *);
 
@@ -19,6 +23,10 @@ const char *glite_jp_attrval_db_type_index(glite_jp_context_t ctx,const char *at
 
 time_t glite_jp_attr2time(const char *);
 char * glite_jp_time2attr(time_t);
+
+#ifdef __cplusplus
+};
+#endif
 
 
 #endif
