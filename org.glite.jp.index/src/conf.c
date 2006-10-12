@@ -9,10 +9,6 @@
 #include <getopt.h>
 #include <unistd.h>
 
-/* XXX: makes the stuff build, together with #include "jpis_C.h" 
- *      but I have no idea whether it works */
-#define SOAP_FMAC3 static
-#define WITH_NOGLOBAL
 
 #include <glite/jp/types.h>
 #include <glite/jp/context.h>
@@ -20,10 +16,9 @@
 #include "db_ops.h"
 #include "ws_is_typeref.h"
 
-//#include <stdsoap2.h>
-//#include "soap_version.h"
-// #include "jpis_H.h"
 
+#define SOAP_FMAC3 static
+#define WITH_NOGLOBAL
 #include "jpis_C.c"
 
 extern SOAP_NMAC struct Namespace jpis__namespaces[];
@@ -108,90 +103,6 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 		fprintf(stderr,"JP IS configuration file must be specified! "\
 			"Exiting.\n");
 		return 1;
-/* hardcoded configuration from 3.1 */
-#if 0
-	// prefixes & attributes defined in:
-	// lb.server/build/jp_job_attrs.h (created when build plugin)
-	// jp.common/interface/known_attr.h
-
-	conf->attrs = calloc(29, sizeof(*conf->attrs));
-	conf->attrs[0] = strdup("http://egee.cesnet.cz/en/Schema/JP/System:owner");
-	conf->attrs[1] = strdup("http://egee.cesnet.cz/en/Schema/JP/System:jobId");
-	conf->attrs[2] = strdup("http://egee.cesnet.cz/en/Schema/JP/System:regtime");
-	conf->attrs[3] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:user");
-	conf->attrs[4] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:aTag");
-	conf->attrs[5] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:eNodes");
-	conf->attrs[6] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:RB");
-	conf->attrs[7] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:CE");
-	conf->attrs[8] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:UIHost");
-	conf->attrs[9] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:CPUTime");
-	conf->attrs[10] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:NProc");
-	conf->attrs[11] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus");
-	conf->attrs[12] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatusDate");
-	conf->attrs[13] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:retryCount");
-	conf->attrs[14] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:jobType");
-	conf->attrs[15] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:nsubjobs");
-	conf->attrs[16] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:lastStatusHistory");
-	conf->attrs[17] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:fullStatusHistory");
-	conf->attrs[18] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:parent");
-	conf->attrs[19] = strdup("http://egee.cesnet.cz/en/WSDL/jp-lbtag:IPAW_STAGE");
-	conf->attrs[20] = strdup("http://egee.cesnet.cz/en/WSDL/jp-lbtag:IPAW_PROGRAM");
-	conf->attrs[21] = strdup("http://egee.cesnet.cz/en/WSDL/jp-lbtag:IPAW_INPUT");
-	conf->attrs[22] = strdup("http://egee.cesnet.cz/en/WSDL/jp-lbtag:IPAW_OUTPUT");
-	conf->attrs[23] = strdup("http://egee.cesnet.cz/en/WSDL/jp-lbtag:IPAW_PARAM");
-	conf->attrs[24] = strdup("http://egee.cesnet.cz/en/WSDL/jp-lbtag:IPAW_HEADER");
-	conf->attrs[25] = strdup("http://egee.cesnet.cz/en/Schema/JP/Workflow:ancestor");
-	conf->attrs[26] = strdup("http://egee.cesnet.cz/en/Schema/JP/Workflow:successor");
-	conf->attrs[27] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:host");
-
-	conf->indexed_attrs = calloc(12, sizeof(*conf->indexed_attrs));
-	conf->indexed_attrs[0] = strdup("http://egee.cesnet.cz/en/Schema/JP/System:owner");
-	conf->indexed_attrs[1] = strdup("http://egee.cesnet.cz/en/Schema/JP/System:jobId");
-	conf->indexed_attrs[2] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:user");
-	conf->indexed_attrs[3] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus");
-	conf->indexed_attrs[4] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:UIHost");
-	conf->indexed_attrs[5] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:CE");
-	conf->indexed_attrs[6] = strdup("http://egee.cesnet.cz/en/Schema/LB/Attributes:RB");
-	conf->indexed_attrs[7] = strdup("http://egee.cesnet.cz/en/WSDL/jp-lbtag:IPAW_PROGRAM");
-	conf->indexed_attrs[8] = strdup("http://egee.cesnet.cz/en/WSDL/jp-lbtag:IPAW_OUTPUT");
-	conf->indexed_attrs[9] = strdup("http://egee.cesnet.cz/en/Schema/JP/Workflow:successor");
-	conf->indexed_attrs[10] = strdup("http://egee.cesnet.cz/en/Schema/JP/Workflow:ancestor");
-
-	// XXX: some plugin names should come here in future
-	conf->plugins = NULL;
-
-	if (!ps) {
-		// No JP PrimaryStrorage server specified in $GLITE_JPIS_PS -> skip feeds
-		conf->feeds = calloc(1, sizeof(*(conf->feeds)));
-		*configuration = conf;
-		return 0;
-	}
-
-	/* ask for one feed */
-	conf->feeds = calloc(2, sizeof(*(conf->feeds)));
-	
-	conf->feeds[0] = calloc(1, sizeof(**(conf->feeds)));
-	conf->feeds[0]->PS_URL = strdup(ps);
-
-	// all job since Epoche
-	conf->feeds[0]->query = calloc(2,sizeof(*conf->feeds[0]->query));
-	conf->feeds[0]->query[0] = calloc(2,sizeof(**conf->feeds[0]->query));
-	conf->feeds[0]->query[0][0].attr = strdup("http://egee.cesnet.cz/en/Schema/JP/System:regtime");
-	conf->feeds[0]->query[0][0].op = GLITE_JP_QUERYOP_GREATER;
-	conf->feeds[0]->query[0][0].value = strdup("0");
-
-	if (qt && !strcmp(qt,"both")) {
-		conf->feeds[0]->history = 1;
-		conf->feeds[0]->continuous = 1;
-	}
-	else if ( qt && (!strcmp(qt,"continuous") || !strcmp(qt,"cont")) ) {
-		conf->feeds[0]->history = 0;
-		conf->feeds[0]->continuous = 1;
-	}
-	else if ( qt && (!strcmp(qt,"history") || !strcmp(qt,"hist")) ) {
-		conf->feeds[0]->history = 1;
-		conf->feeds[0]->continuous = 0;
-#endif
 	}
 	else {
 		read_conf(conf, conf_file);
