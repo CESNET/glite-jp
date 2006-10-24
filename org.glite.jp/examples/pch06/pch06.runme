@@ -1,6 +1,7 @@
 #!/bin/sh
 
-sandbox='gsiftp://umbar.ics.muni.cz:1414/home/mulac/pch06'
+# sandbox='gsiftp://umbar.ics.muni.cz:1414/home/mulac/pch06'
+sandbox=.
 
 if [ -z "$6" ]; then
 	echo usage: $0 reference base1 base2 base3 base4 atlas
