@@ -56,12 +56,12 @@ LOBJS:=${OBJS:.o=.lo}
 
 ifneq (${mysql_prefix},/usr)
 	ifeq ($(shell test -f ${mysql_prefix}/lib/libmysqlclient.a -o -f ${mysql_prefix}/lib/libmysqlclient.so && echo ok),ok)
-		MYSQLIB := -L${mysql_prefix}/lib -lmysqlclient
+		MYSQLIB := -L${mysql_prefix}/lib -lmysqlclient -lz
 	else
-		MYSQLIB := -L${mysql_prefix}/lib/mysql -lmysqlclient
+		MYSQLIB := -L${mysql_prefix}/lib/mysql -lmysqlclient -lz
 	endif
 else
-	MYSQLIB := -lmysqlclient
+	MYSQLIB := -lmysqlclient -lz
 endif
 
 
