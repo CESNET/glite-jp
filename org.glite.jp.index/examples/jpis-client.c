@@ -3,6 +3,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <stdlib.h>
 
 #include <stdsoap2.h>
 #include <glite/security/glite_gsplugin.h>
@@ -23,6 +24,7 @@
 #define soap_serialize__jpisclient__QueryJobsResponse soap_serialize__jpelem__QueryJobsResponse
 
 #define DEFAULT_JPIS "http://localhost:8902"
+//#define USE_GMT 1
 
 
 /* namespaces[] not used here but needed to prevent linker to complain... */
@@ -315,6 +317,9 @@ static void queryresult_print(FILE *out, const struct  _jpelem__QueryJobsRespons
 	struct jptype__attrValue *attr;
 	int i, j, k;
 
+#if USE_GMT
+	setenv("TZ","UTC",1); tzset();
+#endif
 	fprintf(out, "Result %d jobs:\n", in->__sizejobs);
 	for (j=0; j<in->__sizejobs; j++) {
 		fprintf(out, "\tjobid = %s, owner = %s\n", in->jobs[j]->jobid, in->jobs[j]->owner);

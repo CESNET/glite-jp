@@ -27,6 +27,7 @@
 	<indexedAttrs>http://egee.cesnet.cz/en/Schema/JP/System:jobId</indexedAttrs>
 	<indexedAttrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:user</indexedAttrs>
 	<indexedAttrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:CE</indexedAttrs>
+	<indexedAttrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus</indexedAttrs>
 
 	<!-- List of type plugins -->
 	<plugins></plugins>

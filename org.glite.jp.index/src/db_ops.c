@@ -289,7 +289,7 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 	// attrs table and attrid_* tables
 	attrs = ctx->conf->attrs;
 	i = 0;
-	while (attrs[i]) {
+	if (attrs) while (attrs[i]) {
 		type_full = glite_jp_attrval_db_type_full(jpctx, attrs[i]);
 		type_index = glite_jp_attrval_db_type_index(jpctx, attrs[i], INDEX_LENGTH);
 
@@ -322,7 +322,7 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 	if (glite_jp_db_prepare(jpctx, "INSERT INTO feeds (state, locked, source, condition) VALUES (?, ?, ?, ?)", &stmt, param, NULL) != 0) goto fail;
 	feeds = ctx->conf->feeds;
 	i = 0;
-	while (feeds[i]) {
+	if (feeds) while (feeds[i]) {
 		state = (feeds[i]->history ? GLITE_JP_IS_STATE_HIST : 0) |
 		        (feeds[i]->continuous ? GLITE_JP_IS_STATE_CONT : 0);
 		locked = 0;

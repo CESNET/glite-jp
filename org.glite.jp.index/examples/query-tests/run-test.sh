@@ -63,6 +63,7 @@ init() {
 	GLITE_JPIS_TEST_PORT=${GLITE_JPIS_TEST_PORT:-"10000"}
 	GLITE_JPIS_TEST_PIDFILE=${GLITE_JPIS_TEST_PIDFILE:-"/tmp/glite-jp-indexd.pid"}
 	GLITE_JPIS_TEST_LOGFILE=${GLITE_JPIS_TEST_LOGFILE:-"/tmp/glite-jp-indexd.log"}
+	GLITE_JPIS_TEST_CONFIG=${GLITE_JPIS_TEST_CONFIG:-"$GLITE_LOCATION/etc/glite-jpis-config.xml"}
 
 	if [ -z "$GLITE_JPIS_TEST_DB" ]; then
 		GLITE_JPIS_TEST_DB="jpis/@localhost:jpis1test"
@@ -107,7 +108,8 @@ run_is() {
 	# run index server
 	X509_USER_KEY=${X509_USER_KEY} X509_USER_CERT=${X509_USER_CERT} \
 	$GLITE_LOCATION/bin/glite-jp-indexd -m $GLITE_JPIS_TEST_DB -p $GLITE_JPIS_TEST_PORT \
-			-i ${GLITE_JPIS_TEST_PIDFILE} -o ${GLITE_JPIS_TEST_LOGFILE} $1\
+			-i ${GLITE_JPIS_TEST_PIDFILE} -o ${GLITE_JPIS_TEST_LOGFILE} \
+			-x ${GLITE_JPIS_TEST_CONFIG} $1\
 			2>/dev/null
 
 
@@ -144,7 +146,7 @@ run_test_query() {
 	X509_USER_KEY=${X509_USER_KEY} X509_USER_CERT=${X509_USER_CERT} \
 	$GLITE_LOCATION/examples/glite-jpis-client -f xml -q $1 \
 		 -i http://localhost:$GLITE_JPIS_TEST_PORT &>/tmp/result
-	DIFF=`diff --ignore-matching-lines="query: using JPIS" $2 /tmp/result`
+	DIFF=`diff -b --ignore-matching-lines="query: using JPIS" $2 /tmp/result`
 	if [ -z "$DIFF" -a "$?" -eq "0" ] ; then
 		echo "OK."
 		rm /tmp/result
@@ -171,7 +173,8 @@ run_test_query() {
 run_test_feed() {
 	# run the example
 	numok=`X509_USER_KEY=${X509_USER_KEY} X509_USER_CERT=${X509_USER_CERT}\
-		$GLITE_LOCATION/examples/glite-jpis-test -p $GLITE_JPIS_TEST_PORT -m $GLITE_JPIS_TEST_DB `
+		$GLITE_LOCATION/examples/glite-jpis-test -p $GLITE_JPIS_TEST_PORT \
+		-m $GLITE_JPIS_TEST_DB -x $GLITE_JPIS_TEST_CONFIG | grep -c OK`
 	if [ "$numok" -eq "2" ]; then
 		echo OK.
 	else
@@ -216,7 +219,12 @@ create_db;
 run_is;
 import_db $GLITE_LOCATION/examples/query-tests/dump1.sql;
 run_test_query $GLITE_LOCATION/examples/query-tests/simple_query.in $GLITE_LOCATION/examples/query-tests/authz.out;
-drop_db;
 kill_is;
 
-
+echo -n "Query jobId test........... "
+create_db;
+run_is "-n";
+import_db $GLITE_LOCATION/examples/query-tests/dump1.sql;
+run_test_query $GLITE_LOCATION/examples/query-tests/jobid_query.in $GLITE_LOCATION/examples/query-tests/jobid_query.out;
+drop_db;
+kill_is;

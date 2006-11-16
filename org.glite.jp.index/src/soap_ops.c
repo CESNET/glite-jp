@@ -6,6 +6,7 @@
 #include "glite/jp/context.h"
 #include "glite/jp/strmd5.h"
 #include "glite/jp/attr.h"
+#include "glite/jp/known_attr.h"
 #include "glite/lb/trio.h"
 
 #include "jpis_H.h"
@@ -182,7 +183,8 @@ static int checkIndexedConditions(glite_jpis_context_t ctx, struct _jpelem__Quer
 
 	for (k=0; k < in->__sizeconditions; k++) {
 		for (j=0; j < i; j++) {
-			if (!strcmp(in->conditions[k]->attr, indexed_attrs[j])) {
+			char *attr = in->conditions[k]->attr;
+			if (!strcmp(attr, GLITE_JP_ATTR_JOBID) || !strcmp(attr, indexed_attrs[j])) {
 				ret = 0;
 				goto end;
 			}
@@ -271,39 +273,43 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 		else
 */
 		{
-			attr_md5 = str2md5(in->conditions[i]->attr);
-			trio_asprintf(&qa,"%s jobs.jobid = attr_%|Ss.jobid AND (", 
-				(i ? "AND" : ""), attr_md5);
-		
+			if (strcmp(in->conditions[i]->attr, GLITE_JP_ATTR_JOBID) == 0) {
+				/* no subset from attr_ table, used jobs table instead */
+				attr_md5 = NULL;
+				qa = strdup("(");
+			} else {
+				/* select given records in attr_ table */
+				attr_md5 = str2md5(in->conditions[i]->attr);
+				trio_asprintf(&qa,"%s jobs.jobid = attr_%|Ss.jobid AND (", 
+					(i ? "AND" : ""), attr_md5);
+			}
+
+			/* inside part of the condition - ORs */
 			for (j=0; j < in->conditions[i]->__sizerecord; j++) { 
 				if (get_op(in->conditions[i]->record[j]->op, &qop)) goto err;
-				add_attr_table(attr_md5, &attr_tables);
+				if (attr_md5) add_attr_table(attr_md5, &attr_tables);
 
+				attr.name = in->conditions[i]->attr;
 				if (in->conditions[i]->record[j]->value->string) {
-					attr.name = in->conditions[i]->attr;
 					attr.value = in->conditions[i]->record[j]->value->string;
 					attr.binary = 0;
-					glite_jpis_SoapToAttrOrig(soap,
-						in->conditions[i]->origin, &(attr.origin));
+				} else {
+					attr.value = in->conditions[i]->record[j]->value->blob->__ptr;
+					attr.size = in->conditions[i]->record[j]->value->blob->__size;
+					attr.binary = 1;
+				}
+				glite_jpis_SoapToAttrOrig(soap,
+					in->conditions[i]->origin, &(attr.origin));
+				if (strcmp(in->conditions[i]->attr, GLITE_JP_ATTR_JOBID) == 0) {
+					trio_asprintf(&qb,"%s%sjobs.dg_jobid %s \"%|Ss\"",
+						qa, (j ? " OR " : ""), qop, attr.value);
+				} else {
 					trio_asprintf(&qb,"%s%sattr_%|Ss.value %s \"%|Ss\"",
 						qa, (j ? " OR " : ""), attr_md5, qop,
 						glite_jp_attrval_to_db_index(ctx->jpctx, &attr, 255));
-					free(qop);
-					free(qa); qa = qb; qb = NULL;
 				}
-				else {
-					attr.name = in->conditions[i]->attr;
-					attr.value = in->conditions[i]->record[j]->value->blob->__ptr;
-					attr.binary = 1;
-					attr.size = in->conditions[i]->record[j]->value->blob->__size;
-					glite_jpis_SoapToAttrOrig(soap,
-						in->conditions[i]->origin, &(attr.origin));
-					trio_asprintf(&qb,"%s %s attr_%|Ss.value %s \"%|Ss\"",
-						qa, (j ? "OR" : ""), attr_md5, qop,
-						glite_jp_attrval_to_db_index(ctx->jpctx, &attr, 255));
-					free(qop);
-					free(qa); qa = qb; qb = NULL; 
-				}
+				free(qop);
+				free(qa); qa = qb; qb = NULL;
 			}
 			trio_asprintf(&qb,"%s %s)", qwhere, qa);
 			free(qa); qwhere = qb; qb = NULL; qa = NULL;
@@ -390,7 +396,7 @@ static int get_attr(struct soap *soap, glite_jpis_context_t ctx, char *jobid, ch
 {
 	glite_jp_attrval_t		jav;
 	struct jptype__attrValue	**av = NULL;;
-	//enum jptype__attrOrig		*origin;
+	enum jptype__attrOrig		*origin;
 	char 				*query, *fv, *jobid_md5, *attr_md5;
 	int 				i, ret;
 	glite_jp_db_stmt_t      	stmt;
@@ -432,12 +438,10 @@ static int get_attr(struct soap *soap, glite_jpis_context_t ctx, char *jobid, ch
 		else {
 			av[i]->value->string = soap_strdup(soap, jav.value);
 		}
-// XXX: load timestamp and origin from DB
-// need to add columns to DB
-//		av[i]->timestamp = jav.timestamp;
-//		glite_jpis_AttrOrigToSoap(soap, jav.origin, &origin);
-//		av[i]->origin = *origin; free(origin);
-//		av[i]->originDetail = soap_strdup(soap, jav.origin_detail);		
+		av[i]->timestamp = jav.timestamp;
+		glite_jpis_AttrOrigToSoap(soap, jav.origin, &origin);
+		av[i]->origin = *origin; soap_dealloc(soap, origin);
+		av[i]->originDetail = soap_strdup(soap, jav.origin_detail);		
 
 		i++;
 		freeAttval_t(jav);

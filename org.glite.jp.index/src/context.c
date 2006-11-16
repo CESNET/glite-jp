@@ -22,6 +22,7 @@ int glite_jpis_init_context(glite_jpis_context_t *isctx, glite_jp_context_t jpct
 
 
 void glite_jpis_free_context(glite_jpis_context_t ctx) {
+	if (!ctx) return;
 	free(ctx->hname);
 	free(ctx);
 }

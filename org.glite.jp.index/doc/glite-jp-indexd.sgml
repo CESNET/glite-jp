@@ -22,11 +22,6 @@
 				<arg>--help</arg>
 			</group></arg>
 
-			<arg><group choice='plain'>
-				<arg>-s</arg>
-				<arg>--ps-server</arg>
-			</group> <replaceable>HOST:PORT</replaceable></arg>
-
 			<arg>-d</arg>
 
 			<arg><group choice='plain'>
@@ -62,6 +57,11 @@
 				<arg>-o</arg>
 				<arg>--logfile</arg>
 			</group> <replaceable>FILE.LOG</replaceable></arg>
+
+			<arg><group choice='plain'>
+				<arg>-x</arg>
+				<arg>--config</arg>
+			</group> <replaceable>CONFIG.XML</replaceable></arg>
 
 		</cmdsynopsis>
 	</refsynopsisdiv>
@@ -150,6 +150,13 @@ File to store master pid (default: <filename>/var/run/glite-jp-indexd.pid</filen
 				<term><option>-o</option>|<option>--logfile</option></term>
 				<listitem><para>
 File to store logs (default: <filename>/var/run/glite-jp-indexd.log</filename> or <filename>$HOME/glite-jp-indexd.log</filename>).
+				</para></listitem>
+			</varlistentry>
+
+			<varlistentry>
+				<term><option>-x</option>|<option>--config</option></term>
+				<listitem><para>
+Configuration file containing information about feeds, primary storages, ... Structure is defined in <filename>server_conf.xsd</filename>.
 				</para></listitem>
 			</varlistentry>
 		</variablelist>

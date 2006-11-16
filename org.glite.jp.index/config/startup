@@ -75,7 +75,7 @@ start()
 	echo -n Starting glite-jp-indexd ...
 	#su  " $GLITE_LOCATION/bin/glite-jp-indexd \
 	su - $GLITE_USER -c " $GLITE_LOCATION/bin/glite-jp-indexd \
-		-s $GLITE_JPIS_PS $GLITE_JPIS_DEBUG \
+		$GLITE_JPIS_DEBUG \
 		-q $GLITE_JPIS_QT $creds $GLITE_JPIS_AUTH \
 		-m $GLITE_JPIS_DB -p $GLITE_JPIS_PORT \
 		-i $GLITE_JPIS_PIDFILE -o $GLITE_JPIS_LOGFILE \
