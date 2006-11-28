@@ -18,6 +18,7 @@ GLITE_LOCATION_VAR=${GLITE_LOCATION_VAR:-${GLITE_LOCATION}/var}
 [ -n "$GLITE_JPIS_LOGFILE" ] || export GLITE_JPIS_LOGFILE=$GLITE_LOCATION_VAR/glite-jp-indexd.log
 pidfile="$GLITE_JPIS_PIDFILE"
 
+test -n "$GLITE_JPIS_CONFIG" || GLITE_JPIS_CONFIG="$GLITE_LOCATION/etc/glite-jpis-config.xml"
 test -n "$GLITE_JPIS_PORT" || GLITE_JPIS_PORT=8902
 test -n "$GLITE_JPIS_DB" || GLITE_JPIS_DB=jpis/@localhost:jpis
 test -n "$GLITE_JPIS_QT" || GLITE_JPIS_QT="both"
@@ -55,11 +56,6 @@ start()
 
         [ -z "$creds" ] && echo $0: WARNING: No credentials specified. Using default lookup which is dangerous. >&2
 
-        if test -z "$GLITE_JPIS_PS" ;then
-                echo 'Error: GLITE_JPIS_PS is not set'
-                echo FAILED
-                return 1
-        fi
 	if [ ! -d "`dirname $GLITE_JPIS_PIDFILE`" ] 
 	then 
 		echo "Directory `dirname $GLITE_JPIS_PIDFILE` does not exist!"
@@ -79,6 +75,7 @@ start()
 		-q $GLITE_JPIS_QT $creds $GLITE_JPIS_AUTH \
 		-m $GLITE_JPIS_DB -p $GLITE_JPIS_PORT \
 		-i $GLITE_JPIS_PIDFILE -o $GLITE_JPIS_LOGFILE \
+		-x $GLITE_JPIS_CONFIG
 		" && echo " done" || echo " FAILED"
 }
 

@@ -70,7 +70,6 @@ some hard-coded options.
 The index server takes the following options:
 
 ./glite-jp-indexd [option]
-	-s, --ps-server  primary storage server address (http://hostname:port)
         -d, --debug      don't run as daemon, additional diagnostics
 	-q, --query-type hist/cont/both (default history)	
         -n, --noauth     don't check user identity with result owner
@@ -78,9 +77,10 @@ The index server takes the following options:
         -p, --port       port to listen
         -i, --pidfile    file to store master pid
         -o, --logfile    file to store logs
+	-x, --config     file with server configuration
 
-Other parameters will be configurable in close future. Its
-current hard-coded values are in org.glite.jp.index/src/conf.[ch]
+The config file parameter is required. There is the example configuration in
+$GLITE_LOCATION/etc/glite-jpis-config.xml.
 
 
 Starting the daemon
@@ -91,8 +91,8 @@ Preferred way of starting the daemon is using start-up script
 in ~/.glite.conf) where many variables may be set to configure the daemon.
 The script takes following variables:
 
-GLITE_JPIS_PS		- location of JP-PS server (_required parameter_)
-                  	(for example http://umbar.ics.muni.cz:8901)
+GLITE_JPIS_CONFIG	- server config file specification
+			(default is $GLITE_LOCATION//etc/glite-jpis-config.xml)
 GLITE_JPIS_DEBUG   	- setting to '-d' forces the daemon not to daemonize 
 GLITE_JPIS_QT		- defines query type 
 			'hist' ... history query

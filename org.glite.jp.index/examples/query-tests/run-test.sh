@@ -219,6 +219,7 @@ create_db;
 run_is;
 import_db $GLITE_LOCATION/examples/query-tests/dump1.sql;
 run_test_query $GLITE_LOCATION/examples/query-tests/simple_query.in $GLITE_LOCATION/examples/query-tests/authz.out;
+drop_db;
 kill_is;
 
 echo -n "Query jobId test........... "

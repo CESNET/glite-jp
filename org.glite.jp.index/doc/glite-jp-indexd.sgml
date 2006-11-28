@@ -82,14 +82,6 @@ With no options you get simple usage message as with <option>-h</option>.
 
 		<variablelist>
 			<varlistentry>
-				<term><option>-s</option>|<option>--ps-server</option></term>
-				<listitem><para>
-Primary storage server address
-(http://<replaceable>HOSTNAME:PORT</replaceable>).
-				</para></listitem>
-			</varlistentry>
-
-			<varlistentry>
 				<term><option>-d</option>|<option>--debug</option></term>
 				<listitem><para>
 Don't run as daemon, additional diagnostics.
@@ -174,9 +166,9 @@ Preferred way of starting the daemon is using start-up script (<filename>config/
 
 		<variablelist>
 			<varlistentry>
-				<term>GLITE_JPIS_PS</term>
+				<term>GLITE_JPIS_CONFIG</term>
 				<listitem><para>
-Location of JP-PS server (_required parameter_), for example http://umbar.ics.muni.cz:8901.
+Specifying config file. Default is <filename>$GLITE_LOCATION/etc/glite-jpis-config.xml</filename>
 				</para></listitem>
 			</varlistentry>
 
