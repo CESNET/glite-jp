@@ -75,7 +75,7 @@ ${LTLIB} ${STATICLIB}: ${OBJS}
 examples: db-test-int
 
 db-test-int: db-test-int.o
-	${LINK} -o $@ $+ ${STATICLIB} ${MYSQLIB} -lglite_jp_common ${TRIOLIB} ${GLOBUS_LIBS}
+	${LINK} -o $@ $+ ${STATICLIB} ${MYSQLIB} -lglite_jp_common_${nothrflavour} ${TRIOLIB} ${GLOBUS_LIBS}
 
 check: 
 	-echo nothing yet

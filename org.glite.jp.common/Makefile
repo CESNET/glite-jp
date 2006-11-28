@@ -47,8 +47,11 @@ HDRS:=types.h context.h strmd5.h attr.h known_attr.h trio.h escape.h
 
 SRCS:=context.c strmd5.c attr.c
 OBJS:=${SRCS:.c=.lo}
+LIBS:=-lcrypto_${nothrflavour}
+LIBS_THR:=-lcrypto_${thrflavour}
 
-commonlib:= libglite_jp_common.la
+commonlib:= libglite_jp_common_${nothrflavour}.la
+commonlib_thr:= libglite_jp_common_${thrflavour}.la
 
 TRIO_OBJS:=escape.o trio.o strio.o
 TRIO_LIB:=libglite_jp_trio.la
@@ -60,10 +63,13 @@ TEST_INC:=-I${cppunit}/include
 
 default all: compile
 
-compile: ${commonlib} ${TRIO_LIB} 
+compile: ${commonlib} ${commonlib_thr} ${TRIO_LIB} 
 
 ${commonlib}: ${OBJS}
-	${LINK} -o $@ ${OBJS} -lcrypto_${nothrflavour}
+	${LINK} -o $@ ${OBJS} ${LIBS}
+
+${commonlib_thr}: ${OBJS}
+	${LINK} -o $@ ${OBJS} ${LIBS}
 
 ${TRIO_LIB}: ${TRIO_LOBJS}
 	${LINK} ${version_info} -o $@ ${TRIO_LOBJS} -lm
@@ -85,7 +91,7 @@ install:
 	-mkdir -p ${PREFIX}/include/${globalprefix}/${jpprefix}
 	cd ${top_srcdir}/interface && install -m 644 ${HDRS} ${PREFIX}/include/${globalprefix}/${jpprefix}
 	-mkdir -p ${PREFIX}/lib
-	${INSTALL} -m 755 ${commonlib} ${TRIO_LIB} ${PREFIX}/lib
+	${INSTALL} -m 755 ${commonlib} ${commonlib_thr} ${TRIO_LIB} ${PREFIX}/lib
 
 dist: distsrc distbin
 
