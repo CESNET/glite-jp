@@ -25,11 +25,10 @@ CC=gcc
 VPATH=${top_srcdir}/src:${top_srcdir}/test:${top_srcdir}/project:${jpproject}
 
 GLOBUSINC:= -I${globus_prefix}/include/${nothrflavour}
-
+GLOBUSINCTHR:= -I${globus_prefix}/include/${thrflavour}
 
 DEBUG:=-g -O0 
-CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${stagedir}/include \
-	${GLOBUSINC}
+CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${stagedir}/include
 
 offset=0
 version_info:=-version-info ${shell \
@@ -45,8 +44,12 @@ HDRS:=types.h context.h strmd5.h attr.h known_attr.h trio.h escape.h
 
 SRCS:=context.c strmd5.c attr.c
 OBJS:=${SRCS:.c=.lo}
+THROBJS:=${OBJS:.o=.thr.lo}
+LIBS:=-L${globus_prefix}/lib -lcrypto_${nothrflavour}
+THRLIBS:=-L${globus_prefix}/lib -lcrypto_${thrflavour}
 
-commonlib:= libglite_jp_common.la
+commonlib:= libglite_jp_common_${nothrflavour}.la
+commonlib_thr:= libglite_jp_common_${thrflavour}.la
 
 TRIO_OBJS:=escape.o trio.o strio.o
 TRIO_LIB:=libglite_jp_trio.la
@@ -54,10 +57,13 @@ TRIO_LOBJS:=${TRIO_OBJS:.o=.lo}
 
 default all: compile
 
-compile: ${commonlib} ${TRIO_LIB}
+compile: ${commonlib} ${commonlib_thr} ${TRIO_LIB}
 
 ${commonlib}: ${OBJS}
-	${LINK} -o $@ ${OBJS}
+	${LINK} -o $@ ${OBJS} ${LIBS}
+
+${commonlib_thr}: ${THROBJS}
+	${LINK} -o $@ ${THROBJS} ${THRLIBS}
 
 ${TRIO_LIB}: ${TRIO_LOBJS}
 	${LINK} ${version_info} -o $@ ${TRIO_LOBJS} -lm
@@ -74,7 +80,7 @@ install:
 	-mkdir -p ${PREFIX}/include/${globalprefix}/${jpprefix}
 	cd ${top_srcdir}/interface && install -m 644 ${HDRS} ${PREFIX}/include/${globalprefix}/${jpprefix}
 	-mkdir -p ${PREFIX}/lib
-	${INSTALL} -m 755 ${commonlib} ${TRIO_LIB} ${PREFIX}/lib
+	${INSTALL} -m 755 ${commonlib} ${commonlib_thr} ${TRIO_LIB} ${PREFIX}/lib
 
 dist: distsrc distbin
 
@@ -92,8 +98,11 @@ distbin:
         
 clean:
 
+%.thr.lo: %.c
+	${COMPILE} ${GLOBUSTHRINC} -o $@ -c $<
+
 %.lo: %.c
-	${COMPILE} -o $@ -c $< 
+	${COMPILE} ${GLOBUSINC} -o $@ -c $< 
 
 ${TRIO_LOBJS}: %.lo: %.c
 	${COMPILE} -o $@ -c -DDATAGRID_EXTENSION $< 
