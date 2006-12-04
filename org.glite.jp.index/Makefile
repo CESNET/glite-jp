@@ -75,7 +75,7 @@ EXA_DB_OBJS:=${EXA_DB_SRCS:.c=.o}
 EXA_CLIENT_OBJS:=${EXA_CLIENT_SRCS:.c=.o}
 
 
-COMMONLIB:=-lglite_jp_common
+COMMONLIB:=-lglite_jp_common_${nothrflavour}
 SRVCOMMONLIB:=-lglite_jp_server_common
 BONESLIB:=-lglite_lb_server_bones
 TRIOLIB:=-lglite_jp_trio
