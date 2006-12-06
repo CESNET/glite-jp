@@ -12,6 +12,15 @@ typedef struct _glite_jpps_fplug_op_t {
 \param[out] handle	Handle to the opened file structure, to be passed to other plugin functions.
 */
 	int	(*open)(void *fpctx,void *bhandle,const char *uri,void **handle);
+/** Open from a string.
+\param[in] fpctx	Context of the plugin, returned by its init.
+\param[in] str		The string to use.
+\param[in] uri		URI (type) of the string
+\param[in] ns		namespace to handle 
+\param[out] handle      Handle to the opened file structure, to be passed to other plugin functions.
+*/
+
+	int	(*open_str)(void *fpctx,const char *str,const char *uri,const char *ns,void **handle);
 
 /** Close the file. Free data associated to a handle */
 	int	(*close)(void *fpctx,void *handle);
