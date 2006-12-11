@@ -32,7 +32,7 @@ GLOBUS_CFLAGS:=-I${globus_prefix}/include/${nothrflavour}
 
 DEBUG:=-g -O0  -DDEBUG
 
-CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${gsoap_prefix} -I${stagedir}/include ${GLOBUS_CFLAGS} -I${mysql_prefix}/include -I${mysql_prefix}/include/mysql -I${classads_prefix}/include
+CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${gsoap_prefix} -I${stagedir}/include ${GLOBUS_CFLAGS} -I${mysql_prefix}/include -I${mysql_prefix}/include/mysql -I${classads_prefix}/include -I${libtar_prefix}/include
 LDFLAGS:=-L${stagedir}/lib
 
 LINK:=libtool --mode=link ${CC} ${LDFLAGS} 
@@ -51,7 +51,7 @@ ps_prefix:=jpps_
 is_prefix:=jpis_
 sample_jobs:=sample_job_aborted  sample_job_cleared  sample_job_tagged_done  sample_job_waiting
 
-plugins:=glite-jp-tags.la glite-jp-ftpdauth.la
+plugins:=glite-jp-tags.la glite-jp-ftpdauth.la glite-jp-sandbox.la
 
 HDRS_I=file_plugin.h
 HDRS_S=builtin_plugins.h backend.h feed.h
@@ -79,6 +79,7 @@ COMMONLIB:=-lglite_jp_common_${nothrflavour}
 BONESLIB:=-lglite_lb_server_bones
 GSOAPLIB:=-L${stagedir}/lib -lglite_security_gsoap_plugin_${dotless_soap_ver}_${nothrflavour} 
 TRIOLIB:=-lglite_jp_trio
+LIBTARLIB:=-L${libtar_prefix}/lib -llibtar
 
 ifneq (${mysql_prefix},/usr)
 	ifeq ($(shell test -f ${mysql_prefix}/lib/libmysqlclient.a -o -f ${mysql_prefix}/lib/libmysqlclient.so && echo ok),ok)
@@ -195,6 +196,9 @@ simple_server.o soap_ops.o jpps-test.o: ${ps_prefix}H.h
 # 	@echo 'The following warning "time_t (de)serialization is not MT safe on this platform" is harmless'
 # 	${CC} -o $@ -c -DWITH_NONAMESPACES -DHAVE_CONFIG_H ${CFLAGS} ${gsoap_prefix}/devel/stdsoap2.c
 # 
+
+glite-jp-sandbox.la: sandbox_plugin.lo
+	${SOLINK} -o $@ sandbox_plugin.lo ${LIBLIBTAR}
 
 glite-jp-tags.la: tags_plugin.lo
 	${SOLINK} -o $@ tags_plugin.lo
