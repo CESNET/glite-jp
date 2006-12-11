@@ -16,7 +16,7 @@ STAGETO=interface
 
 XSLTPROC=xsltproc --nonet
 XMLLINT:=xmllint --nonet
-TIDY:=tidy
+TIDY:=tidy -i -q --show-warnings no --tidy-mark no --wrap 0
 docbookxls:=http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl
 
 WSDL=JobProvenancePS.wsdl JobProvenanceIS.wsdl JobProvenanceTypes.wsdl 
@@ -56,15 +56,15 @@ clean:
 	
 %.wsdl: %.xml puke-wsdl.xsl
 	${XSLTPROC} ../src/puke-wsdl.xsl $< >$@
-	-${TIDY} -wrap 10000 -xml -m -i -q $@
+	-${TIDY} -xml -m $@
 
 %.xsd: %.xml puke-schema.xsl
 	${XSLTPROC} ../src/puke-schema.xsl $< >$@
-	-${TIDY} -wrap 10000 -xml -m -i -q $@
+	-${TIDY} -xml -m $@
 
 JobProvenance.html: doc.xml JobProvenancePS.xml JobProvenanceIS.xml JobProvenanceTypes.xml puke-ug.xsl
 	${XSLTPROC} --novalid ../src/puke-ug.xsl $< >doc-html.xml
-	-${TIDY} -wrap 10000 -xml -m -i -q doc-html.xml
+	-${TIDY} -xml -m doc-html.xml
 	${XMLLINT} --valid --noout doc-html.xml
 	${XSLTPROC} --stringparam  chapter.autolabel 0 ${docbookxls} doc-html.xml >$@
-	-${TIDY} -wrap 10000 -asxhtml -m -i -q $@
+	-${TIDY} -asxhtml -m $@
