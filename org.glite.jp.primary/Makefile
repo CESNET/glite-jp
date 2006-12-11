@@ -79,7 +79,7 @@ COMMONLIB:=-lglite_jp_common_${nothrflavour}
 BONESLIB:=-lglite_lb_server_bones
 GSOAPLIB:=-L${stagedir}/lib -lglite_security_gsoap_plugin_${dotless_soap_ver}_${nothrflavour} 
 TRIOLIB:=-lglite_jp_trio
-LIBTARLIB:=-L${libtar_prefix}/lib -llibtar
+LIBTARLIB:=-L${libtar_prefix}/lib -ltar
 
 ifneq (${mysql_prefix},/usr)
 	ifeq ($(shell test -f ${mysql_prefix}/lib/libmysqlclient.a -o -f ${mysql_prefix}/lib/libmysqlclient.so && echo ok),ok)
@@ -198,7 +198,7 @@ simple_server.o soap_ops.o jpps-test.o: ${ps_prefix}H.h
 # 
 
 glite-jp-sandbox.la: sandbox_plugin.lo
-	${SOLINK} -o $@ sandbox_plugin.lo ${LIBLIBTAR}
+	${SOLINK} -o $@ sandbox_plugin.lo ${LIBTARLIB}
 
 glite-jp-tags.la: tags_plugin.lo
 	${SOLINK} -o $@ tags_plugin.lo

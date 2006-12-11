@@ -21,7 +21,13 @@ typedef struct _sb_handle {
 	char		**file_names;
 } sb_handle;
 
-
+// Global data needed for read/write wrappers
+static struct {
+	void			*bhandle;
+	glite_jp_context_t	ctx;
+	off_t			offset;
+} global_data;
+		
 
 //static int sandbox_append(void *,void *,int,...);
 static int sandbox_open(void *,void *,const char *uri,void **);
@@ -39,8 +45,20 @@ static int my_close(int fd) {
         return 0;
 }
 
-static ssize_t my_read(int fd, void *buf, size_t count) {
-	// XXX: wrapper around glite_jppsbe_pread
+// wrapper around glite_jppsbe_pread
+static ssize_t my_read(int fd, void *buf, size_t count) 
+{
+	size_t                  r;
+
+	
+	if (glite_jppsbe_pread(global_data.ctx,global_data.bhandle,buf,count,global_data.offset,&r)) {
+		errno = global_data.ctx->error->code;
+		return -1;
+	}
+
+	global_data.offset += r;
+
+	return r;
 }
 
 
@@ -52,6 +70,7 @@ static ssize_t my_write(int fd, const void *buf, size_t count) {
 int init(glite_jp_context_t ctx, glite_jpps_fplug_data_t *data)
 {
 	data->fpctx = ctx;
+	global_data.ctx = ctx;
 
 	data->uris = calloc(2,sizeof *data->uris);
 	data->uris[0] = strdup(GLITE_JP_FILETYPE_ISB);
@@ -75,6 +94,8 @@ static int sandbox_open(void *fpctx,void *bhandle,const char *uri,void **handle)
 	printf("sandbox_open() called\n");
 
 	h->bhandle = bhandle;
+	global_data.bhandle = bhandle;
+	global_data.offset = 0;
 
 	h->tt = malloc(sizeof(*h->tt));
 	h->tt->openfunc = my_open;
