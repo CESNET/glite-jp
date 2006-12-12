@@ -82,7 +82,7 @@ int init(glite_jp_context_t ctx, glite_jpps_fplug_data_t *data)
 	data->ops.close = sandbox_close;
 	data->ops.attr = sandbox_attr;
 	
-	printf("sandbox_plugin: URI: \"%s\"",GLITE_JP_FILETYPE_ISB);
+	printf("sandbox_plugin: URI: \"%s\"\n",GLITE_JP_FILETYPE_ISB);
 	return 0;
 }
 
@@ -150,7 +150,7 @@ static int sandbox_attr(void *fpctx,void *handle,const char *attr,glite_jp_attrv
 	{
 		printf("-- %s\n", th_get_pathname(h->t));
 
-		if (TH_ISREG(h->t) && tar_extract_regfile(h->t, th_get_pathname(h->t)) != 0)
+		if (TH_ISREG(h->t) && tar_skip_regfile(h->t) != 0)
 		{
 			err.code = EIO;
 			err.desc = "tar_skip_regfile";
