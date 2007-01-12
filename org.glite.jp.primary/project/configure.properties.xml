@@ -12,6 +12,9 @@
 
 	Revision history:
 	$Log$
+	Revision 1.7  2006/10/10 17:36:32  akrenek
+	merge from 3.1
+
 	Revision 1.6.4.1  2006/08/28 18:49:23  akrenek
 	pch06 tool to generate subjob relationships from DAG JDL
 
@@ -76,6 +79,7 @@ cppunit=${with.cppunit.prefix}
 jpproject=${subsystem.project.dir}
 project=${component.project.dir}
 classads_prefix=${with.classads.prefix}
+libtar_prefix=${with.libtar.prefix}
 			</echo>
 	    </target>
 	</project>
