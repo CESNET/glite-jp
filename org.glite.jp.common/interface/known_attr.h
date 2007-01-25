@@ -24,7 +24,7 @@
 
 /** Namespace for LB user tags, schemaless, all values are strings */
 #define GLITE_JP_LBTAG_NS	"http://egee.cesnet.cz/en/WSDL/jp-lbtag"
-
+#define GLITE_JP_JDL_NS 	"http://jdl"
 
 /** Namespace for Sandboxes */
 #define GLITE_JP_ISB_NS       "http://egee.cesnet.cz/en/Schema/JP/ISB"
@@ -33,6 +33,5 @@
 /** File names in SB tar */
 #define GLITE_JP_ATTR_ISB_FILENAME     GLITE_JP_ISB_NS ":fileName"
 #define GLITE_JP_ATTR_OSB_FILENAME     GLITE_JP_OSB_NS ":fileName"
-
 
 #endif
