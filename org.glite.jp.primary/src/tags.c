@@ -3,6 +3,9 @@
 #include <assert.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <stdarg.h>
+#include <assert.h>
+#include <stdint.h>
 
 #include <glite/jp/types.h>
 #include "tags.h"
@@ -11,8 +14,10 @@
 /* magic name_len value_len binary sequence timestamp */
 #define HEADER "JP#TAG# %05u %012lu %c %05u %012lu#"
 #define HEADER_SIZE 48
+#define TAGS_MAGIC 0x74c016f2   /* two middle digits encode version, i.e. 01 */
 
-int glite_jpps_tag_append(
+
+/*int glite_jpps_tag_append(
 	glite_jp_context_t ctx,
 	void *handle,
 	const glite_jp_tagval_t *tag
@@ -127,7 +132,7 @@ int glite_jpps_tag_read(
 		err.desc = "No more tags in the file";
 		goto error_out;
 	}
-	/* #define HEADER "JP#TAG# %05u %012lu %c %05u %012lu#" */
+	// #define HEADER "JP#TAG# %05u %012lu %c %05u %012lu#" 
 	if (sscanf(hdr, HEADER, &nlen, &vlen, &binary, &sequence, &timestamp) < 5) {
 		err.code = EILSEQ;
 		err.desc = "Incorrect tag header format";
@@ -170,14 +175,14 @@ error_out:
 	free(name);
 	free(value);
 	return glite_jp_stack_error(ctx,&err);
-}
+}*/
 
 /*
 int glite_jpps_tag_read(glite_jp_context_t, void *, off_t, glite_jp_tagval_t *, size_t);
 int glite_jpps_tag_readall(glite_jp_context_t, void *, glite_jp_tagval_t **);
 */
 
-int glite_jpps_tag_readall(
+/*int glite_jpps_tag_readall(
 	glite_jp_context_t ctx,
 	void *handle,
 	glite_jp_tagval_t **tags_out
@@ -230,11 +235,11 @@ error_out:
 	}
 	free(tags);
 	return glite_jp_stack_error(ctx,&err);
-}
+}*/
 
 int tag_append(void *fpctx,void *bhandle,glite_jp_attrval_t * tag)
 {
-        va_list ap;
+        //va_list ap;
         char    *hdr,*rec;
         glite_jp_context_t      ctx = fpctx;
         uint32_t                magic,hlen,rlen,rlen_n;

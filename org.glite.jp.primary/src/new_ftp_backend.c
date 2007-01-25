@@ -22,7 +22,6 @@
 
 #include "feed.h"
 #include "tags.h"
-#include "tags2.h"
 #include "backend.h"
 #include "db.h"
 
