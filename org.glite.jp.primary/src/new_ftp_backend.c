@@ -22,6 +22,7 @@
 
 #include "feed.h"
 #include "tags.h"
+#include "tags2.h"
 #include "backend.h"
 #include "db.h"
 
@@ -1003,6 +1004,24 @@ error_out:
 	} else { 
 		return 0;
 	}
+}
+
+int glite_jppsbe_file_attrs(glite_jp_context_t ctx, void *handle, struct stat *buf){
+	glite_jp_error_t err;
+
+        assert(handle != NULL);
+
+        glite_jp_clear_error(ctx);
+        memset(&err,0,sizeof err);
+        err.source = __FUNCTION__;
+
+	if (! fstat(((fhandle)handle)->fd, buf)) {
+		err.code = errno;
+		err.desc = "Error calling fstat";
+		return -1;
+	}
+
+	return 0;
 }
 
 int glite_jppsbe_pread(
@@ -2311,6 +2330,86 @@ cleanup:
 	return err.code;
 }
 
+int glite_jppsbe_append_tag(
+	void *fpctx,
+	char *jobid,
+	glite_jp_attrval_t *attr
+)
+{
+	void 			*file_be;
+	glite_jp_error_t        err;
+        glite_jp_context_t      ctx = fpctx;
+	memset(&err,0,sizeof err);
+        err.source = __FUNCTION__;
+
+	if (glite_jppsbe_open_file(ctx,jobid,"tags",NULL,
+                                                O_RDWR|O_CREAT,&file_be)
+                        // XXX: tags need reading to check magic number
+        ) {
+		err.code = EIO;
+		err.desc = "cannot open tags file";
+		return glite_jp_stack_error(ctx,&err);
+        }
+
+	if (tag_append(ctx,file_be,attr))
+        {
+		err.code = EIO;
+                err.desc = "cannot append tag";
+                return glite_jp_stack_error(ctx,&err);
+        }
+
+	if (glite_jppsbe_close_file(ctx,file_be))
+	{
+		err.code = EIO;
+                err.desc = "cannot close tags file";
+		return glite_jp_stack_error(ctx,&err);
+        }
+	
+	return 0;
+}
+
+
+int glite_jppsbe_read_tag(
+	void *fpctx,
+	const char *jobid,
+	const char *attr,
+	glite_jp_attrval_t **attrval
+)
+{
+        glite_jp_error_t        err;
+        glite_jp_context_t      ctx = fpctx;
+	struct tags_handle     	*h;
+
+	memset(&err,0,sizeof err);
+        err.source = __FUNCTION__;
+	h = malloc(sizeof (*h));
+	h->tags = NULL;
+	h->n = 0;
+
+	if (glite_jppsbe_open_file(ctx,jobid,"tags",NULL,
+                                                O_RDONLY,&(h->bhandle))
+                        // XXX: tags need reading to check magic number
+        ) {
+                err.code = EIO;
+                err.desc = "cannot open tags file";
+                return glite_jp_stack_error(ctx,&err);
+        }
+
+	if (tag_attr(ctx,h,attr,attrval)){
+		err.code = EIO;
+                err.desc = "cannot read tag";
+                return glite_jp_stack_error(ctx,&err);		
+	}
+
+	if (glite_jppsbe_close_file(ctx,h->bhandle))
+        {
+                err.code = EIO;
+                err.desc = "cannot close tags file";
+                return glite_jp_stack_error(ctx,&err);
+        }
+	
+	return 0;
+}
 
 
 

@@ -14,46 +14,58 @@
 #include "builtin_plugins.h"
 
 static struct {
-	char	*class,*uri;
-	glite_jpps_fplug_data_t	**plugins;
-	int	nplugins;
-} *known_classes;
+	char *namespace;
+	glite_jpps_fplug_data_t **plugins;
+        int     nplugins;
 
-static int tags_index;
+} *known_namespaces;
 
+static char* get_namespace(const char* attr){
+        char* namespace = strdup(attr);
+        char* colon = strrchr(namespace, ':');
+	if (colon)
+		namespace[strrchr(namespace, ':') - namespace] = 0;
+	else
+		namespace[0] = 0;
+	return namespace;
+}
 
-static void scan_classes(glite_jp_context_t ctx)
+static void scan_namespaces(glite_jp_context_t ctx)
 {
-	int	i,j,k;
-	glite_jpps_fplug_data_t	*pd;
+        int     i,j,k;
+        glite_jpps_fplug_data_t *pd;
 
 	if (!ctx->plugins) return;
+        
 	for (i=0; ctx->plugins[i]; i++) {
-		pd = ctx->plugins[i];
-
-		for (j=0; pd->classes[j]; j++) {
-			for (k=0; known_classes && known_classes[k].class
-					&& strcmp(pd->classes[j],known_classes[k].class);
-				k++);
-			if (known_classes && known_classes[k].class) {
-				known_classes[k].plugins = realloc(known_classes[k].plugins,
-						(known_classes[k].nplugins + 2) * sizeof(glite_jpps_fplug_data_t *));
-				known_classes[k].plugins[known_classes[k].nplugins++] = pd;
-				known_classes[k].plugins[known_classes[k].nplugins] = NULL;
-			}
-			else {
-				known_classes = realloc(known_classes,(k+2) * sizeof *known_classes);
-				known_classes[k].class = pd->classes[j];
-				known_classes[k].uri = pd->uris[j];
-				known_classes[k].plugins = malloc(2 * sizeof(glite_jpps_fplug_data_t *));
-				known_classes[k].plugins[0] = pd;
-				known_classes[k].plugins[1] = NULL;
-				known_classes[k].nplugins = 1;
-				memset(known_classes+k+1,0,sizeof *known_classes);
-				if (!strcmp(known_classes[k].uri,GLITE_JP_FILETYPE_TAGS)) tags_index = k;
-			}
+                pd = ctx->plugins[i];
+		
+		if (pd->namespaces){
+	                for (j=0; pd->namespaces[j]; j++) {
+				for (k=0; known_namespaces && known_namespaces[k].namespace
+        	        	                       && strcmp(pd->namespaces[j],known_namespaces[k].namespace); k++) {};
+			
+				if (known_namespaces && known_namespaces[k].namespace) {
+					printf("Adding new plugin into namespace %s\n", known_namespaces[k].namespace);
+                                	known_namespaces[k].plugins = realloc(known_namespaces[k].plugins,
+                               			(known_namespaces[k].nplugins + 2) * sizeof(glite_jpps_fplug_data_t *));
+	                               	known_namespaces[k].plugins[known_namespaces[k].nplugins++] = pd;
+	        	                known_namespaces[k].plugins[known_namespaces[k].nplugins] = NULL;
+					known_namespaces[k].namespace = pd->namespaces[j];
+                	       	}
+	                        else {
+					printf("Adding new namespace %s\n", pd->namespaces[j]);
+        	               	        known_namespaces = realloc(known_namespaces,(k+2) * sizeof *known_namespaces);
+        	                       	known_namespaces[k].plugins = malloc(2 * sizeof(glite_jpps_fplug_data_t *));
+	        	                known_namespaces[k].plugins[0] = pd;
+        	                       	known_namespaces[k].plugins[1] = NULL;
+                	       	        known_namespaces[k].nplugins = 1;
+					known_namespaces[k].namespace = pd->namespaces[j];
+                        	        memset(known_namespaces+k+1,0,sizeof *known_namespaces);
+       		                }
+	               	}
 		}
-	}
+        }
 }
 
 static int merge_attrvals(glite_jp_attrval_t **out,int nout,const glite_jp_attrval_t *in)
@@ -68,16 +80,36 @@ static int merge_attrvals(glite_jp_attrval_t **out,int nout,const glite_jp_attrv
 	return nout+nin;
 }
 
+void process_files(glite_jp_context_t ctx, const char *job, glite_jp_attrval_t** out, int* nout, const char* attr, const glite_jpps_fplug_data_t* plugin, const char* class, const char* uri, const char *ns){
+	void *ph, *beh; 
+	char** names = NULL;
+        int nnames = glite_jppsbe_get_names(ctx, job, class, &names);
+	int n;
+        for (n = 0; n < nnames; n++)
+        	if (! glite_jppsbe_open_file(ctx,job,class, names[n], O_RDONLY, &beh)) {
+ 	       		if (!plugin->ops.open(plugin->fpctx,beh,uri,&ph)) {
+		        	glite_jp_attrval_t* myattr;
+        		        // XXX: ignore errors
+                		if (!plugin->ops.attr(plugin->fpctx,ph,ns,attr,&myattr)) {
+                			int k;
+	                        	for (k=0; myattr[k].name; k++) {
+        	                		myattr[k].origin = GLITE_JP_ATTR_ORIG_FILE;
+	                	                trio_asprintf(&myattr[k].origin_detail,"%s %s", uri, names[n] ? names[n] : "");
+        	                	}
+	        	                *nout = merge_attrvals(out,*nout,myattr);
+        	        	        free(myattr);
+				}
+				plugin->ops.close(plugin->fpctx, ph);
+               		}
+			glite_jppsbe_close_file(ctx,beh);
+		}
+}
+
 glite_jpps_get_attrs(glite_jp_context_t ctx,const char *job,char **attr,int nattr,glite_jp_attrval_t **attrs_out)
 {
 	glite_jp_attrval_t	*meta = NULL,*out = NULL;
         char const	**other = NULL;
 	int	i,j,nmeta,nother,err = 0,nout = 0;
-
-	struct { int 	class_idx;
-		 char	*name;
-	} *files = NULL;
-	int	nfiles = 0;
 
 	nmeta = nother = 0;
 	glite_jp_clear_error(ctx);
@@ -102,85 +134,32 @@ glite_jpps_get_attrs(glite_jp_context_t ctx,const char *job,char **attr,int natt
 /* retrieve the metadata */
 	if (meta && (err = glite_jppsbe_get_job_metadata(ctx,job,meta))) goto cleanup;
 
-	if (!known_classes) scan_classes(ctx);
+	if (!known_namespaces) scan_namespaces(ctx);
 
-/* build a list of available files for this job */
-	files = malloc(sizeof *files);
-	files->class_idx = tags_index;
-	files->name = NULL;
-	nfiles = 1;
-
-	for (i=0; known_classes[i].class; i++) {
-		char	**names = NULL;
-		int	nnames = 
-			glite_jppsbe_get_names(ctx,job,known_classes[i].class,&names);
-		if (nnames < 0) continue; /* XXX: error ignored */
-
-		if (nnames > 0) {
-			files = realloc(files,(nfiles+nnames+1) * sizeof *files);
-			for (j=0; j<nnames; j++) {
-				files[nfiles].class_idx = i;
-				files[nfiles++].name = names[j];
+/* loop over the attributes */
+	int k, l, m;
+	void* beh;
+	for (i = 0; i < nother; i++){
+		if (! glite_jppsbe_read_tag(ctx, job, other[i], &out))
+			nout++;
+		for (j = 0; known_namespaces[j].namespace; j++) {
+			void* ph;
+			char* attr_namespace = get_namespace(other[i]);
+			if (strcmp(attr_namespace, known_namespaces[j].namespace) == 0){
+				for (k = 0; known_namespaces[j].plugins[k]; k++)
+					for (l = 0; known_namespaces[j].plugins[k]->classes[l]; l++)
+						process_files(ctx, job, &out, &nout, other[i], known_namespaces[j].plugins[k]
+							, known_namespaces[j].plugins[k]->classes[l]
+							, known_namespaces[j].plugins[k]->uris[l]
+							, known_namespaces[j].namespace);
+				break;
 			}
-		}
-		free(names);
-	}
-
-/* loop over the files */
-	for (i=0; i<nfiles; i++) {
-		void	*beh;
-		int	ci;
-
-		/* XXX: ignore error */
-		if (!glite_jppsbe_open_file(ctx,job,
-			known_classes[ci = files[i].class_idx].class,
-			files[i].name,O_RDONLY,&beh))
-		{
-			for (j=0; j<known_classes[ci].nplugins; j++) {
-				void	*ph;
-
-				glite_jpps_fplug_data_t	*p = 
-					known_classes[ci].plugins[j];
-				/* XXX: ignore error */
-				if (!p->ops.open(p->fpctx,beh,known_classes[ci].uri,&ph)) {
-
-					for (j=0; j<nother; j++) {
-						glite_jp_attrval_t	*myattr;
-						/* XXX: ignore errors */
-						if (!p->ops.attr(p->fpctx,ph,other[j],&myattr)) {
-							int	k;
-							for (k=0; myattr[k].name; k++) {
-								myattr[k].origin = GLITE_JP_ATTR_ORIG_FILE;
-								trio_asprintf(&myattr[k].origin_detail,"%s %s",
-										known_classes[ci].uri,
-										files[i].name ? files[i].name : "");
-							}
-							nout = merge_attrvals(&out,nout,myattr);
-							free(myattr);
-						}
-
-					}
-					p->ops.close(p->fpctx,ph);
-				}
-				else {
-					char	*e;
-					fprintf(stderr,"[%d] %s: %s\n",getpid(),known_classes[ci].class,
-							e = glite_jp_error_chain(ctx));
-					free(e);
-				}
-			}
-
-			glite_jppsbe_close_file(ctx,beh);
-		}
-		else {
-			char	*e;
-			fprintf(stderr,"[%d] %s: %s\n",getpid(),known_classes[ci].class,
-					e = glite_jp_error_chain(ctx));
-			free(e);
+			free(attr_namespace);
 		}
 	}
 
 	nout = merge_attrvals(&out,nout,meta);
+
 	free(meta); meta = NULL;
 
 	if (nout) {
@@ -201,8 +180,6 @@ cleanup:
 
 	free(other);
 
-	if (files) for (i=0; i<nfiles; i++) free(files[i].name);
-	free(files);
-	
 	return err;
 }
+

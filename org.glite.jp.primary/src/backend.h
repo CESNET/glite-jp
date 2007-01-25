@@ -2,6 +2,7 @@
 #define __GLITE_JP_BACKEND
 
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "feed.h"
@@ -72,6 +73,12 @@ int glite_jppsbe_open_file(
 int glite_jppsbe_close_file(
 	glite_jp_context_t ctx,
 	void *handle
+);
+
+int glite_jppsbe_file_attrs(
+	glite_jp_context_t ctx,
+	void *handle,
+	struct stat *buf
 );
 
 int glite_jppsbe_pread(

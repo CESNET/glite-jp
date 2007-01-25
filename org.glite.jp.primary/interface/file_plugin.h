@@ -28,6 +28,7 @@ typedef struct _glite_jpps_fplug_op_t {
 /** Retrieve value(s) of an attribute.
 \param[in] fpctx	Plugin context.
 \param[in] handle	Handle of the opened file.
+\param[in] ns		Namespace of queried attribute.
 \param[in] attr		Queried attribute.
 \param[out] attrval	GLITE_JP_ATTR_UNDEF-terminated list of value(s) of the attribute.
 			If there are more and there is an interpretation of their order
@@ -36,7 +37,7 @@ typedef struct _glite_jpps_fplug_op_t {
 \retval ENOSYS	this attribute is not defined by this type of file
 \retval ENOENT	no value is present 
 */
-	int	(*attr)(void *fpctx,void *handle,const char *attr,glite_jp_attrval_t **attrval);
+	int	(*attr)(void *fpctx,void *handle,const char *ns, const char *attr,glite_jp_attrval_t **attrval);
 
 /** File type specific operation. 
 \param[in] fpctx	Plugin context.

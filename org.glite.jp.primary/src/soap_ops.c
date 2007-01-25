@@ -194,7 +194,6 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RecordTag(
 {
 	CONTEXT_FROM_SOAP(soap,ctx);
 	void	*file_be,*file_p;
-	glite_jpps_fplug_data_t	**pd = NULL;
 	glite_jp_attrval_t	attr[2], meta[2];
 
 
@@ -227,42 +226,30 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RecordTag(
 	attr[0].origin_detail = NULL; 	/* XXX */
 	attr[1].name = NULL;
 
-	/* XXX: we assume just one plugin and also that TAGS plugin handles
-	 * just one uri/class */
+        /*if (glite_jppsbe_open_file(ctx,in->jobid,"tags",NULL,
+                                                O_RDWR|O_CREAT,&file_be)
+                        // XXX: tags need reading to check magic number
+        ) {
+                err2fault(ctx,soap);
+                return SOAP_FAULT;
+        }
 
-	if (glite_jpps_fplug_lookup(ctx,GLITE_JP_FILETYPE_TAGS,&pd)
-		|| glite_jppsbe_open_file(ctx,in->jobid,pd[0]->classes[0],NULL,
-						O_RDWR|O_CREAT,&file_be)
-			/* XXX: tags need reading to check magic number */
-	) {
-		free(pd);
-		err2fault(ctx,soap);
-		return SOAP_FAULT;
-	}
-
-	/* XXX: assuming tag plugin handles just one type */
-	if (pd[0]->ops.open(pd[0]->fpctx,file_be,GLITE_JP_FILETYPE_TAGS,&file_p)
-		|| pd[0]->ops.generic(pd[0]->fpctx,file_p,GLITE_JP_FPLUG_TAGS_APPEND,attr))
+	if (glite_jppsbe_close_file(ctx,file_be))
 	{
 		err2fault(ctx,soap);
-		if (file_p) pd[0]->ops.close(pd[0]->fpctx,file_p);
-		glite_jppsbe_close_file(ctx,file_be);
-		free(pd);
 		return SOAP_FAULT;
-	}
+	}*/
+	glite_jppsbe_append_tag(ctx,in->jobid,attr);
 
-	if (pd[0]->ops.close(pd[0]->fpctx,file_p)
-		|| glite_jppsbe_close_file(ctx,file_be))
+        /*if (tag_append(ctx,file_be,attr))
 	{
-		err2fault(ctx,soap);
-		free(pd);
-		return SOAP_FAULT;
-	}
+                err2fault(ctx,soap);
+                return SOAP_FAULT;
+        }*/
 
 	/* XXX: ignore errors but don't fail silenty */
 	glite_jpps_match_attr(ctx,in->jobid,attr);
 
-	free(pd);
 	return SOAP_OK;
 err:
 	glite_jp_attrval_free(meta,0);

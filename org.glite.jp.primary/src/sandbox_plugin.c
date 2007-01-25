@@ -36,7 +36,7 @@ static struct {
 //static int sandbox_append(void *,void *,int,...);
 static int sandbox_open(void *,void *,const char *uri,void **);
 static int sandbox_close(void *,void *);
-static int sandbox_attr(void *,void *,const char *,glite_jp_attrval_t **);
+static int sandbox_attr(void *,void *,const char*,const char *,glite_jp_attrval_t **);
 
 
 int init(glite_jp_context_t ctx, glite_jpps_fplug_data_t *data)
@@ -49,6 +49,10 @@ int init(glite_jp_context_t ctx, glite_jpps_fplug_data_t *data)
 
 	data->classes = calloc(2,sizeof *data->classes);
 	data->classes[0] = strdup("sandbox");
+
+	data->namespaces = calloc(3, sizeof *data->namespaces);
+        data->namespaces[0] = strdup(GLITE_JP_ISB_NS);
+	data->namespaces[1] = strdup(GLITE_JP_OSB_NS);
 
 	data->ops.open = sandbox_open;
 	data->ops.close = sandbox_close;
@@ -140,7 +144,7 @@ static int sandbox_close(void *fpctx,void *handle)
 }
 
 
-static int sandbox_attr(void *fpctx,void *handle,const char *attr,glite_jp_attrval_t **attrval)
+static int sandbox_attr(void *fpctx,void *handle,const char *ns,const char *attr,glite_jp_attrval_t **attrval)
 {
 	glite_jp_error_t	err;
 	glite_jp_context_t	ctx = fpctx;

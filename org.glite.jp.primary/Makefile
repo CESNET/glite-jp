@@ -28,6 +28,15 @@ GLOBUS_LIBS:=-L${globus_prefix}/lib \
 	-lglobus_common_${nothrflavour} \
 	-lglobus_gssapi_gsi_${nothrflavour}
 
+ifneq (${classads_prefix},/usr)
+        classadslib := -L${classads_prefix}/lib -lclassad
+endif
+
+CLASSADPLUGIN_LIBS:= ${classadslib} -lstdc++ 
+
+CLASSADPLUGIN_LOBJS:= classad_plugin.lo
+
+
 GLOBUS_CFLAGS:=-I${globus_prefix}/include/${nothrflavour}
 
 DEBUG:=-g -O0  -DDEBUG
@@ -41,17 +50,13 @@ SOLINK:=libtool --mode=link ${CC} -module ${LDFLAGS} -rpath ${stagedir}/lib
 LINKXX:=libtool --mode=link ${CXX} ${LDFLAGS} 
 INSTALL:=libtool --mode=install install
 
-ifneq (${classads_prefix},/usr)
-	classadslib := -L${classads_prefix}/lib -lclassad
-endif
-
 daemon:=glite-jp-primarystoraged
 example:=jpps-test dag-deps
 ps_prefix:=jpps_
 is_prefix:=jpis_
 sample_jobs:=sample_job_aborted  sample_job_cleared  sample_job_tagged_done  sample_job_waiting
 
-plugins:=glite-jp-tags.la glite-jp-ftpdauth.la glite-jp-sandbox.la
+plugins:=glite-jp-tags.la glite-jp-ftpdauth.la glite-jp-classad.la glite-jp-sandbox.la
 
 HDRS_I=file_plugin.h
 HDRS_S=builtin_plugins.h backend.h feed.h
@@ -104,7 +109,6 @@ jpps-test: ${TEST_OBJS}
 dag-deps: ${DAG_OBJS}
 	${LINKXX} -o $@ ${DAG_OBJS} ${classadslib} ${GSOAPLIB}
 
-
 JobProvenancePS.xh: %.xh: %.wsdl JobProvenanceTypes.wsdl typemap.dat
 	cp  ${stagedir}/interface/JobProvenanceTypes.wsdl .
 	${gsoap_bin_prefix}/wsdl2h  -t ${top_srcdir}/src/typemap.dat -c -o $@ $<
@@ -115,6 +119,8 @@ JobProvenanceIS.xh: %.xh: %.wsdl JobProvenanceTypes.wsdl typemap.dat
 	${gsoap_bin_prefix}/wsdl2h  -t ${top_srcdir}/src/typemap.dat -c -o $@ $<
 	rm -f JobProvenanceTypes.wsdl
 
+glite-jp-classad.la: ${CLASSADPLUGIN_LOBJS}
+	${SOLINK} -o $@ ${CLASSADPLUGIN_LOBJS} ${CLASSADPLUGIN_LIBS}
 
 ${ps_prefix}Client.c ${ps_prefix}ClientLib.c  \
 ${ps_prefix}Server.c ${ps_prefix}ServerLib.c  \
@@ -200,11 +206,11 @@ simple_server.o soap_ops.o jpps-test.o: ${ps_prefix}H.h
 glite-jp-sandbox.la: sandbox_plugin.lo
 	${SOLINK} -o $@ sandbox_plugin.lo ${LIBTARLIB}
 
-glite-jp-tags.la: tags_plugin.lo
-	${SOLINK} -o $@ tags_plugin.lo
-
 glite-jp-ftpdauth.la: ftpd_auth.lo mysql.lo
 	${SOLINK} -o $@ ftpd_auth.lo mysql.lo ${COMMONLIB} ${TRIOLIB} ${MYSQLIB}
+
+#glite-jp-classad.lo: classad_plugin.c
+#	${LTCOMPILE} -DPLUGIN_DEBUG -o $@ -c $<
 
 %.lo: %.c
 	${LTCOMPILE} -o $@ -c $<
