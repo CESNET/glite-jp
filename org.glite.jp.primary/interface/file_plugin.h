@@ -25,6 +25,9 @@ typedef struct _glite_jpps_fplug_op_t {
 /** Close the file. Free data associated to a handle */
 	int	(*close)(void *fpctx,void *handle);
 
+/** "Preprocess" the file -- this function is called once after the file is commited */
+	int 	(*filecom)(void *fpctx,void *handle);
+
 /** Retrieve value(s) of an attribute.
 \param[in] fpctx	Plugin context.
 \param[in] handle	Handle of the opened file.

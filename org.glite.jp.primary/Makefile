@@ -56,7 +56,7 @@ ps_prefix:=jpps_
 is_prefix:=jpis_
 sample_jobs:=sample_job_aborted  sample_job_cleared  sample_job_tagged_done  sample_job_waiting
 
-plugins:=glite-jp-tags.la glite-jp-ftpdauth.la glite-jp-classad.la glite-jp-sandbox.la
+plugins:=glite-jp-ftpdauth.la glite-jp-classad.la glite-jp-sandbox.la
 
 HDRS_I=file_plugin.h
 HDRS_S=builtin_plugins.h backend.h feed.h
@@ -64,6 +64,7 @@ HDRS_S=builtin_plugins.h backend.h feed.h
 SRCS:= bones_server.c soap_ops.c \
 	new_ftp_backend.c mysql.c file_plugin.c \
 	feed.c authz.c attrs.c\
+	tags.c\
 	is_client.c \
 	soap_switch.c
 

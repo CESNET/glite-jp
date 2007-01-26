@@ -182,6 +182,27 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__CommitUpload(
 	/* XXX: ignore errors but don't fail silenty */
 	glite_jpps_match_file(ctx,job,class,name);
 
+	// apply plugins to commited file
+        glite_jpps_fplug_data_t *pd;
+	int i, j;
+	void *beh, *ph;
+        if (ctx->plugins)
+                for (i = 0; ctx->plugins[i]; i++) {
+                        pd = ctx->plugins[i];
+                        if (pd->classes)
+                                for (j = 0; pd->classes[j]; j++)
+					if (strcmp(class, pd->classes[j]) == 0){
+						if (! glite_jppsbe_open_file(ctx,job,class, name, O_RDONLY, &beh)) {
+                        				if (!pd->ops.open(pd->fpctx,beh,pd->uris[j],&ph)) {
+                                				pd->ops.filecom(pd->fpctx, ph);
+								pd->ops.close(pd->fpctx, ph);
+                        				}
+                        				glite_jppsbe_close_file(ctx,beh);
+                				}
+
+                                	}
+                }
+
 	free(job); free(class); free(name);
 
 	return SOAP_OK;

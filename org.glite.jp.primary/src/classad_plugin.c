@@ -37,6 +37,7 @@ static int classad_query(void *fpctx, void *handle, const char *ns, const char *
 static int classad_open(void *fpctx, void *bhandle, const char *uri, void **handle);
 static int classad_open_str(void *fpctx, const char *str, const char *uri, const char *ns, void **handle);
 static int classad_close(void *fpctx, void *handle);
+static int classad_filecom(void *fpctx, void *handle);
 
 int init(glite_jp_context_t ctx, glite_jpps_fplug_data_t *data) {
 	data->fpctx = ctx;
@@ -54,6 +55,7 @@ int init(glite_jp_context_t ctx, glite_jpps_fplug_data_t *data) {
 	data->ops.close = classad_close;
 	data->ops.attr 	= classad_query;
 	data->ops.open_str = classad_open_str;
+	data->ops.filecom = classad_filecom;
 
 #ifdef PLUGIN_DEBUG
         fprintf(stderr,"classad_plugin: init OK\n");
@@ -198,5 +200,9 @@ static int classad_query(void *fpctx,void *handle, const char* ns, const char *a
                 err.desc = attr;
 		return glite_jp_stack_error(ctx,&err);
 	}
+}
+
+static int classad_filecom(void *fpctx, void *handle){
+	return -1;
 }
  

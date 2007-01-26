@@ -37,7 +37,7 @@ static struct {
 static int sandbox_open(void *,void *,const char *uri,void **);
 static int sandbox_close(void *,void *);
 static int sandbox_attr(void *,void *,const char*,const char *,glite_jp_attrval_t **);
-
+static int sandbox_filecom(void *,void *);
 
 int init(glite_jp_context_t ctx, glite_jpps_fplug_data_t *data)
 {
@@ -57,6 +57,7 @@ int init(glite_jp_context_t ctx, glite_jpps_fplug_data_t *data)
 	data->ops.open = sandbox_open;
 	data->ops.close = sandbox_close;
 	data->ops.attr = sandbox_attr;
+	data->ops.filecom = sandbox_filecom;
 	
 	printf("sandbox_plugin: URI: \"%s\"\n",GLITE_JP_FILETYPE_ISB);
 
@@ -185,5 +186,9 @@ static int sandbox_attr(void *fpctx,void *handle,const char *ns,const char *attr
 	}
 
 	return glite_jp_stack_error(ctx,&err);
+}
+
+static int sandbox_filecom(void *fpctx,void *handle){
+	return -1;
 }
 
