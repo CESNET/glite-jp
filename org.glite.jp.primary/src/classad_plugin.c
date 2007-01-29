@@ -13,11 +13,12 @@
 #include "glite/lb/trio.h"
 #include "glite/jp/types.h"
 #include "glite/jp/context.h"
-#include "glite/jp/file_plugin.h"
-#include "glite/jp/builtin_plugins.h"
-#include "glite/jp/backend.h"
 #include "glite/jp/attr.h"
 #include "glite/jp/known_attr.h"
+
+#include "file_plugin.h"
+#include "builtin_plugins.h"
+#include "backend.h"
 
 //#define INITIAL_NUMBER_EVENTS 100
 //#define INITIAL_NUMBER_STATES EDG_WLL_NUMBER_OF_STATCODES
@@ -25,7 +26,6 @@
 
 //extern int processEvent(intJobStat *, edg_wll_Event *, int, int, char **);
 
-#include "glite/jp/builtin_plugins.h"
 
 typedef struct _classad_handle{
 	char* data;
