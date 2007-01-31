@@ -33,7 +33,7 @@ typedef struct _classad_handle{
 	time_t timestamp;
 } classad_handle;
 
-static int classad_query(void *fpctx, void *handle, const char *ns, const char *attr, glite_jp_attrval_t **attrval);
+static int classad_query(void *fpctx, void *handle, const char *attr, glite_jp_attrval_t **attrval);
 static int classad_open(void *fpctx, void *bhandle, const char *uri, void **handle);
 static int classad_open_str(void *fpctx, const char *str, const char *uri, const char *ns, void **handle);
 static int classad_close(void *fpctx, void *handle);
@@ -154,7 +154,7 @@ static int classad_close(void *fpctx,void *handle) {
 }
 
 
-static int classad_query(void *fpctx,void *handle, const char* ns, const char *attr,glite_jp_attrval_t **attrval) {
+static int classad_query(void *fpctx,void *handle, const char *attr,glite_jp_attrval_t **attrval) {
 	glite_jp_context_t	ctx = (glite_jp_context_t) fpctx;
 	glite_jp_error_t 	err;
 	glite_jp_attrval_t      *av = NULL;

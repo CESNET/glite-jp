@@ -40,7 +40,7 @@ typedef struct _glite_jpps_fplug_op_t {
 \retval ENOSYS	this attribute is not defined by this type of file
 \retval ENOENT	no value is present 
 */
-	int	(*attr)(void *fpctx,void *handle,const char *ns, const char *attr,glite_jp_attrval_t **attrval);
+	int	(*attr)(void *fpctx,void *handle, const char *attr,glite_jp_attrval_t **attrval);
 
 /** File type specific operation. 
 \param[in] fpctx	Plugin context.

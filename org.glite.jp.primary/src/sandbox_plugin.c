@@ -36,7 +36,7 @@ static struct {
 //static int sandbox_append(void *,void *,int,...);
 static int sandbox_open(void *,void *,const char *uri,void **);
 static int sandbox_close(void *,void *);
-static int sandbox_attr(void *,void *,const char*,const char *,glite_jp_attrval_t **);
+static int sandbox_attr(void *,void *,const char *,glite_jp_attrval_t **);
 static int sandbox_filecom(void *,void *);
 
 int init(glite_jp_context_t ctx, glite_jpps_fplug_data_t *data)
@@ -145,7 +145,7 @@ static int sandbox_close(void *fpctx,void *handle)
 }
 
 
-static int sandbox_attr(void *fpctx,void *handle,const char *ns,const char *attr,glite_jp_attrval_t **attrval)
+static int sandbox_attr(void *fpctx,void *handle,const char *attr,glite_jp_attrval_t **attrval)
 {
 	glite_jp_error_t	err;
 	glite_jp_context_t	ctx = fpctx;

@@ -36,7 +36,6 @@ CLASSADPLUGIN_LIBS:= ${classadslib} -lstdc++
 
 CLASSADPLUGIN_LOBJS:= classad_plugin.lo
 
-
 GLOBUS_CFLAGS:=-I${globus_prefix}/include/${nothrflavour}
 
 DEBUG:=-g -O0  -DDEBUG
@@ -59,11 +58,11 @@ sample_jobs:=sample_job_aborted  sample_job_cleared  sample_job_tagged_done  sam
 plugins:=glite-jp-ftpdauth.la glite-jp-classad.la glite-jp-sandbox.la
 
 HDRS_I=file_plugin.h
-HDRS_S=builtin_plugins.h backend.h feed.h
+HDRS_S=builtin_plugins.h backend.h feed.h utils.h
 
 SRCS:= bones_server.c soap_ops.c \
-	new_ftp_backend.c mysql.c file_plugin.c \
-	feed.c authz.c attrs.c\
+	new_ftp_backend.c mysql.c file_plugin.c utils.c\
+	feed.c authz.c attrs.c \
 	tags.c\
 	is_client.c \
 	soap_switch.c

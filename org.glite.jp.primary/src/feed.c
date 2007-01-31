@@ -314,7 +314,7 @@ int glite_jpps_match_file(
 			}
 
 			for (i=0; attrs[i]; i++) 
-				if (!pd[pi]->ops.attr(pd[pi]->fpctx,ph,"",attrs[i],&oneval)) {
+				if (!pd[pi]->ops.attr(pd[pi]->fpctx,ph,attrs[i],&oneval)) {
 				/* XXX: ignore error */
 					for (j=0; oneval[j].name; j++);
 					vals = realloc(vals,(nvals+j+1) * sizeof *vals);

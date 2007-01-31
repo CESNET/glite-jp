@@ -20,16 +20,6 @@ static struct {
 
 } *known_namespaces;
 
-static char* get_namespace(const char* attr){
-        char* namespace = strdup(attr);
-        char* colon = strrchr(namespace, ':');
-	if (colon)
-		namespace[strrchr(namespace, ':') - namespace] = 0;
-	else
-		namespace[0] = 0;
-	return namespace;
-}
-
 static void scan_namespaces(glite_jp_context_t ctx)
 {
         int     i,j,k;
@@ -80,7 +70,7 @@ static int merge_attrvals(glite_jp_attrval_t **out,int nout,const glite_jp_attrv
 	return nout+nin;
 }
 
-void process_files(glite_jp_context_t ctx, const char *job, glite_jp_attrval_t** out, int* nout, const char* attr, const glite_jpps_fplug_data_t* plugin, const char* class, const char* uri, const char *ns){
+void process_files(glite_jp_context_t ctx, const char *job, glite_jp_attrval_t** out, int* nout, const char* attr, const glite_jpps_fplug_data_t* plugin, const char* class, const char* uri){
 	void *ph, *beh; 
 	char** names = NULL;
         int nnames = glite_jppsbe_get_names(ctx, job, class, &names);
@@ -90,7 +80,7 @@ void process_files(glite_jp_context_t ctx, const char *job, glite_jp_attrval_t**
  	       		if (!plugin->ops.open(plugin->fpctx,beh,uri,&ph)) {
 		        	glite_jp_attrval_t* myattr;
         		        // XXX: ignore errors
-                		if (!plugin->ops.attr(plugin->fpctx,ph,ns,attr,&myattr)) {
+                		if (!plugin->ops.attr(plugin->fpctx,ph,attr,&myattr)) {
                 			int k;
 	                        	for (k=0; myattr[k].name; k++) {
         	                		myattr[k].origin = GLITE_JP_ATTR_ORIG_FILE;
@@ -144,14 +134,13 @@ glite_jpps_get_attrs(glite_jp_context_t ctx,const char *job,char **attr,int natt
 			nout++;
 		for (j = 0; known_namespaces[j].namespace; j++) {
 			void* ph;
-			char* attr_namespace = get_namespace(other[i]);
+			char* attr_namespace = glite_jpps_get_namespace(other[i]);
 			if (strcmp(attr_namespace, known_namespaces[j].namespace) == 0){
 				for (k = 0; known_namespaces[j].plugins[k]; k++)
 					for (l = 0; known_namespaces[j].plugins[k]->classes[l]; l++)
 						process_files(ctx, job, &out, &nout, other[i], known_namespaces[j].plugins[k]
 							, known_namespaces[j].plugins[k]->classes[l]
-							, known_namespaces[j].plugins[k]->uris[l]
-							, known_namespaces[j].namespace);
+							, known_namespaces[j].plugins[k]->uris[l]);
 				break;
 			}
 			free(attr_namespace);
