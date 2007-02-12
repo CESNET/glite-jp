@@ -47,7 +47,7 @@ install:
 	-mkdir -p ${PREFIX}/${STAGETO}
 	-mkdir -p ${PREFIX}/share/doc/${package}-${version}
 	install -m 644 ${top_srcdir}/LICENSE ${PREFIX}/share/doc/${package}-${version}
-	install -m 644 JobProvenance.html ${PREFIX}/share/doc/${package}-${version}
+	-install -m 644 JobProvenance.html ${PREFIX}/share/doc/${package}-${version}
 #	cd ${top_srcdir}/interface && install -m 644 ${WSDL} ${PREFIX}/${STAGETO}
 	install -m 644 ${WSDL} ${XSD} ${PREFIX}/${STAGETO}
 
@@ -63,8 +63,8 @@ clean:
 	-${TIDY} -xml -m $@
 
 JobProvenance.html: doc.xml JobProvenancePS.xml JobProvenanceIS.xml JobProvenanceTypes.xml puke-ug.xsl
-	${XSLTPROC} --novalid ../src/puke-ug.xsl $< >doc-html.xml
-	-${TIDY} -xml -m doc-html.xml
-	${XMLLINT} --valid --noout doc-html.xml
+	-${XSLTPROC} --novalid ../src/puke-ug.xsl $< >doc-html.xml && \
 	${XSLTPROC} --stringparam  chapter.autolabel 0 ${docbookxls} doc-html.xml >$@
+	-${TIDY} -xml -m doc-html.xml
+	-${XMLLINT} --valid --noout doc-html.xml
 	-${TIDY} -asxhtml -m $@
