@@ -50,9 +50,11 @@ int init(glite_jp_context_t ctx, glite_jpps_fplug_data_t *data)
 	data->classes = calloc(2,sizeof *data->classes);
 	data->classes[0] = strdup("sandbox");
 
-	data->namespaces = calloc(3, sizeof *data->namespaces);
+	data->namespaces = calloc(5, sizeof *data->namespaces);
         data->namespaces[0] = strdup(GLITE_JP_ISB_NS);
 	data->namespaces[1] = strdup(GLITE_JP_OSB_NS);
+        data->namespaces[2] = strdup(GLITE_JP_ISB_NS_FILE);
+	data->namespaces[3] = strdup(GLITE_JP_OSB_NS_FILE);
 
 	data->ops.open = sandbox_open;
 	data->ops.close = sandbox_close;
@@ -162,26 +164,90 @@ static int sandbox_attr(void *fpctx,void *handle,const char *attr,glite_jp_attrv
 
 	*attrval = NULL;
 
-	while ((i = th_read(h->t)) == 0)
-	{
-		printf("-- %s\n", th_get_pathname(h->t));
-
-		if ( !(count % ALLOC_CHUNK) ) {
-			*attrval = realloc(*attrval, (count + ALLOC_CHUNK + 1) * sizeof(**attrval) );
-			memset( (*attrval) + count, 0, (ALLOC_CHUNK + 1) * sizeof(**attrval));
-		}
-		(*attrval)[count].name = strdup(GLITE_JP_ATTR_ISB_FILENAME);
-		(*attrval)[count].value = strdup(th_get_pathname(h->t));
-		(*attrval)[count].origin = GLITE_JP_ATTR_ORIG_FILE;
-		(*attrval)[count].timestamp = th_get_mtime(h->t);
-
-		count++;
-
-		if (TH_ISREG(h->t) && tar_skip_regfile(h->t) != 0)
+	if (!strcmp(attr, GLITE_JP_ATTR_ISB_CONTENT)) {
+		while ((i = th_read(h->t)) == 0)
 		{
-			err.code = EIO;
-			err.desc = "tar_skip_regfile";
-			return glite_jp_stack_error(ctx,&err);
+			printf("-- %s\n", th_get_pathname(h->t));
+
+			if ( !(count % ALLOC_CHUNK) ) {
+				*attrval = realloc(*attrval, (count + ALLOC_CHUNK + 1) * sizeof(**attrval) );
+				memset( (*attrval) + count, 0, (ALLOC_CHUNK + 1) * sizeof(**attrval));
+			}
+			(*attrval)[count].name = strdup(GLITE_JP_ATTR_ISB_CONTENT);
+			(*attrval)[count].value = strdup(th_get_pathname(h->t));
+			(*attrval)[count].origin = GLITE_JP_ATTR_ORIG_FILE;
+			(*attrval)[count].timestamp = th_get_mtime(h->t);
+
+			count++;
+
+			if (TH_ISREG(h->t) && tar_skip_regfile(h->t) != 0)
+			{
+				err.code = EIO;
+				err.desc = "tar_skip_regfile";
+				return glite_jp_stack_error(ctx,&err);
+			}
+		}
+	}
+	else if (!strcmp(attr, GLITE_JP_ATTR_OSB_CONTENT)) {
+		printf("Namespace %s not implemented yet\n", GLITE_JP_ATTR_OSB_CONTENT);
+	}
+	else if (strstr(attr,GLITE_JP_OSB_NS_FILE)) {
+		printf("Namespace %s not implemented yet\n", GLITE_JP_OSB_NS_FILE);
+	}
+	else if (strstr(attr,GLITE_JP_ISB_NS_FILE)) {
+		char *fileName = (char *) attr + sizeof(GLITE_JP_ISB_NS_FILE);
+	
+		printf("untaring file: %s\n", fileName);
+
+		while (th_read(h->t) == 0)
+		{ 
+			if ( !strcmp(fileName, th_get_pathname(h->t)) ) {
+			/* extract the file */
+				int	k, count = 0;
+				size_t	size;
+				char	buf[T_BLOCKSIZE];
+				char	*value;
+
+
+				if (!TH_ISREG(h->t)) assert(0);	// not a regular file
+
+				size = th_get_size(h->t);
+				value = (char *) malloc(size * sizeof(char) + 1);
+				memset( value, 0, size * sizeof(char) + 1);
+
+				for (i = size; i > 0; i -= T_BLOCKSIZE)
+				{
+					k = tar_block_read(h->t, buf);
+					if (k != T_BLOCKSIZE)
+					{
+						if (k != -1) err.code = EINVAL;
+						else err.code = errno;
+
+						err.desc = "tar_block_read";
+						return glite_jp_stack_error(ctx,&err);
+					}
+
+					// XXX: returns always T_BLOCKSIZE, even if only 1B read - why??
+					// call pread, which should return number of bytes read
+					if (i < T_BLOCKSIZE) { k=i; }
+
+					strncpy(value + count, buf, k);
+					count += T_BLOCKSIZE;
+				}
+				*attrval = malloc(2 * sizeof(**attrval) );
+				memset( (*attrval), 0, 2 * sizeof(**attrval));
+
+				(*attrval)[0].name = strdup(attr);
+				(*attrval)[0].value = value;
+				(*attrval)[0].origin = GLITE_JP_ATTR_ORIG_FILE;
+				(*attrval)[0].timestamp = th_get_mtime(h->t);
+			}
+			else if (TH_ISREG(h->t) && tar_skip_regfile(h->t) != 0)
+			{
+				err.code = EIO;
+				err.desc = "tar_skip_regfile";
+				return glite_jp_stack_error(ctx,&err);
+			}
 		}
 	}
 
