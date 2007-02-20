@@ -75,6 +75,8 @@ void process_files(glite_jp_context_t ctx, const char *job, glite_jp_attrval_t**
 	char** names = NULL;
         int nnames = glite_jppsbe_get_names(ctx, job, class, &names);
 	int n;
+	glite_jp_error_t	*keep_err = NULL;
+
         for (n = 0; n < nnames; n++)
         	if (! glite_jppsbe_open_file(ctx,job,class, names[n], O_RDONLY, &beh)) {
  	       		if (!plugin->ops.open(plugin->fpctx,beh,uri,&ph)) {
@@ -89,9 +91,13 @@ void process_files(glite_jp_context_t ctx, const char *job, glite_jp_attrval_t**
 	        	                *nout = merge_attrvals(out,*nout,myattr);
         	        	        free(myattr);
 				}
+				keep_err = ctx->error; ctx->error = NULL;
 				plugin->ops.close(plugin->fpctx, ph);
+				if (keep_err) { ctx->error = keep_err; keep_err = NULL; }
                		}
+			keep_err = ctx->error; ctx->error = NULL;
 			glite_jppsbe_close_file(ctx,beh);
+			if (keep_err) { ctx->error = keep_err; keep_err = NULL; }
 		}
 }
 
