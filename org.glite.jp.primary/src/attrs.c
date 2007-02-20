@@ -10,6 +10,7 @@
 #include "feed.h"
 #include "backend.h"
 #include "attrs.h"
+#include "utils.h"
 #include "file_plugin.h"
 #include "builtin_plugins.h"
 
@@ -103,7 +104,7 @@ void process_files(glite_jp_context_t ctx, const char *job, glite_jp_attrval_t**
 
 glite_jpps_get_attrs(glite_jp_context_t ctx,const char *job,char **attr,int nattr,glite_jp_attrval_t **attrs_out)
 {
-	glite_jp_attrval_t	*meta = NULL,*out = NULL;
+	glite_jp_attrval_t	*meta = NULL,*out = NULL,*tag_out;
         char const	**other = NULL;
 	int	i,j,nmeta,nother,err = 0,nout = 0;
 
@@ -136,8 +137,13 @@ glite_jpps_get_attrs(glite_jp_context_t ctx,const char *job,char **attr,int natt
 	int k, l, m;
 	void* beh;
 	for (i = 0; i < nother; i++){
-		if (! glite_jppsbe_read_tag(ctx, job, other[i], &out))
-			nout++;
+		if (! glite_jppsbe_read_tag(ctx, job, other[i], &tag_out)) {
+			for (j=0; tag_out[j].name; j++);
+			out = realloc(out,(nout+j) * sizeof *out);
+			memcpy(out+nout,tag_out,j * sizeof *out);
+			nout += j;
+			free(tag_out); tag_out = NULL;
+		}
 		for (j = 0; known_namespaces[j].namespace; j++) {
 			void* ph;
 			char* attr_namespace = glite_jpps_get_namespace(other[i]);
