@@ -203,7 +203,7 @@ static int sandbox_attr(void *fpctx,void *handle,const char *attr,glite_jp_attrv
 		{ 
 			if ( !strcmp(fileName, th_get_pathname(h->t)) ) {
 			/* extract the file */
-				int	k, count = 0;
+				int	k;
 				size_t	size;
 				char	buf[T_BLOCKSIZE];
 				char	*value;
@@ -215,24 +215,25 @@ static int sandbox_attr(void *fpctx,void *handle,const char *attr,glite_jp_attrv
 				value = (char *) malloc(size * sizeof(char) + 1);
 				memset( value, 0, size * sizeof(char) + 1);
 
-				for (i = size; i > 0; i -= T_BLOCKSIZE)
+				for (i = 0; i < size; i += T_BLOCKSIZE)
 				{
 					k = tar_block_read(h->t, buf);
-					if (k != T_BLOCKSIZE)
+					if (k == -1)
 					{
-						if (k != -1) err.code = EINVAL;
-						else err.code = errno;
-
+						err.code = errno;
 						err.desc = "tar_block_read";
 						return glite_jp_stack_error(ctx,&err);
 					}
 
-					// XXX: returns always T_BLOCKSIZE, even if only 1B read - why??
-					// call pread, which should return number of bytes read
-					if (i < T_BLOCKSIZE) { k=i; }
+					// tar_block_read calls glite_jppsbe_pread, which usually
+					// returns whole block (read from the middle of uploaded
+					// tar file
+					// so cut k in order to the last chunk had correct size 
+					if (i + T_BLOCKSIZE > size) { 
+						k = size - i;
+					}
 
-					strncpy(value + count, buf, k);
-					count += T_BLOCKSIZE;
+					strncpy(value + i, buf, k);
 				}
 				*attrval = malloc(2 * sizeof(**attrval) );
 				memset( (*attrval), 0, 2 * sizeof(**attrval));
