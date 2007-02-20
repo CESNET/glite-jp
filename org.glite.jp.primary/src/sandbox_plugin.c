@@ -53,8 +53,8 @@ int init(glite_jp_context_t ctx, glite_jpps_fplug_data_t *data)
 	data->namespaces = calloc(5, sizeof *data->namespaces);
         data->namespaces[0] = strdup(GLITE_JP_ISB_NS);
 	data->namespaces[1] = strdup(GLITE_JP_OSB_NS);
-        data->namespaces[2] = strdup(GLITE_JP_ISB_NS_FILE);
-	data->namespaces[3] = strdup(GLITE_JP_OSB_NS_FILE);
+        data->namespaces[2] = strdup(GLITE_JP_ISB_CONTENT_NS);
+	data->namespaces[3] = strdup(GLITE_JP_OSB_CONTENT_NS);
 
 	data->ops.open = sandbox_open;
 	data->ops.close = sandbox_close;
@@ -164,7 +164,7 @@ static int sandbox_attr(void *fpctx,void *handle,const char *attr,glite_jp_attrv
 
 	*attrval = NULL;
 
-	if (!strcmp(attr, GLITE_JP_ATTR_ISB_CONTENT)) {
+	if (!strcmp(attr, GLITE_JP_ATTR_ISB_FILENAME)) {
 		while ((i = th_read(h->t)) == 0)
 		{
 			printf("-- %s\n", th_get_pathname(h->t));
@@ -173,7 +173,7 @@ static int sandbox_attr(void *fpctx,void *handle,const char *attr,glite_jp_attrv
 				*attrval = realloc(*attrval, (count + ALLOC_CHUNK + 1) * sizeof(**attrval) );
 				memset( (*attrval) + count, 0, (ALLOC_CHUNK + 1) * sizeof(**attrval));
 			}
-			(*attrval)[count].name = strdup(GLITE_JP_ATTR_ISB_CONTENT);
+			(*attrval)[count].name = strdup(GLITE_JP_ATTR_ISB_FILENAME);
 			(*attrval)[count].value = strdup(th_get_pathname(h->t));
 			(*attrval)[count].origin = GLITE_JP_ATTR_ORIG_FILE;
 			(*attrval)[count].timestamp = th_get_mtime(h->t);
@@ -188,14 +188,14 @@ static int sandbox_attr(void *fpctx,void *handle,const char *attr,glite_jp_attrv
 			}
 		}
 	}
-	else if (!strcmp(attr, GLITE_JP_ATTR_OSB_CONTENT)) {
-		printf("Namespace %s not implemented yet\n", GLITE_JP_ATTR_OSB_CONTENT);
+	else if (!strcmp(attr, GLITE_JP_ATTR_OSB_FILENAME)) {
+		printf("Namespace %s not implemented yet\n", GLITE_JP_ATTR_OSB_FILENAME);
 	}
-	else if (strstr(attr,GLITE_JP_OSB_NS_FILE)) {
-		printf("Namespace %s not implemented yet\n", GLITE_JP_OSB_NS_FILE);
+	else if (strstr(attr,GLITE_JP_OSB_CONTENT_NS)) {
+		printf("Namespace %s not implemented yet\n", GLITE_JP_OSB_CONTENT_NS);
 	}
-	else if (strstr(attr,GLITE_JP_ISB_NS_FILE)) {
-		char *fileName = (char *) attr + sizeof(GLITE_JP_ISB_NS_FILE);
+	else if (strstr(attr,GLITE_JP_ISB_CONTENT_NS)) {
+		char *fileName = (char *) attr + sizeof(GLITE_JP_ISB_CONTENT_NS);
 	
 		printf("untaring file: %s\n", fileName);
 

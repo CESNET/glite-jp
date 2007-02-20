@@ -30,12 +30,12 @@
 #define GLITE_JP_ISB_NS       "http://egee.cesnet.cz/en/Schema/JP/ISB"
 #define GLITE_JP_OSB_NS       "http://egee.cesnet.cz/en/Schema/JP/OSB"
 
-/** List file names in SB tar */
-#define GLITE_JP_ATTR_ISB_CONTENT     GLITE_JP_ISB_NS ":content"
-#define GLITE_JP_ATTR_OSB_CONTENT     GLITE_JP_OSB_NS ":content"
+/** Namespace for file names listed from tar  */
+#define GLITE_JP_ATTR_ISB_FILENAME	GLITE_JP_ISB_NS ":filename"
+#define GLITE_JP_ATTR_OSB_FILENAME	GLITE_JP_OSB_NS ":filename"
 
-/** Unpack file from SB tar */
-#define GLITE_JP_ISB_NS_FILE     GLITE_JP_ISB_NS "/file"
-#define GLITE_JP_OSB_NS_FILE     GLITE_JP_OSB_NS "/file"
+/** Namespace for filenames to be unpacked from sanbox tar */
+#define GLITE_JP_ISB_CONTENT_NS     GLITE_JP_ISB_NS ":content"
+#define GLITE_JP_OSB_CONTENT_NS     GLITE_JP_OSB_NS ":content"
 
 #endif
