@@ -80,7 +80,7 @@ void process_files(glite_jp_context_t ctx, const char *job, glite_jp_attrval_t**
  	       		if (!plugin->ops.open(plugin->fpctx,beh,uri,&ph)) {
 		        	glite_jp_attrval_t* myattr;
         		        // XXX: ignore errors
-                		if (!plugin->ops.attr(plugin->fpctx,ph,attr,&myattr)) {
+                		if (!plugin->ops.attr(plugin->fpctx,ph,attr,&myattr) && myattr) {
                 			int k;
 	                        	for (k=0; myattr[k].name; k++) {
         	                		myattr[k].origin = GLITE_JP_ATTR_ORIG_FILE;
