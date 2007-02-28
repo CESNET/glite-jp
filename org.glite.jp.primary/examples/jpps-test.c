@@ -3,14 +3,13 @@
 #include <string.h>
 #include <assert.h>
 
-#include "glite/security/glite_gsplugin.h"
-
 #include "jpps_H.h"
 #include "jpps_.nsmap"
 
 #include "jptype_map.h"
+#include "glite/security/glite_gsplugin.h"
+#include "glite/security/glite_gscompat.h"
 
-#include "soap_version.h"
 #if GSOAP_VERSION <= 20602
 #define soap_call___jpsrv__RegisterJob soap_call___ns1__RegisterJob
 #define soap_call___jpsrv__StartUpload soap_call___ns1__StartUpload
@@ -21,6 +20,9 @@
 #define soap_call___jpsrv__GetJob soap_call___ns1__GetJob
 #endif
 
+#define dprintf(x) printf x
+#include "glite/jp/ws_fault.c"
+#define check_fault(SOAP, ERR) glite_jp_clientCheckFault((SOAP), (ERR), NULL, 0)
 
 static void usage(const char *me)
 {
@@ -39,48 +41,6 @@ static void usage(const char *me)
 	exit (EX_USAGE);
 }
 	
-static int check_fault(struct soap *soap,int err) {
-	struct SOAP_ENV__Detail *detail;
-	struct jptype__genericFault	*f;
-	char	*reason,indent[200] = "  ";
-
-	switch(err) {
-		case SOAP_OK: puts("OK");
-			      break;
-		case SOAP_FAULT:
-		case SOAP_SVR_FAULT:
-			if (soap->version == 2) {
-				detail = soap->fault->SOAP_ENV__Detail;
-				reason = soap->fault->SOAP_ENV__Reason;
-			}
-			else {
-				detail = soap->fault->detail;
-				reason = soap->fault->faultstring;
-			}
-			fputs(reason,stderr);
-			putc('\n',stderr);
-			assert(detail->__type == SOAP_TYPE__genericFault);
-#if GSOAP_VERSION >=20700
-			f = ((struct _genericFault *) detail->fault)
-#else
-			f = ((struct _genericFault *) detail->value)
-#endif
-				-> jpelem__genericFault;
-
-			while (f) {
-				fprintf(stderr,"%s%s: %s (%s)\n",indent,
-						f->source,f->text,f->description);
-				f = f->reason;
-				strcat(indent,"  ");
-			}
-			return -1;
-
-		default: soap_print_fault(soap,stderr);
-			 return -1;
-	}
-	return 0;
-}
-
 /* FIXME: new wsdl */
 #if 0
 static struct jptype__Attribute sample_attr[] = {
@@ -182,8 +142,8 @@ int main(int argc,char *argv[])
 		in.tag = &tagval;
 		tagval.name = argv[3];
 		tagval.value = &val;
-		val.string = argv[4];
-		val.blob = NULL;
+		GSOAP_STRING(&val) = argv[4];
+		GSOAP_BLOB(&val)= NULL;
 		
 		if (!(ret = check_fault(soap,
 				soap_call___jpsrv__RecordTag(soap, server, "",&in, &empty)))) {
@@ -196,10 +156,10 @@ int main(int argc,char *argv[])
 			"http://egee.cesnet.cz/en/Schema/JP/System:owner"
 		};
 
-		struct jptype__stringOrBlob vals[] = {
-			{ "/O=CESNET/O=Masaryk University/CN=Ales Krenek", NULL },
-			{ "Done", NULL }
-		};
+		struct jptype__stringOrBlob vals[2];
+		memset(vals, 0, sizeof vals);
+		GSOAP_STRING(vals) = "/O=CESNET/O=Masaryk University/CN=Ales Krenek";
+		GSOAP_STRING(vals + 1) = "Done";
 
 		struct jptype__primaryQuery	q[] = {
 			{ 
@@ -281,8 +241,8 @@ int main(int argc,char *argv[])
 			puts("Attribute values:");
 			for (i=0; i<out.__sizeattrValues; i++)
 				printf("\t%s\t%s\t%s",
-					out.attrValues[i]->value->string ?
-						out.attrValues[i]->value->string :
+					GSOAP_STRING(out.attrValues[i]->value) ?
+						GSOAP_STRING(out.attrValues[i]->value) :
 						"binary",
 					orig2str(out.attrValues[i]->origin),
 					ctime(&out.attrValues[i]->timestamp));

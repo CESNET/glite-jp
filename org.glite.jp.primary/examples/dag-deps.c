@@ -9,15 +9,15 @@
 
 #include <cclassad.h>
 
-#include "glite/security/glite_gsplugin.h"
 #include "glite/jp/known_attr.h"
 
 #include "jpps_H.h"
 #include "jpps_.nsmap"
 
 #include "jptype_map.h"
+#include "glite/security/glite_gsplugin.h"
+#include "glite/security/glite_gscompat.h"
 
-#include "soap_version.h"
 #if GSOAP_VERSION <= 20602
 #define soap_call___jpsrv__RegisterJob soap_call___ns1__RegisterJob
 #define soap_call___jpsrv__StartUpload soap_call___ns1__StartUpload
@@ -28,54 +28,16 @@
 #define soap_call___jpsrv__GetJob soap_call___ns1__GetJob
 #endif
 
+#define dprintf(FMT, ARGS...) fprintf(stderr, (FMT), ##ARGS)
+#include "glite/jp/ws_fault.c"
+#define check_fault(SOAP, ERR) glite_jp_clientCheckFault((SOAP), (ERR), NULL, 0)
+
 
 static void usage(const char *me)
 {
 	fprintf(stderr,"%s: [-s server-url] jobid\n",me);
 
 	exit (EX_USAGE);
-}
-	
-static int check_fault(struct soap *soap,int err) {
-	struct SOAP_ENV__Detail *detail;
-	struct jptype__genericFault	*f;
-	char	*reason,indent[200] = "  ";
-
-	switch(err) {
-		case SOAP_OK: puts("OK");
-			      break;
-		case SOAP_FAULT:
-		case SOAP_SVR_FAULT:
-			if (soap->version == 2) {
-				detail = soap->fault->SOAP_ENV__Detail;
-				reason = soap->fault->SOAP_ENV__Reason;
-			}
-			else {
-				detail = soap->fault->detail;
-				reason = soap->fault->faultstring;
-			}
-			fputs(reason,stderr);
-			putc('\n',stderr);
-			assert(detail->__type == SOAP_TYPE__genericFault);
-#if GSOAP_VERSION >=20700
-			f = ((struct _genericFault *) detail->fault)
-#else
-			f = ((struct _genericFault *) detail->value)
-#endif
-				-> jpelem__genericFault;
-
-			while (f) {
-				fprintf(stderr,"%s%s: %s (%s)\n",indent,
-						f->source,f->text,f->description);
-				f = f->reason;
-				strcat(indent,"  ");
-			}
-			return -1;
-
-		default: soap_print_fault(soap,stderr);
-			 return -1;
-	}
-	return 0;
 }
 
 static const char *orig2str(enum jptype__attrOrig orig)
@@ -131,7 +93,7 @@ int main(int argc,char *argv[])
 	if ((ret = check_fault(soap,soap_call___jpsrv__GetJobAttributes(soap,server,"",&in,&out))))
 		return 1;
 
-       	ad = cclassad_create(out.attrValues[0]->value->string);
+       	ad = cclassad_create(GSOAP_STRING(out.attrValues[0]->value));
 	if (!ad) {
 		fputs("Can't parse JDL\n",stderr);
 		return 1;
@@ -196,14 +158,14 @@ int main(int argc,char *argv[])
 			in.tag = &tagval;
 			tagval.name = GLITE_JP_ATTR_WF_SUCCESSOR;
 			tagval.value = &val;
-			val.string = js;
-			val.blob = NULL;
+			GSOAP_STRING(&val) = js;
+			GSOAP_BLOB(&val) = NULL;
 
 			printf("Register successor ...\n");
 			ret = check_fault(soap,soap_call___jpsrv__RecordTag(soap, server, "",&in, &empty));
 			in.jobid = js;
 			tagval.name = GLITE_JP_ATTR_WF_ANCESTOR;
-			val.string = ja;
+			GSOAP_STRING(&val) = ja;
 
 			printf("Register ancestor ...\n");
 			ret = check_fault(soap,soap_call___jpsrv__RecordTag(soap, server, "",&in, &empty));

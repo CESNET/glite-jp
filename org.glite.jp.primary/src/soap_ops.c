@@ -13,6 +13,7 @@
 #include "attrs.h"
 
 #include "jptype_map.h"
+#include "glite/security/glite_gscompat.h"
 
 #include "file_plugin.h"
 #include "builtin_plugins.h"
@@ -24,48 +25,13 @@
 
 #include "jpps_.nsmap"
 
-#include "soap_util.c"
-
 #include "soap_env_ctx.h"
 #include "soap_env_ctx.c"
 
-static struct jptype__genericFault *jp2s_error(struct soap *soap,
-		const glite_jp_error_t *err)
-{
-	struct jptype__genericFault *ret = NULL;
-	if (err) {
-		ret = soap_malloc(soap,sizeof *ret);
-		memset(ret,0,sizeof *ret);
-		ret->code = err->code;
-		ret->source = soap_strdup(soap,err->source);
-		ret->text = soap_strdup(soap,strerror(err->code));
-		ret->description = soap_strdup(soap,err->desc);
-		ret->reason = jp2s_error(soap,err->reason);
-	}
-	return ret;
-}
+#include "glite/jp/ws_fault.c"
+#include "soap_util.c"
 
-static void err2fault(const glite_jp_context_t ctx,struct soap *soap)
-{
-	char	*et;
-	struct SOAP_ENV__Detail	*detail = soap_malloc(soap,sizeof *detail);
-	struct _genericFault *f = soap_malloc(soap,sizeof *f);
-
-
-	f->jpelem__genericFault = jp2s_error(soap,ctx->error);
-
-	detail->__type = SOAP_TYPE__genericFault;
-#if GSOAP_VERSION >= 20700
-	detail->fault = f;
-#else
-	detail->value = f;
-#endif
-	detail->__any = NULL;
-
-	soap_receiver_fault(soap,"Oh, shit!",NULL);
-	if (soap->version == 2) soap->fault->SOAP_ENV__Detail = detail;
-	else soap->fault->detail = detail;
-}
+#define err2fault(CTX, SOAP) glite_jp_server_err2fault((CTX), (SOAP));
 
 #define CONTEXT_FROM_SOAP(soap,ctx) glite_jp_context_t	ctx = (glite_jp_context_t) ((soap)->user)
 
@@ -211,13 +177,13 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RecordTag(
 	}
 
 	attr[0].name = in->tag->name;
-	if (in->tag->value->string) {
-		attr[0].value = in->tag->value->string;
+	if (GSOAP_STRING(in->tag->value)) {
+		attr[0].value = GSOAP_STRING(in->tag->value);
 		attr[0].binary = 0;
 	}
 	else {
-		attr[0].value = in->tag->value->blob->__ptr;
-		attr[0].size = in->tag->value->blob->__size;
+		attr[0].value = GSOAP_BLOB(in->tag->value)->__ptr;
+		attr[0].size = GSOAP_BLOB(in->tag->value)->__size;
 		attr[0].binary = 1;
 	}
 	attr[0].origin = GLITE_JP_ATTR_ORIG_USER;
@@ -270,16 +236,16 @@ err:
 
 static void s2jp_qval(const struct jptype__stringOrBlob *in, char **value, int *binary, size_t *size)
 {
-	if (in->string) {
-		*value = in->string;
+	if (GSOAP_STRING(in)) {
+		*value = GSOAP_STRING(in);
 		*binary = 0;
 		*size = 0;
 	}
 	else {
-		assert(in->blob);	/* XXX: should report error instead */
-		*value = in->blob->__ptr;
+		assert(GSOAP_BLOB(in));	/* XXX: should report error instead */
+		*value = GSOAP_BLOB(in)->__ptr;
 		*binary = 1;
-		*size = in->blob->__size;
+		*size = GSOAP_BLOB(in)->__size;
 	}
 }
 

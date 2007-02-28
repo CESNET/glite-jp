@@ -8,7 +8,9 @@
 #define SOAP_FMAC1 static
 
 #include "glite/jp/types.h"
+#include "soap_version.h"
 #include "glite/security/glite_gsplugin.h"
+#include "glite/security/glite_gscompat.h"
 
 #include "feed.h"
 #include "is_client.h"
@@ -20,6 +22,7 @@
 
 #include "jpis_.nsmap"
 
+#include "glite/jp/ws_fault.c"
 #include "soap_util.c"
 
 #include "soap_env_ctx.h"
@@ -94,7 +97,7 @@ int glite_jpps_single_feed(
 	struct _jpelem__UpdateJobsResponse	out;
 	struct jptype__jobRecord	jr, *jrp = &jr;
 	int	i;
-	enum xsd__boolean	false = false_;
+	enum xsd__boolean	false = GLITE_SECURITY_GSOAP_FALSE;
 	glite_jp_error_t	err;
 
 	glite_jp_clear_error(ctx);
@@ -166,7 +169,7 @@ int glite_jpps_multi_feed(
 	struct _jpelem__UpdateJobs	in;
 	struct _jpelem__UpdateJobsResponse	out;
 	struct jptype__jobRecord	*jr;
-	enum xsd__boolean	false = false_;
+	enum xsd__boolean	false = GLITE_SECURITY_GSOAP_FALSE;
 	glite_jp_error_t	err;
 
 	printf("multi_feed: %s\n",destination);
