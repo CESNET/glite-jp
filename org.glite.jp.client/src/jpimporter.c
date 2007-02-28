@@ -15,16 +15,16 @@
 #include <libgen.h>
 
 #include "glite/lb/lb_maildir.h"
-#include "glite/security/glite_gsplugin.h"
 
 #include "jpps_H.h"
 #include "jpps_.nsmap"
 
 #include "jptype_map.h"
+#include "glite/security/glite_gsplugin.h"
+#include "glite/security/glite_gscompat.h"
 
 #include "globus_ftp_client.h"
 
-#include "soap_version.h"
 #if GSOAP_VERSION <= 20602
 #define soap_call___jpsrv__RegisterJob soap_call___ns1__RegisterJob
 #endif
@@ -39,6 +39,8 @@ typedef struct {
 #ifndef dprintf
 #define dprintf(x)		{ if (debug) printf x; }
 #endif
+
+#define check_soap_fault(SOAP, ERR) glite_jp_clientCheckFault((SOAP), (ERR), name, 1)
 
 #ifndef GLITE_JPIMPORTER_PIDFILE
 #define GLITE_JPIMPORTER_PIDFILE	"/var/run/glite-jpimporter.pid"
@@ -95,6 +97,8 @@ static struct option opts[] = {
 
 static const char *get_opt_string = "hgp:r:d:i:t:c:k:C:";
 
+#include "glite/jp/ws_fault.c"
+
 static void usage(char *me)
 {
 	fprintf(stderr,"usage: %s [option]\n"
@@ -124,7 +128,6 @@ static void catch_chld(int sig)
 
 
 static int slave(int (*)(void), const char *);
-static int check_soap_fault(struct soap *, int);
 static int reg_importer(void);
 static int dump_importer(void);
 static int parse_msg(char *, msg_pattern_t []);
@@ -508,54 +511,6 @@ static int dump_importer(void)
 	return 1;
 }
 
-
-static int check_soap_fault(struct soap *soap, int err)
-{
-	struct SOAP_ENV__Detail		   *detail;
-	struct jptype__genericFault	   *f;
-	char						   *reason,
-									indent[200] = "  ";
-		
-
-	switch ( err ) {
-	case SOAP_OK:
-		dprintf(("[%s] ok\n", name));
-		break; 
-
-	case SOAP_FAULT:
-	case SOAP_SVR_FAULT:
-		if (soap->version == 2) {
-			detail = soap->fault->SOAP_ENV__Detail;
-			reason = soap->fault->SOAP_ENV__Reason;
-		} else {
-			detail = soap->fault->detail;
-			reason = soap->fault->faultstring;
-		}
-		dprintf(("[%s] %s\n", name, reason));
-		if ( !debug ) syslog(LOG_ERR, "%s", reason);
-		assert(detail->__type == SOAP_TYPE__genericFault);
-#if GSOAP_VERSION >=20700
-		f = ((struct _genericFault *) detail->fault) -> jpelem__genericFault;
-#else
-		f = ((struct _genericFault *) detail->value) -> jpelem__genericFault;
-#endif
-		while (f) {
-			dprintf(("[%s] %s%s: %s (%s)\n",
-					name, indent,
-					f->source, f->text, f->description));
-			if ( !debug ) syslog(LOG_ERR, "%s%s: %s (%s)",
-					reason, f->source, f->text, f->description);
-			f = f->reason;
-			strcat(indent, "  ");
-		}
-		return -1;
-
-	default: soap_print_fault(soap,stderr);
-		return -1;
-	}
-
-	return 0;
-}
 
 /** Parses every line looking for pattern string and stores the value into
  *  the given variable
