@@ -11,6 +11,7 @@
 #include "jpis_H.h"
 #include "jpis_.nsmap"
 #include "soap_version.h"
+#include "glite/security/glite_gscompat.h"
 #include "db_ops.h"
 // XXX: avoid 2 wsdl collisions - work only because ws_ps_typeref.h 
 // uses common types from jpis_H.h (awful)
@@ -22,53 +23,13 @@
 				// XXX: 2 is only for debugging, replace with e.g. 100
 #define	JOBIDS_STRIDE	2	// how often realloc matched jobids result
 
-#if GSOAP_VERSION >= 20706
-#define false_ xsd__boolean__false_
-#endif
-
 /*------------------*/
 /* Helper functions */
 /*------------------*/
 
-
-static struct jptype__genericFault *jp2s_error(struct soap *soap,
-		const glite_jp_error_t *err)
-{
-	struct jptype__genericFault *ret = NULL;
-	if (err) {
-		ret = soap_malloc(soap,sizeof *ret);
-		memset(ret,0,sizeof *ret);
-		ret->code = err->code;
-		ret->source = soap_strdup(soap,err->source);
-		ret->text = soap_strdup(soap,strerror(err->code));
-		ret->description = soap_strdup(soap,err->desc);
-		ret->reason = jp2s_error(soap,err->reason);
-	}
-	return ret;
-}
-
-static void err2fault(const glite_jp_context_t ctx,struct soap *soap)
-{
-	struct SOAP_ENV__Detail	*detail = soap_malloc(soap,sizeof *detail);
-	struct _genericFault *f = soap_malloc(soap,sizeof *f);
-
-
-	f->jpelem__genericFault = jp2s_error(soap,ctx->error);
-
-	detail->__type = SOAP_TYPE__genericFault;
-#if GSOAP_VERSION >= 20700
-	detail->fault = f;
-#else
-	detail->value = f;
-#endif
-	detail->__any = NULL;
-
-	soap_receiver_fault(soap,"Oh, shit!",NULL);
-	if (soap->version == 2) soap->fault->SOAP_ENV__Detail = detail;
-	else soap->fault->detail = detail;
-}
-
-
+#define dprintf(x)
+#include "glite/jp/ws_fault.c"
+#define err2fault(CTX, SOAP) glite_jp_server_err2fault((CTX), (SOAP))
 
 
 
@@ -87,7 +48,7 @@ static int updateJob(glite_jpis_context_t ctx, const char *ps, struct jptype__jo
 
 	lprintf("jobid='%s', attrs=%d\n", jobAttrs->jobid, jobAttrs->__sizeattributes);
 
-	if (jobAttrs->remove) assert(*(jobAttrs->remove) == false_);
+	if (jobAttrs->remove) assert(*(jobAttrs->remove) == GLITE_SECURITY_GSOAP_FALSE);
 
 	if ((ret = glite_jpis_lazyInsertJob(ctx, ps, jobAttrs->jobid, jobAttrs->owner)) != 0) return ret;
 	for (iattrs = 0; iattrs < jobAttrs->__sizeattributes; iattrs++) {
@@ -279,9 +240,9 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 				if (get_op(in->conditions[i]->record[j]->op, &qop)) goto err;
 				add_attr_table(attr_md5, &attr_tables);
 
-				if (in->conditions[i]->record[j]->value->string) {
+				if (GSOAP_STRING(in->conditions[i]->record[j]->value)) {
 					attr.name = in->conditions[i]->attr;
-					attr.value = in->conditions[i]->record[j]->value->string;
+					attr.value = GSOAP_STRING(in->conditions[i]->record[j]->value);
 					attr.binary = 0;
 					glite_jpis_SoapToAttrOrig(soap,
 						in->conditions[i]->origin, &(attr.origin));
@@ -293,9 +254,9 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 				}
 				else {
 					attr.name = in->conditions[i]->attr;
-					attr.value = in->conditions[i]->record[j]->value->blob->__ptr;
+					attr.value = GSOAP_BLOB(in->conditions[i]->record[j]->value)->__ptr;
 					attr.binary = 1;
-					attr.size = in->conditions[i]->record[j]->value->blob->__size;
+					attr.size = GSOAP_BLOB(in->conditions[i]->record[j]->value)->__size;
 					glite_jpis_SoapToAttrOrig(soap,
 						in->conditions[i]->origin, &(attr.origin));
 					trio_asprintf(&qb,"%s %s attr_%|Ss.value %s \"%|Ss\"",
@@ -422,15 +383,15 @@ static int get_attr(struct soap *soap, glite_jpis_context_t ctx, char *jobid, ch
 		av[i]->value = soap_malloc(soap, sizeof(*(av[i]->value)));
 		memset(av[i]->value, 0, sizeof(*(av[i]->value)));
 		if (jav.binary) {
-			av[i]->value->blob = soap_malloc(soap, sizeof(*(av[i]->value->blob)));
-			memset(av[i]->value->blob, 0, sizeof(*(av[i]->value->blob)));
-			av[i]->value->blob->__ptr = soap_malloc(soap, jav.size);
-			memcpy(av[i]->value->blob->__ptr, jav.value, jav.size);
-			av[i]->value->blob->__size = jav.size;
+			GSOAP_BLOB(av[i]->value) = soap_malloc(soap, sizeof(*(GSOAP_BLOB(av[i]->value))));
+			memset(GSOAP_BLOB(av[i]->value), 0, sizeof(*(GSOAP_BLOB(av[i]->value))));
+			GSOAP_BLOB(av[i]->value)->__ptr = soap_malloc(soap, jav.size);
+			memcpy(GSOAP_BLOB(av[i]->value)->__ptr, jav.value, jav.size);
+			GSOAP_BLOB(av[i]->value)->__size = jav.size;
 			// XXX: id, type, option - how to handle?
 		}
 		else {
-			av[i]->value->string = soap_strdup(soap, jav.value);
+			GSOAP_STRING(av[i]->value) = soap_strdup(soap, jav.value);
 		}
 // XXX: load timestamp and origin from DB
 // need to add columns to DB

@@ -135,7 +135,7 @@ int MyFeedIndex(glite_jpis_context_t ctx, glite_jp_is_conf *conf, long int uniqu
 	struct soap             		*soap = soap_new();
 	glite_gsplugin_Context			plugin_ctx;
 	glite_jp_error_t err;
-	char *src, hname[512];
+	char *src;
 
 lprintf("MyFeedIndex for %s called\n", dest);
 	glite_gsplugin_init_context(&plugin_ctx);

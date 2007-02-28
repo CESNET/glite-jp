@@ -17,14 +17,14 @@
 #define soap_call___jpsrv__UpdateJobs soap_call___ns1__UpdateJobs
 #define soap_call___jpsrv__QueryJobs soap_call___ns1__QueryJobs
 #endif
+#define dprintf(FMT, ARGS...) fprintf(stderr, FMT, ##ARGS);
+#define check_fault(SOAP, ERR) glite_jp_clientCheckFault((SOAP), (ERR), NULL, 0)
+#include "glite/jp/ws_fault.c"
 
 
 /* insert simulating FeedIndex call */
 #define INSERT "insert into feeds value ('93', '12345', '8', '0' , 'http://localhost:8901', '2005-10-14 10:48:27', 'COND2');" 
 #define DELETE "delete from feeds where feedid = '12345';" 
-
-static int check_fault(struct soap *soap,int err);
-
 
 	
 int main(int argc,char *argv[])
@@ -79,7 +79,7 @@ int main(int argc,char *argv[])
 		memset(&out, 0, sizeof(out));
 
 		in.feedId = soap_strdup(soap, "12345");
-		in.feedDone = false_;
+		in.feedDone = GLITE_SECURITY_GSOAP_FALSE;
 		in.__sizejobAttributes = 2;
 		in.jobAttributes = soap_malloc(soap, 
 			in.__sizejobAttributes * sizeof(*(in.jobAttributes)));
@@ -107,8 +107,8 @@ int main(int argc,char *argv[])
 			rec->attributes[0] = soap_malloc(soap, sizeof(*(rec->attributes[0])));
 			rec->attributes[0]->name = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/LB/Attributes:user");
 			rec->attributes[0]->value =  soap_malloc(soap, sizeof(*(rec->attributes[0]->value)));
-			rec->attributes[0]->value->string = soap_strdup(soap, "CertSubj");
-			rec->attributes[0]->value->blob = NULL;
+			GSOAP_STRING(rec->attributes[0]->value) = soap_strdup(soap, "CertSubj");
+			GSOAP_BLOB(rec->attributes[0]->value) = NULL;
 			rec->attributes[0]->timestamp = 333;
 			rec->attributes[0]->origin = jptype__attrOrig__SYSTEM;
 			rec->attributes[0]->originDetail = NULL;
@@ -116,8 +116,8 @@ int main(int argc,char *argv[])
 			rec->attributes[1] = soap_malloc(soap, sizeof(*(rec->attributes[1])));
 			rec->attributes[1]->name = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus");
 			rec->attributes[1]->value =  soap_malloc(soap, sizeof(*(rec->attributes[0]->value)));
-			rec->attributes[1]->value->string = soap_strdup(soap, "Done");
-			rec->attributes[1]->value->blob = NULL;
+			GSOAP_STRING(rec->attributes[1]->value) = soap_strdup(soap, "Done");
+			GSOAP_BLOB(rec->attributes[1]->value) = NULL;
 			rec->attributes[1]->timestamp = 333;
 			rec->attributes[1]->origin = jptype__attrOrig__SYSTEM;
 			rec->attributes[1]->originDetail = NULL;
@@ -137,16 +137,16 @@ int main(int argc,char *argv[])
 			rec->attributes[0] = soap_malloc(soap, sizeof(*(rec->attributes[0])));
 			rec->attributes[0]->name = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/LB/Attributes:user");
 			rec->attributes[0]->value =  soap_malloc(soap, sizeof(*(rec->attributes[0]->value)));
-			rec->attributes[0]->value->string = soap_strdup(soap, "CertSubj");
-			rec->attributes[0]->value->blob = NULL;
+			GSOAP_STRING(rec->attributes[0]->value) = soap_strdup(soap, "CertSubj");
+			GSOAP_BLOB(rec->attributes[0]->value) = NULL;
 			rec->attributes[0]->timestamp = 333;
 			rec->attributes[0]->origin = jptype__attrOrig__USER;
 			rec->attributes[0]->originDetail = NULL;
 			rec->attributes[1] = soap_malloc(soap, sizeof(*(rec->attributes[1])));
 			rec->attributes[1]->name = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus");
 			rec->attributes[1]->value =  soap_malloc(soap, sizeof(*(rec->attributes[0]->value)));
-			rec->attributes[1]->value->string = soap_strdup(soap, "Ready");
-			rec->attributes[1]->value->blob = NULL;
+			GSOAP_STRING(rec->attributes[1]->value) = soap_strdup(soap, "Ready");
+			GSOAP_BLOB(rec->attributes[1]->value) = NULL;
 			rec->attributes[1]->timestamp = 333;
 			rec->attributes[1]->origin = jptype__attrOrig__SYSTEM;
 			rec->attributes[1]->originDetail = NULL;
@@ -186,8 +186,8 @@ int main(int argc,char *argv[])
 		memset(rec, 0, sizeof(*rec));
 		rec->op = jptype__queryOp__EQUAL;
 		rec->value = soap_malloc(soap, sizeof(*(rec->value)));
-		rec->value->string = soap_strdup(soap, "Done");
-		rec->value->blob = NULL;
+		GSOAP_STRING(rec->value) = soap_strdup(soap, "Done");
+		GSOAP_BLOB(rec->value) = NULL;
 		cond->record[0] = rec;
 
 		// OR equal to Ready
@@ -195,8 +195,8 @@ int main(int argc,char *argv[])
 		memset(rec, 0, sizeof(*rec));
 		rec->op = jptype__queryOp__EQUAL;
 		rec->value = soap_malloc(soap, sizeof(*(rec->value)));
-		rec->value->string = soap_strdup(soap, "Ready");
-		rec->value->blob = NULL;
+		GSOAP_STRING(rec->value) = soap_strdup(soap, "Ready");
+		GSOAP_BLOB(rec->value) = NULL;
 		cond->record[1] = rec;
 
 		in.conditions[0] = cond;
@@ -215,8 +215,8 @@ int main(int argc,char *argv[])
 		memset(rec, 0, sizeof(*rec));
 		rec->op = jptype__queryOp__UNEQUAL;
 		rec->value = soap_malloc(soap, sizeof(*(rec->value)));
-		rec->value->string = soap_strdup(soap, "God");
-		rec->value->blob = NULL;
+		GSOAP_STRING(rec->value) = soap_strdup(soap, "God");
+		GSOAP_BLOB(rec->value) = NULL;
 		cond->record[0] = rec;
 
 		in.conditions[1] = cond;
@@ -241,57 +241,13 @@ int main(int argc,char *argv[])
 			for (i=0; i<out.jobs[j]->__sizeattributes; i++) {
 				printf("\t%s = %s\n",
 					out.jobs[j]->attributes[i]->name,
-					out.jobs[j]->attributes[i]->value->string);
+					GSOAP_STRING(out.jobs[j]->attributes[i]->value));
 			}
 		}
 	} 
 
 	return 0;
 }
-
-
-static int check_fault(struct soap *soap,int err) {
-	struct SOAP_ENV__Detail *detail;
-	struct jptype__genericFault	*f;
-	char	*reason,indent[200] = "  ";
-
-	switch(err) {
-		case SOAP_OK: puts("OK");
-			      break;
-		case SOAP_FAULT:
-		case SOAP_SVR_FAULT:
-			if (soap->version == 2) {
-				detail = soap->fault->SOAP_ENV__Detail;
-				reason = soap->fault->SOAP_ENV__Reason;
-			}
-			else {
-				detail = soap->fault->detail;
-				reason = soap->fault->faultstring;
-			}
-			fputs(reason,stderr);
-			putc('\n',stderr);
-			assert(detail->__type == SOAP_TYPE__genericFault);
-#if GSOAP_VERSION >=20700
-			f = ((struct _genericFault *) detail->fault)
-#else
-			f = ((struct _genericFault *) detail->value)
-#endif
-				-> jpelem__genericFault;
-
-			while (f) {
-				fprintf(stderr,"%s%s: %s (%s)\n",indent,
-						f->source,f->text,f->description);
-				f = f->reason;
-				strcat(indent,"  ");
-			}
-			return -1;
-
-		default: soap_print_fault(soap,stderr);
-			 return -1;
-	}
-	return 0;
-}
-
 
 
 /* XXX: we don't use it */

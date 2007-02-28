@@ -8,6 +8,7 @@
 #include "jpps_H.h"
 #include "ws_typemap.h"
 #include "ws_ps_typeref.h"
+#include "glite/jp/ws_fault.c"
 
 
 static void QueryOpToSoap(const glite_jp_queryop_t in, enum jptype__queryOp *out)
@@ -55,16 +56,16 @@ static int QueryRecordValToSoap(
 	memset(val, 0, sizeof(*val) );
 
         if (binary) {
-		val->string = NULL;
-		if ( !(val->blob = soap_malloc(soap, sizeof(*val->blob))) ) return SOAP_FAULT;
-		val->blob->__size = size;
-		if ( !(val->blob->__ptr = soap_malloc(soap, val->blob->__size)) ) return SOAP_FAULT;
-		memcpy(val->blob->__ptr, in, val->blob->__size);
+		GSOAP_STRING(val) = NULL;
+		if ( !(GSOAP_BLOB(val) = soap_malloc(soap, sizeof(*GSOAP_BLOB(val)))) ) return SOAP_FAULT;
+		GSOAP_BLOB(val)->__size = size;
+		if ( !(GSOAP_BLOB(val)->__ptr = soap_malloc(soap, GSOAP_BLOB(val)->__size)) ) return SOAP_FAULT;
+		memcpy(GSOAP_BLOB(val)->__ptr, in, GSOAP_BLOB(val)->__size);
 		// XXX how to handle id, type, option?
 	}
 	else {
-		val->blob = NULL;
-		if ( !(val->string = soap_strdup(soap, in)) )  return SOAP_FAULT;
+		GSOAP_BLOB(val) = NULL;
+		if ( !(GSOAP_STRING(val) = soap_strdup(soap, in)) )  return SOAP_FAULT;
 	}
 
 	*out = val;
@@ -122,14 +123,14 @@ static void SoapToAttrOrig(glite_jp_attr_orig_t *out, const enum jptype__attrOri
 void glite_jpis_SoapToAttrVal(glite_jp_attrval_t *av, const struct jptype__attrValue *attr) {
 	memset(av, 0, sizeof(*av));
 	av->name = attr->name;
-	av->binary = attr->value->blob ? 1 : 0;
-	assert(av->binary || attr->value->string);
+	av->binary = GSOAP_BLOB(attr->value) ? 1 : 0;
+	assert(av->binary || GSOAP_STRING(attr->value));
 	if (av->binary) {
-		av->value = attr->value->blob->__ptr;
-		av->size =attr->value->blob->__size ;
+		av->value = GSOAP_BLOB(attr->value)->__ptr;
+		av->size = GSOAP_BLOB(attr->value)->__size ;
 	} else {
 		av->size = -1;
-		av->value = attr->value->string;
+		av->value = GSOAP_STRING(attr->value);
 	}
 	SoapToAttrOrig(&av->origin, attr->origin);
 	av->origin_detail = attr->originDetail;

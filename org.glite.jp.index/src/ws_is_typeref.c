@@ -8,6 +8,7 @@
 #include "jpis_H.h"
 #include "ws_typemap.h"
 #include "ws_is_typeref.h"
+#include "glite/jp/ws_fault.c"
 
 
 void glite_jpis_SoapToQueryOp(const enum jptype__queryOp in, glite_jp_queryop_t *out)
@@ -53,17 +54,17 @@ static int SoapToQueryRecordVal(
 {
 	
         assert(in);
-	if (in->string) {
+	if (GSOAP_STRING(in)) {
 		*binary = 0;
 		*size = 0;
-		*value = strdup(in->string);
+		*value = strdup(GSOAP_STRING(in));
 
 		return 0;
 	}
-	else if (in->blob) {
+	else if (GSOAP_BLOB(in)) {
 		*binary = 1;
-		*size = in->blob->__size;
-		memcpy(*value, in->blob->__ptr, in->blob->__size);
+		*size = GSOAP_BLOB(in)->__size;
+		memcpy(*value, GSOAP_BLOB(in)->__ptr, GSOAP_BLOB(in)->__size);
 		// XXX how to handle id, type, option?
 
 		return 0;
