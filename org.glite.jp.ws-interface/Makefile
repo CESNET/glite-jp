@@ -5,6 +5,7 @@ top_builddir=${top_srcdir}/${builddir}
 stagedir=.
 distdir=.
 globalprefix=glite
+jpprefix=jp
 package=glite-jp-ws-interface
 version=0.0.0
 PREFIX=/opt/glite
@@ -46,10 +47,12 @@ distbin:
 install:
 	-mkdir -p ${PREFIX}/${STAGETO}
 	-mkdir -p ${PREFIX}/share/doc/${package}-${version}
+	-mkdir -p ${PREFIX}/include/${globalprefix}/${jpprefix}
 	install -m 644 ${top_srcdir}/LICENSE ${PREFIX}/share/doc/${package}-${version}
 	-install -m 644 JobProvenance.html ${PREFIX}/share/doc/${package}-${version}
 #	cd ${top_srcdir}/interface && install -m 644 ${WSDL} ${PREFIX}/${STAGETO}
 	install -m 644 ${WSDL} ${XSD} ${PREFIX}/${STAGETO}
+	install -m 644 ${top_srcdir}/src/ws_fault.c ${PREFIX}/include/${globalprefix}/${jpprefix}
 
 clean:
 	rm -f *.h
