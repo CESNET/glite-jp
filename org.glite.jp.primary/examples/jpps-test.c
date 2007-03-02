@@ -120,17 +120,22 @@ int main(int argc,char *argv[])
 
 	soap_register_plugin(soap,glite_gsplugin);
 
-	while ((opt = getopt(argc,argv,"s:")) >= 0) switch (opt) {
+	/*while ((opt = getopt(argc,argv,"s:")) >= 0) switch (opt) {
 		case 's': server = optarg;
 			break;
-		case '?': usage(argv[0]);
-	}
+		//case '?': usage(argv[0]);
+	}*/
+	int i;
+	for (i = 0; i < argc-1; i++)
+		if (strcmp(argv[i], "-s") == 0)
+			server = argv[i+1];
 
 	if (server) {
 		argv += 2;
 		argc -= 2;
 	}
 	else server = "http://localhost:8901";
+
 
 	if (!strcasecmp(argv[1],"RegisterJob")) {
 		struct _jpelem__RegisterJob	in;
