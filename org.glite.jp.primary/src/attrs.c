@@ -68,6 +68,7 @@ static int merge_attrvals(glite_jp_attrval_t **out,int nout,const glite_jp_attrv
 	for (nin=0; in[nin].name; nin++);
 	*out = realloc(*out,(nout+nin+1) * sizeof **out);
 	memcpy(*out + nout,in,(nin+1) * sizeof **out);
+	memset(*out + nout+nin, 0, sizeof **out);
 	return nout+nin;
 }
 
@@ -104,7 +105,7 @@ void process_files(glite_jp_context_t ctx, const char *job, glite_jp_attrval_t**
 
 glite_jpps_get_attrs(glite_jp_context_t ctx,const char *job,char **attr,int nattr,glite_jp_attrval_t **attrs_out)
 {
-	glite_jp_attrval_t	*meta = NULL,*out = NULL,*tag_out;
+	glite_jp_attrval_t	*meta = NULL,*out = NULL,*tag_out = NULL;
         char const	**other = NULL;
 	int	i,j,nmeta,nother,err = 0,nout = 0;
 
@@ -138,10 +139,7 @@ glite_jpps_get_attrs(glite_jp_context_t ctx,const char *job,char **attr,int natt
 	void* beh;
 	for (i = 0; i < nother; i++){
 		if (! glite_jppsbe_read_tag(ctx, job, other[i], &tag_out)) {
-			for (j=0; tag_out[j].name; j++);
-			out = realloc(out,(nout+j) * sizeof *out);
-			memcpy(out+nout,tag_out,j * sizeof *out);
-			nout += j;
+			nout = merge_attrvals(&out, nout, tag_out);
 			free(tag_out); tag_out = NULL;
 		}
 		for (j = 0; known_namespaces[j].namespace; j++) {
