@@ -27,18 +27,16 @@ static int jp2s_attrValues(
 		a->name = soap_strdup(soap,in[i].name); 
 		if (freeit) free(in[i].name);
 		a->value = soap_malloc(soap,sizeof *a->value);
+		memset(a->value, 0, sizeof *a->value);
 		if (in[i].binary) {
-			GSOAP_BLOB(a->value) = soap_malloc(soap,sizeof *GSOAP_BLOB(a->value));
+			GSOAP_SETBLOB(a->value, soap_malloc(soap,sizeof *GSOAP_BLOB(a->value)));
 			memset(GSOAP_BLOB(a->value),0,sizeof *GSOAP_BLOB(a->value));
 			GSOAP_BLOB(a->value)->__ptr = soap_malloc(soap,in[i].size);
 			GSOAP_BLOB(a->value)->__size = in[i].size;
 			memcpy(GSOAP_BLOB(a->value)->__ptr,in[i].value,in[i].size);
-
-			GSOAP_STRING(a->value) = NULL;
 		}
 		else {
-			GSOAP_STRING(a->value) = soap_strdup(soap,in[i].value);
-			GSOAP_BLOB(a->value) = NULL;
+			GSOAP_SETSTRING(a->value, soap_strdup(soap,in[i].value));
 		}
 		if (freeit) free(in[i].value);
 		a->origin = jp2s_origin(in[i].origin);
@@ -61,8 +59,8 @@ static void attrValues_free(
 
 	for (i=0; i<na; i++) {
 		soap_dealloc(soap,a[i]->name);
-		if (GSOAP_STRING(a[i]->value)) soap_dealloc(soap,GSOAP_STRING(a[i]->value));
-		if (GSOAP_BLOB(a[i]->value)) {
+		if (GSOAP_ISSTRING(a[i]->value) && GSOAP_STRING(a[i]->value)) soap_dealloc(soap,GSOAP_STRING(a[i]->value));
+		if (GSOAP_ISBLOB(a[i]->value) && GSOAP_BLOB(a[i]->value)) {
 			soap_dealloc(soap,GSOAP_BLOB(a[i]->value)->__ptr);
 			soap_dealloc(soap,GSOAP_BLOB(a[i]->value));
 		}

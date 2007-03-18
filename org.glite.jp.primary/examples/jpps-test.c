@@ -142,8 +142,8 @@ int main(int argc,char *argv[])
 		in.tag = &tagval;
 		tagval.name = argv[3];
 		tagval.value = &val;
-		GSOAP_STRING(&val) = argv[4];
-		GSOAP_BLOB(&val)= NULL;
+		memset(&val, 0, sizeof(val));
+		GSOAP_SETSTRING(&val, argv[4]);
 		
 		if (!(ret = check_fault(soap,
 				soap_call___jpsrv__RecordTag(soap, server, "",&in, &empty)))) {
@@ -158,8 +158,8 @@ int main(int argc,char *argv[])
 
 		struct jptype__stringOrBlob vals[2];
 		memset(vals, 0, sizeof vals);
-		GSOAP_STRING(vals) = "/O=CESNET/O=Masaryk University/CN=Ales Krenek";
-		GSOAP_STRING(vals + 1) = "Done";
+		GSOAP_SETSTRING(vals, "/O=CESNET/O=Masaryk University/CN=Ales Krenek");
+		GSOAP_SETSTRING(vals + 1, "Done");
 
 		struct jptype__primaryQuery	q[] = {
 			{ 
@@ -241,7 +241,7 @@ int main(int argc,char *argv[])
 			puts("Attribute values:");
 			for (i=0; i<out.__sizeattrValues; i++)
 				printf("\t%s\t%s\t%s",
-					GSOAP_STRING(out.attrValues[i]->value) ?
+					GSOAP_ISSTRING(out.attrValues[i]->value) ?
 						GSOAP_STRING(out.attrValues[i]->value) :
 						"binary",
 					orig2str(out.attrValues[i]->origin),

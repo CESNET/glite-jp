@@ -158,14 +158,14 @@ int main(int argc,char *argv[])
 			in.tag = &tagval;
 			tagval.name = GLITE_JP_ATTR_WF_SUCCESSOR;
 			tagval.value = &val;
-			GSOAP_STRING(&val) = js;
-			GSOAP_BLOB(&val) = NULL;
+			memset(&val, 0, sizeof(val));
+			GSOAP_SETSTRING(&val, js);
 
 			printf("Register successor ...\n");
 			ret = check_fault(soap,soap_call___jpsrv__RecordTag(soap, server, "",&in, &empty));
 			in.jobid = js;
 			tagval.name = GLITE_JP_ATTR_WF_ANCESTOR;
-			GSOAP_STRING(&val) = ja;
+			GSOAP_SETSTRING(&val, ja);
 
 			printf("Register ancestor ...\n");
 			ret = check_fault(soap,soap_call___jpsrv__RecordTag(soap, server, "",&in, &empty));

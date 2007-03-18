@@ -177,7 +177,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RecordTag(
 	}
 
 	attr[0].name = in->tag->name;
-	if (GSOAP_STRING(in->tag->value)) {
+	if (GSOAP_ISSTRING(in->tag->value)) {
 		attr[0].value = GSOAP_STRING(in->tag->value);
 		attr[0].binary = 0;
 	}
@@ -236,7 +236,7 @@ err:
 
 static void s2jp_qval(const struct jptype__stringOrBlob *in, char **value, int *binary, size_t *size)
 {
-	if (GSOAP_STRING(in)) {
+	if (GSOAP_ISSTRING(in)) {
 		*value = GSOAP_STRING(in);
 		*binary = 0;
 		*size = 0;
