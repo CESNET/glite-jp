@@ -13,6 +13,10 @@
 #endif
 #define GSOAP_STRING(CHOICE) GLITE_SECURITY_GSOAP_CHOICE_GET(CHOICE, string, jptype__stringOrBlob, 1)
 #define GSOAP_BLOB(CHOICE) GLITE_SECURITY_GSOAP_CHOICE_GET(CHOICE, blob, jptype__stringOrBlob, 1)
+#define GSOAP_SETSTRING(CHOICE, VALUE) GLITE_SECURITY_GSOAP_CHOICE_SET(CHOICE, string, jptype, jptype__stringOrBlob, 1, VALUE)
+#define GSOAP_SETBLOB(CHOICE, VALUE) GLITE_SECURITY_GSOAP_CHOICE_SET(CHOICE, blob, jptype, jptype__stringOrBlob, 1, VALUE)
+#define GSOAP_ISSTRING(CHOICE) GLITE_SECURITY_GSOAP_CHOICE_ISTYPE(CHOICE, string, jptype, jptype__stringOrBlob, 1)
+#define GSOAP_ISBLOB(CHOICE) GLITE_SECURITY_GSOAP_CHOICE_ISTYPE(CHOICE, blob, jptype, jptype__stringOrBlob, 1)
 
 #ifndef dprintf
 #define dprintf(x) printf x
