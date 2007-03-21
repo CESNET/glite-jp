@@ -27,7 +27,7 @@
 /* Helper functions */
 /*------------------*/
 
-#define dprintf(x)
+#define dprintf(FMT, ARGS, ...)
 #include "glite/jp/ws_fault.c"
 #define err2fault(CTX, SOAP) glite_jp_server_err2fault((CTX), (SOAP))
 
@@ -52,7 +52,7 @@ static int updateJob(glite_jpis_context_t ctx, const char *ps, struct jptype__jo
 
 	if ((ret = glite_jpis_lazyInsertJob(ctx, ps, jobAttrs->jobid, jobAttrs->owner)) != 0) return ret;
 	for (iattrs = 0; iattrs < jobAttrs->__sizeattributes; iattrs++) {
-		attr = jobAttrs->attributes[iattrs];
+		attr = GLITE_SECURITY_GSOAP_LIST_GET(jobAttrs->attributes, iattrs);
 		glite_jpis_SoapToAttrVal(&av, attr);
 		if ((ret = glite_jpis_insertAttrVal(ctx, jobAttrs->jobid, &av)) != 0) return ret;
 	}
@@ -101,7 +101,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__UpdateJobs(
 
 	// insert all attributes
 	for (ijobs = 0; ijobs < jpelem__UpdateJobs->__sizejobAttributes; ijobs++) {
-		if (updateJob(ctx, (const char *) ps, jpelem__UpdateJobs->jobAttributes[ijobs]) != 0) goto fail;
+		if (updateJob(ctx, (const char *) ps, GLITE_SECURITY_GSOAP_LIST_GET(jpelem__UpdateJobs->jobAttributes, ijobs)) != 0) goto fail;
 	}
 	free(ps);
 
@@ -143,7 +143,7 @@ static int checkIndexedConditions(glite_jpis_context_t ctx, struct _jpelem__Quer
 
 	for (k=0; k < in->__sizeconditions; k++) {
 		for (j=0; j < i; j++) {
-			if (!strcmp(in->conditions[k]->attr, indexed_attrs[j])) {
+			if (!strcmp(GLITE_SECURITY_GSOAP_LIST_GET(in->conditions, k)->attr, indexed_attrs[j])) {
 				ret = 0;
 				goto end;
 			}
@@ -210,18 +210,21 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 	
 	qwhere = strdup("");
 	for (i=0; i < in->__sizeconditions; i++) {
+		struct jptype__indexQuery *condition;
+
+		condition = GLITE_SECURITY_GSOAP_LIST_GET(in->conditions, i);
 /* XXX: deal with jobIds diferently (they are not in attr_X table, but in jobs)
 		if (strcmp(in->conditions[i]->attr,GLITE_JP_ATTR_JOBID)) {
 			trio_asprintf(&qa,"%s  (", (i ? "AND" : "") );
 
-			for (j=0; j < in->conditions[i]->__sizerecord; j++) {
-				if (get_op(in->conditions[i]->record[j]->op, &qop)) goto err;
+			for (j=0; j < condition->__sizerecord; j++) {
+				if (get_op(condition->record[j]->op, &qop)) goto err;
 
-				attr.name = in->conditions[i]->attr;
-				attr.value = in->conditions[i]->record[j]->value->string;
+				attr.name = condition->attr;
+				attr.value = condition->record[j]->value->string;
 				attr.binary = 0;
 				glite_jpis_SoapToAttrOrig(soap,
-					in->conditions[i]->origin, &(attr.origin));
+					condition->origin, &(attr.origin));
 				trio_asprintf(&qb,"%s%sjobs.dg_jobid %s \"%|Ss\"",
 					qa, (j ? " OR " : ""), attr_md5, qop,
 					glite_jp_attrval_to_db_index(ctx->jpctx, &attr, 255));
@@ -232,20 +235,23 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 		else
 */
 		{
-			attr_md5 = str2md5(in->conditions[i]->attr);
+			attr_md5 = str2md5(condition->attr);
 			trio_asprintf(&qa,"%s jobs.jobid = attr_%|Ss.jobid AND (", 
 				(i ? "AND" : ""), attr_md5);
 		
-			for (j=0; j < in->conditions[i]->__sizerecord; j++) { 
-				if (get_op(in->conditions[i]->record[j]->op, &qop)) goto err;
+			for (j=0; j < condition->__sizerecord; j++) { 
+				struct jptype__indexQueryRecord *record;
+
+				record = GLITE_SECURITY_GSOAP_LIST_GET(condition->record, j);
+				if (get_op(record->op, &qop)) goto err;
 				add_attr_table(attr_md5, &attr_tables);
 
-				if (GSOAP_STRING(in->conditions[i]->record[j]->value)) {
-					attr.name = in->conditions[i]->attr;
-					attr.value = GSOAP_STRING(in->conditions[i]->record[j]->value);
+				if (GSOAP_ISSTRING(record->value)) {
+					attr.name = condition->attr;
+					attr.value = GSOAP_STRING(record->value);
 					attr.binary = 0;
 					glite_jpis_SoapToAttrOrig(soap,
-						in->conditions[i]->origin, &(attr.origin));
+						condition->origin, &(attr.origin));
 					trio_asprintf(&qb,"%s%sattr_%|Ss.value %s \"%|Ss\"",
 						qa, (j ? " OR " : ""), attr_md5, qop,
 						glite_jp_attrval_to_db_index(ctx->jpctx, &attr, 255));
@@ -253,12 +259,12 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 					free(qa); qa = qb; qb = NULL;
 				}
 				else {
-					attr.name = in->conditions[i]->attr;
-					attr.value = GSOAP_BLOB(in->conditions[i]->record[j]->value)->__ptr;
+					attr.name = condition->attr;
+					attr.value = GSOAP_BLOB(record->value)->__ptr;
 					attr.binary = 1;
-					attr.size = GSOAP_BLOB(in->conditions[i]->record[j]->value)->__size;
+					attr.size = GSOAP_BLOB(record->value)->__size;
 					glite_jpis_SoapToAttrOrig(soap,
-						in->conditions[i]->origin, &(attr.origin));
+						condition->origin, &(attr.origin));
 					trio_asprintf(&qb,"%s %s attr_%|Ss.value %s \"%|Ss\"",
 						qa, (j ? "OR" : ""), attr_md5, qop,
 						glite_jp_attrval_to_db_index(ctx->jpctx, &attr, 255));
@@ -345,17 +351,16 @@ static void freeAttval_t(glite_jp_attrval_t jav)
 /* get all values of a given attribute for a job with a given jobid 	*/
 /* all values are soap_malloc-ated, exept of av (due to absence of 	*/
 /* soap_realloc)							*/ 
-/* Needs to be reallocated with soap_malloc in calling function!	*/
+/* Needs to be copied to list using soap_malloc in calling function!	*/
 
-static int get_attr(struct soap *soap, glite_jpis_context_t ctx, char *jobid, char *attr_name, struct jptype__jobRecord *out)
+static int get_attr(struct soap *soap, glite_jpis_context_t ctx, char *jobid, char *attr_name, int *size, struct jptype__attrValue **out)
 {
 	glite_jp_attrval_t		jav;
-	struct jptype__attrValue	**av = NULL;;
+	struct jptype__attrValue	*av;
 	//enum jptype__attrOrig		*origin;
 	char 				*query, *fv, *jobid_md5, *attr_md5;
 	int 				i, ret;
 	glite_jp_db_stmt_t      	stmt;
-
 
 	memset(&jav,0,sizeof(jav));
 	jobid_md5 = str2md5(jobid);
@@ -371,43 +376,43 @@ static int get_attr(struct soap *soap, glite_jpis_context_t ctx, char *jobid, ch
 		goto err; 
 	free(query);
 
-	i = 0;
+	av = *out;
+	i = *size;
 	while ( (ret = glite_jp_db_fetchrow(stmt, &fv)) > 0 ) {	
 		av = realloc(av, (i+1) * sizeof(*av));
-		av[i] = soap_malloc(soap, sizeof(**av));
-		memset(av[i], 0, sizeof(**av));
+		memset(&av[i], 0, sizeof(av[i]));
 
 		memset(&jav,0,sizeof(jav));
 		if (glite_jp_attrval_from_db(ctx->jpctx, fv, &jav)) goto err;
-		av[i]->name = soap_strdup(soap, attr_name);
-		av[i]->value = soap_malloc(soap, sizeof(*(av[i]->value)));
-		memset(av[i]->value, 0, sizeof(*(av[i]->value)));
+		av[i].name = soap_strdup(soap, attr_name);
+		av[i].value = soap_malloc(soap, sizeof(*(av[i].value)));
+		memset(av[i].value, 0, sizeof(*(av[i].value)));
 		if (jav.binary) {
-			GSOAP_BLOB(av[i]->value) = soap_malloc(soap, sizeof(*(GSOAP_BLOB(av[i]->value))));
-			memset(GSOAP_BLOB(av[i]->value), 0, sizeof(*(GSOAP_BLOB(av[i]->value))));
-			GSOAP_BLOB(av[i]->value)->__ptr = soap_malloc(soap, jav.size);
-			memcpy(GSOAP_BLOB(av[i]->value)->__ptr, jav.value, jav.size);
-			GSOAP_BLOB(av[i]->value)->__size = jav.size;
+			GSOAP_SETBLOB(av[i].value, soap_malloc(soap, sizeof(*(GSOAP_BLOB(av[i].value)))));
+			memset(GSOAP_BLOB(av[i].value), 0, sizeof(*(GSOAP_BLOB(av[i].value))));
+			GSOAP_BLOB(av[i].value)->__ptr = soap_malloc(soap, jav.size);
+			memcpy(GSOAP_BLOB(av[i].value)->__ptr, jav.value, jav.size);
+			GSOAP_BLOB(av[i].value)->__size = jav.size;
 			// XXX: id, type, option - how to handle?
 		}
 		else {
-			GSOAP_STRING(av[i]->value) = soap_strdup(soap, jav.value);
+			GSOAP_SETSTRING(av[i].value, soap_strdup(soap, jav.value));
 		}
 // XXX: load timestamp and origin from DB
 // need to add columns to DB
-//		av[i]->timestamp = jav.timestamp;
+//		av[i].timestamp = jav.timestamp;
 //		glite_jpis_AttrOrigToSoap(soap, jav.origin, &origin);
-//		av[i]->origin = *origin; free(origin);
-//		av[i]->originDetail = soap_strdup(soap, jav.origin_detail);		
+//		av[i].origin = origin; //XXX: NULL(=ANY) origin?
+//		av[i].originDetail = soap_strdup(soap, jav.origin_detail);		
 
 		i++;
 		freeAttval_t(jav);
 	} 
 	if (ret < 0) goto err;
 	
-	glite_jp_db_freestmt(&stmt);	
-	(*out).__sizeattributes = i;
-	(*out).attributes = av;
+	glite_jp_db_freestmt(&stmt);
+	*size = i;
+	*out = av;
 
 	return 0;
 
@@ -461,35 +466,28 @@ err:
 }
 
 /* fills structure jobRecord  for a given jobid*/
-static int get_attrs(struct soap *soap, glite_jpis_context_t ctx, char *jobid, struct _jpelem__QueryJobs *in, struct jptype__jobRecord **out)
+static int get_attrs(struct soap *soap, glite_jpis_context_t ctx, char *jobid, struct _jpelem__QueryJobs *in, struct jptype__jobRecord *out)
 {
-	struct jptype__jobRecord 	jr;
-	struct jptype__attrValue	**av = NULL;
-	int 				j, size;
+//	struct jptype__jobRecord	jr;
+	struct jptype__attrValue	*av = NULL;
+	int 				j, size = 0;
 
 
 	assert(out);
-	*out = soap_malloc(soap, sizeof(**out));
-	memset(*out, 0, sizeof(**out));
+	memset(out, 0, sizeof(*out));
 
 	/* jobid */
-	(*out)->jobid = soap_strdup(soap, jobid);
+	out->jobid = soap_strdup(soap, jobid);
 
 	/* sizeattributes & attributes */
 	size = 0;
-	for (j=0; j < in->__sizeattributes; j++) {
-		if (get_attr(soap, ctx, jobid, in->attributes[j], &jr) ) goto err;
-		if (jr.__sizeattributes > 0) {
-			av = realloc(av, (size + jr.__sizeattributes) * sizeof(*av));
-			memcpy(&av[size], jr.attributes, jr.__sizeattributes * sizeof(*(jr.attributes)));
-			size += jr.__sizeattributes;
-			free(jr.attributes);
-		}
-	} 
-	if ( get_owner(ctx, jobid, &((*out)->owner)) ) goto err;
-	(*out)->__sizeattributes = size;
-	(*out)->attributes = soap_malloc( soap, size *sizeof(*((*out)->attributes)) );
-	memcpy((*out)->attributes, av, size * sizeof(*((*out)->attributes)) );
+	for (j=0; j < in->__sizeattributes; j++)
+		if (get_attr(soap, ctx, jobid, in->attributes[j], &size, &av) ) goto err;
+	if ( get_owner(ctx, jobid, &(out->owner)) ) goto err;
+
+	GLITE_SECURITY_GSOAP_LIST_CREATE(soap, out, attributes, struct jptype__attrValue, size);
+	for (j = 0; j < size; j++)
+		memcpy(GLITE_SECURITY_GSOAP_LIST_GET(out->attributes, j), &av[j], sizeof(av[0]));
 	free(av);
 
 	return 0;
@@ -504,7 +502,8 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__QueryJobs(
 	struct _jpelem__QueryJobsResponse *out)
 {
 	CONTEXT_FROM_SOAP(soap, ctx);
-	struct jptype__jobRecord	**jr = NULL;
+	struct jptype__jobRecord	*jr;
+
 	char				**jobids = NULL, **ps_list = NULL;
 	int 				i, size;
 
@@ -526,25 +525,22 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__QueryJobs(
 	/* get all requested attributes for matching jobids */
 	for (i=0; (jobids && jobids[i]); i++);
 	size = i;
-	jr = soap_malloc(soap, size * sizeof(*jr));
+	GLITE_SECURITY_GSOAP_LIST_CREATE(soap, out, jobs, struct jptype__jobRecord, size);
 	for (i=0; (jobids && jobids[i]); i++) {
-		if ( get_attrs(soap, ctx, jobids[i], in, &(jr[i])) ) {
-			return SOAP_ERR;
-		}	
+		jr = GLITE_SECURITY_GSOAP_LIST_GET(out->jobs, i);
+		if ( get_attrs(soap, ctx, jobids[i], in, jr) ) return SOAP_ERR;
+
 		// XXX: in prototype we return only first value of PS URL
 		// in future database should contain one more table with URLs
-		jr[i]->__sizeprimaryStorage = 1;
-		jr[i]->primaryStorage = soap_malloc(soap, sizeof(*(jr[i]->primaryStorage)));
-		jr[i]->primaryStorage[0] = soap_strdup(soap, ps_list[i]);
+		jr->__sizeprimaryStorage = 1;
+		jr->primaryStorage = soap_malloc(soap, sizeof(*(jr->primaryStorage)));
+		jr->primaryStorage[0] = soap_strdup(soap, ps_list[i]);
 		free(ps_list[i]);
 		free(jobids[i]);
 	}
 	free(jobids);
 	free(ps_list);
 
-	(*out).__sizejobs = size;
-	(*out).jobs = jr;
-	
 	return SOAP_OK;
 }
 

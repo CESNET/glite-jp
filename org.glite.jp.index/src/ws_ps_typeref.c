@@ -82,12 +82,11 @@ static int QueryRecordValToSoap(
 int glite_jpis_QueryCondToSoap(
 	struct soap                     *soap,
 	glite_jp_query_rec_t 		*in, 
-	struct jptype__primaryQuery	**out)
+	struct jptype__primaryQuery	*out)
 {
 	struct jptype__primaryQuery	*qr;
 
 	assert(in); assert(out);
-	if ( !(qr = soap_malloc(soap, sizeof(*qr))) ) return SOAP_FAULT;
 	memset(qr, 0, sizeof(*qr));
 
 	if ( !(qr->attr = soap_strdup(soap, in->attr)) ) return SOAP_FAULT;
@@ -104,7 +103,7 @@ int glite_jpis_QueryCondToSoap(
 		break;
 	}
 
-	*out = qr;
+	*out = *qr;
 		
 	return SOAP_OK;
 }

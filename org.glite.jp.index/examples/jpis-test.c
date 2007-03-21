@@ -74,17 +74,16 @@ int main(int argc,char *argv[])
 		struct jptype__jobRecord		*rec;
 		struct _jpelem__UpdateJobs 		in;
 		struct _jpelem__UpdateJobsResponse 	out;
+		struct jptype__attrValue *a;
 
 		memset(&in, 0, sizeof(in));
 		memset(&out, 0, sizeof(out));
 
 		in.feedId = soap_strdup(soap, "12345");
 		in.feedDone = GLITE_SECURITY_GSOAP_FALSE;
-		in.__sizejobAttributes = 2;
-		in.jobAttributes = soap_malloc(soap, 
-			in.__sizejobAttributes * sizeof(*(in.jobAttributes)));
+		GLITE_SECURITY_GSOAP_LIST_CREATE(soap, &in, jobAttributes, struct jptype__jobRecord, 2);
+		rec = GLITE_SECURITY_GSOAP_LIST_GET(in.jobAttributes, 0);
 		{
-			rec = soap_malloc(soap,  sizeof(*rec));
 			memset(rec, 0, sizeof(*rec));
 			rec->jobid = soap_strdup(soap, "https://localhost:7846/pokus1");
 			{
@@ -101,58 +100,53 @@ int main(int argc,char *argv[])
 			}
 			rec->__sizeprimaryStorage = 0;
 			rec->primaryStorage = NULL;
-			rec->__sizeattributes = 2;
-			rec->attributes = soap_malloc(soap,
-				rec->__sizeattributes * sizeof(*(rec->attributes)));
-			rec->attributes[0] = soap_malloc(soap, sizeof(*(rec->attributes[0])));
-			rec->attributes[0]->name = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/LB/Attributes:user");
-			rec->attributes[0]->value =  soap_malloc(soap, sizeof(*(rec->attributes[0]->value)));
-			GSOAP_STRING(rec->attributes[0]->value) = soap_strdup(soap, "CertSubj");
-			GSOAP_BLOB(rec->attributes[0]->value) = NULL;
-			rec->attributes[0]->timestamp = 333;
-			rec->attributes[0]->origin = jptype__attrOrig__SYSTEM;
-			rec->attributes[0]->originDetail = NULL;
+			GLITE_SECURITY_GSOAP_LIST_CREATE(soap, rec, attributes, struct jptype__attrValue, 2);
+			a = GLITE_SECURITY_GSOAP_LIST_GET(rec->attributes, 0);
+			a->name = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/LB/Attributes:user");
+			a->value =  soap_malloc(soap, sizeof(*(a->value)));
+			memset(a->value, 0, sizeof(a->value));
+			GSOAP_SETSTRING(a->value, soap_strdup(soap, "CertSubj"));
+			a->timestamp = 333;
+			a->origin = jptype__attrOrig__SYSTEM;
+			a->originDetail = NULL;
 
-			rec->attributes[1] = soap_malloc(soap, sizeof(*(rec->attributes[1])));
-			rec->attributes[1]->name = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus");
-			rec->attributes[1]->value =  soap_malloc(soap, sizeof(*(rec->attributes[0]->value)));
-			GSOAP_STRING(rec->attributes[1]->value) = soap_strdup(soap, "Done");
-			GSOAP_BLOB(rec->attributes[1]->value) = NULL;
-			rec->attributes[1]->timestamp = 333;
-			rec->attributes[1]->origin = jptype__attrOrig__SYSTEM;
-			rec->attributes[1]->originDetail = NULL;
+			a = GLITE_SECURITY_GSOAP_LIST_GET(rec->attributes, 1);
+			a->name = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus");
+			a->value =  soap_malloc(soap, sizeof(*(a->value)));
+			memset(a->value, 0, sizeof(a->value));
+			GSOAP_SETSTRING(a->value, soap_strdup(soap, "Done"));
+			a->timestamp = 333;
+			a->origin = jptype__attrOrig__SYSTEM;
+			a->originDetail = NULL;
 
 		}
-		in.jobAttributes[0] = rec;
+
+		rec = GLITE_SECURITY_GSOAP_LIST_GET(in.jobAttributes, 1);
 		{
-			rec = soap_malloc(soap,  sizeof(*rec));
 			memset(rec, 0, sizeof(*rec));
 			rec->jobid = soap_strdup(soap, "https://localhost:7846/pokus2");
 			rec->owner = soap_strdup(soap, "OwnerName");
 			rec->__sizeprimaryStorage = 0;
 			rec->primaryStorage = NULL;
-			rec->__sizeattributes = 2;
-			rec->attributes = soap_malloc(soap,
-				rec->__sizeattributes * sizeof(*(rec->attributes)));
-			rec->attributes[0] = soap_malloc(soap, sizeof(*(rec->attributes[0])));
-			rec->attributes[0]->name = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/LB/Attributes:user");
-			rec->attributes[0]->value =  soap_malloc(soap, sizeof(*(rec->attributes[0]->value)));
-			GSOAP_STRING(rec->attributes[0]->value) = soap_strdup(soap, "CertSubj");
-			GSOAP_BLOB(rec->attributes[0]->value) = NULL;
-			rec->attributes[0]->timestamp = 333;
-			rec->attributes[0]->origin = jptype__attrOrig__USER;
-			rec->attributes[0]->originDetail = NULL;
-			rec->attributes[1] = soap_malloc(soap, sizeof(*(rec->attributes[1])));
-			rec->attributes[1]->name = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus");
-			rec->attributes[1]->value =  soap_malloc(soap, sizeof(*(rec->attributes[0]->value)));
-			GSOAP_STRING(rec->attributes[1]->value) = soap_strdup(soap, "Ready");
-			GSOAP_BLOB(rec->attributes[1]->value) = NULL;
-			rec->attributes[1]->timestamp = 333;
-			rec->attributes[1]->origin = jptype__attrOrig__SYSTEM;
-			rec->attributes[1]->originDetail = NULL;
-		}
-		in.jobAttributes[1] = rec;
+			GLITE_SECURITY_GSOAP_LIST_CREATE(soap, rec, attributes, struct jptype__jobRecord, 2);
+			a = GLITE_SECURITY_GSOAP_LIST_GET(rec->attributes, 0);
+			a->name = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/LB/Attributes:user");
+			a->value =  soap_malloc(soap, sizeof(*(a->value)));
+			memset(a->value, 0, sizeof(a->value));
+			GSOAP_SETSTRING(a->value, soap_strdup(soap, "CertSubj"));
+			a->timestamp = 333;
+			a->origin = jptype__attrOrig__USER;
+			a->originDetail = NULL;
 
+			a = GLITE_SECURITY_GSOAP_LIST_GET(rec->attributes, 1);
+			a->name = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus");
+			a->value =  soap_malloc(soap, sizeof(*(a->value)));
+			memset(a->value, 0, sizeof(a->value));
+			GSOAP_SETSTRING(a->value, soap_strdup(soap, "Ready"));
+			a->timestamp = 333;
+			a->origin = jptype__attrOrig__SYSTEM;
+			a->originDetail = NULL;
+		}
 
 		check_fault(soap,
 			soap_call___jpsrv__UpdateJobs(soap,server,"",&in,&out));
@@ -165,61 +159,51 @@ int main(int argc,char *argv[])
 		struct jptype__indexQuery 		*cond;
 		struct jptype__indexQueryRecord 	*rec;
 		struct _jpelem__QueryJobsResponse	out;
+		struct jptype__jobRecord		*job;
+		struct jptype__attrValue		*attr;
 		int					i, j;
 
-		
-		in.__sizeconditions = 2;
-		in.conditions = soap_malloc(soap,
-			in.__sizeconditions * 
-			sizeof(*(in.conditions)));
+		GLITE_SECURITY_GSOAP_LIST_CREATE(soap, &in, conditions, struct jptype__indexQuery, 2);
 		
 		// query status
-		cond = soap_malloc(soap, sizeof(*cond));
+		cond = GLITE_SECURITY_GSOAP_LIST_GET(in.conditions, 0);
 		memset(cond, 0, sizeof(*cond));
 		cond->attr = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus");
 		cond->origin = NULL;
-		cond->__sizerecord = 2;
-		cond->record = soap_malloc(soap, cond->__sizerecord * sizeof(*(cond->record)));
+		GLITE_SECURITY_GSOAP_LIST_CREATE(soap, cond, record, struct jptype__indexQueryRecord, 2);
 
 		// equal to Done
-		rec = soap_malloc(soap, sizeof(*rec));
+		rec = GLITE_SECURITY_GSOAP_LIST_GET(cond->record, 0);
 		memset(rec, 0, sizeof(*rec));
 		rec->op = jptype__queryOp__EQUAL;
 		rec->value = soap_malloc(soap, sizeof(*(rec->value)));
-		GSOAP_STRING(rec->value) = soap_strdup(soap, "Done");
-		GSOAP_BLOB(rec->value) = NULL;
-		cond->record[0] = rec;
+		memset(rec->value, 0, sizeof(*rec->value));
+		GSOAP_SETSTRING(rec->value, soap_strdup(soap, "Done"));
 
 		// OR equal to Ready
-		rec = soap_malloc(soap, sizeof(*rec));
+		rec = GLITE_SECURITY_GSOAP_LIST_GET(cond->record, 1);
 		memset(rec, 0, sizeof(*rec));
 		rec->op = jptype__queryOp__EQUAL;
 		rec->value = soap_malloc(soap, sizeof(*(rec->value)));
-		GSOAP_STRING(rec->value) = soap_strdup(soap, "Ready");
-		GSOAP_BLOB(rec->value) = NULL;
-		cond->record[1] = rec;
+		memset(rec->value, 0, sizeof(*rec->value));
+		GSOAP_SETSTRING(rec->value, soap_strdup(soap, "Ready"));
 
-		in.conditions[0] = cond;
 
 		// AND
 		// owner
-		cond = soap_malloc(soap, sizeof(*cond));
+		cond = GLITE_SECURITY_GSOAP_LIST_GET(in.conditions, 1);
 		memset(cond, 0, sizeof(*cond));
 		cond->attr = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/LB/Attributes:user");
 		cond->origin = NULL;
-		cond->__sizerecord = 1;
-		cond->record = soap_malloc(soap, cond->__sizerecord * sizeof(*(cond->record)));
+		GLITE_SECURITY_GSOAP_LIST_CREATE(soap, cond, record, struct jptype__indexQueryRecord, 1);
 
 		// not equal to CertSubj
-		rec = soap_malloc(soap, sizeof(*rec));
+		rec = GLITE_SECURITY_GSOAP_LIST_GET(cond->record, 0);
 		memset(rec, 0, sizeof(*rec));
 		rec->op = jptype__queryOp__UNEQUAL;
 		rec->value = soap_malloc(soap, sizeof(*(rec->value)));
-		GSOAP_STRING(rec->value) = soap_strdup(soap, "God");
-		GSOAP_BLOB(rec->value) = NULL;
-		cond->record[0] = rec;
-
-		in.conditions[1] = cond;
+		memset(rec->value, 0, sizeof(*rec->value));
+		GSOAP_SETSTRING(rec->value,  soap_strdup(soap, "God"));
 
 
 		in.__sizeattributes = 4;
@@ -237,11 +221,13 @@ int main(int argc,char *argv[])
 			soap_call___jpsrv__QueryJobs(soap, server, "",&in,&out));
 
 		for (j=0; j<out.__sizejobs; j++) {
-			printf("jobid = %s\n",out.jobs[j]->jobid);
-			for (i=0; i<out.jobs[j]->__sizeattributes; i++) {
+			job = GLITE_SECURITY_GSOAP_LIST_GET(out.jobs, j);
+			printf("jobid = %s\n",job->jobid);
+			for (i=0; i<job->__sizeattributes; i++) {
+				attr = GLITE_SECURITY_GSOAP_LIST_GET(job->attributes, i);
 				printf("\t%s = %s\n",
-					out.jobs[j]->attributes[i]->name,
-					GSOAP_STRING(out.jobs[j]->attributes[i]->value));
+					attr->name,
+					GSOAP_ISSTRING(attr->value) ? GSOAP_STRING(attr->value) : "binary");
 			}
 		}
 	} 

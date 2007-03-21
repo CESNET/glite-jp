@@ -8,6 +8,7 @@
 #include "jpis_H.h"
 #include "ws_typemap.h"
 #include "ws_is_typeref.h"
+
 #include "glite/jp/ws_fault.c"
 
 
@@ -54,14 +55,14 @@ static int SoapToQueryRecordVal(
 {
 	
         assert(in);
-	if (GSOAP_STRING(in)) {
+	if (GSOAP_ISSTRING(in)) {
 		*binary = 0;
 		*size = 0;
 		*value = strdup(GSOAP_STRING(in));
 
 		return 0;
 	}
-	else if (GSOAP_BLOB(in)) {
+	else if (GSOAP_ISBLOB(in)) {
 		*binary = 1;
 		*size = GSOAP_BLOB(in)->__size;
 		memcpy(*value, GSOAP_BLOB(in)->__ptr, GSOAP_BLOB(in)->__size);
@@ -82,25 +83,26 @@ static int SoapToQueryCond(
 {
 	glite_jp_query_rec_t	*qr;	
 	int                     i;
-
+	struct jptype__indexQueryRecord *record;
 
 	assert(in); assert(out);
 	qr = calloc(in->__sizerecord, sizeof(*qr));	
 
 	for (i=0; i < in->__sizerecord; i++) {
+		record = GLITE_SECURITY_GSOAP_LIST_GET(in->record, i);
 		qr[i].attr = strdup(in->attr);
-		glite_jpis_SoapToQueryOp(in->record[i]->op, &(qr[i].op));
+		glite_jpis_SoapToQueryOp(record->op, &(qr[i].op));
 
 		switch (qr[i].op) {
 		case GLITE_JP_QUERYOP_EXISTS:
                 	break;
 
 		case GLITE_JP_QUERYOP_WITHIN:
-			SoapToQueryRecordVal(soap, in->record[i]->value2, &(qr[i].binary), 
+			SoapToQueryRecordVal(soap, record->value2, &(qr[i].binary), 
 				&(qr[i].size2), &(qr[i].value2));
 			// fall through
 		default:
-			if ( SoapToQueryRecordVal(soap, in->record[i]->value, &(qr[i].binary), 
+			if ( SoapToQueryRecordVal(soap, record->value, &(qr[i].binary), 
 					&(qr[i].size), 	&(qr[i].value)) ) {
 				*out = NULL;
 				return 1;
