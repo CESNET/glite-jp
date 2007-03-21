@@ -43,14 +43,24 @@ static int glite_jp_clientCheckFault(struct soap *soap, int err, const char *nam
 		reason = GLITE_SECURITY_GSOAP_REASON(soap);
 		dprintf("%s%s\n", prefix, reason);
 		if (toSyslog) syslog(LOG_ERR, "%s", reason);
-		assert(detail->__type == GFNUM);
+
+		if (detail->__type != GFNUM && detail->__any) {
+		// compatibility with clients gSoaps < 2.7.9b
+			dprintf("%s%s%s\n", prefix, indent, detail->__any);
+			if (toSyslog) syslog(LOG_ERR, "%s", detail->__any);
+
+			f = NULL;
+		} else {
+		// client is based on gSoap 2.7.9b
+			assert(detail->__type == GFNUM);
 #if GSOAP_VERSION >= 20709
-		f = (struct jptype__genericFault *)detail->fault;
+			f = (struct jptype__genericFault *)detail->fault;
 #elif GSOAP_VERSION >= 20700
-		f = ((struct _genericFault *)detail->fault)->jpelem__genericFault;
+			f = ((struct _genericFault *)detail->fault)->jpelem__genericFault;
 #else
-		f = ((struct _genericFault *)detail->value)->jpelem__genericFault;
+			f = ((struct _genericFault *)detail->value)->jpelem__genericFault;
 #endif
+		}
 
 		while (f) {
 			dprintf("%s%s%s: %s (%s)\n",
