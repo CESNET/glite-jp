@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <assert.h>
+#include <stdsoap2.h>
 
+#undef SOAP_FMAC1
 #define SOAP_FMAC1	static
 
 #include "glite/jp/types.h"
@@ -325,7 +327,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__FeedIndex(
 	}
 
 	memcpy(attrs,in->attributes,sizeof *attrs * in->__sizeattributes);
-	for (i = 0; i<in->__sizeconditions; i++) s2jp_query(in->conditions[i],qry+i);
+	for (i = 0; i<in->__sizeconditions; i++) s2jp_query(GLITE_SECURITY_GSOAP_LIST_GET(in->conditions, i),qry+i);
 
 	if (in->history) {
 		if (glite_jpps_run_feed(ctx,in->destination,attrs,qry,in->continuous,&feed_id)) {
@@ -386,11 +388,11 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__GetJobFiles(
 	int	i,n;
 	glite_jp_error_t	err;
 	void	**pd;
-	struct jptype__jppsFile 	**f = NULL;
+	struct jptype__jppsFile 	*f = NULL;
 	glite_jp_attrval_t	meta[2];
 
 	memset(&err,0,sizeof err);
-	out->__sizefiles = 0;
+	n = 0;
 
 	memset(meta,0,sizeof meta);
         meta[0].name = strdup(GLITE_JP_ATTR_OWNER);
@@ -409,12 +411,13 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__GetJobFiles(
 		for (i=0; plugin->uris[i]; i++) {
 			glite_jp_clear_error(ctx);
 			switch (glite_jppsbe_get_job_url(ctx,in->jobid,plugin->classes[i],NULL,&url)) {
-				case 0: n = out->__sizefiles++;
-					f = realloc(f,out->__sizefiles * sizeof *f);
-					f[n] = soap_malloc(soap, sizeof **f);
-					f[n]->class_ = soap_strdup(soap,plugin->uris[i]);
-					f[n]->name = NULL;
-					f[n]->url = soap_strdup(soap,url);
+				case 0:
+					f = realloc(f,(n + 1) * sizeof *f);
+					f[n].class_ = soap_strdup(soap,plugin->uris[i]);
+#warning FIXME: file name required in WSDL
+					f[n].name = NULL;
+					f[n].url = soap_strdup(soap,url);
+					n++;
 					free(url);
 					break;
 				case ENOENT:
@@ -431,7 +434,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__GetJobFiles(
 		}
 	}
 
-	if (!out->__sizefiles) {
+	if (!n) {
 		glite_jp_clear_error(ctx);
 		err.code = ENOENT;
 		err.source = __FUNCTION__;
@@ -442,8 +445,8 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__GetJobFiles(
 		return SOAP_FAULT;
 	}
 
-	out->files = soap_malloc(soap,out->__sizefiles * sizeof *f);
-	memcpy(out->files,f,out->__sizefiles * sizeof *f);
+	GLITE_SECURITY_GSOAP_LIST_CREATE(soap, out, files, struct jptype__jppsFile, n);
+	for (i = 0; i < n; i++) memcpy(GLITE_SECURITY_GSOAP_LIST_GET(out->files, i), &f[i], sizeof(f[i]));
 
 	return SOAP_OK;
 err:

@@ -93,7 +93,7 @@ int main(int argc,char *argv[])
 	if ((ret = check_fault(soap,soap_call___jpsrv__GetJobAttributes(soap,server,"",&in,&out))))
 		return 1;
 
-       	ad = cclassad_create(GSOAP_STRING(out.attrValues[0]->value));
+       	ad = cclassad_create(GSOAP_STRING(GLITE_SECURITY_GSOAP_LIST_GET(out.attrValues, 0)->value));
 	if (!ad) {
 		fputs("Can't parse JDL\n",stderr);
 		return 1;
