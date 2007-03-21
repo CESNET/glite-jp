@@ -249,43 +249,66 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 	
 	qwhere = strdup("");
 	for (i=0; i < in->__sizeconditions; i++) {
-		attr_md5 = str2md5(in->conditions[i]->attr);
-		trio_asprintf(&qa,"%s jobs.jobid = attr_%|Ss.jobid AND (", 
-			(i ? "AND" : ""), attr_md5);
-	
-		for (j=0; j < in->conditions[i]->__sizerecord; j++) { 
-			if (get_op(in->conditions[i]->record[j]->op, &qop)) goto err;
-			add_attr_table(attr_md5, &attr_tables);
+/* XXX: deal with jobIds diferently (they are not in attr_X table, but in jobs)
+		if (strcmp(in->conditions[i]->attr,GLITE_JP_ATTR_JOBID)) {
+			trio_asprintf(&qa,"%s  (", (i ? "AND" : "") );
 
-			if (in->conditions[i]->record[j]->value->string) {
+			for (j=0; j < in->conditions[i]->__sizerecord; j++) {
+				if (get_op(in->conditions[i]->record[j]->op, &qop)) goto err;
+
 				attr.name = in->conditions[i]->attr;
 				attr.value = in->conditions[i]->record[j]->value->string;
 				attr.binary = 0;
 				glite_jpis_SoapToAttrOrig(soap,
 					in->conditions[i]->origin, &(attr.origin));
-				trio_asprintf(&qb,"%s%sattr_%|Ss.value %s \"%|Ss\"",
+				trio_asprintf(&qb,"%s%sjobs.dg_jobid %s \"%|Ss\"",
 					qa, (j ? " OR " : ""), attr_md5, qop,
 					glite_jp_attrval_to_db_index(ctx->jpctx, &attr, 255));
 				free(qop);
 				free(qa); qa = qb; qb = NULL;
-			}
-			else {
-				attr.name = in->conditions[i]->attr;
-				attr.value = in->conditions[i]->record[j]->value->blob->__ptr;
-				attr.binary = 1;
-				attr.size = in->conditions[i]->record[j]->value->blob->__size;
-				glite_jpis_SoapToAttrOrig(soap,
-					in->conditions[i]->origin, &(attr.origin));
-				trio_asprintf(&qb,"%s %s attr_%|Ss.value %s \"%|Ss\"",
-					qa, (j ? "OR" : ""), attr_md5, qop,
-					glite_jp_attrval_to_db_index(ctx->jpctx, &attr, 255));
-				free(qop);
-				free(qa); qa = qb; qb = NULL; 
-			}
+			
 		}
-		trio_asprintf(&qb,"%s %s)", qwhere, qa);
-		free(qa); qwhere = qb; qb = NULL; qa = NULL;
-		free(attr_md5);
+		else
+*/
+		{
+			attr_md5 = str2md5(in->conditions[i]->attr);
+			trio_asprintf(&qa,"%s jobs.jobid = attr_%|Ss.jobid AND (", 
+				(i ? "AND" : ""), attr_md5);
+		
+			for (j=0; j < in->conditions[i]->__sizerecord; j++) { 
+				if (get_op(in->conditions[i]->record[j]->op, &qop)) goto err;
+				add_attr_table(attr_md5, &attr_tables);
+
+				if (in->conditions[i]->record[j]->value->string) {
+					attr.name = in->conditions[i]->attr;
+					attr.value = in->conditions[i]->record[j]->value->string;
+					attr.binary = 0;
+					glite_jpis_SoapToAttrOrig(soap,
+						in->conditions[i]->origin, &(attr.origin));
+					trio_asprintf(&qb,"%s%sattr_%|Ss.value %s \"%|Ss\"",
+						qa, (j ? " OR " : ""), attr_md5, qop,
+						glite_jp_attrval_to_db_index(ctx->jpctx, &attr, 255));
+					free(qop);
+					free(qa); qa = qb; qb = NULL;
+				}
+				else {
+					attr.name = in->conditions[i]->attr;
+					attr.value = in->conditions[i]->record[j]->value->blob->__ptr;
+					attr.binary = 1;
+					attr.size = in->conditions[i]->record[j]->value->blob->__size;
+					glite_jpis_SoapToAttrOrig(soap,
+						in->conditions[i]->origin, &(attr.origin));
+					trio_asprintf(&qb,"%s %s attr_%|Ss.value %s \"%|Ss\"",
+						qa, (j ? "OR" : ""), attr_md5, qop,
+						glite_jp_attrval_to_db_index(ctx->jpctx, &attr, 255));
+					free(qop);
+					free(qa); qa = qb; qb = NULL; 
+				}
+			}
+			trio_asprintf(&qb,"%s %s)", qwhere, qa);
+			free(qa); qwhere = qb; qb = NULL; qa = NULL;
+			free(attr_md5);
+		}
 	}
 
 	qa = strdup("");
@@ -373,6 +396,7 @@ static int get_attr(struct soap *soap, glite_jpis_context_t ctx, char *jobid, ch
 	glite_jp_db_stmt_t      	stmt;
 
 
+	memset(&jav,0,sizeof(jav));
 	jobid_md5 = str2md5(jobid);
 	attr_md5 = str2md5(attr_name);
 	trio_asprintf(&query,"SELECT full_value FROM attr_%|Ss WHERE jobid = \"%s\"",
@@ -380,7 +404,10 @@ static int get_attr(struct soap *soap, glite_jpis_context_t ctx, char *jobid, ch
 	free(attr_md5);
 	free(jobid_md5);
 
-	if ((ret = glite_jp_db_execstmt(ctx->jpctx, query, &stmt)) < 0) goto err;
+	if ((ret = glite_jp_db_execstmt(ctx->jpctx, query, &stmt)) < 0) 
+		// unknown attribute
+		// XXX: propagate the error to client
+		goto err; 
 	free(query);
 
 	i = 0;

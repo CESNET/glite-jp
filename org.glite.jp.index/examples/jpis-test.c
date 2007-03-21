@@ -47,7 +47,7 @@ int main(int argc,char *argv[])
 		
 
 		glite_jp_init_context(&ctx);
-		glite_jp_get_conf(0, NULL, NULL, &conf);
+		glite_jp_get_conf(argc, argv, NULL, &conf);
 		if (default_server) strcpy(server, default_server);
 		else snprintf(server, sizeof(server), "http://localhost:%s", conf->port ? conf->port : GLITE_JPIS_DEFAULT_PORT_STR);
 		printf("JP index server: %s\n", server);

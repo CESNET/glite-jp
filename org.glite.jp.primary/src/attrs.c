@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <fcntl.h>
 
 #include "glite/jp/types.h"
@@ -161,9 +162,21 @@ glite_jpps_get_attrs(glite_jp_context_t ctx,const char *job,char **attr,int natt
 					}
 					p->ops.close(p->fpctx,ph);
 				}
+				else {
+					char	*e;
+					fprintf(stderr,"[%d] %s: %s\n",getpid(),known_classes[ci].class,
+							e = glite_jp_error_chain(ctx));
+					free(e);
+				}
 			}
 
 			glite_jppsbe_close_file(ctx,beh);
+		}
+		else {
+			char	*e;
+			fprintf(stderr,"[%d] %s: %s\n",getpid(),known_classes[ci].class,
+					e = glite_jp_error_chain(ctx));
+			free(e);
 		}
 	}
 

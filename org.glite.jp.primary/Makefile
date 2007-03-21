@@ -32,7 +32,7 @@ GLOBUS_CFLAGS:=-I${globus_prefix}/include/${nothrflavour}
 
 DEBUG:=-g -O0  -DDEBUG
 
-CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${gsoap_prefix} -I${stagedir}/include ${GLOBUS_CFLAGS} -I${mysql_prefix}/include -I${mysql_prefix}/include/mysql
+CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${gsoap_prefix} -I${stagedir}/include ${GLOBUS_CFLAGS} -I${mysql_prefix}/include -I${mysql_prefix}/include/mysql -I${classads_prefix}/include
 LDFLAGS:=-L${stagedir}/lib
 
 LINK:=libtool --mode=link ${CC} ${LDFLAGS} 
@@ -41,8 +41,12 @@ SOLINK:=libtool --mode=link ${CC} -module ${LDFLAGS} -rpath ${stagedir}/lib
 LINKXX:=libtool --mode=link ${CXX} ${LDFLAGS} 
 INSTALL:=libtool --mode=install install
 
+ifneq (${classads_prefix},/usr)
+	classadslib := -L${classads_prefix}/lib -lclassad
+endif
+
 daemon:=glite-jp-primarystoraged
-example:=jpps-test
+example:=jpps-test dag-deps
 ps_prefix:=jpps_
 is_prefix:=jpis_
 sample_jobs:=sample_job_aborted  sample_job_cleared  sample_job_tagged_done  sample_job_waiting
@@ -61,12 +65,14 @@ SRCS:= bones_server.c soap_ops.c \
 #	${ps_prefix}ServerLib.c \
 #	${is_prefix}ClientLib.c jpps_C.c
 
-EXA_SRCS:=jpps-test.c ${ps_prefix}C.c ${ps_prefix}Client.c
+TEST_SRCS:=jpps-test.c ${ps_prefix}C.c ${ps_prefix}Client.c
+DAG_SRCS:=dag-deps.c ${ps_prefix}C.c ${ps_prefix}Client.c
 
 gsoap_bin_prefix:=${shell if [ -x  ${gsoap_prefix}/bin/soapcpp2 ]; then echo ${gsoap_prefix}/bin; else echo ${gsoap_prefix}; fi }
 
 OBJS:=${SRCS:.c=.o}
-EXA_OBJS:=${EXA_SRCS:.c=.o}
+TEST_OBJS:=${TEST_SRCS:.c=.o}
+DAG_OBJS:=${DAG_SRCS:.c=.o}
 
 dotless_soap_ver:=${shell echo ${gsoap_version} | tr -d . }
 COMMONLIB:=-lglite_jp_common
@@ -91,8 +97,12 @@ compile: ${daemon} ${example} ${plugins}
 ${daemon}: ${OBJS}
 	${LINK} -o $@ -export-dynamic ${OBJS} ${BONESLIB} ${TRIOLIB} ${COMMONLIB} ${GSOAPLIB} ${GLOBUS_LIBS} ${MYSQLIB} 
 
-${example}: ${EXA_OBJS}
-	${LINK} -o $@ ${EXA_OBJS} ${GSOAPLIB} ${GLOBUS_LIBS}
+jpps-test: ${TEST_OBJS}
+	${LINK} -o $@ ${TEST_OBJS} ${GSOAPLIB}
+
+dag-deps: ${DAG_OBJS}
+	${LINKXX} -o $@ ${DAG_OBJS} ${classadslib} ${GSOAPLIB}
+
 
 JobProvenancePS.xh: %.xh: %.wsdl JobProvenanceTypes.wsdl typemap.dat
 	cp  ${stagedir}/interface/JobProvenanceTypes.wsdl .

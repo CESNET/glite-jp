@@ -41,10 +41,14 @@ start()
 	jpdump_maildir="--dump-mdir $GLITE_LB_EXPORT_JPDUMP_MAILDIR "
 	[ -d "$GLITE_LB_EXPORT_JPDUMP_MAILDIR" ] || mkdir "$GLITE_LB_EXPORT_JPDUMP_MAILDIR" && chown $GLITE_USER:$GLITE_GROUP "$GLITE_LB_EXPORT_JPDUMP_MAILDIR"
 	[ -n "$GLITE_LB_EXPORT_JPPS" ] && jpps="--jpps $GLITE_LB_EXPORT_JPPS "
+	if [ -n "$GLITE_LB_EXPORT_JOBSDIR_KEEP" ]; then
+		keep_jobs="--store ${GLITE_LB_EXPORT_JOBSDIR_KEEP} "
+		[ -d $GLITE_LB_EXPORT_JOBSDIR_KEEP ] || mkdir -p $GLITE_LB_EXPORT_JOBSDIR_KEEP
+	fi
 
 	echo -n Starting glite-jp-importer ...
 	su - $GLITE_USER -c "$GLITE_LOCATION/bin/glite-jp-importer \
-		-i $pidfile $jpreg_maildir $jpdump_maildir $jpps $creds" \
+		-i $pidfile $jpreg_maildir $jpdump_maildir $jpps $keep_jobs $creds" \
 	&& echo " done" || echo " FAILED"
 }
 

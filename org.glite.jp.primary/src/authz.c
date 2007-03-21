@@ -31,8 +31,14 @@ int glite_jpps_authz(glite_jp_context_t ctx,int op,const char *job,const char *o
 
 		case SOAP_TYPE___jpsrv__GetJobFiles:
 		case SOAP_TYPE___jpsrv__GetJobAttributes:
+		case SOAP_TYPE___jpsrv__RecordTag:
 			assert(owner);
-			return strcmp(owner,ctx->peer) ? glite_jp_stack_error(ctx,&err) : 0;
+			if (!ctx->noauth && strcmp(owner,ctx->peer)) {
+				err.desc = "you are not a job owner";
+				glite_jp_stack_error(ctx,&err);
+				return 1;
+			}
+			return 0;
 			break;
 
 		default:
@@ -76,3 +82,4 @@ int glite_jpps_readauth(glite_jp_context_t ctx,const char *file)
 	fclose(f);
 	return 0;
 }
+

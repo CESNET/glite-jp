@@ -22,7 +22,7 @@ CC=gcc
 -include Makefile.inc
 
 
-VPATH=${top_srcdir}/src:${top_srcdir}/examples:${top_srcdir}/examples/query-tests:${top_srcdir}/tests:${top_srcdir}/test:${top_srcdir}/project:${top_srcdir}/doc:${jpproject}:${stagedir}/interface
+VPATH=${top_srcdir}/src:${top_srcdir}/examples:${top_srcdir}/project:${top_srcdir}/doc:${jpproject}:${stagedir}/interface
 
 GLOBUS_LIBS:=-L${globus_prefix}/lib \
 	-lglobus_common_${nothrflavour} \
@@ -61,11 +61,12 @@ ps_prefix:=jpps_
 SRCS:= conf.c bones_server.c soap_ops.c soap_ps_calls.c \
 	ws_ps_typeref.c ws_is_typeref.c db_ops.c context.c common_server.c \
 	${is_prefix}ServerLib.c \
-	${ps_prefix}ClientLib.c ${ps_prefix}C.c \
+	${ps_prefix}ClientLib.c ${ps_prefix}C.c
 
 EXA_TEST_SRCS:=jpis-test.c ${is_prefix}C.c ${is_prefix}Client.c context.c db_ops.c conf.c
 EXA_DB_SRCS:=jpis-db-internal.c db_ops.c conf.c context.c
-EXA_CLIENT_SRCS:=jpis-client.c ${is_client_prefix}C.c ${is_client_prefix}Client.c
+EXA_CLIENT_SRCS:=jpis-client.c common.c \
+	${is_client_prefix}C.c ${is_client_prefix}Client.c
 #                ${is_prefix}C.c
 
 OBJS:=${SRCS:.c=.o}
@@ -96,7 +97,9 @@ glite-jpis-client: ${EXA_CLIENT_OBJS}
 	${LINK} -o $@ $+ ${GSOAPLIB}
 
 copy_tests: ${test} ${test_files}
-	-for i in $?; do cp $$i  ${top_srcdir}/build; done
+
+${test} ${test_files}:
+	for i in $@; do cp ${top_srcdir}/examples/query-tests/$$i  ${top_srcdir}/build; done
 
 JobProvenanceIS.xh: JobProvenanceIS.wsdl JobProvenanceTypes.wsdl typemap.dat
 	cp  ${stagedir}/interface/JobProvenanceTypes.wsdl .
