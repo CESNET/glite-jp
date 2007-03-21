@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <assert.h>
+#include <stdsoap2.h>
 
+#undef SOAP_FMAC1
 #define SOAP_FMAC1	static
 
 #include "glite/jp/types.h"
@@ -13,6 +15,7 @@
 #include "attrs.h"
 
 #include "jptype_map.h"
+#include "glite/security/glite_gscompat.h"
 
 #include "file_plugin.h"
 #include "builtin_plugins.h"
@@ -24,48 +27,13 @@
 
 #include "jpps_.nsmap"
 
-#include "soap_util.c"
-
 #include "soap_env_ctx.h"
 #include "soap_env_ctx.c"
 
-static struct jptype__genericFault *jp2s_error(struct soap *soap,
-		const glite_jp_error_t *err)
-{
-	struct jptype__genericFault *ret = NULL;
-	if (err) {
-		ret = soap_malloc(soap,sizeof *ret);
-		memset(ret,0,sizeof *ret);
-		ret->code = err->code;
-		ret->source = soap_strdup(soap,err->source);
-		ret->text = soap_strdup(soap,strerror(err->code));
-		ret->description = soap_strdup(soap,err->desc);
-		ret->reason = jp2s_error(soap,err->reason);
-	}
-	return ret;
-}
+#include "glite/jp/ws_fault.c"
+#include "soap_util.c"
 
-static void err2fault(const glite_jp_context_t ctx,struct soap *soap)
-{
-	char	*et;
-	struct SOAP_ENV__Detail	*detail = soap_malloc(soap,sizeof *detail);
-	struct _genericFault *f = soap_malloc(soap,sizeof *f);
-
-
-	f->jpelem__genericFault = jp2s_error(soap,ctx->error);
-
-	detail->__type = SOAP_TYPE__genericFault;
-#if GSOAP_VERSION >= 20700
-	detail->fault = f;
-#else
-	detail->value = f;
-#endif
-	detail->__any = NULL;
-
-	soap_receiver_fault(soap,"Oh, shit!",NULL);
-	if (soap->version == 2) soap->fault->SOAP_ENV__Detail = detail;
-	else soap->fault->detail = detail;
-}
+#define err2fault(CTX, SOAP) glite_jp_server_err2fault((CTX), (SOAP));
 
 #define CONTEXT_FROM_SOAP(soap,ctx) glite_jp_context_t	ctx = (glite_jp_context_t) ((soap)->user)
 
@@ -194,18 +162,30 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RecordTag(
 	CONTEXT_FROM_SOAP(soap,ctx);
 	void	*file_be,*file_p;
 	glite_jpps_fplug_data_t	**pd = NULL;
-	glite_jp_attrval_t	attr[2];
+	glite_jp_attrval_t	attr[2], meta[2];
+
 
 	file_be = file_p = NULL;
 
+	memset(meta,0,sizeof meta);
+        meta[0].name = strdup(GLITE_JP_ATTR_OWNER);
+
+	if (glite_jppsbe_get_job_metadata(ctx,in->jobid,meta)) {
+		goto err;
+	}
+	
+	if (glite_jpps_authz(ctx,SOAP_TYPE___jpsrv__RecordTag,in->jobid,meta[0].value)) {
+		goto err;
+	}
+
 	attr[0].name = in->tag->name;
-	if (in->tag->value->string) {
-		attr[0].value = in->tag->value->string;
+	if (GSOAP_ISSTRING(in->tag->value)) {
+		attr[0].value = GSOAP_STRING(in->tag->value);
 		attr[0].binary = 0;
 	}
 	else {
-		attr[0].value = in->tag->value->blob->__ptr;
-		attr[0].size = in->tag->value->blob->__size;
+		attr[0].value = GSOAP_BLOB(in->tag->value)->__ptr;
+		attr[0].size = GSOAP_BLOB(in->tag->value)->__size;
 		attr[0].binary = 1;
 	}
 	attr[0].origin = GLITE_JP_ATTR_ORIG_USER;
@@ -250,20 +230,24 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RecordTag(
 
 	free(pd);
 	return SOAP_OK;
+err:
+	glite_jp_attrval_free(meta,0);
+	err2fault(ctx,soap);
+	return SOAP_FAULT;
 }
 
 static void s2jp_qval(const struct jptype__stringOrBlob *in, char **value, int *binary, size_t *size)
 {
-	if (in->string) {
-		*value = in->string;
+	if (GSOAP_ISSTRING(in)) {
+		*value = GSOAP_STRING(in);
 		*binary = 0;
 		*size = 0;
 	}
 	else {
-		assert(in->blob);	/* XXX: should report error instead */
-		*value = in->blob->__ptr;
+		assert(GSOAP_BLOB(in));	/* XXX: should report error instead */
+		*value = GSOAP_BLOB(in)->__ptr;
 		*binary = 1;
-		*size = in->blob->__size;
+		*size = GSOAP_BLOB(in)->__size;
 	}
 }
 
@@ -343,7 +327,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__FeedIndex(
 	}
 
 	memcpy(attrs,in->attributes,sizeof *attrs * in->__sizeattributes);
-	for (i = 0; i<in->__sizeconditions; i++) s2jp_query(in->conditions[i],qry+i);
+	for (i = 0; i<in->__sizeconditions; i++) s2jp_query(GLITE_SECURITY_GSOAP_LIST_GET(in->conditions, i),qry+i);
 
 	if (in->history) {
 		if (glite_jpps_run_feed(ctx,in->destination,attrs,qry,in->continuous,&feed_id)) {
@@ -404,10 +388,22 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__GetJobFiles(
 	int	i,n;
 	glite_jp_error_t	err;
 	void	**pd;
-	struct jptype__jppsFile 	**f = NULL;
+	struct jptype__jppsFile 	*f = NULL;
+	glite_jp_attrval_t	meta[2];
 
 	memset(&err,0,sizeof err);
-	out->__sizefiles = 0;
+	n = 0;
+
+	memset(meta,0,sizeof meta);
+        meta[0].name = strdup(GLITE_JP_ATTR_OWNER);
+
+	if (glite_jppsbe_get_job_metadata(ctx,in->jobid,meta)) {
+		goto err;
+	}
+	
+	if (glite_jpps_authz(ctx,SOAP_TYPE___jpsrv__GetJobFiles,in->jobid,meta[0].value)) {
+		goto err;
+	}
 
 	for (pd = ctx->plugins; *pd; pd++) {
 		glite_jpps_fplug_data_t	*plugin = *pd;
@@ -415,12 +411,13 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__GetJobFiles(
 		for (i=0; plugin->uris[i]; i++) {
 			glite_jp_clear_error(ctx);
 			switch (glite_jppsbe_get_job_url(ctx,in->jobid,plugin->classes[i],NULL,&url)) {
-				case 0: n = out->__sizefiles++;
-					f = realloc(f,out->__sizefiles * sizeof *f);
-					f[n] = soap_malloc(soap, sizeof **f);
-					f[n]->class_ = soap_strdup(soap,plugin->uris[i]);
-					f[n]->name = NULL;
-					f[n]->url = soap_strdup(soap,url);
+				case 0:
+					f = realloc(f,(n + 1) * sizeof *f);
+					f[n].class_ = soap_strdup(soap,plugin->uris[i]);
+#warning FIXME: file name required in WSDL
+					f[n].name = NULL;
+					f[n].url = soap_strdup(soap,url);
+					n++;
 					free(url);
 					break;
 				case ENOENT:
@@ -437,7 +434,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__GetJobFiles(
 		}
 	}
 
-	if (!out->__sizefiles) {
+	if (!n) {
 		glite_jp_clear_error(ctx);
 		err.code = ENOENT;
 		err.source = __FUNCTION__;
@@ -448,10 +445,14 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__GetJobFiles(
 		return SOAP_FAULT;
 	}
 
-	out->files = soap_malloc(soap,out->__sizefiles * sizeof *f);
-	memcpy(out->files,f,out->__sizefiles * sizeof *f);
+	GLITE_SECURITY_GSOAP_LIST_CREATE(soap, out, files, struct jptype__jppsFile, n);
+	for (i = 0; i < n; i++) memcpy(GLITE_SECURITY_GSOAP_LIST_GET(out->files, i), &f[i], sizeof(f[i]));
 
 	return SOAP_OK;
+err:
+	glite_jp_attrval_free(meta,0);
+	err2fault(ctx,soap);
+	return SOAP_FAULT;
 }
 
 SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__GetJobAttributes(
@@ -459,10 +460,21 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__GetJobAttributes(
 		struct _jpelem__GetJobAttributes *in,
 		struct _jpelem__GetJobAttributesResponse *out)
 {
-	glite_jp_attrval_t	*attr;
+	glite_jp_attrval_t	*attr, meta[2];
 	int	i,n;
 
 	CONTEXT_FROM_SOAP(soap,ctx);
+
+	memset(meta,0,sizeof meta);
+        meta[0].name = strdup(GLITE_JP_ATTR_OWNER);
+
+	if (glite_jppsbe_get_job_metadata(ctx,in->jobid,meta)) {
+		goto err;
+	}
+	
+	if (glite_jpps_authz(ctx,SOAP_TYPE___jpsrv__GetJobAttributes,in->jobid,meta[0].value)) {
+		goto err;
+	}
 
 	if (glite_jpps_get_attrs(ctx,in->jobid,
 			in->attributes,
@@ -475,4 +487,8 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__GetJobAttributes(
 	out->__sizeattrValues = jp2s_attrValues(soap,attr,&out->attrValues,1);
 
 	return SOAP_OK;
+err:
+	glite_jp_attrval_free(meta,0);
+	err2fault(ctx,soap);
+	return SOAP_FAULT;
 }

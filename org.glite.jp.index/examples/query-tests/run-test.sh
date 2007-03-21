@@ -59,7 +59,7 @@ init() {
 
 	# handle the configuration
 	ARGS="-u ${GLITE_JPIS_TEST_ROOT_USER:-root}"
-	[ -z "$GLITE_JPIS_TEST_ROOT_PASSWORD" ] || ARGS="-p ${GLITE_JPIS_TEST_ROOT_PASSWORD} $ARGS"
+	[ -z "$GLITE_JPIS_TEST_ROOT_PASSWORD" ] || ARGS="--password=${GLITE_JPIS_TEST_ROOT_PASSWORD} $ARGS"
 	GLITE_JPIS_TEST_PORT=${GLITE_JPIS_TEST_PORT:-"10000"}
 	GLITE_JPIS_TEST_PIDFILE=${GLITE_JPIS_TEST_PIDFILE:-"/tmp/glite-jp-indexd.pid"}
 	GLITE_JPIS_TEST_LOGFILE=${GLITE_JPIS_TEST_LOGFILE:-"/tmp/glite-jp-indexd.log"}
@@ -80,7 +80,7 @@ create_db() {
 	if [ "x$need_new_db" = "x1" ]; then
 		mysqladmin -f $ARGS drop $DB_NAME > /dev/null 2>&1
 		mysqladmin -f $ARGS create $DB_NAME && \
-		mysql $ARGS -e 'GRANT ALL on $DB_NAME.* to jpis@localhost' && \
+		mysql $ARGS -e "GRANT ALL on $DB_NAME.* to jpis@localhost" && \
 		mysql -u $DB_USER $DB_NAME < $GLITE_LOCATION/etc/glite-jp-index-dbsetup.sql || exit 1
 		db_created="1"
 	fi
@@ -142,7 +142,7 @@ kill_is() {
 
 run_test_query() {
 	X509_USER_KEY=${X509_USER_KEY} X509_USER_CERT=${X509_USER_CERT} \
-	$GLITE_LOCATION/examples/glite-jpis-client -q $1 \
+	$GLITE_LOCATION/examples/glite-jpis-client -f xml -q $1 \
 		 -i http://localhost:$GLITE_JPIS_TEST_PORT &>/tmp/result
 	DIFF=`diff --ignore-matching-lines="query: using JPIS" $2 /tmp/result`
 	if [ -z "$DIFF" -a "$?" -eq "0" ] ; then
@@ -151,11 +151,17 @@ run_test_query() {
 	else
 		echo "FAILED!"
 		echo
-		echo "Expected result:"
+		echo "Expected result (using query $1):"
+		echo ------------------------------------------------------------------------------
 		cat $2
+		echo
+		echo ---------------------------------------------------------------------------------------------------
+		echo
 		echo "Obtained result (in /tmp/result):"
+		echo ---------------------------------
 		cat /tmp/result
 		echo
+		echo ---------------------------------------------------------------------------------------------------
 		drop_db;
 		kill_is;
 		exit 1
@@ -165,9 +171,7 @@ run_test_query() {
 run_test_feed() {
 	# run the example
 	numok=`X509_USER_KEY=${X509_USER_KEY} X509_USER_CERT=${X509_USER_CERT}\
-		GLITE_JPIS_DB=$GLITE_JPIS_TEST_DB \
-		GLITE_JPIS_PORT=$GLITE_JPIS_TEST_PORT \
-		$GLITE_LOCATION/examples/glite-jpis-test 2>/dev/null| grep "OK" | wc -l`
+		$GLITE_LOCATION/examples/glite-jpis-test -p $GLITE_JPIS_TEST_PORT -m $GLITE_JPIS_TEST_DB `
 	if [ "$numok" -eq "2" ]; then
 		echo OK.
 	else
@@ -187,16 +191,16 @@ echo
 echo -n "Simple query test.... "
 create_db;
 run_is "-n";
-import_db $GLITE_LOCATION/examples/dump1.sql;
-run_test_query $GLITE_LOCATION/examples/simple_query.in $GLITE_LOCATION/examples/simple_query.out;
+import_db $GLITE_LOCATION/examples/query-tests/dump1.sql;
+run_test_query $GLITE_LOCATION/examples/query-tests/simple_query.in $GLITE_LOCATION/examples/query-tests/simple_query.out;
 drop_db;
 kill_is;
 
 echo -n "Complex query test... "
 create_db;
 run_is "-n";
-import_db $GLITE_LOCATION/examples/dump1.sql;
-run_test_query $GLITE_LOCATION/examples/complex_query.in $GLITE_LOCATION/examples/complex_query.out;
+import_db $GLITE_LOCATION/examples/query-tests/dump1.sql;
+run_test_query $GLITE_LOCATION/examples/query-tests/complex_query.in $GLITE_LOCATION/examples/query-tests/complex_query.out;
 drop_db;
 kill_is;
 
@@ -210,8 +214,8 @@ kill_is;
 echo -n "Authz test........... "
 create_db;
 run_is;
-import_db $GLITE_LOCATION/examples/dump1.sql;
-run_test_query $GLITE_LOCATION/examples/simple_query.in $GLITE_LOCATION/examples/authz.out;
+import_db $GLITE_LOCATION/examples/query-tests/dump1.sql;
+run_test_query $GLITE_LOCATION/examples/query-tests/simple_query.in $GLITE_LOCATION/examples/query-tests/authz.out;
 drop_db;
 kill_is;
 

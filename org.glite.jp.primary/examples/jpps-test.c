@@ -3,14 +3,13 @@
 #include <string.h>
 #include <assert.h>
 
-#include "glite/security/glite_gsplugin.h"
-
 #include "jpps_H.h"
 #include "jpps_.nsmap"
 
 #include "jptype_map.h"
+#include "glite/security/glite_gsplugin.h"
+#include "glite/security/glite_gscompat.h"
 
-#include "soap_version.h"
 #if GSOAP_VERSION <= 20602
 #define soap_call___jpsrv__RegisterJob soap_call___ns1__RegisterJob
 #define soap_call___jpsrv__StartUpload soap_call___ns1__StartUpload
@@ -21,6 +20,9 @@
 #define soap_call___jpsrv__GetJob soap_call___ns1__GetJob
 #endif
 
+#define dprintf(FMT, ARGS...) printf(FMT, ##ARGS)
+#include "glite/jp/ws_fault.c"
+#define check_fault(SOAP, ERR) glite_jp_clientCheckFault((SOAP), (ERR), NULL, 0)
 
 static void usage(const char *me)
 {
@@ -39,48 +41,6 @@ static void usage(const char *me)
 	exit (EX_USAGE);
 }
 	
-static int check_fault(struct soap *soap,int err) {
-	struct SOAP_ENV__Detail *detail;
-	struct jptype__genericFault	*f;
-	char	*reason,indent[200] = "  ";
-
-	switch(err) {
-		case SOAP_OK: puts("OK");
-			      break;
-		case SOAP_FAULT:
-		case SOAP_SVR_FAULT:
-			if (soap->version == 2) {
-				detail = soap->fault->SOAP_ENV__Detail;
-				reason = soap->fault->SOAP_ENV__Reason;
-			}
-			else {
-				detail = soap->fault->detail;
-				reason = soap->fault->faultstring;
-			}
-			fputs(reason,stderr);
-			putc('\n',stderr);
-			assert(detail->__type == SOAP_TYPE__genericFault);
-#if GSOAP_VERSION >=20700
-			f = ((struct _genericFault *) detail->fault)
-#else
-			f = ((struct _genericFault *) detail->value)
-#endif
-				-> jpelem__genericFault;
-
-			while (f) {
-				fprintf(stderr,"%s%s: %s (%s)\n",indent,
-						f->source,f->text,f->description);
-				f = f->reason;
-				strcat(indent,"  ");
-			}
-			return -1;
-
-		default: soap_print_fault(soap,stderr);
-			 return -1;
-	}
-	return 0;
-}
-
 /* FIXME: new wsdl */
 #if 0
 static struct jptype__Attribute sample_attr[] = {
@@ -182,8 +142,8 @@ int main(int argc,char *argv[])
 		in.tag = &tagval;
 		tagval.name = argv[3];
 		tagval.value = &val;
-		val.string = argv[4];
-		val.blob = NULL;
+		memset(&val, 0, sizeof(val));
+		GSOAP_SETSTRING(&val, argv[4]);
 		
 		if (!(ret = check_fault(soap,
 				soap_call___jpsrv__RecordTag(soap, server, "",&in, &empty)))) {
@@ -195,11 +155,12 @@ int main(int argc,char *argv[])
 			"http://egee.cesnet.cz/en/Schema/LB/Attributes:RB",
 			"http://egee.cesnet.cz/en/Schema/JP/System:owner"
 		};
+		int sizepq;
 
-		struct jptype__stringOrBlob vals[] = {
-			{ "/O=CESNET/O=Masaryk University/CN=Ales Krenek", NULL },
-			{ "Done", NULL }
-		};
+		struct jptype__stringOrBlob vals[2];
+		memset(vals, 0, sizeof vals);
+		GSOAP_SETSTRING(vals, "/O=CESNET/O=Masaryk University/CN=Ales Krenek");
+		GSOAP_SETSTRING(vals + 1, "Done");
 
 		struct jptype__primaryQuery	q[] = {
 			{ 
@@ -212,11 +173,16 @@ int main(int argc,char *argv[])
 				jptype__queryOp__UNEQUAL,
 				NULL, vals+1, NULL
 			}
-		}, *qp[] = { q, q+1 };
+		};
+		GLITE_SECURITY_GSOAP_LIST_TYPE(jptype, primaryQuery) pq;
+
+		GLITE_SECURITY_GSOAP_LIST_CREATE0(soap, pq, sizepq, struct jptype__primaryQuery, 2);
+		memcpy(GLITE_SECURITY_GSOAP_LIST_GET(pq, 0), &q[0], sizeof(q[0]));
+		memcpy(GLITE_SECURITY_GSOAP_LIST_GET(pq, 1), &q[1], sizeof(q[1]));
 		struct _jpelem__FeedIndex	in = {
 			"http://some.index//",
 			2,ap,
-			2,qp,
+			sizepq,pq,
 			0,
 			1
 		};
@@ -228,6 +194,7 @@ int main(int argc,char *argv[])
 		{
 			printf("FeedId: %s\nExpires: %s\n",out.feedId,ctime(&out.feedExpires));
 		}
+		GLITE_SECURITY_GSOAP_LIST_DESTROY(soap, &in, conditions);
 	 }
 /* FIXME: new wsdl  */
 #if 0
@@ -245,6 +212,7 @@ int main(int argc,char *argv[])
 	else if (!strcasecmp(argv[1],"GetJobFiles")) {
 		struct _jpelem__GetJobFiles	in;
 		struct _jpelem__GetJobFilesResponse	out;
+		struct jptype__jppsFile	*outf;
 
 		if (argc != 3) usage(argv[0]);
 		in.jobid = argv[2];
@@ -257,10 +225,11 @@ int main(int argc,char *argv[])
 			printf("JobFiles:\n");
 
 			for (i=0; i<out.__sizefiles;i++) {
+				outf = GLITE_SECURITY_GSOAP_LIST_GET(out.files, i);
 				printf("\tclass = %s, name = %s, url = %s\n",
-						out.files[i]->class_,
-						out.files[i]->name,
-						out.files[i]->url);
+						outf->class_,
+						outf->name,
+						outf->url);
 			}
 		}
 
@@ -268,6 +237,7 @@ int main(int argc,char *argv[])
 	else if (!strcasecmp(argv[1],"GetJobAttr")) {
 		struct _jpelem__GetJobAttributes	in;
 		struct _jpelem__GetJobAttributesResponse	out;
+		struct jptype__attrValue	*outav;
 		
 		if (argc != 4) usage(argv[0]);
 		in.jobid = argv[2];
@@ -279,13 +249,15 @@ int main(int argc,char *argv[])
 			int	i;
 
 			puts("Attribute values:");
-			for (i=0; i<out.__sizeattrValues; i++)
+			for (i=0; i<out.__sizeattrValues; i++) {
+				outav = GLITE_SECURITY_GSOAP_LIST_GET(out.attrValues, i);
 				printf("\t%s\t%s\t%s",
-					out.attrValues[i]->value->string ?
-						out.attrValues[i]->value->string :
+					GSOAP_ISSTRING(outav->value) ?
+						GSOAP_STRING(outav->value) :
 						"binary",
-					orig2str(out.attrValues[i]->origin),
-					ctime(&out.attrValues[i]->timestamp));
+					orig2str(outav->origin),
+					ctime(&outav->timestamp));
+			}
 
 		}
 		

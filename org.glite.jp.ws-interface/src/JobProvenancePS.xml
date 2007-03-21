@@ -4,8 +4,7 @@
 	typeNs="http://glite.org/wsdl/types/jp"
 	typePrefix="jpt"
 	elemNs="http://glite.org/wsdl/elements/jp"
-	elemPrefix="jpe"
-	xmlns:jpt="http://glite.org/wsdl/types/jp">
+	elemPrefix="jpe">
 
 	<version>CVS revision: <![CDATA[ $Header$ ]]></version>
 
@@ -13,22 +12,16 @@
 
 	<doc>
 		<para>
-		The Job Provenance (JP) Primary Storage Service is responsible
-		to keep the JP data
-		(definition of submitted jobs, execution conditions and environment,
-		and important points of the job life cycle) in a compact and
-		economic form.
+		The Job Provenance (JP) Primary Storage Service is responsible to keep the JP data 
+		(definition of submitted jobs, execution conditions and environment, and important 
+		points of the job life cycle) in a compact and economic form.
 		</para>
 
 		<para>
-		The JP Primary storage, as described in section 8.4 of
-		the 
-		<ulink url="https://edms.cern.ch/document/594698/">
-		Architecture deliverable DJRA1.1 
-		</ulink>
-		provides public interfaces for data storing,
-		retrieval based on basic metadata, and registration of Index servers for
-		incremental feed.
+		The JP Primary storage, as described in section 8.4 of the 
+		<ulink url="https://edms.cern.ch/document/594698/">Architecture deliverable DJRA1.1 </ulink>
+		provides public interfaces for data storing, retrieval based on basic metadata, 
+		and registration of Index servers for incremental feed.
 		</para>
 
 		<para>

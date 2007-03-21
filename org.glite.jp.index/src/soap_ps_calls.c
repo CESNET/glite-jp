@@ -2,13 +2,14 @@
 #include <fcntl.h>
 #include <assert.h>
 
+#include "soap_version.h"
 #include "glite/jp/types.h"
 #include "glite/jp/context.h"
 #include "glite/security/glite_gsplugin.h"
+#include "glite/security/glite_gscompat.h"
 
 #include "jpps_H.h"
 #include "jpps_.nsmap"
-#include "soap_version.h"
 
 #include "conf.h"
 #include "db_ops.h"
@@ -22,6 +23,11 @@
 /* Helper functions */
 /*------------------*/
 
+#define dprintf(FMT, ARGS...)
+#include "glite/jp/ws_fault.c"
+#define check_fault(SOAP, ERR) glite_jp_clientCheckFault((SOAP), (ERR), NULL, 0)
+
+#if 0
 
 static struct jptype__genericFault *jp2s_error(struct soap *soap,
 		const glite_jp_error_t *err)
@@ -106,7 +112,7 @@ static int check_fault(struct soap *soap,int err) {
 	}
 	return 0;
 }
-
+#endif
 
 /*----------------------*/
 /* PS WSDL client calls */
@@ -135,7 +141,7 @@ int MyFeedIndex(glite_jpis_context_t ctx, glite_jp_is_conf *conf, long int uniqu
 	struct soap             		*soap = soap_new();
 	glite_gsplugin_Context			plugin_ctx;
 	glite_jp_error_t err;
-	char *src, hname[512];
+	char *src;
 
 lprintf("MyFeedIndex for %s called\n", dest);
 	glite_gsplugin_init_context(&plugin_ctx);
@@ -158,12 +164,11 @@ lprintf("MyFeedIndex for %s called\n", dest);
 	if ((dest_index = find_dest_index(conf, dest)) < 0) goto err;
 
 	for (i=0; conf->feeds[dest_index]->query[i]; i++);
-	in.__sizeconditions = i;
-	in.conditions = soap_malloc(soap, in.__sizeconditions * sizeof(*in.conditions));
+	GLITE_SECURITY_GSOAP_LIST_CREATE(soap, &in, conditions, struct jptype__primaryQuery, i);
 
 	for (i=0; conf->feeds[dest_index]->query[i]; i++) {
 		if (glite_jpis_QueryCondToSoap(soap, conf->feeds[dest_index]->query[i], 
-				&(in.conditions[i])) != SOAP_OK) {
+				GLITE_SECURITY_GSOAP_LIST_GET(in.conditions, i)) != SOAP_OK) {
 			err.code = EINVAL;
 			err.desc = "error during conds conversion";
 			asprintf(&src, "%s/%s():%d", __FILE__, __FUNCTION__, __LINE__);

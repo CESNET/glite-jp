@@ -1784,7 +1784,10 @@ int glite_jppsbe_query(
 	memset(metadata,0, sizeof metadata);
 
 	/* XXX: const discarding is OK */
-	for (i=0;attrs[i]; i++) metadata[i].name = (char *) attrs[i];
+	for (i=0;attrs[i]; i++) {
+		assert(i<2);
+		metadata[i].name = (char *) attrs[i];
+	}
 
 	for (i=0; query[i].attr; i++) {
 		char	*qitem;

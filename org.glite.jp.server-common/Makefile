@@ -14,8 +14,6 @@ glite_location=/opt/glite
 globus_prefix=/opt/globus
 nothrflavour=gcc32
 thrflavour=gcc32pthr
-expat_prefix=/opt/expat
-gsoap_prefix=/software/gsoap-2.6
 
 CC=gcc
 
@@ -56,12 +54,12 @@ LOBJS:=${OBJS:.o=.lo}
 
 ifneq (${mysql_prefix},/usr)
 	ifeq ($(shell test -f ${mysql_prefix}/lib/libmysqlclient.a -o -f ${mysql_prefix}/lib/libmysqlclient.so && echo ok),ok)
-		MYSQLIB := -L${mysql_prefix}/lib -lmysqlclient
+		MYSQLIB := -L${mysql_prefix}/lib -lmysqlclient -lz
 	else
-		MYSQLIB := -L${mysql_prefix}/lib/mysql -lmysqlclient
+		MYSQLIB := -L${mysql_prefix}/lib/mysql -lmysqlclient -lz
 	endif
 else
-	MYSQLIB := -lmysqlclient
+	MYSQLIB := -lmysqlclient -lz
 endif
 
 
@@ -75,7 +73,7 @@ ${LTLIB} ${STATICLIB}: ${OBJS}
 examples: db-test-int
 
 db-test-int: db-test-int.o
-	${LINK} -o $@ $+ ${STATICLIB} ${MYSQLIB} -lglite_jp_common ${TRIOLIB} ${GLOBUS_LIBS}
+	${LINK} -o $@ $+ ${STATICLIB} ${MYSQLIB} -lglite_jp_common_${nothrflavour} ${TRIOLIB} ${GLOBUS_LIBS}
 
 check: 
 	-echo nothing yet

@@ -12,6 +12,10 @@
 
 	Revision history:
 	$Log$
+	Revision 1.6  2006/01/16 17:20:27  mmulac
+	merge from RC15 branch
+	 - compiles
+	
 	Revision 1.5.2.1  2005/11/03 17:46:53  mmulac
 	ares to c-ares migration
 	 - use dynamic library of c-ares, instead of ares static lib
@@ -68,6 +72,7 @@ nothrflavour=${with.globus.nothr.flavor}
 cppunit=${with.cppunit.prefix}
 jpproject=${subsystem.project.dir}
 project=${component.project.dir}
+classads_prefix=${with.classads.prefix}
 			</echo>
 	    </target>
 	</project>
