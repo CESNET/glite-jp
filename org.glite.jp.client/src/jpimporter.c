@@ -37,7 +37,7 @@ typedef struct {
 
 
 #ifndef dprintf
-#define dprintf(x)		{ if (debug) printf x; }
+#define dprintf(FMT, ARGS...)		{ if (debug) printf(FMT, ##ARGS); }
 #endif
 
 #define check_soap_fault(SOAP, ERR) glite_jp_clientCheckFault((SOAP), (ERR), name, 1)
@@ -212,13 +212,13 @@ int main(int argc, char *argv[])
 		openlog(name, LOG_PID, LOG_DAEMON);
 	} else { setpgid(0, getpid()); }
 
-	dprintf(("Master pid %d\n", getpid()));
+	dprintf("Master pid %d\n", getpid());
 
 	if ( globus_module_activate(GLOBUS_FTP_CLIENT_MODULE) != GLOBUS_SUCCESS ) {
-		dprintf(("[master] Could not activate ftp client module\n"));
+		dprintf("[master] Could not activate ftp client module\n");
 		if (!debug) syslog(LOG_INFO, "Could not activate ftp client module\n");
 		exit(1);
-	} else dprintf(("[master] Ftp client module activated\n"));
+	} else dprintf("[master] Ftp client module activated\n");
 	
 	if ( !server_cert || !server_key )
 		fprintf(stderr, "%s: key or certificate file not specified"
@@ -226,13 +226,13 @@ int main(int argc, char *argv[])
 	if ( cadir ) setenv("X509_CERT_DIR", cadir, 1);
 	edg_wll_gss_watch_creds(server_cert, &cert_mtime);
 	if ( !edg_wll_gss_acquire_cred_gsi(server_cert, server_key, &mycred, &mysubj, &gss_code) ) {
-		dprintf(("[master] Server identity: %s\n", mysubj));
+		dprintf("[master] Server identity: %s\n", mysubj);
 	} else {
 		char *errmsg;
 		edg_wll_gss_get_error(&gss_code, "edg_wll_gss_acquire_cred_gsi()", &errmsg);
-		dprintf(("[master] %s\n", errmsg));
+		dprintf("[master] %s\n", errmsg);
 		free(errmsg);
-		dprintf(("[master] Running unauthenticated\n"));
+		dprintf("[master] Running unauthenticated\n");
 	}
 
 	memset(&sa, 0, sizeof(sa)); assert(sa.sa_handler == NULL);
@@ -283,23 +283,23 @@ int main(int argc, char *argv[])
 			while ( (pid = waitpid(-1, NULL, WNOHANG)) > 0 ) {
 				if ( !die ) {
 					if ( pid == reg_pid ) {
-						dprintf(("[master] reg importer slave died [%d]\n", pid));
+						dprintf("[master] reg importer slave died [%d]\n", pid);
 						if (!debug) syslog(LOG_INFO, "reg importer slave died [%d]\n", die);
 						if ( (reg_pid = slave(reg_importer, "reg-imp")) < 0 ) {
 							perror("starting reg importer slave");
 							kill(0, SIGINT);
 							exit(1);
 						}
-						dprintf(("[master] reg importer slave restarted [%d]\n", reg_pid));
+						dprintf("[master] reg importer slave restarted [%d]\n", reg_pid);
 					} else if ( pid == dump_pid ) {
-						dprintf(("[master] dump importer slave died [%d]\n", pid));
+						dprintf("[master] dump importer slave died [%d]\n", pid);
 						if (!debug) syslog(LOG_INFO, "dump importer slave died [%d]\n", die);
 						if ( (dump_pid = slave(dump_importer, "dump-imp")) < 0 ) {
 							perror("starting dump importer slave");
 							kill(0, SIGINT);
 							exit(1);
 						}
-						dprintf(("[master] dump importer slave restarted [%d]\n", dump_pid));
+						dprintf("[master] dump importer slave restarted [%d]\n", dump_pid);
 					}
 				}
 			}
@@ -308,7 +308,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	dprintf(("[master] Terminating on signal %d\n", die));
+	dprintf("[master] Terminating on signal %d\n", die);
 	if (!debug) syslog(LOG_INFO, "Terminating on signal %d\n", die);
 	kill(0, die);
 
@@ -339,7 +339,7 @@ static int slave(int (*fn)(void), const char *nm)
 	sigaddset(&sset, SIGUSR1);
 	sigprocmask(SIG_BLOCK, &sset, NULL);
 
-	dprintf(("[%s] slave started - pid [%d]\n", name, getpid()));
+	dprintf("[%s] slave started - pid [%d]\n", name, getpid());
 
 	while ( !die && conn_cnt < MAX_REG_CONNS ) {
 		int ret = fn();
@@ -354,10 +354,10 @@ static int slave(int (*fn)(void), const char *nm)
 	}
 
 	if ( die ) {
-		dprintf(("[%s] Terminating on signal %d\n", name, getpid(), die));
+		dprintf("[%s] Terminating on signal %d\n", name, getpid(), die);
 		if ( !debug ) syslog(LOG_INFO, "Terminating on signal %d", die);
 	}
-    dprintf(("[%s] Terminating after %d connections\n", name, conn_cnt));
+    dprintf("[%s] Terminating after %d connections\n", name, conn_cnt);
     if ( !debug ) syslog(LOG_INFO, "Terminating after %d connections", conn_cnt);
 
 	exit(0);
@@ -376,23 +376,23 @@ static int reg_importer(void)
 
 	ret = edg_wll_MaildirTransStart(reg_mdir, &msg, &fname);
 	if ( ret < 0 ) {
-		dprintf(("[%s] edg_wll_MaildirTransStart: %s (%s)\n", name, strerror(errno), lbm_errdesc));
+		dprintf("[%s] edg_wll_MaildirTransStart: %s (%s)\n", name, strerror(errno), lbm_errdesc);
 		if ( !debug ) syslog(LOG_ERR, "edg_wll_MaildirTransStart: %s (%s)", strerror(errno), lbm_errdesc);
 		return -1;
 	} else if ( ret > 0 ) {
-		dprintf(("[%s] JP registration request received\n", name));
+		dprintf("[%s] JP registration request received\n", name);
 		if ( !debug ) syslog(LOG_INFO, "JP registration request received\n");
 
 		ret = 0;
 		if ( !(aux = strchr(msg, '\n')) ) {
-			dprintf(("[%s] Wrong format of message!\n", name));
+			dprintf("[%s] Wrong format of message!\n", name);
 			if ( !debug ) syslog(LOG_ERR, "Wrong format of message\n");
 			ret = 0;
 		} else do {
 			*aux++ = '\0';
 			in.job = msg;
 			in.owner = aux;
-			dprintf(("[%s] Registering '%s'\n", name, msg));
+			dprintf("[%s] Registering '%s'\n", name, msg);
 			if ( !debug ) syslog(LOG_INFO, "Registering '%s'\n", msg);
 			ret = soap_call___jpsrv__RegisterJob(soap, jpps, "", &in, &empty);
 			if ( (ret = check_soap_fault(soap, ret)) ) break;
@@ -445,17 +445,17 @@ static int dump_importer(void)
 	}
 
 	if ( ret < 0 ) {
-		dprintf(("[%s] edg_wll_MaildirTransStart: %s (%s)\n", name, strerror(errno), lbm_errdesc));
+		dprintf("[%s] edg_wll_MaildirTransStart: %s (%s)\n", name, strerror(errno), lbm_errdesc);
 		if ( !debug ) syslog(LOG_ERR, "edg_wll_MaildirTransStart: %s (%s)", strerror(errno), lbm_errdesc);
 		return -1;
 	}
 
-	dprintf(("[%s] dump JP import request received\n", name));
+	dprintf("[%s] dump JP import request received\n", name);
 	if ( !debug ) syslog(LOG_INFO, "dump JP import request received");
 
 	ret = 0;
 	if ( parse_msg(msg, tab) < 0 ) {
-		dprintf(("[%s] Wrong format of message!\n", name));
+		dprintf("[%s] Wrong format of message!\n", name);
 		if ( !debug ) syslog(LOG_ERR, "Wrong format of message");
 		ret = 0;
 	} else do {
@@ -464,30 +464,30 @@ static int dump_importer(void)
 		su_in.name = NULL;
 		su_in.commitBefore = 1000 + time(NULL);
 		su_in.contentType = "text/lb";
-		dprintf(("[%s] Importing LB dump file '%s'\n", name, tab[_file].val));
+		dprintf("[%s] Importing LB dump file '%s'\n", name, tab[_file].val);
 		if ( !debug ) syslog(LOG_INFO, "Importing LB dump file '%s'\n", msg);
 		ret = soap_call___jpsrv__StartUpload(soap, tab[_jpps].val?:jpps, "", &su_in, &su_out);
 		if ( (ret = check_soap_fault(soap, ret)) ) break;
-		dprintf(("[%s] Destination: %s\n\tCommit before: %s\n", name, su_out.destination, ctime(&su_out.commitBefore)));
+		dprintf("[%s] Destination: %s\n\tCommit before: %s\n", name, su_out.destination, ctime(&su_out.commitBefore));
 		if (su_out.destination == NULL) {
-			dprintf(("[%s] StartUpload returned NULL destination\n", name));
+			dprintf("[%s] StartUpload returned NULL destination\n", name);
 			if ( !debug ) syslog(LOG_ERR, "StartUpload returned NULL destination");
 			break;
 		}
 
 		if ( (fhnd = open(tab[_file].val, O_RDONLY)) < 0 ) {
-			dprintf(("[%s] Can't open dump file: %s\n", name, tab[_file].val));
+			dprintf("[%s] Can't open dump file: %s\n", name, tab[_file].val);
 			if ( !debug ) syslog(LOG_ERR, "Can't open dump file: %s", tab[_file].val);
 			ret = 1;
 			break;
 		}
 		if ( (ret = gftp_put_file(su_out.destination, fhnd)) ) break;
 		close(fhnd);
-		dprintf(("[%s] File sent, commiting the upload\n", name));
+		dprintf("[%s] File sent, commiting the upload\n", name);
 		cu_in.destination = su_out.destination;
 		ret = soap_call___jpsrv__CommitUpload(soap, tab[_jpps].val?:jpps, "", &cu_in, &empty);
 		if ( (ret = check_soap_fault(soap, ret)) ) break;
-		dprintf(("[%s] Dump upload succesfull\n", name));
+		dprintf("[%s] Dump upload succesfull\n", name);
 		if (store && *store) {
 			bname = strdup(tab[_file].val);
 			snprintf(fspec, sizeof fspec, "%s/%s", store, basename(bname));
@@ -495,12 +495,12 @@ static int dump_importer(void)
 			if (rename(tab[_file].val, fspec) != 0) 
 				fprintf(stderr, "moving %s to %s failed: %s\n", tab[_file].val, fspec, strerror(errno));
 			else
-				dprintf(("[%s] moving %s to %s OK\n", name, tab[_file].val, fspec));
+				dprintf("[%s] moving %s to %s OK\n", name, tab[_file].val, fspec);
 		} else {
 			if (unlink(tab[_file].val) != 0)
 				fprintf(stderr, "removing %s failed: %s\n", tab[_file].val, strerror(errno));
 			else
-				dprintf(("[%s] %s removed\n", name, tab[_file].val));
+				dprintf("[%s] %s removed\n", name, tab[_file].val);
 		}
 	} while (0);
 
@@ -565,7 +565,7 @@ static void gftp_done_cb(
 {
 	if ( err != GLOBUS_SUCCESS ) {
 		char   *tmp = globus_object_printable_to_string(err);
-		dprintf(("[%s] Error in callback: %s\n", name, tmp));
+		dprintf("[%s] Error in callback: %s\n", name, tmp);
 		if ( !debug ) syslog(LOG_ERR, "Error in callback: %s", tmp);
 		gError = GLOBUS_TRUE;
 		globus_libc_free(tmp);
@@ -589,7 +589,7 @@ static void gftp_data_cb(
 		int rc;
 		globus_mutex_lock(&gLock);
 		if ( (rc = read(*((int *)user_arg), gBuffer, BUFSZ)) < 0 ) {
-			dprintf(("[%s] Error reading dump file\n", name));
+			dprintf("[%s] Error reading dump file\n", name);
 			if ( !debug ) syslog(LOG_ERR, "Error reading dump file");
 			gDone = GLOBUS_TRUE;
 			gError = GLOBUS_TRUE;
@@ -610,7 +610,7 @@ static int gftp_put_file(const char *url, int fhnd)
 	globus_ftp_client_handleattr_t		hnd_attr;
 
 #define put_file_err(errs)		{			\
-	dprintf(("[%s] %s\n", name, errs));		\
+	dprintf("[%s] %s\n", name, errs);		\
 	if ( !debug ) syslog(LOG_ERR, errs);	\
 	return 1;								\
 }
@@ -639,7 +639,7 @@ static int gftp_put_file(const char *url, int fhnd)
 	if ( globus_ftp_client_put(
 				&hnd, url, &op_attr,
 				GLOBUS_NULL, gftp_done_cb, (void *)&fhnd) != GLOBUS_SUCCESS) {
-		dprintf(("[%s] Could not start file put\n", name));
+		dprintf("[%s] Could not start file put\n", name);
 		if ( !debug ) syslog(LOG_ERR, "Could not start file put");
 		gError = GLOBUS_TRUE;
 		gDone = GLOBUS_TRUE;
@@ -647,7 +647,7 @@ static int gftp_put_file(const char *url, int fhnd)
 		int rc;
 		globus_mutex_lock(&gLock);
 		if ( (rc = read(fhnd, gBuffer, BUFSZ)) < 0 ) {
-			dprintf(("[%s] Error reading dump file\n", name));
+			dprintf("[%s] Error reading dump file\n", name);
 			if ( !debug ) syslog(LOG_ERR, "Error reading dump file");
 			gDone = GLOBUS_TRUE;
 			gError = GLOBUS_TRUE;
