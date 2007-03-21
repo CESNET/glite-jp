@@ -4,22 +4,21 @@
 #include <glite/jp/types.h>
 #include <glite/security/glite_gscompat.h>
 
+#define GSOAP_STRING(CHOICE) GLITE_SECURITY_GSOAP_CHOICE_GET(CHOICE, string, stringOrBlob, 1)
+#define GSOAP_BLOB(CHOICE) GLITE_SECURITY_GSOAP_CHOICE_GET(CHOICE, blob, stringOrBlob, 1)
+#define GSOAP_SETSTRING(CHOICE, VALUE) GLITE_SECURITY_GSOAP_CHOICE_SET(CHOICE, string, jptype, stringOrBlob, 1, VALUE)
+#define GSOAP_SETBLOB(CHOICE, VALUE) GLITE_SECURITY_GSOAP_CHOICE_SET(CHOICE, blob, jptype, stringOrBlob, 1, VALUE)
+#define GSOAP_ISSTRING(CHOICE) GLITE_SECURITY_GSOAP_CHOICE_ISTYPE(CHOICE, string, jptype, stringOrBlob, 1)
+#define GSOAP_ISBLOB(CHOICE) GLITE_SECURITY_GSOAP_CHOICE_ISTYPE(CHOICE, blob, jptype, stringOrBlob, 1)
+
 #if GSOAP_VERSION >= 20709
-  #define GSOAP_FAULT(DETAIL) ((DETAIL)->jpelem__genericFault)
-#elif GSOAP_VERSION >= 20700
-  #define GSOAP_FAULT(DETAIL) (((struct _genericFault *)(DETAIL)->fault)->jpelem__genericFault)
+  #define GFNUM SOAP_TYPE_jptype__genericFault
 #else
-  #define GSOAP_FAULT(DETAIL) (((struct _genericFault *)(DETAIL)->value)->jptype__genericFault)
+  #define GFNUM SOAP_TYPE__genericFault
 #endif
-#define GSOAP_STRING(CHOICE) GLITE_SECURITY_GSOAP_CHOICE_GET(CHOICE, string, jptype__stringOrBlob, 1)
-#define GSOAP_BLOB(CHOICE) GLITE_SECURITY_GSOAP_CHOICE_GET(CHOICE, blob, jptype__stringOrBlob, 1)
-#define GSOAP_SETSTRING(CHOICE, VALUE) GLITE_SECURITY_GSOAP_CHOICE_SET(CHOICE, string, jptype, jptype__stringOrBlob, 1, VALUE)
-#define GSOAP_SETBLOB(CHOICE, VALUE) GLITE_SECURITY_GSOAP_CHOICE_SET(CHOICE, blob, jptype, jptype__stringOrBlob, 1, VALUE)
-#define GSOAP_ISSTRING(CHOICE) GLITE_SECURITY_GSOAP_CHOICE_ISTYPE(CHOICE, string, jptype, jptype__stringOrBlob, 1)
-#define GSOAP_ISBLOB(CHOICE) GLITE_SECURITY_GSOAP_CHOICE_ISTYPE(CHOICE, blob, jptype, jptype__stringOrBlob, 1)
 
 #ifndef dprintf
-#define dprintf(x) printf x
+#define dprintf(FMT, ARGS...) printf(FMT, ##ARGS)
 #endif
 
 static int glite_jp_clientCheckFault(struct soap *soap, int err, const char *name, int toSyslog) {
@@ -35,38 +34,35 @@ static int glite_jp_clientCheckFault(struct soap *soap, int err, const char *nam
 
 	switch(err) {
 	case SOAP_OK:
-		dprintf(("%sOK\n", prefix));
+		dprintf("%sOK\n", prefix);
 		break;
 
 	case SOAP_FAULT:
 	case SOAP_SVR_FAULT:
 		detail = GLITE_SECURITY_GSOAP_DETAIL(soap);
 		reason = GLITE_SECURITY_GSOAP_REASON(soap);
-		dprintf(("%s%s\n", prefix, reason));
+		dprintf("%s%s\n", prefix, reason);
 		if (toSyslog) syslog(LOG_ERR, "%s", reason);
-		if (!(
-#ifdef SOAP_TYPE__genericFault
-		(detail->__type == SOAP_TYPE__genericFault) ||
+		assert(detail->__type == GFNUM);
+#if GSOAP_VERSION >= 20709
+		f = (struct jptype__genericFault *)detail->fault;
+#elif GSOAP_VERSION >= 20700
+		f = ((struct _genericFault *)detail->fault)->jpelem__genericFault;
+#else
+		f = ((struct _genericFault *)detail->value)->jpelem__genericFault;
 #endif
-#ifdef SOAP_TYPE_jptype__genericFault
-		(detail->__type == SOAP_TYPE_jptype__genericFault) ||
-#endif
-#ifdef SOAP_TYPE_lbt__genericFault
-		(detail->__type == SOAP_TYPE_lbt__genericFault) ||
-#endif
-		0)) assert(1);
-		f = GSOAP_FAULT(detail);
 
 		while (f) {
-			dprintf(("%s%s%s: %s (%s)\n",
+			dprintf("%s%s%s: %s (%s)\n",
 					prefix, indent,
-					f->source, f->text, f->description));
+					f->source, f->text, f->description);
 			if (toSyslog) syslog(LOG_ERR, "%s%s: %s (%s)",
 					reason, f->source, f->text, f->description);
 			f = f->reason;
 			strcat(indent,"  ");
 		}
 		retval = -1;
+		break;
 
 	default:
 		soap_print_fault(soap,stderr);
@@ -78,7 +74,7 @@ static int glite_jp_clientCheckFault(struct soap *soap, int err, const char *nam
 }
 
 
-static struct jptype__genericFault *jp2s_error(struct soap *soap, const glite_jp_error_t *err)
+static struct jptype__genericFault* jp2s_error(struct soap *soap, const glite_jp_error_t *err)
 {
 	struct jptype__genericFault *ret = NULL;
 	if (err) {
@@ -97,12 +93,20 @@ static struct jptype__genericFault *jp2s_error(struct soap *soap, const glite_jp
 static void glite_jp_server_err2fault(const glite_jp_context_t ctx,struct soap *soap)
 {
 	struct SOAP_ENV__Detail	*detail = soap_malloc(soap,sizeof *detail);
-	struct _genericFault *f = soap_malloc(soap,sizeof *f);
-
+#if GSOAP_VERSION >= 20709
+	struct jptype__genericFault *f;
+	f = jp2s_error(soap,ctx->error);
+#else
+	struct _genericFault *f = soap_malloc(soap, sizeof *f);
 	f->jpelem__genericFault = jp2s_error(soap,ctx->error);
-
-	detail->__type = SOAP_TYPE__genericFault;
-	GSOAP_FAULT(detail) = f;
+#endif
+	memset(detail, 0, sizeof(*detail));
+#if GSOAP_VERSION >= 20700
+	detail->fault = (void *)f;
+#else
+	detail->value = (void *)f;
+#endif
+	detail->__type = GFNUM;
 	detail->__any = NULL;
 
 	soap_receiver_fault(soap,"Oh, shit!",NULL);
