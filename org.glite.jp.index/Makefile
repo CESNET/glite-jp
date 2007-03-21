@@ -118,18 +118,18 @@ JobProvenancePS.xh: %.xh: %.wsdl JobProvenanceTypes.wsdl typemap.dat
 
 ${is_prefix}ClientLib.c ${is_prefix}Client.c \
 ${is_prefix}Server.c ${is_prefix}ServerLib.c  \
-${is_prefix}C.c ${is_prefix}H.h ${is_prefix}_Stub.h: JobProvenanceIS.xh
+${is_prefix}C.c ${is_prefix}H.h ${is_prefix}Stub.h: JobProvenanceIS.xh
 	${gsoap_bin_prefix}/soapcpp2 -n -w -c -p ${is_prefix} $<
 
 # JobProvenanceISClient.xh should be used, 
 # for now (gsoap-2.7.0) used direct JobProvenanceIS.xh
 ${is_client_prefix}ClientLib.c ${is_client_prefix}Client.c \
 ${is_client_prefix}Server.c ${is_client_prefix}ServerLib.c  \
-${is_client_prefix}C.c ${is_client_prefix}H.h ${is_client_prefix}_Stub.h: JobProvenanceIS.xh
+${is_client_prefix}C.c ${is_client_prefix}H.h ${is_client_prefix}Stub.h: JobProvenanceIS.xh
 	${gsoap_bin_prefix}/soapcpp2 -n -w -c -p ${is_client_prefix} $<
 
 ${ps_prefix}Client.c ${ps_prefix}ClientLib.c  \
-${ps_prefix}C.c ${ps_prefix}H.h ${ps_prefix}_Stub.h: JobProvenancePS.xh
+${ps_prefix}C.c ${ps_prefix}H.h ${ps_prefix}Stub.h: JobProvenancePS.xh
 	${gsoap_bin_prefix}/soapcpp2 -n -w -c -p ${ps_prefix} $<
 
 
