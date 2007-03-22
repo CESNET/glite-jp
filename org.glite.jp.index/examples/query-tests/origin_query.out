@@ -1,0 +1,14 @@
+query: using JPIS http://localhost:12002
+
+Conditions:
+	http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus
+		origin == FILE
+		value == Done
+Attributes:
+	http://egee.cesnet.cz/en/Schema/JP/System:owner
+	http://egee.cesnet.cz/en/Schema/JP/System:jobId
+	http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus
+	http://egee.cesnet.cz/en/Schema/LB/Attributes:user
+
+OK
+<?xml version="1.0" encoding="UTF-8"?><jpisclient:QueryJobsResponse xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:jptype="http://glite.org/wsdl/types/jp" xmlns:jpsrv="http://glite.org/wsdl/services/jp" xmlns:jpelem="http://glite.org/wsdl/elements/jp" xmlns:jpisclient="http://glite.org/xsd/types/jpisclient"><jobs><jobid>https://localhost:7846/pokus1</jobid><owner>/O=CESNET/O=Masaryk University/CN=Milos Mulac</owner><attributes><name>http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus</name><value><string>Done</string></value><timestamp>1970-01-01T02:00:01Z</timestamp><origin>FILE</origin></attributes><attributes><name>http://egee.cesnet.cz/en/Schema/LB/Attributes:user</name><value><string>CertSubj</string></value><timestamp>1970-01-01T02:00:01Z</timestamp><origin>FILE</origin></attributes><primaryStorage>http://localhost:8901</primaryStorage></jobs></jpisclient:QueryJobsResponse>

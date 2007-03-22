@@ -2,7 +2,8 @@ query: using JPIS http://localhost:12002
 
 Conditions:
 	http://egee.cesnet.cz/en/Schema/JP/System:jobId
-		== https://localhost:7846/pokus1
+		origin IS ANY
+		value == https://localhost:7846/pokus1
 Attributes:
 	http://egee.cesnet.cz/en/Schema/JP/System:owner
 	http://egee.cesnet.cz/en/Schema/JP/System:jobId

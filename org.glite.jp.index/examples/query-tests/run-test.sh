@@ -229,3 +229,11 @@ import_db $GLITE_LOCATION/examples/query-tests/dump1.sql;
 run_test_query $GLITE_LOCATION/examples/query-tests/jobid_query.in $GLITE_LOCATION/examples/query-tests/jobid_query.out;
 drop_db;
 kill_is;
+
+echo -n "Origin test........... "
+create_db;
+run_is "-n";
+import_db $GLITE_LOCATION/examples/query-tests/dump1.sql;
+run_test_query $GLITE_LOCATION/examples/query-tests/origin_query.in $GLITE_LOCATION/examples/query-tests/origin_query.out;
+drop_db;
+kill_is;

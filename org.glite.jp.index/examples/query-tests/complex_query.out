@@ -2,10 +2,12 @@ query: using JPIS http://localhost:10000
 
 Conditions:
 	http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus
-		== Done
-		== Ready
+		origin IS ANY
+		value == Done
+		value == Ready
 	http://egee.cesnet.cz/en/Schema/LB/Attributes:user
-		<> God
+		origin IS ANY
+		value <> God
 Attributes:
 	http://egee.cesnet.cz/en/Schema/JP/System:owner
 	http://egee.cesnet.cz/en/Schema/JP/System:jobId

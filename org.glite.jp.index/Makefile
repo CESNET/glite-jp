@@ -49,7 +49,8 @@ INSTALL:=libtool --mode=install install
 daemon:=glite-jp-indexd
 examples:=glite-jpis-test glite-jpis-client
 test:=run-test.sh
-test_files:=dump1.sql simple_query.in simple_query.out complex_query.in complex_query.out authz.out jobid_query.in jobid_query.out
+test_files:=dump1.sql simple_query.in simple_query.out complex_query.in complex_query.out authz.out jobid_query.in jobid_query.out origin_query.in origin_query.out
+
 MANS1:=glite-jpis-client.1
 MANS8:=glite-jp-indexd.8
 MANS:=${MANS1} ${MANS8}

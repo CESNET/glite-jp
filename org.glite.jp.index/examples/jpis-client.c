@@ -24,7 +24,7 @@
 #define soap_serialize__jpisclient__QueryJobsResponse soap_serialize__jpelem__QueryJobsResponse
 
 #define DEFAULT_JPIS "http://localhost:8902"
-//#define USE_GMT 1
+#define USE_GMT 1
 
 
 /* namespaces[] not used here but needed to prevent linker to complain... */
@@ -138,7 +138,8 @@ static void query_example_fill(struct soap *soap, struct _jpisclient__QueryJobs 
 	cond = soap_malloc(soap, sizeof(*cond));
 	memset(cond, 0, sizeof(*cond));
 	cond->attr = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus");
-	cond->origin = NULL;
+	cond->origin = soap_malloc(soap, sizeof(*(cond->origin)));
+	*(cond->origin) = jptype__attrOrig__SYSTEM;
 	cond->__sizerecord = 2;
 	cond->record = soap_malloc(soap, cond->__sizerecord * sizeof(*(cond->record)));
 
@@ -228,11 +229,18 @@ static void query_print(FILE *out, const struct _jpisclient__QueryJobs *in) {
 	fprintf(out, "Conditions:\n");
 	for (i = 0; i < in->__sizeconditions; i++) {
 		fprintf(out, "\t%s\n", in->conditions[i]->attr);
+		if (in->conditions[i]->origin) {
+			for (k = 0; k <= NUMBER_ORIG; k++)
+				if (origins[k].orig == *(in->conditions[i]->origin)) break;
+			fprintf(out, "\t\torigin == %s\n", origins[k].name);
+		} else {
+			fprintf(out, "\t\torigin IS ANY\n");
+		}
 		for (j = 0; j < in->conditions[i]->__sizerecord; j++) {
 			rec = in->conditions[i]->record[j];
 			for (k = 0; k <= NUMBER_OP; k++)
 				if (operations[k].op == rec->op) break;
-			fprintf(out, "\t\t%s", operations[k].name);
+			fprintf(out, "\t\tvalue %s", operations[k].name);
 			if (rec->value) {
 				fprintf(out, " ");
 				value_print(out, rec->value);

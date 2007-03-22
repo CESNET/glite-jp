@@ -17,6 +17,8 @@ typedef struct _glite_jpis_context {
 	void *param_expires;
 
 	char *hname;
+
+	char op_args[GLITE_JP_QUERYOP__LAST];
 } *glite_jpis_context_t;
 
 typedef struct _slave_data_t{

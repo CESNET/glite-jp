@@ -60,23 +60,24 @@ static int is_indexed(glite_jp_is_conf *conf, const char *attr) {
 }
 
 
-static size_t db_arg2_length(glite_jp_query_rec_t *query) {
+static size_t db_arg1_length(glite_jpis_context_t isctx, glite_jp_query_rec_t *query) {
 	size_t len;
 
 	assert(query->op > GLITE_JP_QUERYOP_UNDEF && query->op <= GLITE_JP_QUERYOP__LAST);
-	len = 0;
-	switch (query->op) {
-		case GLITE_JP_QUERYOP_WITHIN:
-			len = query->binary ? query->size2 : strlen(query->value2) + 1;
-		case GLITE_JP_QUERYOP_UNDEF:
-		case GLITE_JP_QUERYOP_EQUAL:
-		case GLITE_JP_QUERYOP_UNEQUAL:
-		case GLITE_JP_QUERYOP_LESS:
-		case GLITE_JP_QUERYOP_GREATER:
-		case GLITE_JP_QUERYOP_EXISTS:
-		case GLITE_JP_QUERYOP__LAST:
-			len = 0;
-	}
+	if (isctx->op_args[query->op] >= 1)
+		len = query->binary ? query->size : (query->value ? strlen(query->value) + 1 : 0);
+	else len = 0;
+
+	return len;
+}
+
+static size_t db_arg2_length(glite_jpis_context_t isctx, glite_jp_query_rec_t *query) {
+	size_t len;
+
+	assert(query->op > GLITE_JP_QUERYOP_UNDEF && query->op <= GLITE_JP_QUERYOP__LAST);
+	if (isctx->op_args[query->op] >= 1)
+		len = query->binary ? query->size2 : (query->value2 ? strlen(query->value2) + 1 : 0);
+	else len = 0;
 
 	return len;
 }
@@ -141,7 +142,7 @@ static void *array_get(void **data, size_t data_len) {
 }
 
 
-static int glite_jpis_db_queries_serialize(void **blob, size_t *len, glite_jp_query_rec_t **queries) {
+static int glite_jpis_db_queries_serialize(glite_jpis_context_t isctx, void **blob, size_t *len, glite_jp_query_rec_t **queries) {
 	size_t maxlen;
 	glite_jp_query_rec_t *query;
 	int ret;
@@ -157,12 +158,12 @@ static int glite_jpis_db_queries_serialize(void **blob, size_t *len, glite_jp_qu
 		if ((ret = array_add_long(blob, len, &maxlen, query->op)) != 0) goto fail;
 		if ((ret = array_add_long(blob, len, &maxlen, query->binary ? 1 : 0)) != 0) goto fail;
 
-		datalen = query->binary ? query->size : strlen(query->value) + 1;
+		datalen = db_arg1_length(isctx, query);
 		if ((ret = array_add_long(blob, len, &maxlen, datalen)) != 0) goto fail;
 		if (datalen)
 			if ((ret = array_add(blob, len, &maxlen, query->value, datalen)) != 0) goto fail;
 		
-		datalen = db_arg2_length(query);
+		datalen = db_arg2_length(isctx, query);
 		if ((ret = array_add_long(blob, len, &maxlen, datalen)) != 0) goto fail;
 		if (datalen)
 			if ((ret = array_add(blob, len, &maxlen, query->value2, datalen)) != 0) goto fail;
@@ -327,7 +328,7 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 		        (feeds[i]->continuous ? GLITE_JP_IS_STATE_CONT : 0);
 		locked = 0;
 		GLITE_JPIS_PARAM(source, source_len, feeds[i]->PS_URL);
-		assert(glite_jpis_db_queries_serialize(&conds, &conds_len, feeds[i]->query) == 0);
+		assert(glite_jpis_db_queries_serialize(ctx, &conds, &conds_len, feeds[i]->query) == 0);
 		assert(conds_len <= sizeof(dbconds));
 		dbconds_len = conds_len;
 		memcpy(dbconds, conds, conds_len);

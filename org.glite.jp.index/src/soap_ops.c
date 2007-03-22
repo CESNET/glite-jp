@@ -247,44 +247,35 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 	int 			i, j, ret;
 	glite_jp_db_stmt_t	stmt;
 	glite_jp_attrval_t	attr;
+	glite_jp_attr_orig_t	orig;
 
 	
 	qwhere = strdup("");
 	for (i=0; i < in->__sizeconditions; i++) {
-/* XXX: deal with jobIds diferently (they are not in attr_X table, but in jobs)
-		if (strcmp(in->conditions[i]->attr,GLITE_JP_ATTR_JOBID)) {
-			trio_asprintf(&qa,"%s  (", (i ? "AND" : "") );
-
-			for (j=0; j < in->conditions[i]->__sizerecord; j++) {
-				if (get_op(in->conditions[i]->record[j]->op, &qop)) goto err;
-
-				attr.name = in->conditions[i]->attr;
-				attr.value = in->conditions[i]->record[j]->value->string;
-				attr.binary = 0;
-				glite_jpis_SoapToAttrOrig(soap,
-					in->conditions[i]->origin, &(attr.origin));
-				trio_asprintf(&qb,"%s%sjobs.dg_jobid %s \"%|Ss\"",
-					qa, (j ? " OR " : ""), attr_md5, qop,
-					glite_jp_attrval_to_db_index(ctx->jpctx, &attr, 255));
-				free(qop);
-				free(qa); qa = qb; qb = NULL;
-			
-		}
-		else
-*/
 		{
+			/* attr name */
 			if (strcmp(in->conditions[i]->attr, GLITE_JP_ATTR_JOBID) == 0) {
 				/* no subset from attr_ table, used jobs table instead */
 				attr_md5 = NULL;
 				qa = strdup("(");
 			} else {
-				/* select given records in attr_ table */
 				attr_md5 = str2md5(in->conditions[i]->attr);
-				trio_asprintf(&qa,"%s jobs.jobid = attr_%|Ss.jobid AND (", 
-					(i ? "AND" : ""), attr_md5);
+
+				/* origin */
+				if (in->conditions[i]->origin) {
+					glite_jpis_SoapToAttrOrig(soap, in->conditions[i]->origin, &orig);
+					trio_asprintf(&qb, "attr_%|Ss.origin = %d AND ", attr_md5, orig);
+				} else
+					trio_asprintf(&qb, "");
+
+				/* select given records in attr_ table */
+				trio_asprintf(&qa,"%s%s jobs.jobid = attr_%|Ss.jobid AND (",
+					(i ? "AND" : ""), qb, attr_md5);
+
+				free(qb);
 			}
 
-			/* inside part of the condition - ORs */
+			/* inside part of the condition: record list (ORs) */
 			for (j=0; j < in->conditions[i]->__sizerecord; j++) { 
 				if (get_op(in->conditions[i]->record[j]->op, &qop)) goto err;
 				if (attr_md5) add_attr_table(attr_md5, &attr_tables);
@@ -325,10 +316,10 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 	}
 
 	if (ctx->conf->no_auth) {
-		trio_asprintf(&query, "SELECT DISTINCT dg_jobid,ps FROM jobs%s WHERE %s;", qa, qwhere);
+		trio_asprintf(&query, "SELECT DISTINCT dg_jobid,ps FROM jobs%s WHERE %s", qa, qwhere);
 	}
 	else {
-		trio_asprintf(&query, "SELECT DISTINCT dg_jobid,ps FROM jobs,users%s WHERE (jobs.ownerid = users.userid AND users.cert_subj='%s') AND %s;", qa, ctx->jpctx->peer, qwhere);
+		trio_asprintf(&query, "SELECT DISTINCT dg_jobid,ps FROM jobs,users%s WHERE (jobs.ownerid = users.userid AND users.cert_subj='%s') AND %s", qa, ctx->jpctx->peer, qwhere);
 	}
 	printf("Incomming QUERY:\n %s\n", query);
 	free(qwhere);
