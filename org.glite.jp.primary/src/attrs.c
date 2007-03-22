@@ -88,7 +88,8 @@ void process_files(glite_jp_context_t ctx, const char *job, glite_jp_attrval_t**
                 			int k;
 	                        	for (k=0; myattr[k].name; k++) {
         	                		myattr[k].origin = GLITE_JP_ATTR_ORIG_FILE;
-	                	                trio_asprintf(&myattr[k].origin_detail,"%s %s", uri, names[n] ? names[n] : "");
+	                	                if (!myattr[k].origin_detail) 
+							trio_asprintf(&myattr[k].origin_detail,"%s %s", uri, names[n] ? names[n] : "");
         	                	}
 	        	                *nout = merge_attrvals(out,*nout,myattr);
         	        	        free(myattr);
@@ -160,6 +161,9 @@ glite_jpps_get_attrs(glite_jp_context_t ctx,const char *job,char **attr,int natt
 	nout = merge_attrvals(&out,nout,meta);
 
 	free(meta); meta = NULL;
+
+	for (i = 0; i < nout; i++)
+                printf("%s\n", out[i].value);
 
 	if (nout) {
 		*attrs_out = out;

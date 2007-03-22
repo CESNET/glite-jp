@@ -285,11 +285,12 @@ int main(int argc,char *argv[])
 
 			puts("Attribute values:");
 			for (i=0; i<out.__sizeattrValues; i++)
-				printf("\t%s\t%s\t%s",
+				printf("\t%s\t%s\t%s\t%s",
 					out.attrValues[i]->value->string ?
 						out.attrValues[i]->value->string :
 						"binary",
 					orig2str(out.attrValues[i]->origin),
+					out.attrValues[i]->originDetail,
 					ctime(&out.attrValues[i]->timestamp));
 
 		}
