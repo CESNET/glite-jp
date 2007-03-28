@@ -66,7 +66,7 @@ int main(int argc, char **argv)
 	if ( lbmd ) glite_jpcl_SetParam(ctx, GLITE_JPCL_PARAM_LBMAILDIR, lbmd);
 	if ( jpps ) glite_jpcl_SetParam(ctx, GLITE_JPCL_PARAM_JPPS, jpps);
 
-	if ( glite_jpimporter_upload_files(ctx, jobid, files, proxy) ) {
+	if ( glite_jpimporter_upload_files(ctx, jobid, (const char **)files, proxy) ) {
 		char *errt, *errd;
 
 		glite_jpcl_Error(ctx, &errt, &errd);
