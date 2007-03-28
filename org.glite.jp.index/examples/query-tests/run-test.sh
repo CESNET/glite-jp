@@ -105,18 +105,28 @@ drop_db() {
 }
 
 run_is() {
+	# check
+	if [ -f "${GLITE_JPIS_TEST_PIDFILE}" ]; then
+		echo "Index server already running!"
+		echo "  pid $(cat ${GLITE_JPIS_TEST_PIDFILE})"
+		echo "  pidfile ${GLITE_JPIS_TEST_PIDFILE}"
+		exit 1
+	fi
+
 	# run index server
 	X509_USER_KEY=${X509_USER_KEY} X509_USER_CERT=${X509_USER_CERT} \
 	$GLITE_LOCATION/bin/glite-jp-indexd -m $GLITE_JPIS_TEST_DB -p $GLITE_JPIS_TEST_PORT \
 			-i ${GLITE_JPIS_TEST_PIDFILE} -o ${GLITE_JPIS_TEST_LOGFILE} \
 			-x ${GLITE_JPIS_TEST_CONFIG} $1\
-			2>/dev/null
-
+			2>/tmp/result
 
 	if [ x"$?" != x"0" ]; then
 		echo FAILED
 		drop_db;
 		exit 1
+	fi
+	if [ ! -s "${GLITE_JPIS_TEST_PIDFILE}" ]; then
+		sleep 1
 	fi
 	if [ ! -s "${GLITE_JPIS_TEST_PIDFILE}" ]; then
 		echo "Can't startup index server."
@@ -140,13 +150,14 @@ kill_is() {
 	kill `cat ${GLITE_JPIS_TEST_PIDFILE}`;
 	sleep 1;
 	kill -9 `cat ${GLITE_JPIS_TEST_PIDFILE}` 2>/dev/null
+	rm -f ${GLITE_JPIS_TEST_PIDFILE}
 }
 
 run_test_query() {
 	X509_USER_KEY=${X509_USER_KEY} X509_USER_CERT=${X509_USER_CERT} \
-	$GLITE_LOCATION/examples/glite-jpis-client -f xml -q $1 \
-		 -i http://localhost:$GLITE_JPIS_TEST_PORT &>/tmp/result
-	DIFF=`diff -b --ignore-matching-lines="query: using JPIS" $2 /tmp/result`
+	$GLITE_LOCATION/examples/glite-jpis-client -f strippedxml -q $1 \
+		 -i http://localhost:$GLITE_JPIS_TEST_PORT 2>&1 | sed -e 's,<?xml version="1.0" encoding="UTF-8"?>,,' -e 's, SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/",,' > /tmp/result
+	DIFF=`diff -b -B --ignore-matching-lines="query: using JPIS" $2 /tmp/result`
 	if [ -z "$DIFF" -a "$?" -eq "0" ] ; then
 		echo "OK."
 		rm /tmp/result
@@ -172,13 +183,24 @@ run_test_query() {
 
 run_test_feed() {
 	# run the example
-	numok=`X509_USER_KEY=${X509_USER_KEY} X509_USER_CERT=${X509_USER_CERT}\
-		$GLITE_LOCATION/examples/glite-jpis-test -p $GLITE_JPIS_TEST_PORT \
-		-m $GLITE_JPIS_TEST_DB -x $GLITE_JPIS_TEST_CONFIG 2>&1 | grep -c OK`
+	X509_USER_KEY=${X509_USER_KEY} X509_USER_CERT=${X509_USER_CERT}\
+                $GLITE_LOCATION/examples/glite-jpis-test -p $GLITE_JPIS_TEST_PORT \
+                -m $GLITE_JPIS_TEST_DB -x $GLITE_JPIS_TEST_CONFIG &>/tmp/result
+	numok="$(cat /tmp/result | grep -c OK)"
 	if [ "$numok" -eq "2" ]; then
 		echo OK.
 	else
 		echo FAILED!
+		echo ---------------------------------------------------------------------------------------------------
+		echo
+		echo "Obtained result (in /tmp/result):"
+		echo ---------------------------------
+		cat /tmp/result
+		echo
+		echo ---------------------------------------------------------------------------------------------------
+		drop_db;
+		kill_is;
+		exit 1
 	fi
 }
 

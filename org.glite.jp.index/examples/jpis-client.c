@@ -71,7 +71,7 @@ struct {
 	{0, "unknown"}
 };
 
-typedef enum {FORMAT_XML, FORMAT_HR} format_t;
+typedef enum {FORMAT_XML, FORMAT_STRIPPEDXML, FORMAT_HR} format_t;
 
 
 /*
@@ -186,7 +186,6 @@ static int query_recv(struct soap *soap, int fd, struct _jpisclient__QueryJobs *
 		return EINVAL;
 	}
 	soap_end_recv(soap);
-	soap_free(soap); /* don't destroy the data we want */
 
 	/* strip white-space characters from attributes */
 	for (i = 0; i < qj->__sizeattributes; i++)
@@ -251,6 +250,7 @@ static int query_dump(struct soap *soap, int fd, struct _jpisclient__QueryJobs *
 	soap_serialize__jpisclient__QueryJobs(soap, qj);
 	retval = soap_put__jpisclient__QueryJobs(soap, qj, "jpisclient:QueryJobs", NULL);
 	soap_end_send(soap);
+	write(fd, "\n", strlen("\n"));
 
 	return retval;
 }
@@ -258,7 +258,9 @@ static int query_dump(struct soap *soap, int fd, struct _jpisclient__QueryJobs *
 
 static int query_format(struct soap *soap, format_t format, FILE *f, struct _jpisclient__QueryJobs *qj) {
 	switch (format) {
-	case FORMAT_XML: return query_dump(soap, fileno(f), qj);
+	case FORMAT_XML:
+	case FORMAT_STRIPPEDXML:
+		return query_dump(soap, fileno(f), qj);
 	case FORMAT_HR:  query_print(f, qj); return 0;
 	default: return EINVAL;
 	}
@@ -294,6 +296,7 @@ static int queryresult_dump(struct soap *soap, int fd, const struct _jpisclient_
 	soap_serialize__jpisclient__QueryJobsResponse(soap, qjr);
 	retval = soap_put__jpisclient__QueryJobsResponse(soap, qjr, "jpisclient:QueryJobsResponse", NULL);
 	soap_end_send(soap);
+	write(fd, "\n", strlen("\n"));
 
 	return retval;
 }
@@ -335,7 +338,9 @@ static void queryresult_print(FILE *out, const struct  _jpelem__QueryJobsRespons
 
 static int queryresult_format(struct soap *soap, format_t format, FILE *f, const struct  _jpelem__QueryJobsResponse *qj) {
 	switch (format) {
-	case FORMAT_XML: return queryresult_dump(soap, fileno(f), qj);
+	case FORMAT_XML:
+	case FORMAT_STRIPPEDXML:
+		return queryresult_dump(soap, fileno(f), qj);
 	case FORMAT_HR:  queryresult_print(f, qj); return 0;
 	default: return EINVAL;
 	}
@@ -353,7 +358,7 @@ static void usage(const char *prog_name) {
 	fprintf(stderr, "  -q|--query-file IN_FILE.XML\n");
 	fprintf(stderr, "  -t|--test-file IN_FILE.XML\n");
 	fprintf(stderr, "  -e|--example-file OUT_FILE.XML\n");
-	fprintf(stderr, "  -f|--format xml | human\n");
+	fprintf(stderr, "  -f|--format xml | strippedxml | human\n");
 }
 
 
@@ -379,10 +384,6 @@ int main(int argc, char * const argv[]) {
 	retval = 1;
 
 	soap_init(&soap);
-
-#ifdef SOAP_XML_INDENT
-	soap_omode(&soap, SOAP_XML_INDENT);
-#endif
 
 	/*
 	 * Following code is needed, when we can't combine more XSD/WSDL files
@@ -447,6 +448,7 @@ int main(int argc, char * const argv[]) {
 			break;
 		case 'f':
 			if (strcasecmp(optarg, "xml") == 0) format = FORMAT_XML;
+			else if (strcasecmp(optarg, "strippedxml") == 0) format = FORMAT_STRIPPEDXML;
 			else format = FORMAT_HR;
 			break;
 		default:
@@ -458,6 +460,10 @@ int main(int argc, char * const argv[]) {
 		goto cleanup;
 	}
 	if (!server) server = strdup(DEFAULT_JPIS);
+#ifdef SOAP_XML_INDENT
+	if (format != FORMAT_STRIPPEDXML) soap_omode(&soap, SOAP_XML_INDENT);
+#endif
+
 
 	/* prepare steps according to the arguments */
 	if (query_file) {

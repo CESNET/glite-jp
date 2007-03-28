@@ -213,67 +213,65 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 	
 	qwhere = strdup("");
 	for (i=0; i < in->__sizeconditions; i++) {
-	{
-			struct jptype__indexQuery *condition;
+		struct jptype__indexQuery *condition;
 
-			condition = GLITE_SECURITY_GSOAP_LIST_GET(in->conditions, i);
+		condition = GLITE_SECURITY_GSOAP_LIST_GET(in->conditions, i);
 
-			/* attr name */
-			if (strcmp(condition->attr, GLITE_JP_ATTR_JOBID) == 0) {
-				/* no subset from attr_ table, used jobs table instead */
-				attr_md5 = NULL;
-				qa = strdup("(");
-			} else {
-				attr_md5 = str2md5(condition->attr);
+		/* attr name */
+		if (strcmp(condition->attr, GLITE_JP_ATTR_JOBID) == 0) {
+			/* no subset from attr_ table, used jobs table instead */
+			attr_md5 = NULL;
+			qa = strdup("(");
+		} else {
+			attr_md5 = str2md5(condition->attr);
 
-				/* origin */
-				if (condition->origin) {
-					glite_jpis_SoapToAttrOrig(soap, condition->origin, &orig);
-					trio_asprintf(&qb, "attr_%|Ss.origin = %d AND ", attr_md5, orig);
-				} else
-					trio_asprintf(&qb, "");
+			/* origin */
+			if (condition->origin) {
+				glite_jpis_SoapToAttrOrig(soap, condition->origin, &orig);
+				trio_asprintf(&qb, "attr_%|Ss.origin = %d AND ", attr_md5, orig);
+			} else
+				trio_asprintf(&qb, "");
 
-				/* select given records in attr_ table */
-				trio_asprintf(&qa,"%s%s jobs.jobid = attr_%|Ss.jobid AND (",
-					(i ? "AND" : ""), qb, attr_md5);
+			/* select given records in attr_ table */
+			trio_asprintf(&qa,"%s%s jobs.jobid = attr_%|Ss.jobid AND (",
+				(i ? "AND" : ""), qb, attr_md5);
 
-				free(qb);
-			}
-
-			/* inside part of the condition: record list (ORs) */
-			for (j=0; j < condition->__sizerecord; j++) { 
-				struct jptype__indexQueryRecord *record;
-
-				record = GLITE_SECURITY_GSOAP_LIST_GET(condition->record, j);
-				if (get_op(record->op, &qop)) goto err;
-				if (attr_md5) add_attr_table(attr_md5, &attr_tables);
-
-				attr.name = condition->attr;
-				if (GSOAP_ISSTRING(record->value)) {
-					attr.value = GSOAP_STRING(record->value);
-					attr.binary = 0;
-				} else {
-					attr.value = GSOAP_BLOB(record->value)->__ptr;
-					attr.size = GSOAP_BLOB(record->value)->__size;
-					attr.binary = 1;
-				}
-				glite_jpis_SoapToAttrOrig(soap,
-					condition->origin, &(attr.origin));
-				if (strcmp(condition->attr, GLITE_JP_ATTR_JOBID) == 0) {
-				        trio_asprintf(&qb,"%s%sjobs.dg_jobid %s \"%|Ss\"",
-				                qa, (j ? " OR " : ""), qop, attr.value);
-				} else {
-					trio_asprintf(&qb,"%s%sattr_%|Ss.value %s \"%|Ss\"",
-						qa, (j ? " OR " : ""), attr_md5, qop,
-						glite_jp_attrval_to_db_index(ctx->jpctx, &attr, 255));
-				}
-				free(qop);
-				free(qa); qa = qb; qb = NULL;
-			}
-			trio_asprintf(&qb,"%s %s)", qwhere, qa);
-			free(qa); qwhere = qb; qb = NULL; qa = NULL;
-			free(attr_md5);
+			free(qb);
 		}
+
+		/* inside part of the condition: record list (ORs) */
+		for (j=0; j < condition->__sizerecord; j++) { 
+			struct jptype__indexQueryRecord *record;
+
+			record = GLITE_SECURITY_GSOAP_LIST_GET(condition->record, j);
+			if (get_op(record->op, &qop)) goto err;
+			if (attr_md5) add_attr_table(attr_md5, &attr_tables);
+
+			attr.name = condition->attr;
+			if (GSOAP_ISSTRING(record->value)) {
+				attr.value = GSOAP_STRING(record->value);
+				attr.binary = 0;
+			} else {
+				attr.value = GSOAP_BLOB(record->value)->__ptr;
+				attr.size = GSOAP_BLOB(record->value)->__size;
+				attr.binary = 1;
+			}
+			glite_jpis_SoapToAttrOrig(soap,
+				condition->origin, &(attr.origin));
+			if (strcmp(condition->attr, GLITE_JP_ATTR_JOBID) == 0) {
+			        trio_asprintf(&qb,"%s%sjobs.dg_jobid %s \"%|Ss\"",
+			                qa, (j ? " OR " : ""), qop, attr.value);
+			} else {
+				trio_asprintf(&qb,"%s%sattr_%|Ss.value %s \"%|Ss\"",
+					qa, (j ? " OR " : ""), attr_md5, qop,
+					glite_jp_attrval_to_db_index(ctx->jpctx, &attr, 255));
+			}
+			free(qop);
+			free(qa); qa = qb; qb = NULL;
+		}
+		trio_asprintf(&qb,"%s %s)", qwhere, qa);
+		free(qa); qwhere = qb; qb = NULL; qa = NULL;
+		free(attr_md5);
 	}
 
 	qa = strdup("");

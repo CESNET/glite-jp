@@ -11,10 +11,14 @@
 
 #include <glite/jp/types.h>
 #include <glite/jp/context.h>
+#include "soap_version.h"
+#include <glite/security/glite_gscompat.h>
+
 #include "conf.h"
 #include "db_ops.h"
 #include "ws_is_typeref.h"
 
+#include <glite/jp/ws_fault.c>
 
 #define SOAP_FMAC3 static
 #define WITH_NOGLOBAL
@@ -65,7 +69,7 @@ static void usage(char *me)
 
 int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf **configuration)
 {
-	char 			*ps = NULL, *qt = NULL, *conf_file = NULL;
+	char 			*qt = NULL, *conf_file = NULL;
 	int			opt;
 	glite_jp_is_conf	*conf;
 
@@ -199,19 +203,21 @@ static int read_conf(glite_jp_is_conf *conf, char *conf_file)
 		}
 	}
 	if (out.__sizefeeds) {
-#warning FIXME: list
 		conf->feeds = calloc(out.__sizefeeds + 1, sizeof(*conf->feeds));
 		for (i=0; i < out.__sizefeeds; i++) {
-			conf->feeds[i] = calloc(1, sizeof(*conf->feeds[i]));
-			conf->feeds[i]->PS_URL=strdup(out.feeds[i]->primaryServer);
+			struct jptype__feedSession *feed;
 
-			if (out.feeds[i]->__sizecondition) {
-				glite_jpis_SoapToPrimaryQueryConds(&soap, out.feeds[i]->__sizecondition,
-					out.feeds[i]->condition, &conf->feeds[i]->query);
+			feed = GLITE_SECURITY_GSOAP_LIST_GET(out.feeds, i);
+			conf->feeds[i] = calloc(1, sizeof(*conf->feeds[i]));
+			conf->feeds[i]->PS_URL=strdup(feed->primaryServer);
+
+			if (feed->__sizecondition) {
+				glite_jpis_SoapToPrimaryQueryConds(&soap, feed->__sizecondition,
+					feed->condition, &conf->feeds[i]->query);
 			}
 			
-			conf->feeds[i]->history = out.feeds[0]->history;
-			conf->feeds[i]->continuous = out.feeds[0]->continuous;
+			conf->feeds[i]->history = feed->history;
+			conf->feeds[i]->continuous = feed->continuous;
 		}
 	}
 
@@ -230,7 +236,8 @@ static int dump_conf(void) {
         int retval;
 	struct  _jpelem__ServerConfigurationResponse    out;
 	struct soap                                     soap;
-	
+	struct jptype__feedSession			*feed;
+	struct jptype__primaryQuery			*cond;
 
 	soap_init(&soap);
         soap_set_namespaces(&soap, jpis__namespaces);
@@ -254,21 +261,19 @@ static int dump_conf(void) {
         out.plugins[0] = strdup("plugin1");
         out.plugins[1] = strdup("plugin2");
 
-#warning: FIXME: lists
-	out.__sizefeeds = 1;
-        out.feeds = calloc(1, sizeof(*out.feeds));
-	out.feeds[0] = calloc(1, sizeof(*out.feeds[0]));
-        out.feeds[0]->primaryServer = strdup("PrimaryServer");
-	out.feeds[0]->__sizecondition = 1;
-	out.feeds[0]->condition = calloc(1, sizeof(*(out.feeds[0]->condition)) );
-	out.feeds[0]->condition[0] = calloc(1, sizeof(*(out.feeds[0]->condition[0])) );
-	out.feeds[0]->condition[0]->attr = strdup("queryAttr");
-	out.feeds[0]->condition[0]->op = jptype__queryOp__EQUAL;
-	out.feeds[0]->condition[0]->origin = jptype__attrOrig__SYSTEM;
-	out.feeds[0]->condition[0]->value = calloc(1, sizeof(*(out.feeds[0]->condition[0]->value)) );
-	out.feeds[0]->condition[0]->value->string = strdup("attrValue");
-	out.feeds[0]->history = 1;
-	out.feeds[0]->continuous = 0; 
+	GLITE_SECURITY_GSOAP_LIST_CREATE(&soap, &out, feeds, struct jptype__feedSession, 1);
+	feed = GLITE_SECURITY_GSOAP_LIST_GET(out.feeds, 0);
+        feed->primaryServer = strdup("PrimaryServer");
+	feed->__sizecondition = 1;
+	GLITE_SECURITY_GSOAP_LIST_CREATE(&soap, feed, condition, struct jptype__primaryQuery, 1);
+	cond = GLITE_SECURITY_GSOAP_LIST_GET(feed->condition, 0);
+	cond->attr = strdup("queryAttr");
+	cond->op = jptype__queryOp__EQUAL;
+	cond->origin = jptype__attrOrig__SYSTEM;
+	cond->value = calloc(1, sizeof(*(cond->value)));
+	GSOAP_SETSTRING(cond->value, soap_strdup(&soap, "attrValue"));
+	feed->history = 1;
+	feed->continuous = 0; 
 
         soap_serialize__jpelem__ServerConfigurationResponse(&soap, &out);
         retval = soap_put__jpelem__ServerConfigurationResponse(&soap, &out, "jpelem:ServerConfiguration", NULL);

@@ -56,16 +56,16 @@ static int QueryRecordValToSoap(
 	memset(val, 0, sizeof(*val) );
 
         if (binary) {
-		GSOAP_STRING(val) = NULL;
-		if ( !(GSOAP_BLOB(val) = soap_malloc(soap, sizeof(*GSOAP_BLOB(val)))) ) return SOAP_FAULT;
+		GSOAP_SETBLOB(val, soap_malloc(soap, sizeof(*GSOAP_BLOB(val))));
+		if ( !GSOAP_BLOB(val) ) return SOAP_FAULT;
 		GSOAP_BLOB(val)->__size = size;
 		if ( !(GSOAP_BLOB(val)->__ptr = soap_malloc(soap, GSOAP_BLOB(val)->__size)) ) return SOAP_FAULT;
 		memcpy(GSOAP_BLOB(val)->__ptr, in, GSOAP_BLOB(val)->__size);
 		// XXX how to handle id, type, option?
 	}
 	else {
-		GSOAP_BLOB(val) = NULL;
-		if ( !(GSOAP_STRING(val) = soap_strdup(soap, in)) )  return SOAP_FAULT;
+		GSOAP_SETSTRING(val, soap_strdup(soap, in));
+		if ( !(GSOAP_STRING(val) ) )  return SOAP_FAULT;
 	}
 
 	*out = val;
@@ -123,8 +123,7 @@ static void SoapToAttrOrig(glite_jp_attr_orig_t *out, const enum jptype__attrOri
 void glite_jpis_SoapToAttrVal(glite_jp_attrval_t *av, const struct jptype__attrValue *attr) {
 	memset(av, 0, sizeof(*av));
 	av->name = attr->name;
-	av->binary = GSOAP_BLOB(attr->value) ? 1 : 0;
-	assert(av->binary || GSOAP_STRING(attr->value));
+	av->binary = GSOAP_ISBLOB(attr->value);
 	if (av->binary) {
 		av->value = GSOAP_BLOB(attr->value)->__ptr;
 		av->size = GSOAP_BLOB(attr->value)->__size ;

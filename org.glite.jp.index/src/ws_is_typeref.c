@@ -4,9 +4,11 @@
 #include <stdsoap2.h>
 
 #include <glite/jp/types.h>
+#include "soap_version.h"
 
 #include "jpis_H.h"
 #include "ws_typemap.h"
+#include <glite/security/glite_gscompat.h>
 #include "ws_is_typeref.h"
 
 #include "glite/jp/ws_fault.c"
@@ -198,7 +200,7 @@ static int SoapToPrimaryQueryCond(
 int glite_jpis_SoapToPrimaryQueryConds(
         struct soap			*soap,
 	int				size,
-        struct jptype__primaryQuery	**in,
+        GLITE_SECURITY_GSOAP_LIST_TYPE(jptype, primaryQuery)	in,
         glite_jp_query_rec_t		***out)
 {
 	glite_jp_query_rec_t    **qr;
@@ -208,7 +210,7 @@ int glite_jpis_SoapToPrimaryQueryConds(
         qr = calloc(size+1, sizeof(*qr));
 
 	for (i=0; i<size; i++) {
-		if ( SoapToPrimaryQueryCond(soap, in[i], &(qr[i])) ) {
+		if ( SoapToPrimaryQueryCond(soap, GLITE_SECURITY_GSOAP_LIST_GET(in, i), &(qr[i])) ) {
 			*out = NULL;
 			return 1;
 		}
