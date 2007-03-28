@@ -5,12 +5,16 @@
 #include <getopt.h>
 #include <stdlib.h>
 
+#include "soap_version.h"
+
 #include <stdsoap2.h>
 #include <glite/security/glite_gsplugin.h>
+#include <glite/security/glite_gscompat.h>
 
-#include "soap_version.h"
 #include "jpis_client_.nsmap"
 #include "common.h"
+#define dprintf(FMT, ARGS...) fprintf(stderr, FMT, ##ARGS);
+#include <glite/jp/ws_fault.c>
 
 
 /* 'jpisclient' as future namespace */
@@ -74,15 +78,9 @@ typedef enum {FORMAT_XML, FORMAT_HR} format_t;
  * set the value
  */
 static void value_set(struct soap *soap, struct jptype__stringOrBlob **value, const char *str) {
-#if GSOAP_VERSION >= 20706
-	*value = soap_malloc(soap, sizeof(*value));
-	(*value)->__union_1 = SOAP_UNION_jptype__union_1_string;
-	(*value)->union_1.string = soap_strdup(soap, str);
-#else
-	*value = soap_malloc(soap, sizeof(*value));
-	(*value)->string = soap_strdup(soap, str);
-	(*value)->blob = NULL;
-#endif
+	*value = soap_malloc(soap, sizeof(**value));
+	memset(*value, 0, sizeof(*value));
+	GSOAP_SETSTRING(*value, soap_strdup(soap, str));
 }
 
 
@@ -94,20 +92,12 @@ static void value_print(FILE *out, const struct jptype__stringOrBlob *value) {
 	unsigned char *ptr;
 
 	if (value) {
-#if GSOAP_VERSION >= 20706
-		if (value->__union_1 == SOAP_UNION_jptype__union_1_string) {
-			fprintf(out, "%s", value->union_1.string);
-		} else if (value->__union_1 == SOAP_UNION_jptype__union_1_blob) {
+		if (GSOAP_ISSTRING(value)) fprintf(out, "%s", GSOAP_STRING(value));
+		else if (GSOAP_ISBLOB(value)) {
 			fprintf(out, "BLOB(");
-			ptr = value->union_1.blob->__ptr;
-			size = value->union_1.blob->__size;
-#else
-		if (value->string) fprintf(out, "%s", value->string);
-		else if (value->blob) {
-			fprintf(out, "BLOB(");
-			ptr = value->blob->__ptr;
-			size = value->blob->__size;
-#endif
+			ptr = GSOAP_BLOB(value)->__ptr;
+			size = GSOAP_BLOB(value)->__size;
+
 			maxsize = 10;
 			if (ptr) {
 				maxsize = size < 10 ? size : 10;
@@ -128,54 +118,43 @@ static void value_print(FILE *out, const struct jptype__stringOrBlob *value) {
 static void query_example_fill(struct soap *soap, struct _jpisclient__QueryJobs *in) {
 	struct jptype__indexQuery 		*cond;
 	struct jptype__indexQueryRecord 	*rec;
-	
-	in->__sizeconditions = 2;
-	in->conditions = soap_malloc(soap,
-		in->__sizeconditions * 
-		sizeof(*(in->conditions)));
+
+	GLITE_SECURITY_GSOAP_LIST_CREATE(soap, in, conditions, struct jptype__indexQuery, 2);
 	
 	// query status
-	cond = soap_malloc(soap, sizeof(*cond));
+	cond = GLITE_SECURITY_GSOAP_LIST_GET(in->conditions, 0);
 	memset(cond, 0, sizeof(*cond));
 	cond->attr = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus");
 	cond->origin = soap_malloc(soap, sizeof(*(cond->origin)));
 	*(cond->origin) = jptype__attrOrig__SYSTEM;
-	cond->__sizerecord = 2;
-	cond->record = soap_malloc(soap, cond->__sizerecord * sizeof(*(cond->record)));
+	GLITE_SECURITY_GSOAP_LIST_CREATE(soap, cond, record, struct jptype__indexQueryRecord, 2);
 
 	// equal to Done
-	rec = soap_malloc(soap, sizeof(*rec));
+	rec = GLITE_SECURITY_GSOAP_LIST_GET(cond->record, 0);
 	memset(rec, 0, sizeof(*rec));
 	rec->op = jptype__queryOp__EQUAL;
 	value_set(soap, &rec->value, "Done");
-	cond->record[0] = rec;
 
 	// OR equal to Ready
-	rec = soap_malloc(soap, sizeof(*rec));
+	rec = GLITE_SECURITY_GSOAP_LIST_GET(cond->record, 1);
 	memset(rec, 0, sizeof(*rec));
 	rec->op = jptype__queryOp__EQUAL;
 	value_set(soap, &rec->value, "Ready");
-	cond->record[1] = rec;
 
-	in->conditions[0] = cond;
 
 	// AND
 	// owner
-	cond = soap_malloc(soap, sizeof(*cond));
+	cond = GLITE_SECURITY_GSOAP_LIST_GET(in->conditions, 0);
 	memset(cond, 0, sizeof(*cond));
 	cond->attr = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/LB/Attributes:user");
 	cond->origin = NULL;
-	cond->__sizerecord = 1;
-	cond->record = soap_malloc(soap, cond->__sizerecord * sizeof(*(cond->record)));
+	GLITE_SECURITY_GSOAP_LIST_CREATE(soap, cond, record, struct jptype__indexQueryRecord, 1);
 
 	// not equal to CertSubj
-	rec = soap_malloc(soap, sizeof(*rec));
+	rec = GLITE_SECURITY_GSOAP_LIST_GET(cond->record, 0);
 	memset(rec, 0, sizeof(*rec));
 	rec->op = jptype__queryOp__UNEQUAL;
 	value_set(soap, &rec->value, "God");
-	cond->record[0] = rec;
-
-	in->conditions[1] = cond;
 
 
 	in->__sizeattributes = 4;
@@ -213,7 +192,7 @@ static int query_recv(struct soap *soap, int fd, struct _jpisclient__QueryJobs *
 	for (i = 0; i < qj->__sizeattributes; i++)
 		glite_jpis_trim_soap(soap, &qj->attributes[i]);
 	for (i = 0; i < qj->__sizeconditions; i++)
-		glite_jpis_trim_soap(soap, &qj->conditions[i]->attr);
+		glite_jpis_trim_soap(soap, &GLITE_SECURITY_GSOAP_LIST_GET(qj->conditions, i)->attr);
 
 	return 0;
 }
@@ -223,21 +202,23 @@ static int query_recv(struct soap *soap, int fd, struct _jpisclient__QueryJobs *
  * print info from the query soap structure
  */
 static void query_print(FILE *out, const struct _jpisclient__QueryJobs *in) {
+	struct jptype__indexQuery	*cond;
 	struct jptype__indexQueryRecord 	*rec;
 	int i, j, k;
 
 	fprintf(out, "Conditions:\n");
 	for (i = 0; i < in->__sizeconditions; i++) {
-		fprintf(out, "\t%s\n", in->conditions[i]->attr);
-		if (in->conditions[i]->origin) {
+		cond = GLITE_SECURITY_GSOAP_LIST_GET(in->conditions, i);
+		fprintf(out, "\t%s\n", cond->attr);
+		if (cond->origin) {
 			for (k = 0; k <= NUMBER_ORIG; k++)
-				if (origins[k].orig == *(in->conditions[i]->origin)) break;
+				if (origins[k].orig == *(cond->origin)) break;
 			fprintf(out, "\t\torigin == %s\n", origins[k].name);
 		} else {
 			fprintf(out, "\t\torigin IS ANY\n");
 		}
-		for (j = 0; j < in->conditions[i]->__sizerecord; j++) {
-			rec = in->conditions[i]->record[j];
+		for (j = 0; j < cond->__sizerecord; j++) {
+			rec = GLITE_SECURITY_GSOAP_LIST_GET(cond->record, j);
 			for (k = 0; k <= NUMBER_OP; k++)
 				if (operations[k].op == rec->op) break;
 			fprintf(out, "\t\tvalue %s", operations[k].name);
@@ -322,6 +303,7 @@ static int queryresult_dump(struct soap *soap, int fd, const struct _jpisclient_
  * print the data returned from JP IS
  */
 static void queryresult_print(FILE *out, const struct  _jpelem__QueryJobsResponse *in) {
+	struct jptype__jobRecord *job;
 	struct jptype__attrValue *attr;
 	int i, j, k;
 
@@ -330,9 +312,10 @@ static void queryresult_print(FILE *out, const struct  _jpelem__QueryJobsRespons
 #endif
 	fprintf(out, "Result %d jobs:\n", in->__sizejobs);
 	for (j=0; j<in->__sizejobs; j++) {
-		fprintf(out, "\tjobid = %s, owner = %s\n", in->jobs[j]->jobid, in->jobs[j]->owner);
-		for (i=0; i<in->jobs[j]->__sizeattributes; i++) {
-			attr = in->jobs[j]->attributes[i];
+		job = GLITE_SECURITY_GSOAP_LIST_GET(in->jobs, j);
+		fprintf(out, "\tjobid = %s, owner = %s\n", job->jobid, job->owner);
+		for (i=0; i<job->__sizeattributes; i++) {
+			attr = GLITE_SECURITY_GSOAP_LIST_GET(job->attributes, i);
 			fprintf(out, "\t\t%s\n", attr->name);
 			fprintf(out, "\t\t\tvalue = ");
 			value_print(out, attr->value);
@@ -377,52 +360,7 @@ static void usage(const char *prog_name) {
 /*
  * process the result after calling soap
  */
-static int check_fault(struct soap *soap, int err) {
-	struct SOAP_ENV__Detail *detail;
-	struct jptype__genericFault	*f;
-	char	*reason,indent[200] = "  ";
-
-	switch(err) {
-		case SOAP_OK: fputs("OK", stderr);
-			      putc('\n', stderr);
-			      break;
-		case SOAP_FAULT:
-		case SOAP_SVR_FAULT:
-			if (soap->version == 2) {
-				detail = soap->fault->SOAP_ENV__Detail;
-#if GSOAP_VERSION >= 20706
-				reason = soap->fault->SOAP_ENV__Reason->SOAP_ENV__Text;
-#else
-				reason = soap->fault->SOAP_ENV__Reason;
-#endif
-			}
-			else {
-				detail = soap->fault->detail;
-				reason = soap->fault->faultstring;
-			}
-			fputs(reason, stderr);
-			putc('\n', stderr);
-			assert(detail->__type == SOAP_TYPE__genericFault);
-#if GSOAP_VERSION >= 20700
-			f = ((struct _genericFault *) detail->fault)
-#else
-			f = ((struct _genericFault *) detail->value)
-#endif
-				-> jpelem__genericFault;
-
-			while (f) {
-				fprintf(stderr,"%s%s: %s (%s)\n",indent,
-						f->source,f->text,f->description);
-				f = f->reason;
-				strcat(indent,"  ");
-			}
-			return -1;
-
-		default: soap_print_fault(soap,stderr);
-			 return -1;
-	}
-	return 0;
-}
+#define check_fault(SOAP, ERR) glite_jp_clientCheckFault((SOAP), (ERR), NULL, 0)
 
 
 int main(int argc, char * const argv[]) {

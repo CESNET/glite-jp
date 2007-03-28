@@ -61,7 +61,7 @@ ps_prefix:=jpps_
 
 SRCS:= conf.c bones_server.c soap_ops.c soap_ps_calls.c \
 	ws_ps_typeref.c ws_is_typeref.c db_ops.c context.c common_server.c \
-	${is_prefix}ServerLib.c\
+	${is_prefix}ServerLib.c \
 	${ps_prefix}ClientLib.c ${ps_prefix}C.c
 
 EXA_TEST_SRCS:=jpis-test.c ${is_prefix}C.c ${is_prefix}Client.c context.c db_ops.c conf.c ws_is_typeref.c
@@ -83,7 +83,7 @@ TRIOLIB:=-lglite_jp_trio
 
 default all: compile doc
 
-compile: ${daemon} ${examples} copy_tests
+compile: ${daemon} ${examples}
 
 ${daemon}: ${OBJS}
 	${LINK} -o $@ -export-dynamic ${OBJS} ${BONESLIB} ${TRIOLIB} ${COMMONLIB} ${GSOAPLIB} ${GLOBUS_LIBS} ${SRVCOMMONLIB}
@@ -96,11 +96,6 @@ jpis-db-internal: ${EXA_DB_OBJS}
 
 glite-jpis-client: ${EXA_CLIENT_OBJS}
 	${LINK} -o $@ $+ ${GSOAPLIB}
-
-copy_tests: ${test} ${test_files}
-
-${test} ${test_files}:
-	for i in $@; do cp ${top_srcdir}/examples/query-tests/$$i  ${top_srcdir}/build; done
 
 JobProvenanceIS.xh: JobProvenanceIS.wsdl JobProvenanceTypes.wsdl typemap.dat
 	cp  ${stagedir}/interface/JobProvenanceTypes.wsdl .
@@ -119,18 +114,18 @@ JobProvenancePS.xh: %.xh: %.wsdl JobProvenanceTypes.wsdl typemap.dat
 
 ${is_prefix}ClientLib.c ${is_prefix}Client.c \
 ${is_prefix}Server.c ${is_prefix}ServerLib.c  \
-${is_prefix}C.c ${is_prefix}H.h ${is_prefix}_Stub.h: JobProvenanceIS.xh
+${is_prefix}C.c ${is_prefix}H.h ${is_prefix}Stub.h: JobProvenanceIS.xh
 	${gsoap_bin_prefix}/soapcpp2 -n -w -c -p ${is_prefix} $<
 
 # JobProvenanceISClient.xh should be used, 
 # for now (gsoap-2.7.0) used direct JobProvenanceIS.xh
 ${is_client_prefix}ClientLib.c ${is_client_prefix}Client.c \
 ${is_client_prefix}Server.c ${is_client_prefix}ServerLib.c  \
-${is_client_prefix}C.c ${is_client_prefix}H.h ${is_client_prefix}_Stub.h: JobProvenanceIS.xh
+${is_client_prefix}C.c ${is_client_prefix}H.h ${is_client_prefix}Stub.h: JobProvenanceIS.xh
 	${gsoap_bin_prefix}/soapcpp2 -n -w -c -p ${is_client_prefix} $<
 
 ${ps_prefix}Client.c ${ps_prefix}ClientLib.c  \
-${ps_prefix}C.c ${ps_prefix}H.h ${ps_prefix}_Stub.h: JobProvenancePS.xh
+${ps_prefix}C.c ${ps_prefix}H.h ${ps_prefix}Stub.h: JobProvenancePS.xh
 	${gsoap_bin_prefix}/soapcpp2 -n -w -c -p ${ps_prefix} $<
 
 
@@ -177,8 +172,10 @@ install:
 	${INSTALL} -m 644 ${top_srcdir}/doc/README ${HTMLS} ${PREFIX}/share/doc/${package}-${version}
 	${INSTALL} -m 644 ${MANS1} ${PREFIX}/share/man/man1
 	${INSTALL} -m 644 ${MANS8} ${PREFIX}/share/man/man8
-	${INSTALL} -m 755 ${test} ${PREFIX}/examples/query-tests
-	${INSTALL} -m 644 ${test_files} ${PREFIX}/examples/query-tests
+	${INSTALL} -m 755 ../examples/query-tests/${test} ${PREFIX}/examples/query-tests
+	for i in ${test_files}; do \
+		${INSTALL} -m 644 ../examples/query-tests/$$i ${PREFIX}/examples/query-tests; \
+	done
 	${INSTALL} -m 644 ${top_srcdir}/interface/JobProvenanceISClient.xsd ${PREFIX}/interface
 
 clean:

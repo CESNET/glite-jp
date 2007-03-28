@@ -174,7 +174,7 @@ run_test_feed() {
 	# run the example
 	numok=`X509_USER_KEY=${X509_USER_KEY} X509_USER_CERT=${X509_USER_CERT}\
 		$GLITE_LOCATION/examples/glite-jpis-test -p $GLITE_JPIS_TEST_PORT \
-		-m $GLITE_JPIS_TEST_DB -x $GLITE_JPIS_TEST_CONFIG | grep -c OK`
+		-m $GLITE_JPIS_TEST_DB -x $GLITE_JPIS_TEST_CONFIG 2>&1 | grep -c OK`
 	if [ "$numok" -eq "2" ]; then
 		echo OK.
 	else

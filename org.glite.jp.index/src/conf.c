@@ -9,7 +9,6 @@
 #include <getopt.h>
 #include <unistd.h>
 
-
 #include <glite/jp/types.h>
 #include <glite/jp/context.h>
 #include "conf.h"
@@ -200,6 +199,7 @@ static int read_conf(glite_jp_is_conf *conf, char *conf_file)
 		}
 	}
 	if (out.__sizefeeds) {
+#warning FIXME: list
 		conf->feeds = calloc(out.__sizefeeds + 1, sizeof(*conf->feeds));
 		for (i=0; i < out.__sizefeeds; i++) {
 			conf->feeds[i] = calloc(1, sizeof(*conf->feeds[i]));
@@ -254,6 +254,7 @@ static int dump_conf(void) {
         out.plugins[0] = strdup("plugin1");
         out.plugins[1] = strdup("plugin2");
 
+#warning: FIXME: lists
 	out.__sizefeeds = 1;
         out.feeds = calloc(1, sizeof(*out.feeds));
 	out.feeds[0] = calloc(1, sizeof(*out.feeds[0]));
