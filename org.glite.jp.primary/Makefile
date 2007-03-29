@@ -49,6 +49,10 @@ SOLINK:=libtool --mode=link ${CC} -module ${LDFLAGS} -rpath ${stagedir}/lib
 LINKXX:=libtool --mode=link ${CXX} ${LDFLAGS} 
 INSTALL:=libtool --mode=install install
 
+ifneq (${classads_prefix},/usr)
+	classadslib := -L${classads_prefix}/lib -lclassad
+endif
+
 daemon:=glite-jp-primarystoraged
 example:=jpps-test dag-deps
 ps_prefix:=jpps_
