@@ -149,7 +149,7 @@ static int glite_jpis_db_queries_serialize(glite_jpis_context_t isctx, void **bl
 	size_t datalen;
 
 	if ((ret = array_init(blob, len, &maxlen, 1024)) != 0) return ret;
-	query = *queries;
+	query = queries ? *queries : NULL;
 	while(query && query->attr) {
 		if ((ret = array_add_long(blob, len, &maxlen, COND_MAGIC)) != 0) goto fail;
 		datalen = strlen(query->attr) + 1;

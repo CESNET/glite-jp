@@ -159,8 +159,8 @@ static int SoapToPrimaryQueryCond(
 	glite_jp_query_rec_t	*qr;	
 
 
-	assert(in); assert(out);
-	qr = calloc(2, sizeof(*qr));	
+	assert(in && in->attr); assert(out);
+	*out = qr = calloc(2, sizeof(*qr));	
 
 	qr[0].attr = strdup(in->attr);
 	glite_jpis_SoapToQueryOp(in->op, &(qr[0].op));
@@ -184,8 +184,6 @@ static int SoapToPrimaryQueryCond(
 	
 	glite_jpis_SoapToAttrOrig(soap, in->origin, &(qr[0].origin) );
 	
-	*out = qr;
-
 	return 0;
 }
 
@@ -206,12 +204,13 @@ int glite_jpis_SoapToPrimaryQueryConds(
 	glite_jp_query_rec_t    **qr;
 	int 			i;
 
-	assert(in); assert(out);
+	assert(in || !size); assert(out);
         qr = calloc(size+1, sizeof(*qr));
 
 	for (i=0; i<size; i++) {
 		if ( SoapToPrimaryQueryCond(soap, GLITE_SECURITY_GSOAP_LIST_GET(in, i), &(qr[i])) ) {
 			*out = NULL;
+			free(qr);
 			return 1;
 		}
 	}

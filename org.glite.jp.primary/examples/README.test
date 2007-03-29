@@ -48,7 +48,7 @@ $ ./jpps-test GetJobAttr JOBID http://egee.cesnet.cz/en/Schema/JP/System:regtime
 Record JP tag:
 --------------
 
-$ jpps-test RecordTag JPBID TagA 1 blah
+$ jpps-test RecordTag JOBID TagA 1 blah
 
 
 TODO

@@ -98,9 +98,16 @@ int glite_jpis_QueryCondToSoap(
 	case GLITE_JP_QUERYOP_WITHIN:
 		if (QueryRecordValToSoap(soap, in->binary, in->size2, in->value2, &qr->value2)) 
 			return SOAP_FAULT;
-	default:
+	case GLITE_JP_QUERYOP_EQUAL:
+	case GLITE_JP_QUERYOP_UNEQUAL:
+	case GLITE_JP_QUERYOP_LESS:
+	case GLITE_JP_QUERYOP_GREATER:
 		if (QueryRecordValToSoap(soap, in->binary, in->size, in->value, &qr->value)) 
                         return SOAP_FAULT;
+	case GLITE_JP_QUERYOP_EXISTS:
+		break;
+	default:
+		assert(0); // unknown or undefined operation
 		break;
 	}
 

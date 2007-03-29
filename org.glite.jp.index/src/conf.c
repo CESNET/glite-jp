@@ -176,7 +176,8 @@ static int read_conf(glite_jp_is_conf *conf, char *conf_file)
 	soap.recvfd = fd;
 	soap_begin_recv(&soap);
 	memset(&out, 0, sizeof(out));
-					
+
+	soap_default__jpelem__ServerConfigurationResponse(&soap, &out);
 	if (!soap_get__jpelem__ServerConfigurationResponse(&soap, &out, "ServerConfiguration", NULL)) {
                 soap_end_recv(&soap);
                 soap_end(&soap);
@@ -211,10 +212,8 @@ static int read_conf(glite_jp_is_conf *conf, char *conf_file)
 			conf->feeds[i] = calloc(1, sizeof(*conf->feeds[i]));
 			conf->feeds[i]->PS_URL=strdup(feed->primaryServer);
 
-			if (feed->__sizecondition) {
-				glite_jpis_SoapToPrimaryQueryConds(&soap, feed->__sizecondition,
-					feed->condition, &conf->feeds[i]->query);
-			}
+			if (glite_jpis_SoapToPrimaryQueryConds(&soap, feed->__sizecondition,
+				feed->condition, &conf->feeds[i]->query)) return EINVAL;
 			
 			conf->feeds[i]->history = feed->history;
 			conf->feeds[i]->continuous = feed->continuous;
