@@ -4,11 +4,15 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
+#include <stdsoap2.h>
 
+#undef SOAP_FMAC1
 #define SOAP_FMAC1 static
 
 #include "glite/jp/types.h"
+#include "soap_version.h"
 #include "glite/security/glite_gsplugin.h"
+#include "glite/security/glite_gscompat.h"
 
 #include "feed.h"
 #include "is_client.h"
@@ -20,10 +24,11 @@
 
 #include "jpis_.nsmap"
 
-#include "soap_util.c"
-
 #include "soap_env_ctx.h"
 #include "soap_env_ctx.c"
+
+#include "glite/jp/ws_fault.c"
+#include "soap_util.c"
 
 extern char *server_key, *server_cert;	/* XXX */
 
@@ -94,7 +99,7 @@ int glite_jpps_single_feed(
 	struct _jpelem__UpdateJobsResponse	out;
 	struct jptype__jobRecord	jr, *jrp = &jr;
 	int	i;
-	enum xsd__boolean	false = false_;
+	enum xsd__boolean	false = GLITE_SECURITY_GSOAP_FALSE;
 	glite_jp_error_t	err;
 
 	glite_jp_clear_error(ctx);
@@ -112,8 +117,8 @@ int glite_jpps_single_feed(
 	in.jobAttributes = &jrp;
 
 	for (i=0; attrs[i].name; i++);
-	jr.jobid = (char *) job; /* XXX: const */
-	jr.owner = owner;
+	jr.jobid = soap_strdup(ctx->other_soap, job);
+	jr.owner = soap_strdup(ctx->other_soap, owner);
 
 	jr.__sizeattributes = jp2s_attrValues(ctx->other_soap,
 			(glite_jp_attrval_t *) attrs, /* XXX: const */
@@ -146,6 +151,8 @@ int glite_jpps_single_feed(
 	}
 	RESTORE_SOAP_CTX
 
+	soap_dealloc(ctx->other_soap, jr.jobid);
+	soap_dealloc(ctx->other_soap, jr.owner);
 	attrValues_free(ctx->other_soap,jr.attributes,jr.__sizeattributes);
 
 	return err.code;
@@ -166,7 +173,7 @@ int glite_jpps_multi_feed(
 	struct _jpelem__UpdateJobs	in;
 	struct _jpelem__UpdateJobsResponse	out;
 	struct jptype__jobRecord	*jr;
-	enum xsd__boolean	false = false_;
+	enum xsd__boolean	false = GLITE_SECURITY_GSOAP_FALSE;
 	glite_jp_error_t	err;
 
 	printf("multi_feed: %s\n",destination);
@@ -178,8 +185,7 @@ int glite_jpps_multi_feed(
 
 	in.feedId = (char *) feed; /* XXX: const */
 	in.feedDone = done;
-	in.__sizejobAttributes = njobs;
-	in.jobAttributes = malloc(njobs * sizeof *in.jobAttributes);
+	GLITE_SECURITY_GSOAP_LIST_CREATE(ctx->other_soap, &in, jobAttributes, struct jptype__jobRecord, njobs);
 
 	for (i=0; i<njobs; i++) {
 		puts(jobs[i]);
@@ -187,7 +193,7 @@ int glite_jpps_multi_feed(
 			printf("%s = %s\n",attrs[i][j].name,attrs[i][j].value);
 		putchar(10);
 
-		in.jobAttributes[i] = jr = malloc(sizeof *jr);
+		jr = GLITE_SECURITY_GSOAP_LIST_GET(in.jobAttributes, i);
 		jr->jobid = jobs[i];
 		jr->owner = owners[i];
 
@@ -205,11 +211,10 @@ int glite_jpps_multi_feed(
 		soap_call___jpsrv__UpdateJobs(ctx->other_soap,destination,"", &in,&out));
 	RESTORE_SOAP_CTX
 	for (i=0; i<njobs; i++) {
-		jr = in.jobAttributes[i];
+		jr = GLITE_SECURITY_GSOAP_LIST_GET(in.jobAttributes, i);
 		attrValues_free(ctx->other_soap,jr->attributes,jr->__sizeattributes);
-		free(jr);
 	}
-	free(in.jobAttributes);
+	GLITE_SECURITY_GSOAP_LIST_DESTROY(ctx->other_soap, &in, jobAttributes);
 
 	return err.code;
 }
