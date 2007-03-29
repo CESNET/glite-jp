@@ -1,6 +1,7 @@
 #ident "$Header: "
 
 #include <syslog.h>
+#include <assert.h>
 #include <glite/jp/types.h>
 #include <glite/security/glite_gscompat.h>
 

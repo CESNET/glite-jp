@@ -37,7 +37,7 @@
 			<elem name="attr" type="xsd:string">Attribute name to query.</elem>
 			<elem name="op" type="queryOp">Operation.</elem>
 			<elem name="origin" type="attrOrig" optional="yes">Where the attribute value came from.</elem>
-			<elem name="value" type="stringOrBlob">Value to compare the job attribute with.</elem>
+			<elem name="value" type="stringOrBlob" optional="yes">Value to compare the job attribute with.</elem>
 			<elem name="value2" type="stringOrBlob" optional="yes">Another value (for op = WITHIN).</elem>
 		</struct>
 

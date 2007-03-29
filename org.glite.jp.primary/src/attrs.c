@@ -142,7 +142,6 @@ int glite_jpps_get_attrs(glite_jp_context_t ctx,const char *job,char **attr,int 
 			nout = merge_attrvals(&out, nout, tag_out);
 			free(tag_out); tag_out = NULL;
 		}
-#ifndef BRANCH_RC31_3
 		for (j = 0; known_namespaces[j].namespace; j++) {
 			char* attr_namespace = glite_jpps_get_namespace(other[i]);
 			if (strcmp(attr_namespace, known_namespaces[j].namespace) == 0){
@@ -152,53 +151,6 @@ int glite_jpps_get_attrs(glite_jp_context_t ctx,const char *job,char **attr,int 
 							, known_namespaces[j].plugins[k]->classes[l]
 							, known_namespaces[j].plugins[k]->uris[l]);
 				break;
-#else
-		free(names);
-	}
-
-/* loop over the files */
-	for (i=0; i<nfiles; i++) {
-		void	*beh;
-		int	ci;
-
-		/* XXX: ignore error */
-		if (!glite_jppsbe_open_file(ctx,job,
-			known_classes[ci = files[i].class_idx].class,
-			files[i].name,O_RDONLY,&beh))
-		{
-			for (j=0; j<known_classes[ci].nplugins; j++) {
-				void	*ph;
-
-				glite_jpps_fplug_data_t	*p = 
-					known_classes[ci].plugins[j];
-				/* XXX: ignore error */
-				if (!p->ops.open(p->fpctx,beh,known_classes[ci].uri,&ph)) {
-
-					for (j=0; j<nother; j++) {
-						glite_jp_attrval_t	*myattr;
-						/* XXX: ignore errors */
-						if (!p->ops.attr(p->fpctx,ph,other[j],&myattr) && myattr) {
-							int	k;
-							for (k=0; myattr[k].name; k++) {
-								myattr[k].origin = GLITE_JP_ATTR_ORIG_FILE;
-								trio_asprintf(&myattr[k].origin_detail,"%s %s",
-										known_classes[ci].uri,
-										files[i].name ? files[i].name : "");
-							}
-							nout = merge_attrvals(&out,nout,myattr);
-							free(myattr);
-						}
-
-					}
-					p->ops.close(p->fpctx,ph);
-				}
-				else {
-					char	*e;
-					fprintf(stderr,"[%d] %s: %s\n",getpid(),known_classes[ci].class,
-							e = glite_jp_error_chain(ctx));
-					free(e);
-				}
-#endif
 			}
 			free(attr_namespace);
 		}
