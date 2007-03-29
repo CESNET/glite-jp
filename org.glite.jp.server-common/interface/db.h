@@ -240,6 +240,14 @@ int glite_jp_db_execute(glite_jp_db_stmt_t jpstmt);
  */
 int glite_jp_db_fetch(glite_jp_db_stmt_t jpstmt);
 
+/**
+ *
+ * \param[inout] jpstmt	JP SQL statement
+ *
+ * \return value of autoincremented field after last insert/update
+ */
+long int glite_jp_db_lastid(glite_jp_db_stmt_t jpstmt);
+
 #ifdef __cplusplus
 }
 #endif

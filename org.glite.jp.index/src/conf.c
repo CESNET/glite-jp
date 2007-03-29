@@ -217,6 +217,7 @@ static int read_conf(glite_jp_is_conf *conf, char *conf_file)
 			
 			conf->feeds[i]->history = feed->history;
 			conf->feeds[i]->continuous = feed->continuous;
+			conf->feeds[i]->uniqueid = -1;
 		}
 	}
 

@@ -9,7 +9,9 @@
 
 //#define lprintf
 #define lprintf(args...) glite_jp_lprintf(__FUNCTION__, ##args)
-
+#define llprintf(MODULE, args...) do { \
+	if ((MODULE)) glite_jp_lprintf(__FUNCTION__, ##args); \
+} while(0)
 
 
 typedef struct _glite_jp_is_feed {
@@ -17,6 +19,7 @@ typedef struct _glite_jp_is_feed {
 	glite_jp_query_rec_t    **query;	// query to Primary Server (aka filter)
 	int     		history, 	// type of query
 				continuous;
+	long int		uniqueid;       // internal ID
 } glite_jp_is_feed;
 
 typedef struct _glite_jp_is_conf {

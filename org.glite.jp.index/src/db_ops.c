@@ -19,6 +19,8 @@
 #include "db_ops.h"
 
 
+#define LOG_SQL 0
+
 #define TABLE_PREFIX_DATA "attr_"
 #define SQLCMD_DROP_DATA_TABLE "DROP TABLE " TABLE_PREFIX_DATA "%s"
 #define SQLCMD_CREATE_DATA_TABLE "CREATE TABLE " TABLE_PREFIX_DATA "%s (\n\
@@ -306,8 +308,9 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 		// insert
 		if (glite_jp_db_execute(stmt) == -1) goto fail;
 
-		snprintf(sql, sizeof(sql), SQLCMD_CREATE_DATA_TABLE, attrid, type_index, type_full);
-		lprintf("creating table: '%s'\n", sql);
+		sql[sizeof(sql) - 1] = '\0';
+		snprintf(sql, sizeof(sql) - 1, SQLCMD_CREATE_DATA_TABLE, attrid, type_index, type_full);
+		llprintf(LOG_SQL, "creating table: '%s'\n", sql);
 		if ((glite_jp_db_execstmt(jpctx, sql, NULL)) == -1) goto fail;
 
 		i++;
@@ -334,6 +337,7 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 		memcpy(dbconds, conds, conds_len);
 		free(conds);
 		if (glite_jp_db_execute(stmt) == -1) goto fail_conds;
+		feeds[i]->uniqueid = glite_jp_db_lastid(stmt);
 
 		i++;
 	}
@@ -369,7 +373,7 @@ int glite_jpis_dropDatabase(glite_jpis_context_t ctx) {
 	if (glite_jp_db_execute(stmt_tabs) == -1) goto fail;
 	while ((ret = glite_jp_db_fetch(stmt_tabs)) == 0) {
 		snprintf(sql, sizeof(sql), SQLCMD_DROP_DATA_TABLE, attrid);
-		lprintf("dropping '%s' ==> '%s'\n", attrid, sql);
+		llprintf(LOG_SQL, "dropping '%s' ==> '%s'\n", attrid, sql);
 		if (glite_jp_db_execstmt(jpctx, sql, NULL) == -1) printf("warning: can't drop table '" TABLE_PREFIX_DATA "%s': %s (%s)\n", attrid, jpctx->error->desc, jpctx->error->source);
 	}
 	if (ret != ENODATA) goto fail;
@@ -588,7 +592,7 @@ int glite_jpis_insertAttrVal(glite_jpis_context_t ctx, const char *jobid, glite_
 	free(table);
 	free(value);
 	free(full_value);
-	lprintf("(%s) sql=%s\n", av->name, sql);
+	llprintf(LOG_SQL, "(%s) sql=%s\n", av->name, sql);
 	if (glite_jp_db_execstmt(ctx->jpctx, sql, NULL) != 1) {
 		free(sql);
 		return ctx->jpctx->error->code;

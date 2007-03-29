@@ -659,3 +659,13 @@ int glite_jp_db_fetch(glite_jp_db_stmt_t jpstmt) {
 failed:
 	return jpstmt->ctx->error->code;
 }
+
+
+long int glite_jp_db_lastid(glite_jp_db_stmt_t jpstmt) {
+	my_ulonglong i;
+
+	glite_jp_clear_error(jpstmt->ctx);
+	i = mysql_stmt_insert_id(jpstmt->stmt);
+	assert(i < ((unsigned long int)-1) >> 1);
+	return (long int)i;
+}
