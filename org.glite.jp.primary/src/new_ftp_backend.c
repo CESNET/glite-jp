@@ -1791,7 +1791,7 @@ int glite_jppsbe_query(
 	char	*where = NULL,*stmt = NULL,*aux = NULL, *cols = NULL;
 	char	*qres[3] = { NULL, NULL, NULL };
 	int	cmask = 0, owner_idx = -1, reg_idx = -1;
-	glite_jp_db_stmt_t	q;
+	glite_jp_db_stmt_t	q = NULL;
 	glite_jp_attrval_t	metadata[3];
 
 	memset(&err,0,sizeof err);
