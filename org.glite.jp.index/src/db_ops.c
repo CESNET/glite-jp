@@ -311,7 +311,16 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 		sql[sizeof(sql) - 1] = '\0';
 		snprintf(sql, sizeof(sql) - 1, SQLCMD_CREATE_DATA_TABLE, attrid, type_index, type_full);
 		llprintf(LOG_SQL, "creating table: '%s'\n", sql);
-		if ((glite_jp_db_execstmt(jpctx, sql, NULL)) == -1) goto fail;
+		if ((glite_jp_db_execstmt(jpctx, sql, NULL)) == -1) {
+			glite_jp_error_t err;
+
+			memset(&err,0,sizeof err);
+			err.code = EAGAIN;
+			err.source = __FUNCTION__;
+			err.desc = "If the atribute table already exists, restart may help.";
+			glite_jp_stack_error(ctx, &err); 
+			goto fail;
+		}
 
 		i++;
 	}

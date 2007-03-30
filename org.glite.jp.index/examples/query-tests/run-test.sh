@@ -89,6 +89,9 @@ create_db() {
 
 import_db() {
 	# import database
+	echo -n "D"
+	# delay (if JP IS downloads something...)
+	sleep 1
 	cat $1 | sed "s/jpis1test/$DB_NAME/" | mysql -u $DB_USER -h $DB_HOST
 	if [ x"$?" != x"0" ]; then
 		echo "FAILED to import database."
@@ -96,6 +99,7 @@ import_db() {
 		drop_db;
 		exit 1
 	fi
+	echo -n "B "
 }
 
 drop_db() {
@@ -113,6 +117,7 @@ run_is() {
 		exit 1
 	fi
 
+	echo -n "I"
 	# run index server
 	X509_USER_KEY=${X509_USER_KEY} X509_USER_CERT=${X509_USER_CERT} \
 	$GLITE_LOCATION/bin/glite-jp-indexd -m $GLITE_JPIS_TEST_DB -p $GLITE_JPIS_TEST_PORT \
@@ -143,6 +148,7 @@ run_is() {
 		i=$(($i+1))
 		LC_ALL=C sleep 0.1
 	done
+	echo -n "S "
 }
 
 kill_is() {
@@ -154,9 +160,11 @@ kill_is() {
 }
 
 run_test_query() {
+	echo -n "Q"
 	X509_USER_KEY=${X509_USER_KEY} X509_USER_CERT=${X509_USER_CERT} \
-	$GLITE_LOCATION/examples/glite-jpis-client -f strippedxml -q $1 \
-		 -i http://localhost:$GLITE_JPIS_TEST_PORT 2>&1 | sed -e 's,<?xml version="1.0" encoding="UTF-8"?>,,' -e 's, SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/",,' > /tmp/result
+	$GLITE_LOCATION/examples/glite-jpis-client -f hr -q $1 \
+		 -i http://localhost:$GLITE_JPIS_TEST_PORT > /tmp/result 2>&1
+	echo -n "R "
 	DIFF=`diff -b -B --ignore-matching-lines="query: using JPIS" $2 /tmp/result`
 	if [ -z "$DIFF" -a "$?" -eq "0" ] ; then
 		echo "OK."
@@ -257,5 +265,13 @@ create_db;
 run_is "-n";
 import_db $GLITE_LOCATION/examples/query-tests/dump1.sql;
 run_test_query $GLITE_LOCATION/examples/query-tests/origin_query.in $GLITE_LOCATION/examples/query-tests/origin_query.out;
+drop_db;
+kill_is;
+
+echo -n "EXISTS operation test........... "
+create_db;
+run_is "-n";
+import_db $GLITE_LOCATION/examples/query-tests/dump1.sql;
+run_test_query $GLITE_LOCATION/examples/query-tests/exists_query.in $GLITE_LOCATION/examples/query-tests/exists_query.out;
 drop_db;
 kill_is;
