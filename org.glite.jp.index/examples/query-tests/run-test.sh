@@ -6,6 +6,8 @@
 # requires running mysql
 #
 
+LC_ALL=C
+
 usage() {
 cat <<EOF
 
@@ -18,6 +20,8 @@ cat <<EOF
    GLITE_HOST_KEY..................path to host key
    GLITE_JPIS_TEST_PIDFILE.........pidfile (default \`pwd\`/glite-jp-indexd.pid)
    GLITE_JPIS_TEST_LOGFILE.........logfile (default \`pwd\`/glite-jp-indexd.log)
+   GLITE_JPIS_TEST_CONFIG..........config file (default \$GLITE_LOCATION/etc/
+                                   glite-jpis-test-config.xml)
    GLITE_JPIS_TEST_PORT............index server port
    GLITE_JPIS_TEST_DB..............connection string 
                                    (default jpis/@localhost:jpis1test,
@@ -63,7 +67,7 @@ init() {
 	GLITE_JPIS_TEST_PORT=${GLITE_JPIS_TEST_PORT:-"10000"}
 	GLITE_JPIS_TEST_PIDFILE=${GLITE_JPIS_TEST_PIDFILE:-"/tmp/glite-jp-indexd.pid"}
 	GLITE_JPIS_TEST_LOGFILE=${GLITE_JPIS_TEST_LOGFILE:-"/tmp/glite-jp-indexd.log"}
-	GLITE_JPIS_TEST_CONFIG=${GLITE_JPIS_TEST_CONFIG:-"$GLITE_LOCATION/etc/glite-jpis-config.xml"}
+	GLITE_JPIS_TEST_CONFIG=${GLITE_JPIS_TEST_CONFIG:-"$GLITE_LOCATION/etc/glite-jpis-test-config.xml"}
 
 	if [ -z "$GLITE_JPIS_TEST_DB" ]; then
 		GLITE_JPIS_TEST_DB="jpis/@localhost:jpis1test"
@@ -90,8 +94,6 @@ create_db() {
 import_db() {
 	# import database
 	echo -n "D"
-	# delay (if JP IS downloads something...)
-	sleep 1
 	cat $1 | sed "s/jpis1test/$DB_NAME/" | mysql -u $DB_USER -h $DB_HOST
 	if [ x"$?" != x"0" ]; then
 		echo "FAILED to import database."
@@ -130,11 +132,14 @@ run_is() {
 		drop_db;
 		exit 1
 	fi
-	if [ ! -s "${GLITE_JPIS_TEST_PIDFILE}" ]; then
-		sleep 1
-	fi
+	i=0
+	while [ ! -s "${GLITE_JPIS_TEST_PIDFILE}" -a $i -lt 20 ]; do
+		sleep 0.1
+		i=$(($i+1))
+	done
 	if [ ! -s "${GLITE_JPIS_TEST_PIDFILE}" ]; then
 		echo "Can't startup index server."
+		kill_is;
 		drop_db;
 		exit 1
 	fi
@@ -143,11 +148,17 @@ run_is() {
 	ret=1
 	i=0
 	while [ x"$ret" != x"0" -a $i -lt 20 ]; do
-		LC_ALL=C netstat -tap 2>/dev/null | grep "\<$GLITE_JPIS_TEST_PORT\>" > /dev/null
+		netstat -tap 2>/dev/null | grep "\<$GLITE_JPIS_TEST_PORT\>" > /dev/null
 		ret=$?
 		i=$(($i+1))
-		LC_ALL=C sleep 0.1
+		sleep 0.1
 	done
+	if [ x"$ret" != x"0" ]; then
+		echo "Index server not started."
+		kill_is;
+		drop_db;
+		exit 1;
+	fi
 	echo -n "S "
 }
 
@@ -252,7 +263,7 @@ run_test_query $GLITE_LOCATION/examples/query-tests/simple_query.in $GLITE_LOCAT
 drop_db;
 kill_is;
 
-echo -n "Query jobId test........... "
+echo -n "Query jobId test..... "
 create_db;
 run_is "-n";
 import_db $GLITE_LOCATION/examples/query-tests/dump1.sql;
@@ -260,7 +271,7 @@ run_test_query $GLITE_LOCATION/examples/query-tests/jobid_query.in $GLITE_LOCATI
 drop_db;
 kill_is;
 
-echo -n "Origin test........... "
+echo -n "Origin test.......... "
 create_db;
 run_is "-n";
 import_db $GLITE_LOCATION/examples/query-tests/dump1.sql;
@@ -268,10 +279,18 @@ run_test_query $GLITE_LOCATION/examples/query-tests/origin_query.in $GLITE_LOCAT
 drop_db;
 kill_is;
 
-echo -n "EXISTS operation test........... "
+echo -n "EXISTS test.......... "
 create_db;
 run_is "-n";
 import_db $GLITE_LOCATION/examples/query-tests/dump1.sql;
 run_test_query $GLITE_LOCATION/examples/query-tests/exists_query.in $GLITE_LOCATION/examples/query-tests/exists_query.out;
+drop_db;
+kill_is;
+
+echo -n "WITHIN test.......... "
+create_db;
+run_is "-n";
+import_db $GLITE_LOCATION/examples/query-tests/dump1.sql;
+run_test_query $GLITE_LOCATION/examples/query-tests/within_query.in $GLITE_LOCATION/examples/query-tests/exists_query.out;
 drop_db;
 kill_is;

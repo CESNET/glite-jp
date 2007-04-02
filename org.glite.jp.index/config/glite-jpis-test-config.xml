@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jpelem:ServerConfiguration xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:jptype="http://glite.org/wsdl/types/jp" xmlns:jpsrv="http://glite.org/wsdl/services/jp" xmlns:jpelem="http://glite.org/wsdl/elements/jp">
+	
+	<!-- List of attributes IS want to receive from PS's -->
+	<attrs>http://egee.cesnet.cz/en/Schema/JP/System:owner</attrs>
+	<attrs>http://egee.cesnet.cz/en/Schema/JP/System:jobId</attrs>
+	<attrs>http://egee.cesnet.cz/en/Schema/JP/System:regtime</attrs>
+	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:user</attrs>
+	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:aTag</attrs>
+	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:eNodes</attrs>
+	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:RB</attrs>
+	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:CE</attrs>
+	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:UIHost</attrs>
+	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:CPUTime</attrs>
+	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:NProc</attrs>
+	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus</attrs>
+	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatusDate</attrs>
+	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:retryCount</attrs>
+	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:jobType</attrs>
+	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:nsubjobs</attrs>
+	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:lastStatusHistory</attrs>
+	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:fullStatusHistory</attrs>
+
+
+	<!-- List of attributes IS will index -->
+	<indexedAttrs>http://egee.cesnet.cz/en/Schema/JP/System:owner</indexedAttrs>
+	<indexedAttrs>http://egee.cesnet.cz/en/Schema/JP/System:jobId</indexedAttrs>
+	<indexedAttrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:user</indexedAttrs>
+	<indexedAttrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:CE</indexedAttrs>
+	<indexedAttrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus</indexedAttrs>
+
+	<!-- List of type plugins -->
+	<plugins></plugins>
+</jpelem:ServerConfiguration>

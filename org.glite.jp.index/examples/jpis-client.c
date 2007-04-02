@@ -55,8 +55,8 @@ struct {
 	{jptype__queryOp__UNEQUAL, "<>"},
 	{jptype__queryOp__LESS, "<"},
 	{jptype__queryOp__GREATER, ">"},
-	{jptype__queryOp__WITHIN, "in"},
-	{jptype__queryOp__EXISTS, "exists"},
+	{jptype__queryOp__WITHIN, "WITHIN"},
+	{jptype__queryOp__EXISTS, "EXISTS"},
 	{0, "unknown"}
 };
 
@@ -227,7 +227,7 @@ static void query_print(FILE *out, const struct _jpisclient__QueryJobs *in) {
 			}
 			if (rec->value2) {
 				if (!rec->value) fprintf(out, "-");
-				fprintf(out, " ");
+				fprintf(out, " AND ");
 				value_print(out, rec->value2);
 			}
 			fprintf(out, "\n");

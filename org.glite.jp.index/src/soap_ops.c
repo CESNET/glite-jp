@@ -189,6 +189,16 @@ static int get_op(const enum jptype__queryOp in, char **out)
 		case  GLITE_JP_QUERYOP_UNEQUAL:
 			qop = strdup("!=");
 			break;
+// FIXME: has index the same metrics?
+		case  GLITE_JP_QUERYOP_GREATER:
+			qop = strdup(">");
+			break;
+		case  GLITE_JP_QUERYOP_LESS:
+			qop = strdup("<");
+			break;
+		case  GLITE_JP_QUERYOP_WITHIN:
+			qop = strdup("BETWEEN");
+			break;
 		default:
 			// unsupported query operator
 			return(1);
@@ -200,10 +210,61 @@ static int get_op(const enum jptype__queryOp in, char **out)
 }
 
 
+static char *get_sql_stringvalue(glite_jpis_context_t ctx, struct jptype__stringOrBlob *value) {
+	if (!value) return NULL;
+	if (!GSOAP_ISSTRING(value)) return NULL;
+	return GSOAP_STRING(value);
+}
+
+
+static int get_sql_indexvalue(char **sql, struct soap *soap, glite_jpis_context_t ctx, struct jptype__indexQuery *condition, struct jptype__stringOrBlob *value) {
+	glite_jp_attrval_t attr;
+
+	*sql = NULL;
+	if (!value) return 0;
+	memset(&attr, 0, sizeof attr);
+	attr.name = condition->attr;
+	if (GSOAP_ISSTRING(value)) {
+		attr.value = GSOAP_STRING(value);
+		attr.binary = 0;
+	} else if (GSOAP_ISBLOB(value)) {
+		attr.value = GSOAP_BLOB(value)->__ptr;
+		attr.size = GSOAP_BLOB(value)->__size;
+		attr.binary = 1;
+	} else return 0;
+	glite_jpis_SoapToAttrOrig(soap, condition->origin, &(attr.origin));
+
+	*sql = glite_jp_attrval_to_db_index(ctx->jpctx, &attr, 255);
+	return 0;
+}
+
+
+static int get_sql_cond(char **sql, const char *attr_md5, enum jptype__queryOp op, char *value, char *value2) {
+	char *s, *qop, *column;
+
+	*sql = NULL;
+	if (get_op(op, &qop) != 0) return 0;
+	if (attr_md5) trio_asprintf(&column, "attr_%|Ss.value", attr_md5);
+	else asprintf(&column, "jobs.dg_jobid");
+	trio_asprintf(sql, "%s %s \"%|Ss\"", column, qop, value);
+	free(column);
+	free(qop);
+	if (op == jptype__queryOp__WITHIN) {
+		if (!value) {
+			free(*sql);
+			*sql = NULL;
+			return EINVAL;
+		}
+		trio_asprintf(&s, "%s AND \"%|Ss\"", *sql, value2);
+		free(*sql); *sql = s;
+	}
+	return 0;
+}
+
+
 static char *get_sql_or(struct soap *soap, glite_jpis_context_t ctx, struct jptype__indexQuery *condition, const char *attr_md5) {
 	struct jptype__indexQueryRecord *record;
-	glite_jp_attrval_t	attr;
-	char *qop, *sql, *s;
+	char *sql, *cond, *s = NULL, *value, *value2;
 	int j;
 
 	sql = strdup("");
@@ -212,34 +273,30 @@ static char *get_sql_or(struct soap *soap, glite_jpis_context_t ctx, struct jpty
 		if (record->op == jptype__queryOp__EXISTS) {
 			/* no additional conditions needed when existing is enough */
 		} else {
-			if (get_op(record->op, &qop)) return NULL;
-
-			memset(&attr, 0, sizeof(attr));
-			attr.name = condition->attr;
-			if (GSOAP_ISSTRING(record->value)) {
-				attr.value = GSOAP_STRING(record->value);
-				attr.binary = 0;
-			} else {
-				attr.value = GSOAP_BLOB(record->value)->__ptr;
-				attr.size = GSOAP_BLOB(record->value)->__size;
-				attr.binary = 1;
-			}
-			glite_jpis_SoapToAttrOrig(soap,
-				condition->origin, &(attr.origin));
 			if (strcmp(condition->attr, GLITE_JP_ATTR_JOBID) == 0) {
-			        trio_asprintf(&s,"%s%sjobs.dg_jobid %s \"%|Ss\"",
-		        	        sql, (sql[0] ? " OR " : ""), qop, attr.value);
+				value = get_sql_stringvalue(ctx, record->value);
+				if (!value) goto err;
+				value2 = get_sql_stringvalue(ctx, record->value2);
+				if (get_sql_cond(&cond, attr_md5, record->op, value, value2) != 0) goto err;
 			} else {
-				trio_asprintf(&s,"%s%sattr_%|Ss.value %s \"%|Ss\"",
-					sql, (sql[0] ? " OR " : ""), attr_md5, qop,
-					glite_jp_attrval_to_db_index(ctx->jpctx, &attr, 255));
+				get_sql_indexvalue(&value, soap, ctx, condition, record->value);
+				get_sql_indexvalue(&value2, soap, ctx, condition, record->value2);
+				get_sql_cond(&cond, attr_md5, record->op, value, value2);
+				free(value);
+				free(value2);
+				if (!cond) goto err;
 			}
-			free(qop);
+			trio_asprintf(&s,"%s%s%s", sql, (sql[0] ? " OR " : ""), cond);
+			free(cond);
 			free(sql); sql = s;
 		}
 	}
 
 	return sql;
+err:
+	free(sql);
+	free(s);
+	return NULL;
 }
 
 
@@ -250,7 +307,7 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 				*qwhere = NULL, *query = NULL, *res[2], 
 				**jids = NULL, **pss = NULL, **attr_tables = NULL;
 	int 			i, ret;
-	glite_jp_db_stmt_t	stmt;
+	glite_jp_db_stmt_t	stmt = NULL;
 	glite_jp_attr_orig_t	orig;
 
 	
@@ -277,8 +334,8 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 				trio_asprintf(&qb, "");
 
 			/* select given records in attr_ table */
-			trio_asprintf(&qa,"%s%s jobs.jobid = attr_%|Ss.jobid",
-				(i ? "AND" : ""), qb, attr_md5);
+			trio_asprintf(&qa,"%s%sjobs.jobid = attr_%|Ss.jobid",
+				(i ? "AND " : ""), qb, attr_md5);
 
 			free(qb);
 		}
@@ -292,7 +349,7 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 		}
 		free(qor);
 
-		trio_asprintf(&qb,"%s %s", qwhere, qa);
+		trio_asprintf(&qb,"%s%s%s", qwhere, qa[0] ? " " : "", qa);
 		free(qa); qwhere = qb; qb = NULL; qa = NULL;
 		free(attr_md5);
 	}
@@ -308,7 +365,7 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 		trio_asprintf(&query, "SELECT DISTINCT dg_jobid,ps FROM jobs%s WHERE%s", qa, qwhere);
 	}
 	else {
-		trio_asprintf(&query, "SELECT DISTINCT dg_jobid,ps FROM jobs,users%s WHERE (jobs.ownerid = users.userid AND users.cert_subj='%s') AND %s", qa, ctx->jpctx->peer, qwhere);
+		trio_asprintf(&query, "SELECT DISTINCT dg_jobid,ps FROM jobs,users%s WHERE (jobs.ownerid = users.userid AND users.cert_subj='%s') AND%s", qa, ctx->jpctx->peer, qwhere);
 	}
 	printf("Incomming QUERY:\n %s\n", query);
 	free(qwhere);

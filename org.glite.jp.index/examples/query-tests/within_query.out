@@ -1,9 +1,9 @@
-query: using JPIS http://localhost:10000
+query: using JPIS http://localhost:12002
 
 Conditions:
 	http://egee.cesnet.cz/en/Schema/LB/Attributes:CE
 		origin IS ANY
-		value EXISTS
+		value WITHIN VOCA AND VOCI
 Attributes:
 	http://egee.cesnet.cz/en/Schema/JP/System:owner
 	http://egee.cesnet.cz/en/Schema/JP/System:jobId
