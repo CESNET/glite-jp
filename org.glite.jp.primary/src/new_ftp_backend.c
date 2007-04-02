@@ -2395,9 +2395,14 @@ int glite_jppsbe_read_tag(
         }
 
 	if (tag_attr(ctx,h,attr,attrval)){
+		glite_jp_error_t	*e;
 		err.code = EIO;
                 err.desc = "cannot read tag";
-                return glite_jp_stack_error(ctx,&err);		
+		glite_jp_stack_error(ctx,&err);		
+		e = ctx->error;
+		glite_jppsbe_close_file(ctx,h->bhandle);
+		ctx->error = e;
+		return err.code;
 	}
 
 	if (glite_jppsbe_close_file(ctx,h->bhandle))
