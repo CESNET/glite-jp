@@ -45,24 +45,24 @@ table~\ref{tab:LB-JP-interactions}.
 
 \begin{table}[htpb]
  \centering
-  \begin{tabular}{|c|l|l|p{9cm}|}
+  \begin{tabular}{|c|p{3cm}|l|p{9cm}|}
     \hline
     &spool directory&initiated by&description\\
     \hline
     \hline
-    1&lb.export.dump&lb-exporter&Export of LB job records into spool 
-    directory. It use glite-lb-purge utility. LB-exporter reads this
-    spool directory
-    in a regular manner and implement next processing of LB dumps.\\
+    1&lb.export.dump,
+      lb.export.dump.keep&lb-exporter&
+      Export of LB job records into spool directory. It uses glite-lb-purge utility. LB-exporter reads this spool directory in a regular manner and implement next processing of LB dumps. Optionally it can keep handled dumps in lb.export.dump.keep.\\
     \hline
     2&lb.export.jpreg&LB server&When new job come to the LB server 
     it stores its
     registration into the spool directory. It is responsibility of
     JP-importer process to handle such registrations.\\
     \hline
-    3&lb.export.jpdump&lb-exporter&LB-exporter do its processing of 
-    LB dumps and passes
-    on it to the JP-importer using the spool directory.\\
+    3&lb.export.jpdump,
+      lb.export.jobs,
+      lb.export.jobs.keep&lb-exporter&
+      LB-exporter do its processing of LB dumps (they are in per job form) and passes on it to the JP-importer using the spool directory lb.export.jpdump and temporary storage lb.export.jobs. It can keep the job files for futher usage.\\
     \hline
     4&none&jp-importer&JP importer handles registrations received from LB
     server and sends it to the JP primary server front-end (using its WS
@@ -93,7 +93,7 @@ Notes:
    staying in a terminal state is to be purged from the LB server.
  \item The LB exporter have a feature to store LB job event dumps in a
    directory for further handling (e.g. for job statistic tool). This behaviour
-   is controled by lb.export.jobs deployment config file clause (leave
+   is controled by lb.export.jobs.keep deployment config file clause (leave
    this clause empty if you don't use dumps for futher handling).
  \item The LB exporter also have a feature to keep all handled LB
    dumps (in glite-lb-purge format) in filesystem. This feature is

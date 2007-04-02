@@ -12,6 +12,9 @@
 
 	Revision history:
 	$Log$
+	Revision 1.12  2006/05/05 11:52:37  jpospi
+	conditional disabling of cross-subsystem builds via "jponly" property
+
 	Revision 1.11  2006/01/16 17:20:25  mmulac
 	merge from RC15 branch
 	 - compiles
@@ -259,6 +262,42 @@
 		</then>           
 	</if>                   
 
+	<target name="lb.common" unless="setenvonly" depends="envset">
+		<if>
+			<isset property="small.memory"/>
+			<then>
+				<exec dir="${lb.subsystem.dir}" executable="${antExec}" failonerror="${failonerror}">
+					<arg line="common -Dtarget=${target} -Dsmall.memory=true -Dbootstrap=${bootstrap} -Dfailonerror=${failonerror} -Ddo.cvs.tag=${do.cvs.tag}"/>
+				</exec>
+			</then>
+			<else>
+				<ant dir="${lb.subsystem.dir}"
+        				target="common"
+        				inheritall="false" >
+        				<property name="target" value="${target}"/>
+				</ant>
+			</else>
+		</if>
+ 	</target>
+
+	<target name="lb.client-interface" unless="setenvonly" depends="envset">
+		<if>
+			<isset property="small.memory"/>
+			<then>
+				<exec dir="${lb.subsystem.dir}" executable="${antExec}" failonerror="${failonerror}">
+					<arg line="client-interface -Dtarget=${target} -Dsmall.memory=true -Dbootstrap=${bootstrap} -Dfailonerror=${failonerror} -Ddo.cvs.tag=${do.cvs.tag}"/>
+				</exec>
+			</then>
+			<else>
+				<ant dir="${lb.subsystem.dir}"
+        				target="client-interface"
+        				inheritall="false" >
+        				<property name="target" value="${target}"/>
+				</ant>
+			</else>
+		</if>
+ 	</target>
+
 	<target name="ws-interface" unless="setenvonly" depends="envset" >
 		<if>
 			<isset property="small.memory" />
@@ -275,7 +314,7 @@
 		</if>
 	</target>
 
-	<target name="common" unless="setenvonly" depends="envset" >
+	<target name="common" unless="setenvonly" depends="envset,lb.client-interface" >
 		<if>
 			<isset property="small.memory" />
 			<then>
@@ -323,7 +362,7 @@
 		</if>
 	</target>
 
-	<target name="server-common" unless="setenvonly" depends="envset, mysql, common" >
+	<target name="server-common" unless="setenvonly" depends="envset, mysql, common,lb.common" >
 		<if>
 			<isset property="small.memory" />
 			<then>

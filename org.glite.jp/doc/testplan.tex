@@ -43,10 +43,9 @@
 \item JPIS -- Job Provenance Index Server
 \end{itemize}
 
-\todo{}
 
 \section{Test Coverage}
-\todo{}
+\todo{TBD}
 
 %\chapter{Test Cases}
 
@@ -56,7 +55,7 @@
 
 \subsubsection{Basic functionality}
 \label{regjob}
-\req Running JPPS
+\req\ Running JPPS
 
 \how
 \begin{itemize}
@@ -74,16 +73,22 @@ $ jpps-test GetJobAttr JOBID http://egee.cesnet.cz/en/Schema/JP/System:owner
 \end{itemize}
 \result Should print the OWNER value supplied.
 
-
 \subsubsection{AuthZ check}
-\req JPPS running, a~job registered with the procedure in~\ref{regjob}
-\how
+\req\ JPPS running, a~job registered with the procedure in~\ref{regjob}
+
+\how\ 
 Call GetJobAttributes using different user credentials 
-\result 
+
+\result\ 
 Should fail with ``Permission denied'' error
 
 \subsection{Tag recording}
-\req JPPS running, a~job registered with the procedure in~\ref{regjob}
+\label{tagreg}
+
+\subsubsection{Basic functionality}
+\req\
+JPPS running, a~job registered with the procedure in~\ref{regjob}
+
 \how 
 \begin{itemize}
 \item Call RecordTag operation:
@@ -98,34 +103,75 @@ $ jpps-test  GetJobAttr JOBID TAGNAME
 \result
 The recorded value should be returned.
 
-- record and retrieve more values of the same tag
+\how\ Record another values(s) of the same tag by repeating the RecordTag call
+
+\result\ GetJobAttr should return all the recorded values
+
+
+\subsubsection{AuthZ check}
+\req\ JPPS running, a~job registered with the procedure in~\ref{tagreg} \\
+\how\ Call RecordTag using different user credentials \\
+\result\ Should fail with ``Permission denied'' error \\
+
+
 \subsection{File upload}
 
+
 \subsubsection{Basic functionality}
-- call StartUpload, LB dump file type
-* check with GetJobFiles -- shoud return nothing
-- upload via ftp
-- call CommitUpload
-* check with GetJobFiles -- should return URL
-- retrieve and check the file
+\req\ JPPS running, my certificate subject amont JPPS trusted peers, 
+\verb'globus-url-copy' in PATH
+
+\how
+Run the aggregate test script from \verb'org.glite.jp.primary/build'
+
+\begin{verbatim}
+$ ../examples/jpps_store_test -o 'OWNER' -d ../examples/job_template
+\end{verbatim}
+(substitute real cert.\ subject for OWNER)
+
+\result\ 
+The script calls JPPS operations RegisterJob and StartUpload, 
+uploads an \LB\ job log generated from the template file,
+calls CommitUpload.
+
+Finally, the upload is checked by retrieving two attribute
+values: LB/Attributes:user and LB/Attributes:finalStatusk via the GetJobAttr
+call. 
+Both calls should return OK and print reasonable values.
+
+%- call StartUpload, LB dump file type
+%* check with GetJobFiles -- shoud return nothing
+%- upload via ftp
+%- call CommitUpload
+%* check with GetJobFiles -- should return URL
+%- retrieve and check the file
+
+\subsubsection{Phase checks}
+\todo{salvet}
+% soubor nelze zapsat pred otevrenim operaci StartUpload
+% nelze cist pred Commitem
+% nelze zapsat po Commitu
 
 \subsubsection{AuthZ checks}
 (should fail)
-* call GetJobFiles with different credentials
 
-* StartUpload with different credentials
+\todo{salvet}
+%* call GetJobFiles with different credentials
+%
+%* StartUpload with different credentials
+%
+%- StartUpload
+%* ftp upload with different credentials
+%
+%* ftp GET with different credentials
 
-- StartUpload
-* ftp upload with different credentials
-
-* ftp GET with different credentials
 
 \subsubsection{Cleanup}
 (Foreseen test for feature which is not implemented yet)
-- call StartUpload, short timeout
-- upload via ftp
-(don't call CommitUpload)
-* uploaded file should be purged after timeout
+%- call StartUpload, short timeout
+%- upload via ftp
+%(don't call CommitUpload)
+%* uploaded file should be purged after timeout
 
 \section{\LB\ plugin}
 %\todo{honik}
@@ -174,10 +220,8 @@ http://egee.cesnet.cz/en/Schema/LB/Attributes:fullStatusHistory
 
 \result Should print the corresponding LB attributes
 
-
 \section{JPPS-JPIS interaction (feeds)}
 
-\todo{import this chapter from testplan.txt}
 
 %set of queries (how many?) with different "triggering conditions":
 %- on job registration
@@ -405,7 +449,7 @@ Mulac
 \result{} Expected database INSERTs in the JP-IS (last two steps).
 
 \subsection{Multiple feeds at time}
-TODO
+\todo{TBD}
 
 \subsection{Advanced feed features (to be implemented)}
 - remove (not implemented in PS yet)
@@ -414,10 +458,9 @@ TODO
 
 
 \subsection{PS-IS AuthZ}
-TODO, if any
+\todo{Not implemented yet}
 
 \section{IS queries}
-\todo{Import from org.glite.jp.index/doc/README file}
 
 
 %TBD: insert job sets via JP-IS interaction or directly?
@@ -517,7 +560,7 @@ There are 3 scenarios to be verified:
 
 
 \section{IS standalone advanced features}
-\todo{To be implemented}
+\todo{Not implemented yet}
 
 \subsection{Server startup}
 
