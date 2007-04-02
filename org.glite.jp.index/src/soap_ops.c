@@ -161,6 +161,21 @@ end:
 }
 
 
+static int checkConditions(glite_jpis_context_t ctx, struct _jpelem__QueryJobs *in) {
+	int i, j;
+	char *attr;
+
+	for (i = 0; i < in->__sizeconditions; i++) {
+		attr = GLITE_SECURITY_GSOAP_LIST_GET(in->conditions, i)->attr;
+		if (!attr) return 1;
+		for (j = 0; ctx->conf->attrs[j] && strcasecmp(ctx->conf->attrs[j], attr) != 0; j++);
+		if (!ctx->conf->attrs[j]) return 1;
+	}
+
+	return 0;
+}
+
+
 /* adds attr table name to the list (null terminated) , iff unigue */
 static void add_attr_table(char *new, char ***attr_tables) 
 {
@@ -586,9 +601,15 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__QueryJobs(
 	puts(__FUNCTION__);
 	memset(out, 0, sizeof(*out));
 	
-	/* test whether there is any indexed aatribudet in the condition */
+	/* test whether there is any indexed attribudes in the condition */
 	if ( checkIndexedConditions(ctx, in) ) {
 		fprintf(stderr, "No indexed attribute in query\n");
+		return SOAP_ERR;
+	}
+
+	/* test whether there is known attribudes in the condition */
+	if ( checkConditions(ctx, in) ) {
+		fprintf(stderr, "Unknown attribute in query\n");
 		return SOAP_ERR;
 	}
 
