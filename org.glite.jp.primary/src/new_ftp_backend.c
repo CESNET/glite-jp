@@ -2400,6 +2400,7 @@ int glite_jppsbe_read_tag(
                 err.desc = "cannot read tag";
 		glite_jp_stack_error(ctx,&err);		
 		e = ctx->error;
+		ctx->error = NULL;
 		glite_jppsbe_close_file(ctx,h->bhandle);
 		ctx->error = e;
 		return err.code;

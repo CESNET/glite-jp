@@ -75,9 +75,11 @@ static int merge_attrvals(glite_jp_attrval_t **out,int nout,const glite_jp_attrv
 void process_files(glite_jp_context_t ctx, const char *job, glite_jp_attrval_t** out, int* nout, const char* attr, const glite_jpps_fplug_data_t* plugin, const char* class, const char* uri){
 	void *ph, *beh; 
 	char** names = NULL;
-        int nnames = glite_jppsbe_get_names(ctx, job, class, &names);
+        int nnames;
 	int n;
 	glite_jp_error_t	*keep_err = NULL;
+
+	nnames = glite_jppsbe_get_names(ctx, job, class, &names);
 
         for (n = 0; n < nnames; n++)
         	if (! glite_jppsbe_open_file(ctx,job,class, names[n], O_RDONLY, &beh)) {
