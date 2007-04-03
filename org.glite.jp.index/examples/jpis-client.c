@@ -144,7 +144,7 @@ static void query_example_fill(struct soap *soap, struct _jpisclient__QueryJobs 
 
 	// AND
 	// owner
-	cond = GLITE_SECURITY_GSOAP_LIST_GET(in->conditions, 0);
+	cond = GLITE_SECURITY_GSOAP_LIST_GET(in->conditions, 1);
 	memset(cond, 0, sizeof(*cond));
 	cond->attr = soap_strdup(soap, "http://egee.cesnet.cz/en/Schema/LB/Attributes:user");
 	cond->origin = NULL;
