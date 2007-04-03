@@ -13,13 +13,16 @@
 #include <glite/jp/db.h>
 #include <glite/jp/attr.h>
 #include <glite/jp/strmd5.h>
+#include <glite/jp/trio.h>
 
 #include "conf.h"
 #include "context.h"
 #include "db_ops.h"
 
 
-#define LOG_SQL 0
+#ifndef LOG_SQL
+#define LOG_SQL 1
+#endif
 
 #define TABLE_PREFIX_DATA "attr_"
 #define SQLCMD_DROP_DATA_TABLE "DROP TABLE " TABLE_PREFIX_DATA "%s"
@@ -32,10 +35,10 @@
         INDEX (jobid),\n\
         INDEX (value)\n\
 );"
-#define SQLCMD_INSERT_ATTRVAL "INSERT INTO " TABLE_PREFIX_DATA "%s (jobid, value, full_value, origin) VALUES (\n\
-	'%s',\n\
-	'%s',\n\
-	'%s',\n\
+#define SQLCMD_INSERT_ATTRVAL "INSERT INTO " TABLE_PREFIX_DATA "%|Ss (jobid, value, full_value, origin) VALUES (\n\
+	'%|Ss',\n\
+	'%|Ss',\n\
+	'%|Ss',\n\
 	'%ld'\n\
 )"
 #define INDEX_LENGTH 255
@@ -318,7 +321,7 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 			err.code = EAGAIN;
 			err.source = __FUNCTION__;
 			err.desc = "If the atribute table already exists, restart may help.";
-			glite_jp_stack_error(ctx, &err); 
+			glite_jp_stack_error(ctx->jpctx, &err); 
 			goto fail;
 		}
 
@@ -596,7 +599,7 @@ int glite_jpis_insertAttrVal(glite_jpis_context_t ctx, const char *jobid, glite_
 	full_value = glite_jp_attrval_to_db_full(ctx->jpctx, av);
 	md5_jobid = str2md5(jobid);
 	origin = av->origin;
-	asprintf(&sql, SQLCMD_INSERT_ATTRVAL, table, md5_jobid, value, full_value, origin);
+	trio_asprintf(&sql, SQLCMD_INSERT_ATTRVAL, table, md5_jobid, value, full_value, origin);
 	free(md5_jobid);
 	free(table);
 	free(value);
