@@ -12,6 +12,9 @@
 
 	Revision history:
 	$Log$
+	Revision 1.5  2007/03/29 13:01:58  valtri
+	merge from RC31 branch (compiles and seems working)
+
 	Revision 1.4.6.1  2007/03/12 15:46:04  akrenek
 	fetch gsoap
 
@@ -95,8 +98,8 @@
 		description="Module specific initialization tasks">
 
 		<antcall target="gsoap" inheritAll="false">
-			<param name="ext.gsoap.version" value="2.7.0f"/>
-			<param name="ext.gsoap.rep.file" value="gSOAP-2.7.0f.tar.gz"/>
+			<param name="ext.gsoap.version" value="2.7.9d"/>
+			<param name="ext.gsoap.rep.file" value="gSOAP-2.7.9d.tar.gz"/>
 		</antcall>
 
 		<antcall target="lbmakefiles" />
