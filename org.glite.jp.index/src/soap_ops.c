@@ -9,16 +9,14 @@
 #include "glite/jp/known_attr.h"
 #include "glite/lb/trio.h"
 
-#include "jpis_H.h"
-#include "jpis_.nsmap"
+#include "jp_H.h"
 #include "soap_version.h"
 #include "glite/security/glite_gscompat.h"
 #include "db_ops.h"
-// XXX: avoid 2 wsdl collisions - work only because ws_ps_typeref.h 
-// uses common types from jpis_H.h (awful)
 #include "ws_ps_typeref.h"
 #include "ws_is_typeref.h"
 #include "context.h"
+#include "common.h"
 
 #define	INDEXED_STRIDE	2	// how often realloc indexed attr result
 				// XXX: 2 is only for debugging, replace with e.g. 100
@@ -65,7 +63,7 @@ static int updateJob(glite_jpis_context_t ctx, const char *ps, struct jptype__jo
 SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__UpdateJobs(
 	struct soap *soap,
 	struct _jpelem__UpdateJobs *jpelem__UpdateJobs,
-	struct _jpelem__UpdateJobsResponse *jpelem__UpdateJobsResponse)
+	struct _jpelem__UpdateJobsResponse *jpelem__UpdateJobsResponse UNUSED)
 {
 	int 		ret, ijobs;
 	const char 	*feedid;
@@ -225,14 +223,14 @@ static int get_op(const enum jptype__queryOp in, char **out)
 }
 
 
-static char *get_sql_stringvalue(glite_jpis_context_t ctx, struct jptype__stringOrBlob *value) {
+static char *get_sql_stringvalue(struct jptype__stringOrBlob *value) {
 	if (!value) return NULL;
 	if (!GSOAP_ISSTRING(value)) return NULL;
 	return GSOAP_STRING(value);
 }
 
 
-static int get_sql_indexvalue(char **sql, struct soap *soap, glite_jpis_context_t ctx, struct jptype__indexQuery *condition, struct jptype__stringOrBlob *value) {
+static int get_sql_indexvalue(char **sql, glite_jpis_context_t ctx, struct jptype__indexQuery *condition, struct jptype__stringOrBlob *value) {
 	glite_jp_attrval_t attr;
 
 	*sql = NULL;
@@ -247,7 +245,7 @@ static int get_sql_indexvalue(char **sql, struct soap *soap, glite_jpis_context_
 		attr.size = GSOAP_BLOB(value)->__size;
 		attr.binary = 1;
 	} else return 0;
-	glite_jpis_SoapToAttrOrig(soap, condition->origin, &(attr.origin));
+	glite_jpis_SoapToAttrOrig(condition->origin, &(attr.origin));
 
 	*sql = glite_jp_attrval_to_db_index(ctx->jpctx, &attr, 255);
 	return 0;
@@ -277,7 +275,7 @@ static int get_sql_cond(char **sql, const char *attr_md5, enum jptype__queryOp o
 }
 
 
-static char *get_sql_or(struct soap *soap, glite_jpis_context_t ctx, struct jptype__indexQuery *condition, const char *attr_md5) {
+static char *get_sql_or(glite_jpis_context_t ctx, struct jptype__indexQuery *condition, const char *attr_md5) {
 	struct jptype__indexQueryRecord *record;
 	char *sql, *cond, *s = NULL, *value, *value2;
 	int j;
@@ -289,13 +287,13 @@ static char *get_sql_or(struct soap *soap, glite_jpis_context_t ctx, struct jpty
 			/* no additional conditions needed when existing is enough */
 		} else {
 			if (strcmp(condition->attr, GLITE_JP_ATTR_JOBID) == 0) {
-				value = get_sql_stringvalue(ctx, record->value);
+				value = get_sql_stringvalue(record->value);
 				if (!value) goto err;
-				value2 = get_sql_stringvalue(ctx, record->value2);
+				value2 = get_sql_stringvalue(record->value2);
 				if (get_sql_cond(&cond, attr_md5, record->op, value, value2) != 0) goto err;
 			} else {
-				get_sql_indexvalue(&value, soap, ctx, condition, record->value);
-				get_sql_indexvalue(&value2, soap, ctx, condition, record->value2);
+				get_sql_indexvalue(&value, ctx, condition, record->value);
+				get_sql_indexvalue(&value2, ctx, condition, record->value2);
 				get_sql_cond(&cond, attr_md5, record->op, value, value2);
 				free(value);
 				free(value2);
@@ -316,7 +314,7 @@ err:
 
 
 /* get all jobids matching the query conditions */
-static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpelem__QueryJobs *in, char ***jobids, char *** ps_list)
+static int get_jobids(glite_jpis_context_t ctx, struct _jpelem__QueryJobs *in, char ***jobids, char *** ps_list)
 {
 	char 			*qa = NULL, *qb = NULL, *qor, *attr_md5,
 				*qwhere = NULL, *query = NULL, *res[2], 
@@ -343,7 +341,7 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 
 			/* origin */
 			if (condition->origin) {
-				glite_jpis_SoapToAttrOrig(soap, condition->origin, &orig);
+				glite_jpis_SoapToAttrOrig(condition->origin, &orig);
 				trio_asprintf(&qb, "attr_%|Ss.origin = %d AND ", attr_md5, orig);
 			} else
 				trio_asprintf(&qb, "");
@@ -356,7 +354,7 @@ static int get_jobids(struct soap *soap, glite_jpis_context_t ctx, struct _jpele
 		}
 
 		/* inside part of the condition: record list (ORs) */
-		if ((qor = get_sql_or(soap, ctx, condition, attr_md5)) == NULL) goto err;
+		if ((qor = get_sql_or(ctx, condition, attr_md5)) == NULL) goto err;
 		if (qor[0]) {
 			asprintf(&qb, "%s%s(%s)", qa, qa[0] ? " AND " : "", qor);
 			free(qa);
@@ -603,18 +601,20 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__QueryJobs(
 	
 	/* test whether there is any indexed attribudes in the condition */
 	if ( checkIndexedConditions(ctx, in) ) {
-		fprintf(stderr, "No indexed attribute in query\n");
+		glite_jpis_stack_error(ctx->jpctx, EINVAL, "No indexed attribute in query");
+		glite_jp_server_err2fault(ctx->jpctx, soap);
 		return SOAP_ERR;
 	}
 
 	/* test whether there is known attribudes in the condition */
 	if ( checkConditions(ctx, in) ) {
-		fprintf(stderr, "Unknown attribute in query\n");
+		glite_jpis_stack_error(ctx->jpctx, EINVAL, "Unknown attribute in query");
+		glite_jp_server_err2fault(ctx->jpctx, soap);
 		return SOAP_ERR;
 	}
 
 	/* get all jobids matching the conditions */
-	if ( get_jobids(soap, ctx, in, &jobids, &ps_list) ) {
+	if ( get_jobids(ctx, in, &jobids, &ps_list) ) {
 		return SOAP_ERR;
 	}
 
@@ -642,9 +642,9 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__QueryJobs(
 
 
 SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__AddFeed(
-        struct soap *soap,
-        struct _jpelem__AddFeed *in,
-        struct _jpelem__AddFeedResponse *out)
+        struct soap *soap UNUSED,
+        struct _jpelem__AddFeed *in UNUSED,
+        struct _jpelem__AddFeedResponse *out UNUSED)
 {
         // XXX: test client in examples/jpis-test
         //      sends to this function some data for testing
@@ -654,9 +654,9 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__AddFeed(
 
 
 SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__GetFeedIDs(
-        struct soap *soap,
-        struct _jpelem__GetFeedIDs *in,
-        struct _jpelem__GetFeedIDsResponse *out)
+        struct soap *soap UNUSED,
+        struct _jpelem__GetFeedIDs *in UNUSED,
+        struct _jpelem__GetFeedIDsResponse *out UNUSED)
 {
         // XXX: test client in examples/jpis-test
         //      sends to this function some data for testing
@@ -666,9 +666,9 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__GetFeedIDs(
 
 
 SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__DeleteFeed(
-        struct soap *soap,
-        struct _jpelem__DeleteFeed *in,
-        struct _jpelem__DeleteFeedResponse *out)
+        struct soap *soap UNUSED,
+        struct _jpelem__DeleteFeed *in UNUSED,
+        struct _jpelem__DeleteFeedResponse *out UNUSED)
 {
         // XXX: test client in examples/jpis-test
         //      sends to this function some data for testing
@@ -678,9 +678,9 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__DeleteFeed(
 
 
 SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__ServerConfiguration(
-        struct soap *soap,
-        struct _jpelem__ServerConfiguration *in,
-        struct _jpelem__ServerConfigurationResponse *out)
+        struct soap *soap UNUSED,
+        struct _jpelem__ServerConfiguration *in UNUSED,
+        struct _jpelem__ServerConfigurationResponse *out UNUSED)
 {
 	// empty, just for deserializer generation
         puts(__FUNCTION__);

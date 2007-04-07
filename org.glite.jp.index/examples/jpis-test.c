@@ -6,8 +6,8 @@
 #include <glite/security/glite_gsplugin.h>
 #include "glite/jp/strmd5.h"
 
-#include "jpis_H.h"
-#include "jpis_.nsmap"
+#include "jp_H.h"
+#include "jp_.nsmap"
 #include "db_ops.h"
 #include "conf.h"
 
@@ -34,7 +34,7 @@ int main(int argc,char *argv[])
 	struct soap	*soap = soap_new();
 
 	soap_init(soap);	
-	soap_set_namespaces(soap, jpis__namespaces);
+	soap_set_namespaces(soap, jp__namespaces);
 	soap_register_plugin(soap,glite_gsplugin);
 
 /*---------------------------------------------------------------------------*/
@@ -47,7 +47,7 @@ int main(int argc,char *argv[])
 		
 
 		glite_jp_init_context(&ctx);
-		glite_jp_get_conf(argc, argv, NULL, &conf);
+		glite_jp_get_conf(argc, argv, &conf);
 		if (!conf) {
 			fprintf(stderr, "Can't gather configuration\n");
 			goto end;
@@ -238,7 +238,3 @@ int main(int argc,char *argv[])
 
 	return 0;
 }
-
-
-/* XXX: we don't use it */
-SOAP_NMAC struct Namespace namespaces[] = { {NULL,NULL} };

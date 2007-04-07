@@ -20,16 +20,17 @@ XMLLINT:=xmllint --nonet
 TIDY:=tidy -i -q --show-warnings no --tidy-mark no --wrap 0
 docbookxls:=http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl
 
-WSDL=JobProvenancePS.wsdl JobProvenanceIS.wsdl JobProvenanceTypes.wsdl 
+WSDL=JobProvenancePS.wsdl JobProvenanceIS.wsdl JobProvenanceTypes.wsdl
+WSDL_S=jpdev.wsdl
 XSD=JobProvenanceTypes.xsd
 
-all compile: ${WSDL} ${XSD} JobProvenance.html
+all compile: ${WSDL} ${XSD} JobProvenance.html ${WSDL_S}
 
 check: 
 	@echo No unit test required for interface-only module.
 
 stage: ${WSDL}
-	$(MAKE) install PREFIX=${stagedir}
+	$(MAKE) install PREFIX=${stagedir} DOSTAGE=yes
 
 dist: distsrc distbin
 
@@ -53,6 +54,9 @@ install:
 #	cd ${top_srcdir}/interface && install -m 644 ${WSDL} ${PREFIX}/${STAGETO}
 	install -m 644 ${WSDL} ${XSD} ${PREFIX}/${STAGETO}
 	install -m 644 ${top_srcdir}/src/ws_fault.c ${PREFIX}/include/${globalprefix}/${jpprefix}
+	if [ x${DOSTAGE} = xyes ]; then \
+		install -m 644 ${WSDL_S} ${PREFIX}/${STAGETO}; \
+	fi
 
 clean:
 	rm -f *.h
@@ -71,3 +75,6 @@ JobProvenance.html: doc.xml JobProvenancePS.xml JobProvenanceIS.xml JobProvenanc
 	-${TIDY} -xml -m doc-html.xml
 	-${XMLLINT} --valid --noout doc-html.xml
 	-${TIDY} -asxhtml -m $@
+
+jpdev.xml: jpdev.xml.sh
+	${top_srcdir}/src/jpdev.sh $< > $@

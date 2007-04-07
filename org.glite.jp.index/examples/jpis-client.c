@@ -11,30 +11,15 @@
 #include <glite/security/glite_gsplugin.h>
 #include <glite/security/glite_gscompat.h>
 
-#include "jpis_client_.nsmap"
+#include "jp_.nsmap"
 #include "common.h"
 #define dprintf(FMT, ARGS...) fprintf(stderr, FMT, ##ARGS);
 #include <glite/jp/ws_fault.c>
 
 
-/* 'jpisclient' as future namespace */
-#define _jpisclient__QueryJobs _jpelem__QueryJobs
-#define _jpisclient__QueryJobsResponse _jpelem__QueryJobsResponse
-#define soap_default__jpisclient__QueryJobs soap_default__jpelem__QueryJobs
-#define soap_get__jpisclient__QueryJobs soap_get__jpelem__QueryJobs
-#define soap_put__jpisclient__QueryJobs soap_put__jpelem__QueryJobs
-#define soap_put__jpisclient__QueryJobsResponse soap_put__jpelem__QueryJobsResponse
-#define soap_serialize__jpisclient__QueryJobs soap_serialize__jpelem__QueryJobs
-#define soap_serialize__jpisclient__QueryJobsResponse soap_serialize__jpelem__QueryJobsResponse
-
 #define DEFAULT_JPIS "http://localhost:8902"
 #define USE_GMT 1
 
-
-/* namespaces[] not used here but needed to prevent linker to complain... */
-SOAP_NMAC struct Namespace namespaces[] = {
-	{NULL, NULL, NULL, NULL},
-};
 
 static struct option opts[] = {
 	{"index-server",required_argument,	NULL,	'i'},
@@ -115,7 +100,7 @@ static void value_print(FILE *out, const struct jptype__stringOrBlob *value) {
 /*
  * fill the query soap structure with some example data
  */
-static void query_example_fill(struct soap *soap, struct _jpisclient__QueryJobs *in) {
+static void query_example_fill(struct soap *soap, struct _jpelem__QueryJobs *in) {
 	struct jptype__indexQuery 		*cond;
 	struct jptype__indexQueryRecord 	*rec;
 
@@ -172,15 +157,15 @@ static void query_example_fill(struct soap *soap, struct _jpisclient__QueryJobs 
 /*
  * read the XML query
  */
-static int query_recv(struct soap *soap, int fd, struct _jpisclient__QueryJobs *qj) {
+static int query_recv(struct soap *soap, int fd, struct _jpelem__QueryJobs *qj) {
 	int i;
 
 	memset(qj, 0, sizeof(*qj));
 
 	soap->recvfd = fd;
 	soap_begin_recv(soap);
-	soap_default__jpisclient__QueryJobs(soap, qj);
-	if (!soap_get__jpisclient__QueryJobs(soap, qj, "QueryJobs", NULL)) {
+	soap_default__jpelem__QueryJobs(soap, qj);
+	if (!soap_get__jpelem__QueryJobs(soap, qj, "jpelem:QueryJobs", NULL)) {
 		soap_end_recv(soap);
 		soap_end(soap);
 		return EINVAL;
@@ -200,7 +185,7 @@ static int query_recv(struct soap *soap, int fd, struct _jpisclient__QueryJobs *
 /*
  * print info from the query soap structure
  */
-static void query_print(FILE *out, const struct _jpisclient__QueryJobs *in) {
+static void query_print(FILE *out, const struct _jpelem__QueryJobs *in) {
 	struct jptype__indexQuery	*cond;
 	struct jptype__indexQueryRecord 	*rec;
 	int i, j, k;
@@ -242,13 +227,13 @@ static void query_print(FILE *out, const struct _jpisclient__QueryJobs *in) {
 /*
  * dump the XML query
  */
-static int query_dump(struct soap *soap, int fd, struct _jpisclient__QueryJobs *qj) {
+static int query_dump(struct soap *soap, int fd, struct _jpelem__QueryJobs *qj) {
 	int retval;
 
 	soap->sendfd = fd;
 	soap_begin_send(soap);
-	soap_serialize__jpisclient__QueryJobs(soap, qj);
-	retval = soap_put__jpisclient__QueryJobs(soap, qj, "jpisclient:QueryJobs", NULL);
+	soap_serialize__jpelem__QueryJobs(soap, qj);
+	retval = soap_put__jpelem__QueryJobs(soap, qj, "jpelem:QueryJobs", NULL);
 	soap_end_send(soap);
 	write(fd, "\n", strlen("\n"));
 
@@ -256,7 +241,7 @@ static int query_dump(struct soap *soap, int fd, struct _jpisclient__QueryJobs *
 }
 
 
-static int query_format(struct soap *soap, format_t format, FILE *f, struct _jpisclient__QueryJobs *qj) {
+static int query_format(struct soap *soap, format_t format, FILE *f, struct _jpelem__QueryJobs *qj) {
 	switch (format) {
 	case FORMAT_XML:
 	case FORMAT_STRIPPEDXML:
@@ -271,7 +256,7 @@ static int query_format(struct soap *soap, format_t format, FILE *f, struct _jpi
  * dump the XML query with the example data
  */
 static int query_example_dump(struct soap *soap, int fd) {
-	struct _jpisclient__QueryJobs qj;
+	struct _jpelem__QueryJobs qj;
 	int retval;
 
 	memset(&qj, 0, sizeof(qj));
@@ -288,13 +273,13 @@ static int query_example_dump(struct soap *soap, int fd) {
 /*
  * dump the data returned from JP IS
  */
-static int queryresult_dump(struct soap *soap, int fd, const struct _jpisclient__QueryJobsResponse *qjr) {
+static int queryresult_dump(struct soap *soap, int fd, const struct _jpelem__QueryJobsResponse *qjr) {
 	int retval;
 
 	soap->sendfd = fd;
 	soap_begin_send(soap);
-	soap_serialize__jpisclient__QueryJobsResponse(soap, qjr);
-	retval = soap_put__jpisclient__QueryJobsResponse(soap, qjr, "jpisclient:QueryJobsResponse", NULL);
+	soap_serialize__jpelem__QueryJobsResponse(soap, qjr);
+	retval = soap_put__jpelem__QueryJobsResponse(soap, qjr, "QueryJobsResponse", NULL);
 	soap_end_send(soap);
 	write(fd, "\n", strlen("\n"));
 
@@ -370,12 +355,10 @@ static void usage(const char *prog_name) {
 
 int main(int argc, char * const argv[]) {
 	struct soap soap, soap_comm;
-	struct _jpisclient__QueryJobs qj;
+	struct _jpelem__QueryJobs qj;
 	char *server, *example_file, *query_file, *test_file;
 	const char *prog_name;
 	int retval, opt, example_fd, query_fd, test_fd;
-	struct Namespace *namespaces;
-	int i;
 	format_t format = FORMAT_XML;
 
 	prog_name = server = NULL;
@@ -384,38 +367,14 @@ int main(int argc, char * const argv[]) {
 	retval = 1;
 
 	soap_init(&soap);
-
-	/*
-	 * Following code is needed, when we can't combine more XSD/WSDL files
-	 * for using both as client. We direct use structures only from
-	 * JobProvenanceIS.wsdl, just retyped to jpisclient namespace.
-	 *
-	 * So manually add jpisclient to the namespaces.
-	 */
-	for (i = 0; jpis_client__namespaces[i].id; i++)
-		if (strcmp(jpis_client__namespaces[i].id, "jpisclient") == 0) break;
-	if (jpis_client__namespaces[i].id) {
-		/* 
-		 * namespaces hack isn't needed (used two schemas and
-		 * gsoap 2.7.6b)
-		 */
-		namespaces = NULL;
-		soap_set_namespaces(&soap, jpis_client__namespaces);
-	} else {
-		/* perform namespaces hack */
-		namespaces = calloc(i + 2, sizeof(struct Namespace));
-		memcpy(namespaces, jpis_client__namespaces, sizeof(jpis_client__namespaces));
-		namespaces[i].id = "jpisclient";
-		namespaces[i].ns = "http://glite.org/xsd/types/jpisclient";
-		soap_set_namespaces(&soap, namespaces);
-	}
+	soap_set_namespaces(&soap, jp__namespaces);
 
 	/* 
 	 * Soap with registered plugin can't be used for reading XML.
 	 * For communications with JP IS glite_gsplugin needs to be registered yet.
 	 */
 	soap_init(&soap_comm);
-	soap_set_namespaces(&soap_comm, jpis_client__namespaces);
+	soap_set_namespaces(&soap_comm, jp__namespaces);
 	soap_register_plugin(&soap_comm, glite_gsplugin);
 
 	/* program name */
@@ -525,7 +484,7 @@ int main(int argc, char * const argv[]) {
 		 * Right way would be copy data from client query structure to IS query
 		 * structure. Just ugly retype to client here.
 		 */
-		if (query_recv(&soap, query_fd, (struct _jpisclient__QueryJobs *)&in) != 0) {
+		if (query_recv(&soap, query_fd, (struct _jpelem__QueryJobs *)&in) != 0) {
 			fprintf(stderr, "query: Error getting query XML\n");
 		} else {
 			fprintf(stderr, "query: using JPIS %s\n\n", server);
@@ -534,8 +493,12 @@ int main(int argc, char * const argv[]) {
 			soap_begin(&soap_comm);
 			ret = check_fault(&soap_comm, soap_call___jpsrv__QueryJobs(&soap_comm, server, "", &in, &out));
 			if (ret == 0) {
-				queryresult_format(&soap, format, stdout, (struct _jpisclient__QueryJobsResponse *)&out);
-			} else goto cleanup;
+				queryresult_format(&soap, format, stdout, (struct _jpelem__QueryJobsResponse *)&out);
+			} else {
+				soap_end(&soap_comm);
+				soap_end(&soap);
+				goto cleanup;
+			}
 			soap_end(&soap_comm);
 		}
 		soap_end(&soap);
@@ -553,7 +516,6 @@ cleanup:
 	free(example_file);
 	free(query_file);
 	free(test_file);
-	free(namespaces);
 
 	return retval;
 }

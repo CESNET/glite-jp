@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<jpisclient:QueryJobs xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:jptype="http://glite.org/wsdl/types/jp" xmlns:jpsrv="http://glite.org/wsdl/services/jp" xmlns:jpelem="http://glite.org/wsdl/elements/jp" xmlns:jpisclient="http://glite.org/xsd/types/jpisclient">
+<jpelem:QueryJobs xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:jptype="http://glite.org/wsdl/types/jp" xmlns:jpsrv="http://glite.org/wsdl/services/jp" xmlns:jpelem="http://glite.org/wsdl/elements/jp">
 
 	<conditions>
 		<attr>http://egee.cesnet.cz/en/Schema/LB/Attributes:CE</attr>
@@ -14,4 +14,4 @@
 	<attributes>http://egee.cesnet.cz/en/Schema/LB/Attributes:user</attributes>
 	<attributes>http://egee.cesnet.cz/en/Schema/LB/Attributes:CE</attributes>
 
-</jpisclient:QueryJobs>
+</jpelem:QueryJobs>

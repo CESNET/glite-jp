@@ -30,9 +30,9 @@ GLOBUS_LIBS:=-L${globus_prefix}/lib \
 
 GLOBUS_CFLAGS:=-I${globus_prefix}/include/${nothrflavour}
 
-DEBUG:=-W -Wall -Wno-unused-parameter -Wno-unused-function -g -O0
+DEBUG:=-W -Wall -g -O0
 CPPFLAGS:=-DDEBUG -D_GNU_SOURCE -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${gsoap_prefix} -I${stagedir}/include ${GLOBUS_CFLAGS} -I${mysql_prefix}/include -I${mysql_prefix}/include/mysql -I${gsoap_prefix}/include
-CFLAGS:=${DEBUG}
+CFLAGS:=${DEBUG} ${CFLAGS}
 LDFLAGS:=-L${stagedir}/lib
 
 dotless_soap_ver:=${shell echo ${gsoap_version} | tr -d . }
@@ -55,20 +55,17 @@ MANS1:=glite-jpis-client.1
 MANS8:=glite-jp-indexd.8
 MANS:=${MANS1} ${MANS8}
 HTMLS:=glite-jpis-client.html glite-jp-indexd.html
-is_prefix:=jpis_
-is_client_prefix:=jpis_client_
-ps_prefix:=jpps_
+ws_prefix:=jp_
+is_prefix:=${ws_prefix}
+ps_prefix:=${ws_prefix}
 
-SRCS:= conf.c bones_server.c soap_ops.c soap_ps_calls.c \
-	ws_ps_typeref.c ws_is_typeref.c db_ops.c context.c common_server.c \
-	${is_prefix}ServerLib.c \
-	${ps_prefix}ClientLib.c ${ps_prefix}C.c
+SRCS:= conf.c bones_server.c soap_ops.c soap_ps_calls.c common.c \
+	${is_prefix}Server.c ${ps_prefix}Client.c ${ws_prefix}C.c \
+	ws_ps_typeref.c ws_is_typeref.c db_ops.c context.c common_server.c 
 
-EXA_TEST_SRCS:=jpis-test.c ${is_prefix}C.c ${is_prefix}Client.c context.c db_ops.c conf.c ws_is_typeref.c
+EXA_TEST_SRCS:=jpis-test.c ${is_prefix}Client.c ${is_prefix}C.c context.c db_ops.c conf.c ws_is_typeref.c
 EXA_DB_SRCS:=jpis-db-internal.c db_ops.c conf.c context.c ws_is_typeref.c
-EXA_CLIENT_SRCS:=jpis-client.c common.c \
-	${is_client_prefix}C.c ${is_client_prefix}Client.c
-#                ${is_prefix}C.c
+EXA_CLIENT_SRCS:=jpis-client.c ${is_prefix}Client.c ${is_prefix}C.c common.c
 
 OBJS:=${SRCS:.c=.o}
 EXA_TEST_OBJS:=${EXA_TEST_SRCS:.c=.o}
@@ -86,55 +83,25 @@ default all: compile doc
 compile: ${daemon} ${examples}
 
 ${daemon}: ${OBJS}
-	${LINK} -o $@ -export-dynamic ${OBJS} ${BONESLIB} ${TRIOLIB} ${COMMONLIB} ${GSOAPLIB} ${GLOBUS_LIBS} ${SRVCOMMONLIB}
+	${LINK} -o $@ -export-dynamic ${OBJS} ${BONESLIB} ${TRIOLIB} ${COMMONLIB} ${GSOAPLIB} ${SRVCOMMONLIB}
 
 glite-jpis-test: ${EXA_TEST_OBJS}
-	${LINK} -o $@ $+ ${GSOAPLIB} ${GLOBUS_LIBS} ${COMMONLIB} ${TRIOLIB} ${SRVCOMMONLIB}
+	${LINK} -o $@ $+ ${GSOAPLIB} ${COMMONLIB} ${TRIOLIB} ${SRVCOMMONLIB}
 
 jpis-db-internal: ${EXA_DB_OBJS}
-	${LINK} -o $@ $+ ${COMMONLIB} ${SRVCOMMONLIB} ${GLOBUS_LIBS}
+	${LINK} -o $@ $+ ${COMMONLIB} ${SRVCOMMONLIB}
 
 glite-jpis-client: ${EXA_CLIENT_OBJS}
-	${LINK} -o $@ $+ ${GSOAPLIB}
+	${LINK} -o $@ $+ ${GSOAPLIB} ${COMMONLIB} ${TRIOLIB}
 
-JobProvenanceIS.xh: JobProvenanceIS.wsdl JobProvenanceTypes.wsdl typemap.dat
-	cp  ${stagedir}/interface/JobProvenanceTypes.wsdl .
-	${gsoap_bin_prefix}/wsdl2h -t ${top_srcdir}/src/typemap.dat -c -o $@ $<
-	rm -f JobProvenanceTypes.wsdl
+${ws_prefix}Client.c ${ws_prefix}Server.c \
+${ws_prefix}C.c ${ws_prefix}H.h ${ws_prefix}Stub.h: JobProvenance.xh
+	${gsoap_bin_prefix}/soapcpp2 -n -w -c -p ${ws_prefix} $<
 
-JobProvenancePS.xh: %.xh: %.wsdl JobProvenanceTypes.wsdl typemap.dat
-	cp  ${stagedir}/interface/JobProvenanceTypes.wsdl .
+JobProvenance.xh: jpdev.wsdl
+	cp ${stagedir}/interface/JobProvenanceTypes.wsdl .
 	${gsoap_bin_prefix}/wsdl2h  -t ${top_srcdir}/src/typemap.dat -c -o $@ $<
 	rm -f JobProvenanceTypes.wsdl
-
-#JobProvenanceISClient.xh: typemap.dat JobProvenanceISClient.xsd JobProvenanceIS.wsdl
-#	cp  ${stagedir}/interface/JobProvenance{Types.xsd,Types.wsdl,IS.wsdl} .
-#	${gsoap_bin_prefix}/wsdl2h -t ${top_srcdir}/src/typemap.dat -c -o $@ JobProvenanceIS.wsdl ${top_srcdir}/src/JobProvenanceISClient.xsd
-#	rm -f JobProvenance{Types.xsd,Types.wsdl,IS.wsdl}
-
-${is_prefix}ClientLib.c ${is_prefix}Client.c \
-${is_prefix}Server.c ${is_prefix}ServerLib.c  \
-${is_prefix}C.c ${is_prefix}H.h ${is_prefix}Stub.h: JobProvenanceIS.xh
-	${gsoap_bin_prefix}/soapcpp2 -n -w -c -p ${is_prefix} $<
-
-# JobProvenanceISClient.xh should be used, 
-# for now (gsoap-2.7.0) used direct JobProvenanceIS.xh
-${is_client_prefix}ClientLib.c ${is_client_prefix}Client.c \
-${is_client_prefix}Server.c ${is_client_prefix}ServerLib.c  \
-${is_client_prefix}C.c ${is_client_prefix}H.h ${is_client_prefix}Stub.h: JobProvenanceIS.xh
-	${gsoap_bin_prefix}/soapcpp2 -n -w -c -p ${is_client_prefix} $<
-
-${ps_prefix}Client.c ${ps_prefix}ClientLib.c  \
-${ps_prefix}C.c ${ps_prefix}H.h ${ps_prefix}Stub.h: JobProvenancePS.xh
-	${gsoap_bin_prefix}/soapcpp2 -n -w -c -p ${ps_prefix} $<
-
-
-#env_C.c env_Server.c:
-#	touch env.xh
-#	cp  ${stagedir}/interface/JobProvenanceTypes.wsdl .
-#	${gsoap_prefix}/bin/wsdl2h  -t ${top_srcdir}/src/typemap.dat -c -o env.xh JobProvenanceTypes.wsdl
-#	rm -f JobProvenanceTypes.wsdl
-#	${gsoap_prefix}/bin/soapcpp2 -w -c -p env_ env.xh
 
 check:
 	# ../test/run-test.sh
@@ -194,14 +161,17 @@ db_ops.h: context.h
 context.h: conf.h
 db_ops.o: db_ops.c conf.h context.h db_ops.h
 context.o: context.c conf.h context.h
-soap_ps_calls.o: soap_ps_calls.c jpps_H.h jpps_.nsmap soap_version.h conf.h db_ops.h ws_ps_typeref.h context.h
-soap_ops.o: soap_ops.c jpis_H.h jpis_.nsmap soap_version.h db_ops.h ws_ps_typeref.h ws_is_typeref.h context.h
+soap_ps_calls.o: soap_ps_calls.c ${ps_prefix}H.h ${ps_prefix}.nsmap soap_version.h conf.h db_ops.h ws_ps_typeref.h context.h
+soap_ops.o: soap_ops.c jp_H.h ${is_prefix}.nsmap soap_version.h db_ops.h ws_ps_typeref.h ws_is_typeref.h context.h
 ws_ps_typeref.o: ws_ps_typeref.c ${ps_prefix}H.h ws_typemap.h ws_ps_typeref.h soap_version.h
 ws_is_typeref.o: ws_is_typeref.c ${is_prefix}H.h ws_typemap.h ws_is_typeref.h soap_version.h
 comon_server.o: common_server.c common_server.h
-jpis-client.o: jpis-client.c ${is_client_prefix}H.h soap_version.h
-jpis-test.o: jpis-client.c ${is_client_prefix}H.h soap_version.h
+jpis-client.o: jpis-client.c ${is_prefix}H.h soap_version.h
+jpis-test.o: jpis-client.c ${is_prefix}H.h soap_version.h
 conf.o: conf.c ${is_prefix}H.h soap_version.h
+
+${ws_prefix}C.o: ${ws_prefix}C.c
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) -Wno-unused-parameter $<
 
 %.1: %.sgml
 	docbook2man $<

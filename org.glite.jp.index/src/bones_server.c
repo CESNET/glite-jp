@@ -10,9 +10,9 @@
 #include <glite/jp/context.h>
 
 #include <glite/lb/srvbones.h>
-#include <glite/security/glite_gss.h>
 
 #include <stdsoap2.h>
+#include <glite/security/glite_gss.h>
 #include <glite/security/glite_gsplugin.h>
 
 #include "conf.h"
@@ -22,7 +22,8 @@
 #include "common_server.h"
 
 #include "soap_version.h"
-#include "jpis_H.h"
+#include "jp_H.h"
+#include "jp_.nsmap"
 
 #if GSOAP_VERSION <= 20602
 #define soap_call___jpsrv__FeedIndex soap_call___ns1__FeedIndex
@@ -37,9 +38,7 @@
 #define RECONNECT_TIME		60*20	// when try reconnect to PS in case of error (in sec)
 
 
-extern SOAP_NMAC struct Namespace jpis__namespaces[],jpps__namespaces[];
-extern SOAP_NMAC struct Namespace namespaces[] = { {NULL,NULL} };
-// namespaces[] not used here, but need to prevent linker to complain...
+extern SOAP_NMAC struct Namespace jp__namespaces[],jpps__namespaces[];
 
 int newconn(int,struct timeval *,void *);
 int request(int,struct timeval *,void *);
@@ -47,17 +46,10 @@ static int reject(int);
 static int disconn(int,struct timeval *,void *);
 int data_init(void **data);
 
+
 static struct glite_srvbones_service stab = {
 	"JP Index Server", -1, newconn, request, reject, disconn
 };
-
-/*
-typedef struct {
-	glite_jpis_context_t ctx;
-	glite_jp_is_conf *conf;
-	struct soap *soap;
-} slave_data_t;
-*/
 
 static time_t 		cert_mtime;
 static char 		*server_cert, *server_key, *cadir;
@@ -68,13 +60,12 @@ static char 		*port = GLITE_JPIS_DEFAULT_PORT_STR;
 static int 		debug = 1;
 
 static glite_jp_context_t	ctx;
-static char 			*glite_jp_default_namespace;
 static glite_jp_is_conf		*conf;	// Let's make configuration visible to all slaves
 
 
 int main(int argc, char *argv[])
 {
-	int			one = 1,i;
+	int			one = 1, nfeeds;
 	edg_wll_GssStatus	gss_code;
 	struct sockaddr_in	a;
 	glite_jpis_context_t	isctx;
@@ -82,7 +73,7 @@ int main(int argc, char *argv[])
 
 	glite_jp_init_context(&ctx);
 
-	if (glite_jp_get_conf(argc, argv, NULL, &conf)) {
+	if (glite_jp_get_conf(argc, argv, &conf)) {
 		glite_jp_free_context(ctx);
 		exit(1);
 	}
@@ -124,15 +115,6 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-
-#if GSOAP_VERSION <= 20602
-	for (i=0; jpis__namespaces[i].id && strcmp(jpis__namespaces[i].id,"ns1"); i++);
-#else
-	for (i=0; jpis__namespaces[i].id && strcmp(jpis__namespaces[i].id,"jpsrv"); i++);
-#endif
-	assert(jpis__namespaces[i].id);
-	glite_jp_default_namespace = jpis__namespaces[i].ns;
-
 	stab.conn = socket(PF_INET, SOCK_STREAM, 0);
 	if (stab.conn < 0) {
 		perror("socket");
@@ -173,15 +155,28 @@ int main(int argc, char *argv[])
 		fprintf(stderr,"Server idenity: %s\n",mysubj);
 	else fputs("WARNING: Running unauthenticated\n",stderr);
 
-	/* XXX: uncomment after testing phase
-	for (i=0; conf->PS_list[i]; i++);	// count PS we need to contact
-	i += USER_QUERY_SLAVES_NUM;		// add some slaves for user queries
-	if (i > MAX_SLAVES_NUM)
-		glite_srvbones_set_param(GLITE_SBPARAM_SLAVES_COUNT, MAX_SLAVES_NUM);
-	else
-		glite_srvbones_set_param(GLITE_SBPARAM_SLAVES_COUNT, i);
-	*/
-	/* for dbg - one slave OK */ glite_srvbones_set_param(GLITE_SBPARAM_SLAVES_COUNT,1);
+ 	// XXX: more tests needed
+	if (conf->feeds)
+	 	for (nfeeds=0; conf->feeds[nfeeds]; nfeeds++);
+	else nfeeds = 0;
+ 	if (conf->slaves <= 0) {
+ 		// add some slaves for user queries and PS responses
+ 		conf->slaves = nfeeds + (USER_QUERY_SLAVES_NUM - 1);  
+ 		if (conf->slaves > MAX_SLAVES_NUM) conf->slaves = MAX_SLAVES_NUM;
+ 	}
+ 	//
+ 	// SUM(PS, feeds(PS) - slaves(PS)) slaves would be blocked
+ 	// when waited for all PS
+ 	//
+ 	// wild guess for slaves(PS) == 1 on all PS:
+ 	// 1 + SUM(PS, feeds(PS) - 1) slaves is required,
+ 	// SUM(PS, feeds(PS)) is enough.
+ 	//
+ 	if (conf->slaves < nfeeds) {
+ 		fprintf(stderr, "WARNING: %d slaves can be too low for %d feeds\n", conf->slaves, nfeeds);
+ 	}
+ 	glite_srvbones_set_param(GLITE_SBPARAM_SLAVES_COUNT, conf->slaves);
+ 
 	glite_srvbones_run(data_init,&stab,1 /* XXX: entries in stab */,debug);
 
 	glite_jpis_free_db(isctx);
@@ -257,7 +252,7 @@ int newconn(int conn,struct timeval *to,void *data)
 	soap_init2(soap,SOAP_IO_KEEPALIVE,SOAP_IO_KEEPALIVE);
 	soap_set_omode(soap, SOAP_IO_BUFFER);	// set buffered response
 						// buffer set to SOAP_BUFLEN (default = 8k)
-	soap_set_namespaces(soap,jpis__namespaces);
+	soap_set_namespaces(soap,jp__namespaces);
 	soap->user = (void *) private;
 
 	glite_gsplugin_init_context(&plugin_ctx);
@@ -324,7 +319,7 @@ cleanup:
 	return ret;
 }
 
-int request(int conn,struct timeval *to,void *data)
+int request(int conn UNUSED,struct timeval *to,void *data)
 {
 	slave_data_t		*private = (slave_data_t *)data;
 	struct soap		*soap = private->soap;
@@ -346,7 +341,7 @@ int request(int conn,struct timeval *to,void *data)
 	if (soap_envelope_begin_in(soap)
 		|| soap_recv_header(soap)
 		|| soap_body_begin_in(soap)
-		|| jpis__serve_request(soap)
+		|| jp__serve_request(soap)
 #if GSOAP_VERSION >= 20700
 		|| (soap->fserveloop && soap->fserveloop(soap))
 #endif
@@ -378,7 +373,7 @@ static int reject(int conn)
 	return 0;
 }
 
-static int disconn(int conn,struct timeval *to,void *data)
+static int disconn(int conn UNUSED,struct timeval *to UNUSED,void *data)
 {
 	slave_data_t		*private = (slave_data_t *)data;
 	struct soap		*soap = private->soap;

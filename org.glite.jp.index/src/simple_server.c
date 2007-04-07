@@ -1,7 +1,7 @@
 #include "glite/jp/types.h"
 #include "glite/jp/context.h"
 
-#include "jpis_H.h"
+#include "jp_H.h"
 
 int main() {
    struct soap soap;

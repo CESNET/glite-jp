@@ -3,6 +3,13 @@
 #ifndef GLITE_JPIS_COMMON_H
 #define GLITE_JPIS_COMMON_H
 
+#include <glite/jp/types.h>
+#include <glite/jp/context.h>
+
 void glite_jpis_trim_soap(struct soap *soap, char **soap_str);
+
+int glite_jpis_stack_error_source(glite_jp_context_t ctx, int code, const char *desc, const char *func, int line);
+
+#define glite_jpis_stack_error(CTX, CODE, DESC) glite_jpis_stack_error_source((CTX), (CODE), (DESC), __FUNCTION__, __LINE__);
 
 #endif

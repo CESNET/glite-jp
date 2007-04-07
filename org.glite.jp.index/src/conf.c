@@ -20,13 +20,10 @@
 
 #include <glite/jp/ws_fault.c>
 
-#define SOAP_FMAC3 static
-#define WITH_NOGLOBAL
-#include "jpis_C.c"
 
-extern SOAP_NMAC struct Namespace jpis__namespaces[];
+extern SOAP_NMAC struct Namespace jp__namespaces[];
 
-static const char *get_opt_string = "dq:c:k:C:V:nm:p:i:o:x:";
+static const char *get_opt_string = "dq:c:k:C:V:nm:p:i:o:x:s:";
 
 static struct option opts[] = {
 	{"debug",       0, NULL,	'd'},
@@ -41,11 +38,14 @@ static struct option opts[] = {
 	{"pidfile",     1, NULL,	'i'},
 	{"logfile",     1, NULL,	'o'},
 	{"config",      1, NULL,	'x'},
+	{"slaves",      1, NULL,	's'},
 	{NULL,		0, NULL,	0}
 };
 
 static int read_conf(glite_jp_is_conf *conf, char *conf_file);
+#if 0
 static int dump_conf(void);
+#endif
 
 static void usage(char *me) 
 {
@@ -62,12 +62,13 @@ static void usage(char *me)
 		"\t-i, --pidfile\t file to store master pid\n"
 		"\t-o, --logfile\t file to store logs\n"
 		"\t-x, --config\t file with server configuration\n"
+		"\t-s, --slaves\t number of slaves for responses\n"
 		"\n"
 	,me);
 }
 
 
-int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf **configuration)
+int glite_jp_get_conf(int argc, char **argv, glite_jp_is_conf **configuration)
 {
 	char 			*qt = NULL, *conf_file = NULL;
 	int			opt;
@@ -75,7 +76,6 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 
 
 	conf = calloc(1, sizeof(*conf));
-
 
 	while ((opt = getopt_long(argc,argv,get_opt_string,opts,NULL)) != EOF) switch (opt) {
 		case 'd': conf->debug = 1; break;
@@ -90,6 +90,7 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 		case 'i': conf->pidfile = optarg; break;
 		case 'o': conf->logfile = optarg; break;
 		case 'x': conf_file = optarg; break;
+		case 's': conf->slaves = atoi(optarg); if (conf->slaves > 0) break;
 		default : usage(argv[0]); exit(0); break;
 	}
 
@@ -108,7 +109,7 @@ int glite_jp_get_conf(int argc, char **argv, char *config_file, glite_jp_is_conf
 		return 1;
 	}
 	else {
-		read_conf(conf, conf_file);
+		if (read_conf(conf, conf_file) != 0) return 1;
 	}
 
 	*configuration = conf;
@@ -170,7 +171,7 @@ static int read_conf(glite_jp_is_conf *conf, char *conf_file)
         }
 
 	soap_init(&soap);
-	soap_set_namespaces(&soap, jpis__namespaces);
+	soap_set_namespaces(&soap, jp__namespaces);
 
 	soap_begin(&soap);
 	soap.recvfd = fd;
@@ -212,7 +213,7 @@ static int read_conf(glite_jp_is_conf *conf, char *conf_file)
 			conf->feeds[i] = calloc(1, sizeof(*conf->feeds[i]));
 			conf->feeds[i]->PS_URL=strdup(feed->primaryServer);
 
-			if (glite_jpis_SoapToPrimaryQueryConds(&soap, feed->__sizecondition,
+			if (glite_jpis_SoapToPrimaryQueryConds(feed->__sizecondition,
 				feed->condition, &conf->feeds[i]->query)) return EINVAL;
 			
 			conf->feeds[i]->history = feed->history;
@@ -228,6 +229,7 @@ static int read_conf(glite_jp_is_conf *conf, char *conf_file)
 	return 0;
 }
 
+#if 0
 /*
  * Just helper function - used only once for first generation
  * of XML example configuration (which was then reedited in hand)
@@ -240,7 +242,7 @@ static int dump_conf(void) {
 	struct jptype__primaryQuery			*cond;
 
 	soap_init(&soap);
-        soap_set_namespaces(&soap, jpis__namespaces);
+        soap_set_namespaces(&soap, jp__namespaces);
 
         soap.sendfd = STDOUT_FILENO;
         soap_begin_send(&soap);
@@ -283,4 +285,4 @@ static int dump_conf(void) {
 
         return retval;
 }
-
+#endif

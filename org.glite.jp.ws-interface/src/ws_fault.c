@@ -5,6 +5,12 @@
 #include <glite/jp/types.h>
 #include <glite/security/glite_gscompat.h>
 
+#ifdef __GNUC__
+  #define UNUSED __attribute__((unused))
+#else
+  #define UNUSED
+#endif
+
 #define GSOAP_STRING(CHOICE) GLITE_SECURITY_GSOAP_CHOICE_GET(CHOICE, string, stringOrBlob, 1)
 #define GSOAP_BLOB(CHOICE) GLITE_SECURITY_GSOAP_CHOICE_GET(CHOICE, blob, stringOrBlob, 1)
 #define GSOAP_SETSTRING(CHOICE, VALUE) GLITE_SECURITY_GSOAP_CHOICE_SET(CHOICE, string, jptype, stringOrBlob, 1, VALUE)
@@ -22,7 +28,14 @@
 #define dprintf(FMT, ARGS...) printf(FMT, ##ARGS)
 #endif
 
-static int glite_jp_clientCheckFault(struct soap *soap, int err, const char *name, int toSyslog) {
+
+static int glite_jp_clientCheckFault(struct soap *soap, int err, const char *name, int toSyslog) UNUSED;
+static struct jptype__genericFault* jp2s_error(struct soap *soap, const glite_jp_error_t *err) UNUSED;
+static void glite_jp_server_err2fault(const glite_jp_context_t ctx,struct soap *soap) UNUSED;
+
+
+static int glite_jp_clientCheckFault(struct soap *soap, int err, const char *name, int toSyslog)
+{
 	struct SOAP_ENV__Detail *detail;
 	struct jptype__genericFault	*f;
 	char	*reason,indent[200] = "  ";
@@ -124,3 +137,5 @@ static void glite_jp_server_err2fault(const glite_jp_context_t ctx,struct soap *
 	if (soap->version == 2) soap->fault->SOAP_ENV__Detail = detail;
 	else soap->fault->detail = detail;
 }
+
+#undef UNUSED

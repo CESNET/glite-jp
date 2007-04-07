@@ -5,7 +5,7 @@
 
 #include <glite/jp/types.h>
 
-#include "jpps_H.h"
+#include "jp_H.h"
 #include "ws_typemap.h"
 #include "ws_ps_typeref.h"
 #include "glite/jp/ws_fault.c"

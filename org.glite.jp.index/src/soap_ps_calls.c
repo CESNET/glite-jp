@@ -8,8 +8,7 @@
 #include "glite/security/glite_gsplugin.h"
 #include "glite/security/glite_gscompat.h"
 
-#include "jpps_H.h"
-#include "jpps_.nsmap"
+#include "jp_H.h"
 
 #include "conf.h"
 #include "db_ops.h"
@@ -19,11 +18,14 @@
 #include "stdsoap2.h"
 
 
+extern struct Namespace jp__namespaces[];
+int debug = 0;
+
+
 /*------------------*/
 /* Helper functions */
 /*------------------*/
 
-int debug = 0;
 #define dprintf(FMT, ARGS...) if (debug) fprintf(stderr, FMT, ##ARGS)
 #include "glite/jp/ws_fault.c"
 #define check_fault(SOAP, ERR) glite_jp_clientCheckFault((SOAP), (ERR), NULL, 0)
@@ -66,7 +68,7 @@ int MyFeedIndex(glite_jpis_context_t ctx, glite_jp_is_conf *conf, long int uniqu
 	if (ctx->conf->server_cert) plugin_ctx->cert_filename = strdup(ctx->conf->server_cert);
 	
 	soap_init(soap);
-        soap_set_namespaces(soap,jpps__namespaces);
+        soap_set_namespaces(soap, jp__namespaces);
 	soap_set_omode(soap, SOAP_IO_BUFFER);   // set buffered response
                                                 // buffer set to SOAP_BUFLEN (default = 8k)	
 	soap_register_plugin_arg(soap,glite_gsplugin,plugin_ctx);
@@ -132,3 +134,12 @@ err:
 	return err.code;
 }
 
+
+int __jpsrv__RegisterJob(struct soap* soap UNUSED, struct _jpelem__RegisterJob *jpelem__RegisterJob UNUSED, struct _jpelem__RegisterJobResponse *jpelem__RegisterJobResponse UNUSED) { return 0; }
+int __jpsrv__StartUpload(struct soap* soap UNUSED, struct _jpelem__StartUpload *jpelem__StartUpload UNUSED, struct _jpelem__StartUploadResponse *jpelem__StartUploadResponse UNUSED) { return 0; }
+int __jpsrv__CommitUpload(struct soap* soap UNUSED, struct _jpelem__CommitUpload *jpelem__CommitUpload UNUSED, struct _jpelem__CommitUploadResponse *jpelem__CommitUploadResponse UNUSED) { return 0; }
+int __jpsrv__RecordTag(struct soap* soap UNUSED, struct _jpelem__RecordTag *jpelem__RecordTag UNUSED, struct _jpelem__RecordTagResponse *jpelem__RecordTagResponse UNUSED) { return 0; }
+int __jpsrv__FeedIndex(struct soap* soap UNUSED, struct _jpelem__FeedIndex *jpelem__FeedIndex UNUSED, struct _jpelem__FeedIndexResponse *jpelem__FeedIndexResponse UNUSED) { return 0; }
+int __jpsrv__FeedIndexRefresh(struct soap* soap UNUSED, struct _jpelem__FeedIndexRefresh *jpelem__FeedIndexRefresh UNUSED, struct _jpelem__FeedIndexRefreshResponse *jpelem__FeedIndexRefreshResponse UNUSED) { return 0; }
+int __jpsrv__GetJobFiles(struct soap* soap UNUSED, struct _jpelem__GetJobFiles *jpelem__GetJobFiles UNUSED, struct _jpelem__GetJobFilesResponse *jpelem__GetJobFilesResponse UNUSED) { return 0; }
+int __jpsrv__GetJobAttributes(struct soap* soap UNUSED, struct _jpelem__GetJobAttributes *jpelem__GetJobAttributes UNUSED, struct _jpelem__GetJobAttributesResponse *jpelem__GetJobAttributesResponse UNUSED) { return 0; }

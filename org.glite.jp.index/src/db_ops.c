@@ -53,6 +53,10 @@
 
 #define COND_MAGIC 0x444E4F43
 
+
+static int glite_jpis_db_queries_deserialize(glite_jp_query_rec_t ***queries, void *blob, size_t blob_size) UNUSED;
+
+
 static int is_indexed(glite_jp_is_conf *conf, const char *attr) {
 	size_t i;
 
