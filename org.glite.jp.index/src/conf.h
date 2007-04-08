@@ -5,10 +5,12 @@
 
 #include <glite/jp/types.h>
 
-#ifdef __GNUC__
-  #define UNUSED __attribute__((unused))
-#else
-  #define UNUSED
+#ifndef UNUSED
+  #ifdef __GNUC__
+    #define UNUSED __attribute__((unused))
+  #else
+    #define UNUSED
+  #endif
 #endif
 
 #define GLITE_JPIS_DEFAULT_PORT_STR "8902"

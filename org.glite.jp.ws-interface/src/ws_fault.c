@@ -5,10 +5,12 @@
 #include <glite/jp/types.h>
 #include <glite/security/glite_gscompat.h>
 
-#ifdef __GNUC__
-  #define UNUSED __attribute__((unused))
-#else
-  #define UNUSED
+#ifndef UNUSED
+  #ifdef __GNUC__
+    #define UNUSED __attribute__((unused))
+  #else
+    #define UNUSED
+  #endif
 #endif
 
 #define GSOAP_STRING(CHOICE) GLITE_SECURITY_GSOAP_CHOICE_GET(CHOICE, string, stringOrBlob, 1)
@@ -137,5 +139,3 @@ static void glite_jp_server_err2fault(const glite_jp_context_t ctx,struct soap *
 	if (soap->version == 2) soap->fault->SOAP_ENV__Detail = detail;
 	else soap->fault->detail = detail;
 }
-
-#undef UNUSED
