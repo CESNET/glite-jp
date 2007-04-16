@@ -55,11 +55,13 @@ static int glite_jp_clientCheckFault(struct soap *soap, int err, const char *nam
 
 	case SOAP_FAULT:
 	case SOAP_SVR_FAULT:
+		retval = -1;
 		detail = GLITE_SECURITY_GSOAP_DETAIL(soap);
 		reason = GLITE_SECURITY_GSOAP_REASON(soap);
 		dprintf("%s%s\n", prefix, reason);
 		if (toSyslog) syslog(LOG_ERR, "%s", reason);
 
+		if (!detail) break;
 		if (detail->__type != GFNUM && detail->__any) {
 		// compatibility with clients gSoaps < 2.7.9b
 			dprintf("%s%s%s\n", prefix, indent, detail->__any);
@@ -87,7 +89,6 @@ static int glite_jp_clientCheckFault(struct soap *soap, int err, const char *nam
 			f = f->reason;
 			strcat(indent,"  ");
 		}
-		retval = -1;
 		break;
 
 	default:
@@ -109,7 +110,7 @@ static struct jptype__genericFault* jp2s_error(struct soap *soap, const glite_jp
 		ret->code = err->code;
 		ret->source = soap_strdup(soap,err->source);
 		ret->text = soap_strdup(soap,strerror(err->code));
-		ret->description = soap_strdup(soap,err->desc);
+		ret->description = err->desc ? soap_strdup(soap,err->desc) : NULL;
 		ret->reason = jp2s_error(soap,err->reason);
 	}
 	return ret;
@@ -118,7 +119,7 @@ static struct jptype__genericFault* jp2s_error(struct soap *soap, const glite_jp
 
 static void glite_jp_server_err2fault(const glite_jp_context_t ctx,struct soap *soap)
 {
-	struct SOAP_ENV__Detail	*detail = soap_malloc(soap,sizeof *detail);
+	struct SOAP_ENV__Detail	*detail;
 #if GSOAP_VERSION >= 20709
 	struct jptype__genericFault *f;
 	f = jp2s_error(soap,ctx->error);
@@ -126,6 +127,11 @@ static void glite_jp_server_err2fault(const glite_jp_context_t ctx,struct soap *
 	struct _genericFault *f = soap_malloc(soap, sizeof *f);
 	f->jpelem__genericFault = jp2s_error(soap,ctx->error);
 #endif
+	soap_receiver_fault(soap,"Oh, shit!",NULL);
+	// no error in JP context?
+	if (!f) return;
+
+	detail = soap_malloc(soap,sizeof *detail);
 	memset(detail, 0, sizeof(*detail));
 #if GSOAP_VERSION >= 20700
 	detail->fault = (void *)f;
@@ -135,7 +141,6 @@ static void glite_jp_server_err2fault(const glite_jp_context_t ctx,struct soap *
 	detail->__type = GFNUM;
 	detail->__any = NULL;
 
-	soap_receiver_fault(soap,"Oh, shit!",NULL);
 	if (soap->version == 2) soap->fault->SOAP_ENV__Detail = detail;
 	else soap->fault->detail = detail;
 }

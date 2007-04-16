@@ -93,7 +93,9 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__UpdateJobs(
 	if ((done != (status & GLITE_JP_IS_STATE_DONE)) && done) {
 		ctx->param_state |= done;
 		if ((ret = glite_jp_db_execute(ctx->update_state_feed_stmt)) != 1) {
-			fprintf(stderr, "can't update state of '%s', returned %d records: %s (%s)\n", feedid, ret, jpctx->error->desc, jpctx->error->source);
+			fprintf(stderr, "can't update state of '%s', returned %d records", feedid, ret);
+			if (jpctx->error) fprintf(stderr, ": %s (%s)\n", jpctx->error->desc, jpctx->error->source);
+			else fprintf(stderr, "\n");
 			goto fail;
 		}
 	}
@@ -202,7 +204,6 @@ static int get_op(const enum jptype__queryOp in, char **out)
 		case  GLITE_JP_QUERYOP_UNEQUAL:
 			qop = strdup("!=");
 			break;
-// FIXME: has index the same metrics?
 		case  GLITE_JP_QUERYOP_GREATER:
 			qop = strdup(">");
 			break;
@@ -384,9 +385,6 @@ static int get_jobids(glite_jpis_context_t ctx, struct _jpelem__QueryJobs *in, c
 	free(qwhere);
 	free(qa);
 	
-	// XXX: add where's for attr origin (not clear now whether stored in separate column
-	// or obtained via glite_jp_attrval_from_db...
-
 	if ((ret = glite_jp_db_execstmt(ctx->jpctx, query, &stmt)) < 0) goto err;
 	free(query);
 
@@ -459,10 +457,10 @@ static int get_attr(struct soap *soap, glite_jpis_context_t ctx, char *jobid, ch
 	free(attr_md5);
 	free(jobid_md5);
 
-	if ((ret = glite_jp_db_execstmt(ctx->jpctx, query, &stmt)) < 0) 
-		// unknown attribute
-		// XXX: propagate the error to client
-		goto err; 
+	if ((ret = glite_jp_db_execstmt(ctx->jpctx, query, &stmt)) < 0) {
+		glite_jpis_stack_error(ctx->jpctx, EIO, "SELECT from attribute '%s' failed", attr_name);
+		goto err;
+	}
 	free(query);
 
 	av = *out;
@@ -602,20 +600,19 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__QueryJobs(
 	/* test whether there is any indexed attribudes in the condition */
 	if ( checkIndexedConditions(ctx, in) ) {
 		glite_jpis_stack_error(ctx->jpctx, EINVAL, "No indexed attribute in query");
-		glite_jp_server_err2fault(ctx->jpctx, soap);
-		return SOAP_ERR;
+		goto fail;
 	}
 
 	/* test whether there is known attribudes in the condition */
 	if ( checkConditions(ctx, in) ) {
 		glite_jpis_stack_error(ctx->jpctx, EINVAL, "Unknown attribute in query");
-		glite_jp_server_err2fault(ctx->jpctx, soap);
-		return SOAP_ERR;
+		goto fail;
 	}
 
 	/* get all jobids matching the conditions */
 	if ( get_jobids(ctx, in, &jobids, &ps_list) ) {
-		return SOAP_ERR;
+		glite_jpis_stack_error(ctx->jpctx, 0, NULL);
+		goto fail;
 	}
 
 	/* get all requested attributes for matching jobids */
@@ -624,7 +621,10 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__QueryJobs(
 	GLITE_SECURITY_GSOAP_LIST_CREATE(soap, out, jobs, struct jptype__jobRecord, size);
 	for (i=0; (jobids && jobids[i]); i++) {
 		jr = GLITE_SECURITY_GSOAP_LIST_GET(out->jobs, i);
-		if ( get_attrs(soap, ctx, jobids[i], in, jr) ) return SOAP_ERR;
+		if ( get_attrs(soap, ctx, jobids[i], in, jr) ) {
+			glite_jpis_stack_error(ctx->jpctx, 0, NULL);
+			goto fail;
+		}
 
 		// XXX: in prototype we return only first value of PS URL
 		// in future database should contain one more table with URLs
@@ -638,6 +638,9 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__QueryJobs(
 	free(ps_list);
 
 	return SOAP_OK;
+fail:
+	glite_jp_server_err2fault(ctx->jpctx, soap);
+	return SOAP_ERR;
 }
 
 
