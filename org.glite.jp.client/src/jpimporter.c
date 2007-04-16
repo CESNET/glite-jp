@@ -392,12 +392,29 @@ static int reg_importer(void)
 	struct _jpelem__RegisterJob			in;
 	struct _jpelem__RegisterJobResponse	empty;
 	int			ret;
+	static int		readnew = 1;
 	char	   *msg = NULL,
 			   *fname = NULL,
 			   *aux;
 
+	if ( readnew ) ret = edg_wll_MaildirTransStart(reg_mdir, &msg, &fname);
+	else ret = edg_wll_MaildirRetryTransStart(reg_mdir, (time_t)30, (time_t)500, &msg, &fname);
+	if ( !ret ) { 
+		readnew = !readnew;
+		if ( readnew ) ret = edg_wll_MaildirTransStart(reg_mdir, &msg, &fname);
+		else ret = edg_wll_MaildirRetryTransStart(reg_mdir, (time_t)30, (time_t)500, &msg, &fname);
+		if ( !ret ) {
+			readnew = !readnew;
+			return 0;
+		}
+	}
 
-	ret = edg_wll_MaildirTransStart(reg_mdir, &msg, &fname);
+	if ( ret < 0 ) {
+		dprintf("[%s] edg_wll_MaildirTransStart: %s (%s)\n", name, strerror(errno), lbm_errdesc);
+		if ( !debug ) syslog(LOG_ERR, "edg_wll_MaildirTransStart: %s (%s)", strerror(errno), lbm_errdesc);
+		return -1;
+	}
+
 	if ( ret < 0 ) {
 		dprintf("[%s] edg_wll_MaildirTransStart: %s (%s)\n", name, strerror(errno), lbm_errdesc);
 		if ( !debug ) syslog(LOG_ERR, "edg_wll_MaildirTransStart: %s (%s)", strerror(errno), lbm_errdesc);
@@ -420,7 +437,7 @@ static int reg_importer(void)
 			ret = soap_call___jpsrv__RegisterJob(soap, jpps, "", &in, &empty);
 			if ( (ret = check_soap_fault(soap, ret)) ) break;
 		} while (0);
-		edg_wll_MaildirTransEnd(reg_mdir, fname, ret? LBMD_TRANS_FAILED: LBMD_TRANS_OK);
+		edg_wll_MaildirTransEnd(reg_mdir, fname, ret? LBMD_TRANS_FAILED_RETRY: LBMD_TRANS_OK);
 		free(fname);
 		free(msg);
 		return 1;

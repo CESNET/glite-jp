@@ -73,7 +73,7 @@ JP_PID=$!
 trap "kill $JP_PID; exit 0" SIGINT
 
 while [ 1 ]; do
-  $PREFIX/sbin/glite-lb-purge $GLITE_LB_EXPORT_PURGE_ARGS -l -m $GLITE_LB_EXPORT_BKSERVER
+  $PREFIX/sbin/glite-lb-purge $GLITE_LB_EXPORT_PURGE_ARGS -l -m $GLITE_LB_EXPORT_BKSERVER -s
 
   for file in $GLITE_LB_EXPORT_DUMPDIR/*; do
     if [ -s $file ]; then
