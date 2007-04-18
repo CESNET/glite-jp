@@ -525,6 +525,7 @@ void glite_jp_db_set_time(void *buffer, const time_t time) {
 
 	mybuffer = (MYSQL_TIME *)buffer;
 	gmtime_r(&time, &tm);
+	memset(mybuffer, 0, sizeof *mybuffer);
 	mybuffer->year = tm.tm_year + 1900;
 	mybuffer->month = tm.tm_mon + 1;
 	mybuffer->day = tm.tm_mday;
@@ -540,6 +541,7 @@ time_t glite_jp_db_get_time(const void *buffer) {
 
 	mybuffer = (MYSQL_TIME *)buffer;
 	memset(&tm, 0, sizeof(tm));
+	setenv("TZ","UTC",1); tzset();
 	tm.tm_year = mybuffer->year - 1900;
 	tm.tm_mon = mybuffer->month - 1;
 	tm.tm_mday = mybuffer->day;

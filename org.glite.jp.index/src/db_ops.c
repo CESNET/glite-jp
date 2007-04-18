@@ -428,13 +428,6 @@ int glite_jpis_init_db(glite_jpis_context_t isctx) {
 	if ((cs = isctx->conf->cs) == NULL) cs = GLITE_JP_IS_DEFAULTCS;
 	if ((ret = glite_jp_db_connect(jpctx, cs)) != 0) goto fail;
 
-	// sql command: select an uninitialized unlocked feed
-	glite_jp_db_create_params(&myparam, 1, GLITE_JP_DB_TYPE_DATETIME, &isctx->param_expires);
-	glite_jp_db_create_results(&myres, 2,
-		GLITE_JP_DB_TYPE_INT, NULL, &(isctx->param_uniqueid),
-		GLITE_JP_DB_TYPE_VARCHAR, NULL, isctx->param_ps, sizeof(isctx->param_ps), &isctx->param_ps_len);
-	if ((ret = glite_jp_db_prepare(jpctx, "SELECT uniqueid, source FROM feeds WHERE (locked=0) AND (feedid IS NULL) AND ((state < " GLITE_JP_IS_STATE_ERROR_STR ") OR (expires <= ?))", &isctx->select_unlocked_feed_stmt, myparam, myres)) != 0) goto fail;
-
 	// sql command: lock the feed (via uniqueid)
 	glite_jp_db_create_params(&myparam, 1, GLITE_JP_DB_TYPE_INT, &isctx->param_uniqueid);
 	if ((ret = glite_jp_db_prepare(jpctx, "UPDATE feeds SET locked=1 WHERE (locked = 0) AND (uniqueid = ?)", &isctx->lock_feed_stmt, myparam, NULL)) != 0) goto fail;
@@ -509,7 +502,6 @@ fail:
 
 
 void glite_jpis_free_db(glite_jpis_context_t ctx) {
-	glite_jp_db_freestmt(&ctx->select_unlocked_feed_stmt);
 	glite_jp_db_freestmt(&ctx->lock_feed_stmt);
 	glite_jp_db_freestmt(&ctx->init_feed_stmt);
 	glite_jp_db_freestmt(&ctx->unlock_feed_stmt);
@@ -535,21 +527,46 @@ void glite_jpis_free_db(glite_jpis_context_t ctx) {
 int glite_jpis_lockUninitializedFeed(glite_jpis_context_t ctx, long int *uniqueid, char **PS_URL)
 {
 	int ret;
-	time_t now;
+	static int uninit_msg = 1;
+	char *sql, *res[1], *t;
+	glite_jp_db_stmt_t stmt;
 
-	now = time(NULL);
-	glite_jp_db_set_time(ctx->param_expires, now);
 	do {
-		switch (glite_jp_db_execute(ctx->select_unlocked_feed_stmt)) {
-		case -1: lprintf("error selecting unlocked feed\n"); return ENOLCK;
-		case 0: lprintf("no more uninit. feeds unlocked\n"); return ENOENT;
+		t = glite_jp_db_timetodb(time(NULL));
+		trio_asprintf(&sql, "SELECT uniqueid, source FROM feeds WHERE (locked=0) AND (feedid IS NULL) AND ((state < " GLITE_JP_IS_STATE_ERROR_STR ") OR (expires <= %s))", t);
+		free(t);
+		ret = glite_jp_db_execstmt(ctx->jpctx, sql, &stmt);
+		free(sql);
+		switch (ret) {
+		case -1:
+			lprintf("error selecting unlocked feed\n");
+			uninit_msg = 1;
+			glite_jp_db_freestmt(&stmt);
+			return ENOLCK;
+		case 0:
+			if (uninit_msg) {
+				lprintf("no more uninit. feeds unlocked\n");
+				uninit_msg = 0;
+			}
+			glite_jp_db_freestmt(&stmt);
+			return ENOENT;
 		default: break;
 		}
-		if (glite_jp_db_fetch(ctx->select_unlocked_feed_stmt) != 0) return ENOLCK;
-		lprintf("selected uninit. feed %ld\n", ctx->param_uniqueid);
+		uninit_msg = 1;
+		if (glite_jp_db_fetchrow(stmt, res) <= 0) {
+			lprintf("error fetching unlocked feed\n");
+			glite_jp_db_freestmt(&stmt);
+			return ENOLCK;
+		}
+		glite_jp_db_freestmt(&stmt);
+		ctx->param_uniqueid = atol(res[0]);
+		strncpy(ctx->param_ps, res[1], sizeof ctx->param_ps);
+		lprintf("selected uninit. feed, uniqueid='%s'\n", res[0]);
+		free(res[0]);
+		free(res[1]);
 
 		ret = glite_jp_db_execute(ctx->lock_feed_stmt);
-		lprintf("locked %d feeds (uniqueid=%ld, time=%ld)\n", ret, ctx->param_uniqueid, now);
+		lprintf("locked %d feeds (uniqueid=%ld)\n", ret, ctx->param_uniqueid);
 	} while (ret != 1);
 
 	*uniqueid = ctx->param_uniqueid;
