@@ -26,9 +26,7 @@
 /* Helper functions */
 /*------------------*/
 
-#define dprintf(FMT, ARGS, ...)
 #include "glite/jp/ws_fault.c"
-#define err2fault(CTX, SOAP) glite_jp_server_err2fault((CTX), (SOAP))
 
 
 
@@ -79,6 +77,8 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__UpdateJobs(
 
 	// get info about the feed
 	feedid = jpelem__UpdateJobs->feedId;
+	lprintf("feedid='%s'\n", feedid);
+
 	GLITE_JPIS_PARAM(ctx->param_feedid, ctx->param_feedid_len, feedid);
 	if ((ret = glite_jp_db_execute(ctx->select_info_feed_stmt)) != 1) {
 		fprintf(stderr, "can't get info about feed '%s', returned %d records", feedid, ret);
@@ -86,7 +86,15 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__UpdateJobs(
 		else fprintf(stderr, "\n");
 		goto fail;
 	}
+	if (glite_jp_db_fetch(ctx->select_info_feed_stmt) != 0) {
+		fprintf(stderr, "can't fetch feed '%s'", feedid);
+		if (jpctx->error) fprintf(stderr, ": %s (%s)\n", jpctx->error->desc, jpctx->error->source);
+		else fprintf(stderr, "\n");
+		goto fail;
+	}
+	lprintf("uniqueid=%ld, state=%d, source='%s'\n", ctx->param_uniqueid, ctx->param_state, ctx->param_ps);
 	ps = strdup(ctx->param_ps);
+
 	// update status, if needed (only orig)
 	status = ctx->param_state;
 	done = jpelem__UpdateJobs->feedDone ? GLITE_JP_IS_STATE_DONE : 0;
@@ -591,7 +599,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__QueryJobs(
 	struct jptype__jobRecord	*jr;
 
 	char				**jobids = NULL, **ps_list = NULL;
-	int 				i, size;
+	int 				i, size, err;
 
 
 	puts(__FUNCTION__);
@@ -610,8 +618,8 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__QueryJobs(
 	}
 
 	/* get all jobids matching the conditions */
-	if ( get_jobids(ctx, in, &jobids, &ps_list) ) {
-		glite_jpis_stack_error(ctx->jpctx, 0, NULL);
+	if ( (err = get_jobids(ctx, in, &jobids, &ps_list)) != 0 ) {
+		glite_jpis_stack_error(ctx->jpctx, err, "Error getting jobs");
 		goto fail;
 	}
 
@@ -621,8 +629,8 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__QueryJobs(
 	GLITE_SECURITY_GSOAP_LIST_CREATE(soap, out, jobs, struct jptype__jobRecord, size);
 	for (i=0; (jobids && jobids[i]); i++) {
 		jr = GLITE_SECURITY_GSOAP_LIST_GET(out->jobs, i);
-		if ( get_attrs(soap, ctx, jobids[i], in, jr) ) {
-			glite_jpis_stack_error(ctx->jpctx, 0, NULL);
+		if ( (err = get_attrs(soap, ctx, jobids[i], in, jr)) != 0 ) {
+			glite_jpis_stack_error(ctx->jpctx, err, "Error getting attributes of the job '%s'", jobids[i]);
 			goto fail;
 		}
 

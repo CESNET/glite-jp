@@ -315,6 +315,13 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 		// insert
 		if (glite_jp_db_execute(stmt) == -1) goto fail;
 
+		// silently drop
+		sql[sizeof(sql) - 1] = '\0';
+		snprintf(sql, sizeof(sql), SQLCMD_DROP_DATA_TABLE, attrid);
+		llprintf(LOG_SQL, "preventive dropping '%s' ==> '%s'\n", attrid, sql);
+		glite_jp_db_execstmt(jpctx, sql, NULL);
+
+		// create table
 		sql[sizeof(sql) - 1] = '\0';
 		snprintf(sql, sizeof(sql) - 1, SQLCMD_CREATE_DATA_TABLE, attrid, type_index, type_full);
 		llprintf(LOG_SQL, "creating table: '%s'\n", sql);
@@ -426,7 +433,7 @@ int glite_jpis_init_db(glite_jpis_context_t isctx) {
 	glite_jp_db_create_results(&myres, 2,
 		GLITE_JP_DB_TYPE_INT, NULL, &(isctx->param_uniqueid),
 		GLITE_JP_DB_TYPE_VARCHAR, NULL, isctx->param_ps, sizeof(isctx->param_ps), &isctx->param_ps_len);
-	if ((ret = glite_jp_db_prepare(jpctx, "SELECT uniqueid, source FROM feeds WHERE (locked=0) AND (feedid IS NULL) AND ((state <> " GLITE_JP_IS_STATE_ERROR_STR ") OR (expires <= ?))", &isctx->select_unlocked_feed_stmt, myparam, myres)) != 0) goto fail;
+	if ((ret = glite_jp_db_prepare(jpctx, "SELECT uniqueid, source FROM feeds WHERE (locked=0) AND (feedid IS NULL) AND ((state < " GLITE_JP_IS_STATE_ERROR_STR ") OR (expires <= ?))", &isctx->select_unlocked_feed_stmt, myparam, myres)) != 0) goto fail;
 
 	// sql command: lock the feed (via uniqueid)
 	glite_jp_db_create_params(&myparam, 1, GLITE_JP_DB_TYPE_INT, &isctx->param_uniqueid);

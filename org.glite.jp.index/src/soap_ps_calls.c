@@ -19,14 +19,13 @@
 
 
 extern struct Namespace jp__namespaces[];
-int debug = 0;
 
 
 /*------------------*/
 /* Helper functions */
 /*------------------*/
 
-#define dprintf(FMT, ARGS...) if (debug) fprintf(stderr, FMT, ##ARGS)
+#define dprintf(FMT, ARGS...) do {fprintf(stderr, "[%d] %s: ", getpid(), __FUNCTION__); fprintf(stderr, FMT, ##ARGS); } while(0);
 #include "glite/jp/ws_fault.c"
 #define check_fault(SOAP, ERR) glite_jp_clientCheckFault((SOAP), (ERR), NULL, 0)
 
@@ -61,7 +60,6 @@ int MyFeedIndex(glite_jpis_context_t ctx, glite_jp_is_conf *conf, long int uniqu
 	char *src, *desc = NULL;
 
 	lprintf("(%ld) for %s called\n", uniqueid, dest);
-	debug = conf->debug;
 
 	glite_gsplugin_init_context(&plugin_ctx);
 	if (ctx->conf->server_key) plugin_ctx->key_filename = strdup(ctx->conf->server_key);
@@ -99,7 +97,7 @@ int MyFeedIndex(glite_jpis_context_t ctx, glite_jp_is_conf *conf, long int uniqu
 	in.history = conf->feeds[dest_index]->history;
 	in.continuous = conf->feeds[dest_index]->continuous;
 	in.destination = ctx->hname;
-	lprintf("(%ld) destination IS: %s\n", uniqueid, ctx->hname);
+	lprintf("(%ld) destination IS: '%s'\n", uniqueid, ctx->hname);
 
 	if (check_fault(soap,soap_call___jpsrv__FeedIndex(soap,dest,"", &in, &out)) != 0) {
 		fprintf(stderr, "\n");

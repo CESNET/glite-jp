@@ -2,6 +2,7 @@
 
 #ident "$Header$"
 
+#include <sys/types.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -149,7 +150,7 @@ void glite_jp_free_conf(glite_jp_is_conf *conf)
 void glite_jp_lprintf(const char *source, const char *fmt, ...) {
 	va_list ap;
 
-	printf("%s: ", source);
+	printf("[%d] %s: ", getpid(), source);
 	va_start(ap, fmt);
 	vprintf(fmt, ap);
 	va_end(ap);
