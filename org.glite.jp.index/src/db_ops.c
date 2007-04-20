@@ -433,11 +433,12 @@ int glite_jpis_init_db(glite_jpis_context_t isctx) {
 	if ((ret = glite_jp_db_prepare(jpctx, "UPDATE feeds SET locked=1 WHERE (locked = 0) AND (uniqueid = ?)", &isctx->lock_feed_stmt, myparam, NULL)) != 0) goto fail;
 
 	// sql command: assign the feed (via uniqueid)
-	glite_jp_db_create_params(&myparam, 3,
+	glite_jp_db_create_params(&myparam, 4,
 		GLITE_JP_DB_TYPE_CHAR, isctx->param_feedid, &isctx->param_feedid_len,
 		GLITE_JP_DB_TYPE_DATETIME, &isctx->param_expires,
+		GLITE_JP_DB_TYPE_INT, &isctx->param_state,
 		GLITE_JP_DB_TYPE_INT, &isctx->param_uniqueid);
-	if ((ret = glite_jp_db_prepare(jpctx, "UPDATE feeds SET feedid=?, expires=? WHERE (uniqueid=?)", &isctx->init_feed_stmt, myparam, NULL)) != 0) goto fail;
+	if ((ret = glite_jp_db_prepare(jpctx, "UPDATE feeds SET feedid=?, expires=?, state=? WHERE (uniqueid=?)", &isctx->init_feed_stmt, myparam, NULL)) != 0) goto fail;
 
 	// sql command: unlock the feed (via uniqueid)
 	glite_jp_db_create_params(&myparam, 1, GLITE_JP_DB_TYPE_INT, &isctx->param_uniqueid);
@@ -578,13 +579,14 @@ int glite_jpis_lockUninitializedFeed(glite_jpis_context_t ctx, long int *uniquei
 
 /* Store feed ID and expiration time returned by PS for locked feed. */
 
-int glite_jpis_initFeed(glite_jpis_context_t ctx, long int uniqueid, char *feedId, time_t feedExpires)
+int glite_jpis_initFeed(glite_jpis_context_t ctx, long int uniqueid, char *feedId, time_t feedExpires, int status)
 {
 	int ret;
 
 	GLITE_JPIS_PARAM(ctx->param_feedid, ctx->param_feedid_len, feedId);
 	glite_jp_db_set_time(ctx->param_expires, feedExpires);
 	ctx->param_uniqueid = uniqueid;
+	ctx->param_state = status;
 
 	ret = glite_jp_db_execute(ctx->init_feed_stmt);
 	lprintf("initializing feed, uniqueid=%li, result=%d\n", uniqueid, ret);

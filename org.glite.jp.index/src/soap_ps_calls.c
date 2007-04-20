@@ -53,7 +53,7 @@ int MyFeedIndex(glite_jpis_context_t ctx, glite_jp_is_conf *conf, long int uniqu
 //	struct jptype__primaryQuery     	query;
 //	struct jptype__stringOrBlob		value;
 //	struct xsd__base64Binary		blob;
-	int 					i, dest_index;
+	int 					i, dest_index, status;
 	struct soap             		*soap = soap_new();
 	glite_gsplugin_Context			plugin_ctx;
 	glite_jp_error_t err;
@@ -110,9 +110,10 @@ int MyFeedIndex(glite_jpis_context_t ctx, glite_jp_is_conf *conf, long int uniqu
 		goto err;
 	}
 	else {
+		status = (conf->feeds[dest_index]->history ? GLITE_JP_IS_STATE_HIST : 0) | (conf->feeds[dest_index]->continuous ? GLITE_JP_IS_STATE_CONT : 0);
 		lprintf("(%ld) FeedId: %s\n", uniqueid, out.feedId);
 		lprintf("(%ld) Expires: %s", uniqueid, ctime(&out.feedExpires));
-		glite_jpis_initFeed(ctx, uniqueid, out.feedId, out.feedExpires);
+		glite_jpis_initFeed(ctx, uniqueid, out.feedId, out.feedExpires, status);
 		glite_jpis_unlockFeed(ctx, uniqueid);
 	}
 

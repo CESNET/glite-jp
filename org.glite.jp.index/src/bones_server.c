@@ -192,25 +192,26 @@ int main(int argc, char *argv[])
 int feed_caller(glite_jpis_context_t isctx, glite_jp_is_conf *conf) {
 	char *PS_URL;
 	long int uniqueid;
-	int i;
+	int i, ok;
 
 	// dirty hack - try quicker several times first
 	glite_jp_clear_error(isctx->jpctx);
 	switch (glite_jpis_lockUninitializedFeed(isctx,&uniqueid,&PS_URL)) {
 		case 0: 
+			ok = 0;
 			for (i = 0; i < 10; i++) {
 				// contact PS server, ask for data, save
 				// feedId and expiration to DB and unlock feed
 				if (MyFeedIndex(isctx, conf, uniqueid, PS_URL) != 0) {
 					// error when connecting to PS
 					printf("[%d] %s: %s (%s), reconnecting later\n", getpid(), __FUNCTION__, isctx->jpctx->error->desc, isctx->jpctx->error->source);
-					if (i + 1 < 10) glite_jpis_unlockFeed(isctx, uniqueid);
-					else glite_jpis_tryReconnectFeed(isctx, uniqueid, time(NULL) + RECONNECT_TIME);
 				} else {
 					free(PS_URL);
+					ok = 1;
 					break;
 				}
 			}
+			if (!ok) glite_jpis_tryReconnectFeed(isctx, uniqueid, time(NULL) + RECONNECT_TIME);
 			sleep(RECONNECT_TIME_QUICK);
 
 			return 1;
