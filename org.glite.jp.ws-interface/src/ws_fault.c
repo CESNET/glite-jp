@@ -120,19 +120,19 @@ static struct jptype__genericFault* jp2s_error(struct soap *soap, const glite_jp
 static void glite_jp_server_err2fault(const glite_jp_context_t ctx,struct soap *soap)
 {
 	struct SOAP_ENV__Detail	*detail;
+	struct jptype__genericFault *item;
 #if GSOAP_VERSION >= 20709
 	struct jptype__genericFault *f;
-	f = jp2s_error(soap,ctx->error);
+	item = f = jp2s_error(soap,ctx->error);
 #else
 	struct _genericFault *f = soap_malloc(soap, sizeof *f);
-	f->jpelem__genericFault = jp2s_error(soap,ctx->error);
+	item = f->jpelem__genericFault = jp2s_error(soap,ctx->error);
 #endif
 	soap_receiver_fault(soap,"Oh, shit!",NULL);
 	// no error in JP context?
-	if (!f) return;
+	if (!item) return;
 
-	detail = soap_malloc(soap,sizeof *detail);
-	memset(detail, 0, sizeof(*detail));
+	detail = soap_faultdetail(soap);
 #if GSOAP_VERSION >= 20700
 	detail->fault = (void *)f;
 #else
@@ -140,7 +140,4 @@ static void glite_jp_server_err2fault(const glite_jp_context_t ctx,struct soap *
 #endif
 	detail->__type = GFNUM;
 	detail->__any = NULL;
-
-	if (soap->version == 2) soap->fault->SOAP_ENV__Detail = detail;
-	else soap->fault->detail = detail;
 }
