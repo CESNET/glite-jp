@@ -75,6 +75,7 @@ static int SoapToQueryRecordVal(
 }
 
 
+#if 0
 static int SoapToQueryCond(
         struct jptype__indexQuery	*in,
         glite_jp_query_rec_t		**out)
@@ -143,17 +144,18 @@ int glite_jpis_SoapToQueryConds(
 	
 	return 0;
 }
+#endif
 
 
 static int SoapToPrimaryQueryCond(
         struct jptype__primaryQuery	*in,
-        glite_jp_query_rec_t		**out)
+        glite_jp_query_rec_t		*out)
 {
 	glite_jp_query_rec_t	*qr;	
 
 
 	assert(in && in->attr); assert(out);
-	*out = qr = calloc(2, sizeof(*qr));	
+	qr = out;	
 
 	qr[0].attr = strdup(in->attr);
 	glite_jpis_SoapToQueryOp(in->op, &(qr[0].op));
@@ -169,7 +171,6 @@ static int SoapToPrimaryQueryCond(
 	default:
 		if ( SoapToQueryRecordVal(in->value, &(qr[0].binary), 
 				&(qr[0].size), 	&(qr[0].value)) ) {
-			*out = NULL;
 			return 1;
 		}
 		break;
@@ -191,16 +192,16 @@ static int SoapToPrimaryQueryCond(
 int glite_jpis_SoapToPrimaryQueryConds(
 	int				size,
         GLITE_SECURITY_GSOAP_LIST_TYPE(jptype, primaryQuery)	in,
-        glite_jp_query_rec_t		***out)
+        glite_jp_query_rec_t		**out)
 {
-	glite_jp_query_rec_t    **qr;
+	glite_jp_query_rec_t    *qr;
 	int 			i;
 
 	assert(in || !size); assert(out);
         qr = calloc(size+1, sizeof(*qr));
 
 	for (i=0; i<size; i++) {
-		if ( SoapToPrimaryQueryCond(GLITE_SECURITY_GSOAP_LIST_GET(in, i), &(qr[i])) ) {
+		if ( SoapToPrimaryQueryCond(GLITE_SECURITY_GSOAP_LIST_GET(in, i), &qr[i]) ) {
 			*out = NULL;
 			free(qr);
 			return 1;

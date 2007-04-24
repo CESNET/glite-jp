@@ -1,3 +1,4 @@
+#include <sys/time.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <assert.h>
@@ -58,10 +59,13 @@ int MyFeedIndex(glite_jpis_context_t ctx, glite_jp_is_conf *conf, long int uniqu
 	glite_gsplugin_Context			plugin_ctx;
 	glite_jp_error_t err;
 	char *src, *desc = NULL;
+	// preventive very long timeout
+	static const struct timeval to = {tv_sec: 7200, tv_usec: 0};
 
 	lprintf("(%ld) for %s called\n", uniqueid, dest);
 
 	glite_gsplugin_init_context(&plugin_ctx);
+	glite_gsplugin_set_timeout(plugin_ctx, &to);
 	if (ctx->conf->server_key) plugin_ctx->key_filename = strdup(ctx->conf->server_key);
 	if (ctx->conf->server_cert) plugin_ctx->cert_filename = strdup(ctx->conf->server_cert);
 	
@@ -80,11 +84,11 @@ int MyFeedIndex(glite_jpis_context_t ctx, glite_jp_is_conf *conf, long int uniqu
 
 	if ((dest_index = find_dest_index(conf, uniqueid)) < 0) goto err;
 
-	for (i=0; conf->feeds[dest_index]->query[i]; i++);
+	for (i=0; conf->feeds[dest_index]->query[i].attr; i++);
 	GLITE_SECURITY_GSOAP_LIST_CREATE(soap, &in, conditions, struct jptype__primaryQuery, i);
 
-	for (i=0; conf->feeds[dest_index]->query[i]; i++) {
-		if (glite_jpis_QueryCondToSoap(soap, conf->feeds[dest_index]->query[i], 
+	for (i=0; conf->feeds[dest_index]->query[i].attr; i++) {
+		if (glite_jpis_QueryCondToSoap(soap, &conf->feeds[dest_index]->query[i], 
 				GLITE_SECURITY_GSOAP_LIST_GET(in.conditions, i)) != SOAP_OK) {
 			err.code = EINVAL;
 			err.desc = "error during conds conversion";

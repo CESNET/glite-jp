@@ -121,7 +121,7 @@ int glite_jp_get_conf(int argc, char **argv, glite_jp_is_conf **configuration)
 
 void glite_jp_free_conf(glite_jp_is_conf *conf)
 {
-	size_t i, j, k;
+	size_t i, j;
 	glite_jp_is_feed *feed;
 
 	if (!conf) return;
@@ -132,10 +132,7 @@ void glite_jp_free_conf(glite_jp_is_conf *conf)
 	if (conf->feeds) for (i = 0; conf->feeds[i]; i++) {
 		feed = conf->feeds[i];
 		free(feed->PS_URL);
-		for (j = 0; feed->query[j]; j++) {
-			for (k = 0; feed->query[j][k].attr; k++) glite_jp_free_query_rec(&feed->query[j][k]);
-			free(feed->query[j]);
-		}
+		for (j = 0; feed->query[j].attr; j++) glite_jp_free_query_rec(&feed->query[j]);
 		free(feed->query);
 		free(feed);
 	}

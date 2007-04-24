@@ -24,7 +24,7 @@
 
 typedef struct _glite_jp_is_feed {
 	char    		*PS_URL;	//URLs of Primary Storage servers
-	glite_jp_query_rec_t    **query;	// query to Primary Server (aka filter)
+	glite_jp_query_rec_t    *query;		// query to Primary Server (aka filter)
 	int     		history, 	// type of query
 				continuous;
 	long int		uniqueid;       // internal ID

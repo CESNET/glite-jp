@@ -54,7 +54,7 @@
 #define COND_MAGIC 0x444E4F43
 
 
-static int glite_jpis_db_queries_deserialize(glite_jp_query_rec_t ***queries, void *blob, size_t blob_size) UNUSED;
+static int glite_jpis_db_queries_deserialize(glite_jp_query_rec_t **queries, void *blob, size_t blob_size) UNUSED;
 
 
 static int is_indexed(glite_jp_is_conf *conf, const char *attr) {
@@ -151,14 +151,14 @@ static void *array_get(void **data, size_t data_len) {
 }
 
 
-static int glite_jpis_db_queries_serialize(glite_jpis_context_t isctx, void **blob, size_t *len, glite_jp_query_rec_t **queries) {
+static int glite_jpis_db_queries_serialize(glite_jpis_context_t isctx, void **blob, size_t *len, glite_jp_query_rec_t *queries) {
 	size_t maxlen;
 	glite_jp_query_rec_t *query;
 	int ret;
 	size_t datalen;
 
 	if ((ret = array_init(blob, len, &maxlen, 1024)) != 0) return ret;
-	query = queries ? *queries : NULL;
+	query = queries;
 	while(query && query->attr) {
 		if ((ret = array_add_long(blob, len, &maxlen, COND_MAGIC)) != 0) goto fail;
 		datalen = strlen(query->attr) + 1;
@@ -176,7 +176,7 @@ static int glite_jpis_db_queries_serialize(glite_jpis_context_t isctx, void **bl
 		if ((ret = array_add_long(blob, len, &maxlen, datalen)) != 0) goto fail;
 		if (datalen)
 			if ((ret = array_add(blob, len, &maxlen, query->value2, datalen)) != 0) goto fail;
-		
+
 		query++;
 	}
 
@@ -188,20 +188,20 @@ fail:
 }
 
 
-static int glite_jpis_db_queries_deserialize(glite_jp_query_rec_t ***queries, void *blob, size_t blob_size) {
+static int glite_jpis_db_queries_deserialize(glite_jp_query_rec_t **queries, void *blob, size_t blob_size) {
 	size_t maxlen, len, datalen;
 	void *blob_ptr, *blob_end;
 	int ret;
 	uint32_t l;
-	glite_jp_query_rec_t *query;
+	glite_jp_query_rec_t query;
 	int i;
 
-	if ((ret = array_init((void **)queries, &len, &maxlen, 512)) != 0) return ret;
+	if ((ret = array_init((void *)queries, &len, &maxlen, 512)) != 0) return ret;
 	blob_ptr = blob;
 	blob_end = (char *)blob + blob_size;
 	while (blob_end > blob_ptr) {
 		ret = ENOMEM;
-		if ((query = calloc(sizeof(*query), 1)) == NULL) goto fail;
+		memset(&query, 0, sizeof query);
 		l = array_get_long(&blob_ptr);
 		if (l != COND_MAGIC) {
 			lprintf("blob=%p, blob_ptr=%p, 0x%08" PRIX32 "\n", blob, blob_ptr, l);
@@ -211,48 +211,44 @@ static int glite_jpis_db_queries_deserialize(glite_jp_query_rec_t ***queries, vo
 
 		datalen = array_get_long(&blob_ptr);
 		if (datalen) {
-			if ((query->attr = malloc(datalen)) == NULL) goto fail_query;
-			memcpy(query->attr, array_get(&blob_ptr, datalen), datalen);
-		} else query->attr = NULL;
+			if ((query.attr = malloc(datalen)) == NULL) goto fail_query;
+			memcpy(query.attr, array_get(&blob_ptr, datalen), datalen);
+		} else query.attr = NULL;
 
-		query->op = array_get_long(&blob_ptr);
-		query->binary = array_get_long(&blob_ptr);
-
-		datalen = array_get_long(&blob_ptr);
-		if (datalen) {
-			if ((query->value = malloc(datalen)) == NULL) goto fail_query;
-			memcpy(query->value, array_get(&blob_ptr, datalen), datalen);
-		} else query->value = NULL;
-		query->size = datalen;
+		query.op = array_get_long(&blob_ptr);
+		query.binary = array_get_long(&blob_ptr);
 
 		datalen = array_get_long(&blob_ptr);
 		if (datalen) {
-			if ((query->value2 = malloc(datalen)) == NULL) goto fail_query;
-			memcpy(query->value2, array_get(&blob_ptr, datalen), datalen);
-		} else query->value2 = NULL;
-		query->size2 = datalen;
+			if ((query.value = malloc(datalen)) == NULL) goto fail_query;
+			memcpy(query.value, array_get(&blob_ptr, datalen), datalen);
+		} else query.value = NULL;
+		query.size = datalen;
 
-		if ((ret = array_add((void **)queries, &len, &maxlen, &query, sizeof(query))) != 0) goto fail_query;
+		datalen = array_get_long(&blob_ptr);
+		if (datalen) {
+			if ((query.value2 = malloc(datalen)) == NULL) goto fail_query;
+			memcpy(query.value2, array_get(&blob_ptr, datalen), datalen);
+		} else query.value2 = NULL;
+		query.size2 = datalen;
+
+		if ((ret = array_add((void *)queries, &len, &maxlen, &query, sizeof(query))) != 0) goto fail_query;
 	}
 	assert(blob_end == blob_ptr);
 
-	query = NULL;
-	if ((ret = array_add((void **)queries, &len, &maxlen, &query, sizeof(query))) != 0) goto fail;
+	memset(&query, 0, sizeof query);
+	if ((ret = array_add((void *)queries, &len, &maxlen, &query, sizeof(query))) != 0) goto fail;
 
 	return 0;
 
 fail_query:
-	free(query);
 fail:
 	i = 0;
-	query = (*queries)[i];
-	while (query && query->attr) {
-		free(query->attr);
-		free(query->value);
-		free(query->value2);
-		free(query);
+	while ((*queries)[i].attr) {
+		free((*queries)[i].attr);
+		free((*queries)[i].value);
+		free((*queries)[i].value2);
 		i++;
-		query = (*queries)[i];
 	}
 	free(*queries);
 	return ret;

@@ -37,6 +37,8 @@
 
 #define RECONNECT_TIME		60*20	// when try reconnect to PS in case of error (in sec)
 #define RECONNECT_TIME_QUICK	1	// time between feed requests
+#define REACTION_TIME		60*2	// when try reconnect to PS in case of new feeds (in sec)
+#define LAUNCH_TIME		2	// wait (for starting slaves) before requesting feeds
 
 
 extern SOAP_NMAC struct Namespace jp__namespaces[],jpps__namespaces[];
@@ -46,6 +48,9 @@ int request(int,struct timeval *,void *);
 static int reject(int);
 static int disconn(int,struct timeval *,void *);
 int data_init(void **data);
+#ifndef ONETIME_FEEDS
+int feed_loop_slave(void);
+#endif
 
 
 static struct glite_srvbones_service stab = {
@@ -177,6 +182,11 @@ int main(int argc, char *argv[])
  		fprintf(stderr, "WARNING: %d slaves can be too low for %d feeds\n", conf->slaves, nfeeds);
  	}
  	glite_srvbones_set_param(GLITE_SBPARAM_SLAVES_COUNT, conf->slaves);
+#ifndef ONETIME_FEEDS
+ 	if (feed_loop_slave() < 0) {
+ 		fprintf(stderr, "forking feed_loop_slave failed!\n");
+	} else
+#endif
 	glite_srvbones_run(data_init,&stab,1 /* XXX: entries in stab */,debug);
 
 	glite_jpis_free_db(isctx);
@@ -228,6 +238,40 @@ int feed_caller(glite_jpis_context_t isctx, glite_jp_is_conf *conf) {
 }
 
 
+#ifndef ONETIME_FEEDS
+int feed_loop_slave(void) {
+	pid_t pid;
+	glite_jpis_context_t isctx;
+
+	if ( (pid = fork()) ) return pid;
+
+	glite_jpis_init_context(&isctx, ctx, conf);
+	if (glite_jpis_init_db(isctx) != 0) {
+		printf("[%d] %s: DB error: %s (%s)\n", getpid(), __FUNCTION__, ctx->error->desc, ctx->error->source);
+		exit(1);
+	}
+
+	printf("[%d] %s: waiting before feed requests...\n", getpid(), __FUNCTION__);
+	sleep(LAUNCH_TIME);
+	printf("[%d] %s: feeder slave started\n", getpid(), __FUNCTION__);
+	do {
+		switch (feed_caller(isctx, conf)) {
+			case 1: break;
+			case 0:
+				sleep(REACTION_TIME);
+				break;
+			default:
+				printf("[%d] %s: feed locking error, slave terminated\n", getpid(), __FUNCTION__);
+				exit(1);
+		}
+	} while (1);
+
+	printf("[%d] %s: slave terminated\n", getpid(), __FUNCTION__);
+	exit(0);
+}
+#endif
+
+
 /* slave's init comes here */	
 int data_init(void **data)
 {
@@ -243,6 +287,7 @@ int data_init(void **data)
 	printf("[%d] slave started\n",getpid());
 	private->soap = soap_new();
 
+#if ONETIME_FEEDS
 	/* ask PS server for data */
 	do {
 		switch (feed_caller(private->ctx, conf)) {
@@ -260,6 +305,10 @@ int data_init(void **data)
 				return -1;
 		}
 	} while (1);
+#else
+	*data = (void *) private;
+	return 0;
+#endif
 }
 
 
