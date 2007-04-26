@@ -14,6 +14,7 @@ void glite_jp_attrval_free(glite_jp_attrval_t *a,int f)
 	free(a->name);
 	free(a->value);
 	free(a->origin_detail);
+	memset(a,0,sizeof *a);
 	if (f) free(a);
 }
 
