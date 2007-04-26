@@ -23,7 +23,7 @@ extern pid_t	master;
  * seconds before feed expires: should be 
  * XXX: should be configurable, default for real deployment sort of 1 hour
  */
-#define FEED_TTL	3600
+#define FEED_TTL	36000000
 
 /* XXX: configurable */
 #define BATCH_FEED_SIZE	200

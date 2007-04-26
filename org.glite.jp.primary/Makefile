@@ -36,6 +36,11 @@ CLASSADPLUGIN_LIBS:= ${classadslib} -lstdc++
 
 CLASSADPLUGIN_LOBJS:= classad_plugin.lo
 
+ifneq (${expat_prefix},/usr)
+        EXPAT_LIBS:=-L${expat_prefix}/lib
+endif
+EXPAT_LIBS:=${EXPAT_LIBS} -lexpat
+
 GLOBUS_CFLAGS:=-I${globus_prefix}/include/${nothrflavour}
 
 DEBUG:=-g -O0  -DDEBUG
@@ -49,17 +54,13 @@ SOLINK:=libtool --mode=link ${CC} -module ${LDFLAGS} -rpath ${stagedir}/lib
 LINKXX:=libtool --mode=link ${CXX} ${LDFLAGS} 
 INSTALL:=libtool --mode=install install
 
-ifneq (${classads_prefix},/usr)
-	classadslib := -L${classads_prefix}/lib -lclassad
-endif
-
 daemon:=glite-jp-primarystoraged
 example:=jpps-test dag-deps
 ps_prefix:=jpps_
 is_prefix:=jpis_
 sample_jobs:=sample_job_aborted  sample_job_cleared  sample_job_tagged_done  sample_job_waiting
 
-plugins:=glite-jp-ftpdauth.la glite-jp-classad.la glite-jp-sandbox.la
+plugins:=glite-jp-ftpdauth.la glite-jp-classad.la glite-jp-sandbox.la glite-jp-dock.la
 
 HDRS_I=file_plugin.h
 HDRS_S=builtin_plugins.h backend.h feed.h utils.h
@@ -213,8 +214,8 @@ glite-jp-sandbox.la: sandbox_plugin.lo
 glite-jp-ftpdauth.la: ftpd_auth.lo mysql.lo
 	${SOLINK} -o $@ ftpd_auth.lo mysql.lo ${COMMONLIB} ${TRIOLIB} ${MYSQLIB}
 
-#glite-jp-classad.lo: classad_plugin.c
-#	${LTCOMPILE} -DPLUGIN_DEBUG -o $@ -c $<
+glite-jp-dock.la: dock_plugin.lo
+	${SOLINK} -o $@ dock_plugin.lo ${EXPAT_LIBS}
 
 %.lo: %.c
 	${LTCOMPILE} -o $@ -c $<
