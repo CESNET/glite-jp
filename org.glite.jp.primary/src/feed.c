@@ -444,11 +444,9 @@ static void drop_jobs(struct jpfeed *f)
 		free(f->jobs[i]);
 		free(f->owners[i]);
 	}
-	free(f->job_attrs);
-	free(f->jobs);
-	free(f->owners);
-	f->job_attrs = NULL;
-	f->jobs = NULL;
+	free(f->job_attrs); f->job_attrs = NULL;
+	free(f->jobs); f->jobs = NULL;
+	free(f->owners); f->owners = NULL;
 	f->njobs = 0;
 }
 
