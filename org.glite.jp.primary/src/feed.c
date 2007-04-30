@@ -336,6 +336,9 @@ int glite_jpps_match_file(
 		int 	k,fed;
 		glite_jp_attrval_t	* fattr;
 
+		match_feed(ctx,f,job,vals);
+
+/* covered by match_feed() 
 		glite_jppsbe_check_fed(ctx,f->id,job,&fed);
 		if (!fed) full_feed(ctx,f,job,&fattr);
 		else {
@@ -355,6 +358,7 @@ int glite_jpps_match_file(
 
 		if (!fed) for (i=0; fattr[i].name; i++) glite_jp_attrval_free(fattr+i,0);
 		free(fattr);
+*/
 	}
 
 	for (i=0; vals[i].name; i++) glite_jp_attrval_free(vals+i,0);
