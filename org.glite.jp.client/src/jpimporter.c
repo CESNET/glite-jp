@@ -64,6 +64,8 @@ typedef struct {
 
 
 #define	MAX_REG_CONNS				500
+#define JPPS_NO_RESPONSE_TIMEOUT		120
+
 
 static int		debug = 0;
 static int		die = 0;
@@ -83,6 +85,7 @@ static char	   	*server_cert = NULL,
 			*cadir = NULL;
 static gss_cred_id_t	mycred = GSS_C_NO_CREDENTIAL;
 static char		*mysubj;
+struct timeval		to = {JPPS_NO_RESPONSE_TIMEOUT, 0};
 
 
 static struct option opts[] = {
@@ -268,6 +271,7 @@ int main(int argc, char *argv[])
 	glite_gsplugin_init_context(&plugin_ctx);
 	if (server_key) plugin_ctx->key_filename = strdup(server_key);
 	if (server_cert) plugin_ctx->cert_filename = strdup(server_cert);
+	glite_gsplugin_set_timeout(plugin_ctx, &to);
 
 	soap_register_plugin_arg(soap, glite_gsplugin,plugin_ctx);
 
