@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <stdsoap2.h>
 
+
 #undef SOAP_FMAC1
 #define SOAP_FMAC1 static
 
@@ -29,6 +30,9 @@
 
 #include "glite/jp/ws_fault.c"
 #include "soap_util.c"
+
+#define MAX_RETRY	10
+#define RETRY_SLEEP	2
 
 extern char *server_key, *server_cert;	/* XXX */
 
@@ -85,7 +89,7 @@ static struct _glite_jp_soap_env_ctx_t *keep_soap_env_ctx;
 	glite_jp_soap_env_ctx = keep_soap_env_ctx; \
 } \
 
-int glite_jpps_single_feed(
+static int glite_jpps_single_feed_wrapped(
 		glite_jp_context_t ctx,
 		const char *feed,
 		int	done,
@@ -107,7 +111,7 @@ int glite_jpps_single_feed(
 
 	/* TODO: call JP Index server via interlogger */
 
-	printf("feed to %s, job %s\n",destination,job);
+	printf("feed %s to %s, job %s\n",feed,destination,job);
 
 	check_other_soap(ctx);
 
@@ -158,7 +162,27 @@ int glite_jpps_single_feed(
 	return err.code;
 }
 
-int glite_jpps_multi_feed(
+
+int glite_jpps_single_feed(
+		glite_jp_context_t ctx,
+		const char *feed,
+		int	done,
+		const char *destination,
+		const char *job,
+		const char *owner,
+		glite_jp_attrval_t const *attrs
+)
+{
+	int	retry,ret;
+	for (retry = 0; retry < MAX_RETRY; retry++) {
+		if ((ret = glite_jpps_single_feed_wrapped(ctx,feed,done,destination,job,owner,attrs)) == 0) break;
+		sleep(RETRY_SLEEP);
+	}
+	return ret;
+}
+
+
+static int glite_jpps_multi_feed_wrapped(
 		glite_jp_context_t ctx,
 		const char *feed,
 		int	done,
@@ -176,7 +200,7 @@ int glite_jpps_multi_feed(
 	enum xsd__boolean	false = GLITE_SECURITY_GSOAP_FALSE;
 	glite_jp_error_t	err;
 
-	printf("multi_feed: %s\n",destination);
+	printf("multi_feed %s to %s\n",feed,destination);
 
 	glite_jp_clear_error(ctx);
 	memset(&err,0,sizeof err);
@@ -219,3 +243,21 @@ int glite_jpps_multi_feed(
 	return err.code;
 }
 
+
+int glite_jpps_multi_feed(
+		glite_jp_context_t ctx,
+		const char *feed,
+		int	done,
+		int njobs,
+		const char *destination,
+		char **jobs,
+		char **owners,
+		glite_jp_attrval_t **attrs)
+{
+	int	retry,ret;
+	for (retry = 0; retry < MAX_RETRY; retry++) {
+		if ((ret = glite_jpps_multi_feed_wrapped(ctx,feed,done,njobs,destination,jobs,owners,attrs)) == 0) break;
+		sleep(RETRY_SLEEP);
+	}
+	return ret;
+}
