@@ -431,7 +431,7 @@ int request(int conn UNUSED,struct timeval *to,void *data)
 			/* XXX: shall we die on some errors? */
 			int	err = ctx->error->code;
 			glite_jp_clear_error(ctx);
-			return err;
+			return err == EIO ? -err : err;		/* EIO is fatal */
 		}
 
 		return ECANCELED;	// let srv_bones know something is wrong					
