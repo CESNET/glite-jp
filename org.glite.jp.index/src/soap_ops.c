@@ -119,11 +119,11 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__UpdateJobs(
 fail:
 	free(ps);
 	if (ctx->jpctx->error) {
-// TODO: bubble up
 		err = glite_jp_error_chain(ctx->jpctx);
 		fprintf(stderr, "%s:%s\n", __FUNCTION__, err);
 		free(err);
 	}
+	glite_jp_server_err2fault(ctx->jpctx, soap);
 	return SOAP_FAULT;
 }
 
