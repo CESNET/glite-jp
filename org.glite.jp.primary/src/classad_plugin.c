@@ -6,11 +6,13 @@
 #include <cclassad.h>
 #include <errno.h>
 
+/*
 #include "glite/lb/context.h"
 #include "glite/lb/jobstat.h"
 #include "glite/lb/events.h"
 #include "glite/lb/events_parse.h"
 #include "glite/lb/trio.h"
+*/
 #include "glite/jp/types.h"
 #include "glite/jp/context.h"
 #include "glite/jp/attr.h"
