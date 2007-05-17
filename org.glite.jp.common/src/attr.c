@@ -283,7 +283,7 @@ char * glite_jp_time2attr(time_t t)
 {
 	char	*r;
 
-	trio_asprintf(&r,"%ld",(long) t);
+	asprintf(&r,"%ld",(long) t);
 	return r;
 }
 
