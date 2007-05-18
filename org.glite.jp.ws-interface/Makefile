@@ -52,11 +52,8 @@ install:
 	install -m 644 ${top_srcdir}/LICENSE ${PREFIX}/share/doc/${package}-${version}
 	-install -m 644 JobProvenance.html ${PREFIX}/share/doc/${package}-${version}
 #	cd ${top_srcdir}/interface && install -m 644 ${WSDL} ${PREFIX}/${STAGETO}
-	install -m 644 ${WSDL} ${XSD} ${PREFIX}/${STAGETO}
+	install -m 644 ${WSDL} ${WSDL_S} ${XSD} ${PREFIX}/${STAGETO}
 	install -m 644 ${top_srcdir}/src/ws_fault.c ${PREFIX}/include/${globalprefix}/${jpprefix}
-	if [ x${DOSTAGE} = xyes ]; then \
-		install -m 644 ${WSDL_S} ${PREFIX}/${STAGETO}; \
-	fi
 
 clean:
 	rm -f *.h
