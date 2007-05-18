@@ -90,11 +90,17 @@ GSOAPLIB:=-L${stagedir}/lib -lglite_security_gsoap_plugin_${dotless_soap_ver}_${
 TRIOLIB:=-lglite_jp_trio
 LIBTARLIB:=-L${libtar_prefix}/lib -ltar
 
+archlib:=lib
+host_cpu:=${shell uname -m}
+ifeq (${host_cpu},x86_64) 
+    archlib:=lib64
+endif   
+
 ifneq (${mysql_prefix},/usr)
-	ifeq ($(shell test -f ${mysql_prefix}/lib/libmysqlclient.a -o -f ${mysql_prefix}/lib/libmysqlclient.so && echo ok),ok)
-		MYSQLIB := -L${mysql_prefix}/lib -lmysqlclient -lz
+	ifeq ($(shell test -f ${mysql_prefix}/${archlib}/libmysqlclient.a -o -f ${mysql_prefix}/${archlib}/libmysqlclient.so && echo ok),ok)
+		MYSQLIB := -L${mysql_prefix}/${archlib} -lmysqlclient -lz
         else
-		MYSQLIB := -L${mysql_prefix}/lib/mysql -L${mysql_prefix}/lib -lmysqlclient -lz
+		MYSQLIB := -L${mysql_prefix}/${archlib}/mysql -L${mysql_prefix}/${archlib} -lmysqlclient -lz
         endif
 else
 	MYSQLIB := -lmysqlclient
