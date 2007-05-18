@@ -41,8 +41,6 @@ GLOBUS_LIBS:=-L${globus_prefix}/lib \
 	-lglobus_common_${nothrflavour} \
 	-lglobus_gssapi_gsi_${nothrflavour}
 
-TRIOLIB:=-lglite_lb_trio
-
 STATICLIB:=libglite_jp_server_common.a
 LTLIB:=libglite_jp_server_common.la
 
@@ -73,7 +71,7 @@ ${LTLIB} ${STATICLIB}: ${OBJS}
 examples: db-test-int
 
 db-test-int: db-test-int.o
-	${LINK} -o $@ $+ ${STATICLIB} ${MYSQLIB} -lglite_jp_common_${nothrflavour} ${TRIOLIB} ${GLOBUS_LIBS}
+	${LINK} -o $@ $+ ${STATICLIB} ${MYSQLIB} -lglite_jp_common_${nothrflavour}  ${GLOBUS_LIBS}
 
 check: 
 	-echo nothing yet
