@@ -5,7 +5,7 @@ top_builddir=${top_srcdir}/${builddir}
 stagedir=.
 distdir=.
 globalprefix=glite
-lbprefix=lb
+jpprefix=jp
 package=glite-lb-server
 version=0.0.0
 PREFIX=/opt/glite
@@ -14,7 +14,6 @@ glite_location=/opt/glite
 globus_prefix=/opt/globus
 nothrflavour=gcc32
 thrflavour=gcc32pthr
-expat_prefix=/opt/expat
 gsoap_prefix=/software/gsoap-2.6
 
 CC=gcc
