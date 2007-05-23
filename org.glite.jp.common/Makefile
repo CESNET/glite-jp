@@ -14,7 +14,6 @@ glite_location=/opt/glite
 globus_prefix=/opt/globus
 nothrflavour=gcc32
 thrflavour=gcc32pthr
-gsoap_prefix=/software/gsoap-2.6
 
 CC=gcc
 
