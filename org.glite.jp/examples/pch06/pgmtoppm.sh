@@ -1,27 +1,6 @@
 #!/bin/sh
 
-log_event() #1 - attr.name #2 attr.value
-{
-  GLITE_WMS_SEQUENCE_CODE=`$lb_logevent\
-    --jobid="$GLITE_WMS_JOBID"\
-    --source="Application"\
-    --sequence="$GLITE_WMS_SEQUENCE_CODE"\
-    --event="UserTag"\
-    --node=$host\
-    --name="$1"\
-    --value="$2"\
-  || echo $GLITE_WMS_SEQUENCE_CODE`
-}
-
-init_log_event()
-{
-  lb_logevent=${GLITE_WMS_LOCATION}/bin/glite-lb-logevent
-  if [ ! -x "$lb_logevent" ]; then
-    lb_logevent="${EDG_WL_LOCATION}/bin/edg-wl-logev"
-  fi
-  host=`hostname -f`
-}
-
+. ./functions.sh
 
 set -ex
 

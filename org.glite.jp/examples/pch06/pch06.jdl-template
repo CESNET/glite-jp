@@ -6,6 +6,7 @@ Requirements = other.GlueCEInfoHostname=="skurut17.cesnet.cz";
 LBAddress = "skurut1.cesnet.cz:9000";
 
 InputSandbox = {
+	"SANDBOX/functions.sh",
 	"SANDBOX/align.sh",
 	"SANDBOX/reslice.sh",
 	"SANDBOX/softmean.sh",
@@ -23,68 +24,68 @@ InputSandbox = {
 nodes = [
 	align1 = [ description = [
 		executable = "align.sh";
-		arguments = "BASE1 REFERENCE";
+		arguments = "PREFIX BASE1 REFERENCE";
 	] ];
 	align2 = [ description = [
 		executable = "align.sh";
-		arguments = "BASE2 REFERENCE";
+		arguments = "PREFIX BASE2 REFERENCE";
 	] ];
 	align3 = [ description = [
 		executable = "align.sh";
-		arguments = "BASE3 REFERENCE";
+		arguments = "PREFIX BASE3 REFERENCE";
 	] ];
 	align4 = [ description = [
 		executable = "align.sh";
-		arguments = "BASE4 REFERENCE";
+		arguments = "PREFIX BASE4 REFERENCE";
 	] ];
 
 
 	reslice1 = [ description = [
 		executable = "reslice.sh";
-		arguments = "BASE1"; 
+		arguments = "PREFIX BASE1"; 
 	] ];
 	reslice2 = [ description = [
 		executable = "reslice.sh";
-		arguments = "BASE2"; 
+		arguments = "PREFIX BASE2"; 
 	] ];
 	reslice3 = [ description = [
 		executable = "reslice.sh";
-		arguments = "BASE3"; 
+		arguments = "PREFIX BASE3"; 
 	] ];
 	reslice4 = [ description = [
 		executable = "reslice.sh";
-		arguments = "BASE4"; 
+		arguments = "PREFIX BASE4"; 
 	] ];
 
 	softmean = [ description = [
 		executable = "softmean.sh";
-		arguments = "BASE1 BASE2 BASE3 BASE4 ATLAS";
+		arguments = "PREFIX BASE1 BASE2 BASE3 BASE4 ATLAS";
 	] ];
 
 	slicerx = [ description = [
 		executable = "slicer.sh";
-		arguments = "ATLAS x";
+		arguments = "PREFIX ATLAS x";
 	] ];
 	slicery = [ description = [
 		executable = "slicer.sh";
-		arguments = "ATLAS y";
+		arguments = "PREFIX ATLAS y";
 	] ];
 	slicerz = [ description = [
 		executable = "slicer.sh";
-		arguments = "ATLAS z";
+		arguments = "PREFIX ATLAS z";
 	] ];
 
 	convertx = [ description = [
 		executable = "convert.sh"; 
-		arguments = "ATLAS x";
+		arguments = "PREFIX ATLAS x";
 	] ];
 	converty = [ description = [
 		executable = "convert.sh"; 
-		arguments = "ATLAS y";
+		arguments = "PREFIX ATLAS y";
 	] ];
 	convertz = [ description = [
 		executable = "convert.sh"; 
-		arguments = "ATLAS z";
+		arguments = "PREFIX ATLAS z";
 	] ];
 
 ];

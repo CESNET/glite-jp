@@ -4,12 +4,12 @@
 sandbox=.
 
 if [ -z "$6" ]; then
-	echo usage: $0 reference base1 base2 base3 base4 atlas
+	echo usage: $0 urlprefix reference base1 base2 base3 base4 atlas
 	echo "	all args are URLs without suffix"
 	exit 1
 fi
 
-sed "s|REFERENCE|$1|; s|BASE1|$2|; s|BASE2|$3|; s|BASE3|$4|; s|BASE4|$5|; s|ATLAS|$6|; s|SANDBOX|$sandbox|" pch06.jdl-template >pch06.jdl
+sed "s|PREFIX|$1|; s|REFERENCE|$2|; s|BASE1|$3|; s|BASE2|$4|; s|BASE3|$5|; s|BASE4|$6|; s|ATLAS|$7|; s|SANDBOX|$sandbox|" pch06.jdl-template >pch06.jdl
 
 # glite-wms-job-submit -a pch06.jdl
 
