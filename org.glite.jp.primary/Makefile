@@ -27,8 +27,15 @@ GLOBUS_LIBS:=-L${globus_prefix}/lib \
 	-lglobus_common_${nothrflavour} \
 	-lglobus_gssapi_gsi_${nothrflavour}
 
+archlib:=lib
+host_cpu:=${shell uname -m}
+ifeq (${host_cpu},x86_64) 
+    archlib:=lib64
+endif   
+
+
 ifneq (${classads_prefix},/usr)
-        classadslib := -L${classads_prefix}/lib -lclassad
+        classadslib := -L${classads_prefix}/${archlib} -lclassad
 endif
 
 CLASSADPLUGIN_LIBS:= ${classadslib} -lstdc++ 
@@ -47,10 +54,6 @@ LTCOMPILE:=libtool --mode=compile ${CC} ${CFLAGS}
 SOLINK:=libtool --mode=link ${CC} -module ${LDFLAGS} -rpath ${stagedir}/lib
 LINKXX:=libtool --mode=link ${CXX} ${LDFLAGS} 
 INSTALL:=libtool --mode=install install
-
-ifneq (${classads_prefix},/usr)
-	classadslib := -L${classads_prefix}/lib -lclassad
-endif
 
 daemon:=glite-jp-primarystoraged
 example:=jpps-test dag-deps
@@ -88,12 +91,6 @@ BONESLIB:=-lglite_lb_server_bones
 GSOAPLIB:=-L${stagedir}/lib -lglite_security_gsoap_plugin_${dotless_soap_ver}_${nothrflavour} 
 TRIOLIB:=-lglite_jp_trio
 LIBTARLIB:=-L${libtar_prefix}/lib -ltar
-
-archlib:=lib
-host_cpu:=${shell uname -m}
-ifeq (${host_cpu},x86_64) 
-    archlib:=lib64
-endif   
 
 ifneq (${mysql_prefix},/usr)
 	ifeq ($(shell test -f ${mysql_prefix}/${archlib}/libmysqlclient.a -o -f ${mysql_prefix}/${archlib}/libmysqlclient.so && echo ok),ok)
