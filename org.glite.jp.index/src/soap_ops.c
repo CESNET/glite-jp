@@ -268,7 +268,7 @@ static int get_sql_cond(char **sql, const char *attr_md5, enum jptype__queryOp o
 	if (get_op(op, &qop) != 0) return 0;
 	if (attr_md5) trio_asprintf(&column, "attr_%|Ss.value", attr_md5);
 	else asprintf(&column, "jobs.dg_jobid");
-	trio_asprintf(sql, "%s %s \"%|Ss\"", column, qop, value);
+	trio_asprintf(sql, "%s %s '%|Ss'", column, qop, value);
 	free(column);
 	free(qop);
 	if (op == jptype__queryOp__WITHIN) {
@@ -277,7 +277,7 @@ static int get_sql_cond(char **sql, const char *attr_md5, enum jptype__queryOp o
 			*sql = NULL;
 			return EINVAL;
 		}
-		trio_asprintf(&s, "%s AND \"%|Ss\"", *sql, value2);
+		trio_asprintf(&s, "%s AND '%|Ss'", *sql, value2);
 		free(*sql); *sql = s;
 	}
 	return 0;

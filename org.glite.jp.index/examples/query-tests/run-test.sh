@@ -121,6 +121,7 @@ run_is() {
 
 	echo -n "I"
 	# run index server
+	#valgrind --tool=memcheck --trace-children=yes --num-callers=15 --suppressions=$HOME/egee.supp
 	X509_USER_KEY=${X509_USER_KEY} X509_USER_CERT=${X509_USER_CERT} \
 	$GLITE_LOCATION/bin/glite-jp-indexd -m $GLITE_JPIS_TEST_DB -p $GLITE_JPIS_TEST_PORT \
 			-i ${GLITE_JPIS_TEST_PIDFILE} -o ${GLITE_JPIS_TEST_LOGFILE} \
@@ -148,7 +149,7 @@ run_is() {
 	ret=1
 	i=0
 	while [ x"$ret" != x"0" -a $i -lt 20 ]; do
-		netstat -tap 2>/dev/null | grep "\<$GLITE_JPIS_TEST_PORT\>" > /dev/null
+		netstat -tapn 2>/dev/null | grep "\<$GLITE_JPIS_TEST_PORT\>" > /dev/null
 		ret=$?
 		i=$(($i+1))
 		sleep 0.1

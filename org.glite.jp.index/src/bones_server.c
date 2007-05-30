@@ -14,6 +14,7 @@
 #include <stdsoap2.h>
 #include <glite/security/glite_gss.h>
 #include <glite/security/glite_gsplugin.h>
+#include <glite/security/glite_gsplugin-int.h>
 
 #include "conf.h"
 #include "db_ops.h"

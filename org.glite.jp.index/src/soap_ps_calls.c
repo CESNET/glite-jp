@@ -7,6 +7,7 @@
 #include "glite/jp/types.h"
 #include "glite/jp/context.h"
 #include "glite/security/glite_gsplugin.h"
+#include "glite/security/glite_gsplugin-int.h"
 #include "glite/security/glite_gscompat.h"
 
 #include "jp_H.h"
