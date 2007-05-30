@@ -4,11 +4,11 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
-#include <stdsoap2.h>
-
 
 #undef SOAP_FMAC1
 #define SOAP_FMAC1 static
+
+#include <stdsoap2.h>
 
 #include "glite/jp/types.h"
 #include "soap_version.h"
