@@ -40,7 +40,8 @@ static int glite_jp_clientCheckFault(struct soap *soap, int err, const char *nam
 {
 	struct SOAP_ENV__Detail *detail;
 	struct jptype__genericFault	*f;
-	char	*reason,indent[200] = "  ";
+	const char	*reason;
+	char	indent[200] = "  ";
 	char *prefix;
 	int retval;
 
@@ -140,4 +141,7 @@ static void glite_jp_server_err2fault(const glite_jp_context_t ctx,struct soap *
 #endif
 	detail->__type = GFNUM;
 	detail->__any = NULL;
+
+	if (soap->version == 2) soap->fault->SOAP_ENV__Detail = detail;
+	else soap->fault->detail = detail;
 }

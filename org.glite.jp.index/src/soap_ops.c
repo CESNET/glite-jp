@@ -179,6 +179,11 @@ static int checkConditions(glite_jpis_context_t ctx, struct _jpelem__QueryJobs *
 		for (j = 0; ctx->conf->attrs[j] && strcasecmp(ctx->conf->attrs[j], attr) != 0; j++);
 		if (!ctx->conf->attrs[j]) return 1;
 	}
+	for (i = 0; i < in->__sizeattributes; i++) {
+		if ((attr = in->attributes[i]) == NULL) return 1;
+		for (j = 0; ctx->conf->attrs[j] && strcasecmp(ctx->conf->attrs[j], attr) != 0; j++);
+		if (!ctx->conf->attrs[j]) return 1;
+	}
 
 	return 0;
 }
