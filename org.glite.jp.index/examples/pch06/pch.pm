@@ -35,9 +35,9 @@ my @default_is_attributes = (
 );
 my @isquery = (
 '<?xml version="1.0" encoding="UTF-8"?>
-<jpisclient:QueryJobs xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:jptype="http://glite.org/wsdl/types/jp" xmlns:jpsrv="http://glite.org/wsdl/services/jp" xmlns:jpelem="http://glite.org/wsdl/elements/jp" xmlns:jpisclient="http://glite.org/xsd/types/jpisclient">
+<jpelem:QueryJobs xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:jptype="http://glite.org/wsdl/types/jp" xmlns:jpsrv="http://glite.org/wsdl/services/jp" xmlns:jpelem="http://glite.org/wsdl/elements/jp">
 ',
-'</jpisclient:QueryJobs>
+'</jpelem:QueryJobs>
 '
 );
 
@@ -67,6 +67,7 @@ sub isquery {
 		$s .= "\t<attr>$query[0]</attr>\n";
 		while ($i <= $#query) {
 			my @record = @{$query[$i]};
+			$s .= "\t<origin>USER</origin>\n";
 			$s .= "\t<record>\n";
 			$s .= "\t\t<op>$record[0]</op>\n";
 			$s .= "\t\t<value>$record[1]</value>\n";
