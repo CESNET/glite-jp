@@ -1,0 +1,105 @@
+Cook's book
+===========
+
+Scripts for the creating the job sets for Provenance Challenge via gLite
+environment.
+URL: http://egee.cesnet.cz/mediawiki/index.php/Provenance_Challenge
+
+
+Environment
+===========
+
+1) Prepare the data
+
+cd DATAROOTDIR
+cvs -d:gserver:MAKAC@lindir.ics.muni.cz:/cvs/edg co pch1
+chmod g+w data
+
+DATAURI=gsiftp://scientific.civ.zcu.cz:8910`pwd`/data
+
+
+2) Prepare the FTP storage (example for JP PS)
+
+su glite
+X509_USER_CERT="/home/glite/.certs/hostcert.pem" \
+X509_USER_KEY="/home/glite/.certs/hostkey.pem" \
+GLITE_USER="glite" \
+FTPBE_INT_PREFIX="/home/glite/JP/internal"\
+LD_LIBRARY_PATH=/opt/globus/lib \
+LD_PRELOAD=/home/valtri/GLITE/HEAD/stage/lib/glite-jp-ftpdauth.so \
+          /opt/globus/sbin/in.ftpd -Q -W -a -s -p 8910 &
+
+
+3) Prepare the JDL scripts
+
+cd SANDBOXROOTDIR
+cvs co -r glite-jp_branch_1_3_0_RC31 org.glite.jp
+cd org.glite.jp/examples/pch06
+cp pch06.runme runme
+# replace sandbox by current working direcotry
+vim runme
+
+SANDBOXURI=gsiftp://`hostname -f`:8910`pwd`
+
+
+4) Test the environment 
+
+cd /tmp
+# data
+globus-url-copy $DATAURI/resliced1.hdr file://`pwd`/ee
+# sandbox
+globus-url-copy $SANDBOXURI/cheat.pl file://`pwd`/ee
+rm -f ee
+
+
+Run the job
+===========
+
+1) Prepare the JDL (uniqe for each job!!!)
+
+# get the inspiration :-)
+dd if=/dev/random bs=4 count=1 | hexdump
+UNIQ=...
+
+cd $SANDBOXDIR
+./runme $DATAURI reference anatomy1 anatomy2 anatomy3 anatomy4 blabla $UNIQ
+
+2) Submit the job
+
+# valtri's crazy way:
+gsiscp -2 pch06.jdl skurut4.cesnet.cz:~
+gsissh -2 skurut4.cesnet.cz
+grid-proxy-init
+voms-proxy-init -voms voce -noregen
+glite-wms-job-submit -a pch06.jdl
+export JOBID=....
+echo $JOBID >> jobs.txt
+glite-wms-job-status $JOBID | grep '\<https:' | sed -e 's/.*\(https:[^ ]*\).*/\1/' > job.txt
+
+
+3) Get the job to JPPS (only if not enabled automagically)
+
+# After successfull job done!
+
+# copy jobids (job.txt) to LB server a JP importer server
+...
+...
+
+# get the dump (localy on LB server)
+X509_USER_CERT="/etc/grid-security/hostcert.pem" \
+X509_USER_KEY="/etc/grid-security/hostkey.pem" \
+/opt/glite/sbin/glite-lb-purge -j job.txt -s -m localhost:9000 -r
+
+# copy it, where you have running JP importer & co.
+scp -2 /var/glite/statistics/lb_purgedir/... ...:/tmp/dump.txt
+
+# import to JP PS (localy on "JP importer" server)
+for i in $(cat job.txt); do echo $i; examples/glite-jp-primary-test -s skurut1.cesnet.cz:8901 RegisterJob $i "/DC=cz/DC=cesnet-ca/O=University of West Bohemia/CN=Frantisek Dvorak"; done
+cp /tmp/dump.txt /tmp/purge/
+
+
+4) add worflow paths (ancestors and successors)
+# dagdeps isn't installed, build:
+#  cd org.glite.jp.primary/build
+#  make examples
+./dag-deps -s skurut1.cesnet.cz:8901 $JOBID
