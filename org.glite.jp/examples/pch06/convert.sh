@@ -20,5 +20,5 @@ globus-url-copy file://$PWD/atlas.gif $1/$2-$3.gif
 init_log_event
 log_event "IPAW_STAGE" "5"
 log_event "IPAW_PROGRAM" "convert"
-log_file_event "IPAW_INPUT" "$2-$3" "$1/$2-$3.pgm"
-log_file_event "IPAW_OUTPUT" "$2-$3" "$1/$2-$3.gif"
+log_file_event "IPAW_INPUT" "$2-$3"
+log_file_event "IPAW_OUTPUT" "$2-$3.gif"
