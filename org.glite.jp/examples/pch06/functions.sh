@@ -20,7 +20,7 @@ init_log_event()
   host=`hostname -f`
 }
 
-log_file_event() #1 - attr.name #2 file.name #3 file.uri...
+log_file_event_cool_but_unused() #1 - attr.name #2 file.name #3 file.uri...
 {
   attr="$1"
   str="<file name=\"urn:challenge:$2\">
@@ -31,5 +31,12 @@ log_file_event() #1 - attr.name #2 file.name #3 file.uri...
     shift
   done
   str="$str</file>"
+  log_event "$attr" "$str"
+}
+
+log_file_event() #1 - attr.name #2 file.name #3 file.uri...
+{
+  attr="$1"
+  str="<file name=\"urn:challenge:$2\"/>"
   log_event "$attr" "$str"
 }
