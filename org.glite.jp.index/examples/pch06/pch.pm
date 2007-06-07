@@ -59,8 +59,6 @@ sub isquery {
 	if ($attributes) { @attributes = @$attributes; }
 	else { @attributes = @default_is_attributes; }
 
-	$origin = 'USER' unless $origin;
-
 	$s = $isquery[0];
 	foreach my $query (@$queries) {
 		my @query = @$query;
@@ -69,7 +67,7 @@ sub isquery {
 		$s .= "\t<attr>$query[0]</attr>\n";
 		while ($i <= $#query) {
 			my @record = @{$query[$i]};
-			$s .= "\t<origin>$origin</origin>\n";
+			$s .= "\t<origin>$origin</origin>\n" if $origin;
 			$s .= "\t<record>\n";
 			$s .= "\t\t<op>$record[0]</op>\n";
 			$s .= "\t\t<value>$record[1]</value>\n";
