@@ -3,13 +3,13 @@
 # sandbox='gsiftp://umbar.ics.muni.cz:1414/home/mulac/pch06'
 sandbox=.
 
-if [ -z "$6" ]; then
-	echo usage: $0 urlprefix reference base1 base2 base3 base4 atlas
+if [ -z "$8" ]; then
+	echo usage: $0 urlprefix reference base1 base2 base3 base4 atlas wfid
 	echo "	all args are URLs without suffix"
 	exit 1
 fi
 
-sed "s|PREFIX|$1|; s|REFERENCE|$2|; s|BASE1|$3|; s|BASE2|$4|; s|BASE3|$5|; s|BASE4|$6|; s|ATLAS|$7|; s|SANDBOX|$sandbox|" pch06.jdl-template >pch06.jdl
+sed "s|PREFIX|$1|; s|REFERENCE|$2|; s|BASE1|$3|; s|BASE2|$4|; s|BASE3|$5|; s|BASE4|$6|; s|ATLAS|$7|; s|SANDBOX|$sandbox|; s|WFID|$8|g" pch06.jdl-template >pch06.jdl
 
 # glite-wms-job-submit -a pch06.jdl
 

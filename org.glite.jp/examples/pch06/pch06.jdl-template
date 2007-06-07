@@ -24,68 +24,68 @@ InputSandbox = {
 nodes = [
 	align1 = [ description = [
 		executable = "align.sh";
-		arguments = "PREFIX BASE1 REFERENCE";
+		arguments = "PREFIX BASE1 REFERENCE WFID";
 	] ];
 	align2 = [ description = [
 		executable = "align.sh";
-		arguments = "PREFIX BASE2 REFERENCE";
+		arguments = "PREFIX BASE2 REFERENCE WFID";
 	] ];
 	align3 = [ description = [
 		executable = "align.sh";
-		arguments = "PREFIX BASE3 REFERENCE";
+		arguments = "PREFIX BASE3 REFERENCE WFID";
 	] ];
 	align4 = [ description = [
 		executable = "align.sh";
-		arguments = "PREFIX BASE4 REFERENCE";
+		arguments = "PREFIX BASE4 REFERENCE WFID";
 	] ];
 
 
 	reslice1 = [ description = [
 		executable = "reslice.sh";
-		arguments = "PREFIX BASE1"; 
+		arguments = "PREFIX BASE1 WFID"; 
 	] ];
 	reslice2 = [ description = [
 		executable = "reslice.sh";
-		arguments = "PREFIX BASE2"; 
+		arguments = "PREFIX BASE2 WFID"; 
 	] ];
 	reslice3 = [ description = [
 		executable = "reslice.sh";
-		arguments = "PREFIX BASE3"; 
+		arguments = "PREFIX BASE3 WFID"; 
 	] ];
 	reslice4 = [ description = [
 		executable = "reslice.sh";
-		arguments = "PREFIX BASE4"; 
+		arguments = "PREFIX BASE4 WFID"; 
 	] ];
 
 	softmean = [ description = [
 		executable = "softmean.sh";
-		arguments = "PREFIX BASE1 BASE2 BASE3 BASE4 ATLAS";
+		arguments = "PREFIX BASE1-WFID BASE2-WFID BASE3-WFID BASE4-WFID ATLAS-WFID";
 	] ];
 
 	slicerx = [ description = [
 		executable = "slicer.sh";
-		arguments = "PREFIX ATLAS x";
+		arguments = "PREFIX ATLAS-WFID x";
 	] ];
 	slicery = [ description = [
 		executable = "slicer.sh";
-		arguments = "PREFIX ATLAS y";
+		arguments = "PREFIX ATLAS-WFID y";
 	] ];
 	slicerz = [ description = [
 		executable = "slicer.sh";
-		arguments = "PREFIX ATLAS z";
+		arguments = "PREFIX ATLAS-WFID z";
 	] ];
 
 	convertx = [ description = [
 		executable = "convert.sh"; 
-		arguments = "PREFIX ATLAS x";
+		arguments = "PREFIX ATLAS-WFID x";
 	] ];
 	converty = [ description = [
 		executable = "convert.sh"; 
-		arguments = "PREFIX ATLAS y";
+		arguments = "PREFIX ATLAS-WFID y";
 	] ];
 	convertz = [ description = [
 		executable = "convert.sh"; 
-		arguments = "PREFIX ATLAS z";
+		arguments = "PREFIX ATLAS-WFID z";
 	] ];
 
 ];
