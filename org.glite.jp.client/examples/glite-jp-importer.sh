@@ -77,7 +77,7 @@ while [ 1 ]; do
 
   for file in $GLITE_LB_EXPORT_DUMPDIR/*; do
     if [ -s $file ]; then
-      $PREFIX/sbin/glite-lb-lb_dump_exporter -d $file -s $GLITE_LB_EXPORT_JOBSDIR -m $GLITE_LB_EXPORT_JPDUMP_MAILDIR
+      $PREFIX/bin/glite-lb-dump_exporter -d $file -s $GLITE_LB_EXPORT_JOBSDIR -m $GLITE_LB_EXPORT_JPDUMP_MAILDIR
       if [ -n "$GLITE_LB_EXPORT_DUMPDIR_KEEP" ]; then
         mv $file $GLITE_LB_EXPORT_DUMPDIR_KEEP
       else
