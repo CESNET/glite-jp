@@ -243,7 +243,7 @@ static int newconn(int conn,struct timeval *to,void *data)
 	gss_name_t		client_name = GSS_C_NO_NAME;
 	gss_buffer_desc		token = GSS_C_EMPTY_BUFFER;
 	OM_uint32		maj_stat,min_stat;
-
+	edg_wll_GssConnection	connection;
 
 	int	ret = 0;
 
@@ -253,9 +253,6 @@ static int newconn(int conn,struct timeval *to,void *data)
 
 	soap_set_namespaces(soap,jpps__namespaces);
 	soap->user = (void *) ctx; /* XXX: one instance per slave */
-
-	glite_gsplugin_init_context(&plugin_ctx);
-	plugin_ctx->connection = calloc(1,sizeof *plugin_ctx->connection);
 
 	switch (edg_wll_gss_watch_creds(server_cert,&cert_mtime)) {
 		case 0: break;
@@ -282,7 +279,7 @@ static int newconn(int conn,struct timeval *to,void *data)
 
 	/* TODO: DNS paranoia etc. */
 
-	if (edg_wll_gss_accept(mycred,conn,to,plugin_ctx->connection,&gss_code)) {
+	if (edg_wll_gss_accept(mycred,conn,to,&connection,&gss_code)) {
 		char	*et;
 
 		edg_wll_gss_get_error(&gss_code,"",&et);
@@ -293,7 +290,7 @@ static int newconn(int conn,struct timeval *to,void *data)
 		goto cleanup;
 	}
 
-	maj_stat = gss_inquire_context(&min_stat,plugin_ctx->connection->context,
+	maj_stat = gss_inquire_context(&min_stat,connection.context,
 			&client_name, NULL, NULL, NULL, NULL, NULL, NULL);
 
 	if (!GSS_ERROR(maj_stat))
@@ -314,7 +311,10 @@ static int newconn(int conn,struct timeval *to,void *data)
 	if (client_name != GSS_C_NO_NAME) gss_release_name(&min_stat, &client_name);
 	if (token.value) gss_release_buffer(&min_stat, &token);
 
+	glite_gsplugin_init_context(&plugin_ctx);
+	glite_gsplugin_set_connection(plugin_ctx, &connection);
 	soap_register_plugin_arg(soap,glite_gsplugin,plugin_ctx);
+
 	return 0;
 
 cleanup:

@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
 	char			*name,
 				pidfile[PATH_MAX] = GLITE_JPIMPORTER_PIDFILE;
 	glite_gsplugin_Context	plugin_ctx;
-
+	gss_cred_id_t		cred;
 
 	name = strrchr(argv[0],'/');
 	if (name) name++; else name = argv[0];
@@ -269,9 +269,12 @@ int main(int argc, char *argv[])
 	soap_set_namespaces(soap, jpps__namespaces);
 
 	glite_gsplugin_init_context(&plugin_ctx);
-	if (server_key) plugin_ctx->key_filename = strdup(server_key);
-	if (server_cert) plugin_ctx->cert_filename = strdup(server_cert);
+	if (edg_wll_gss_acquire_cred_gsi(server_cert, server_key, &cred, NULL, NULL) != 0) {
+		perror("can't acquire credentials");
+		exit(1);
+	}
 	glite_gsplugin_set_timeout(plugin_ctx, &to);
+	glite_gsplugin_set_credential(plugin_ctx, mycred);
 
 	soap_register_plugin_arg(soap, glite_gsplugin,plugin_ctx);
 

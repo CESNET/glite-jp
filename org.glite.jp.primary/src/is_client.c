@@ -39,11 +39,16 @@ extern char *server_key, *server_cert;	/* XXX */
 static int check_other_soap(glite_jp_context_t ctx)
 {
 	glite_gsplugin_Context	plugin_ctx;
+	int			ret = 0;
 
 	if (!ctx->other_soap) {
 		glite_gsplugin_init_context(&plugin_ctx);
-		if (server_key) plugin_ctx->key_filename = strdup(server_key);
-		if (server_cert) plugin_ctx->cert_filename = strdup(server_cert);
+		if (server_key || server_cert) {
+			gss_cred_id_t cred;
+
+			ret = edg_wll_gss_acquire_cred_gsi(server_cert, server_key, &cred, NULL, NULL);
+			glite_gsplugin_set_credential(plugin_ctx, cred);
+		}
 
 		ctx->other_soap = soap_new();
 		soap_init(ctx->other_soap);
@@ -53,7 +58,7 @@ static int check_other_soap(glite_jp_context_t ctx)
 		soap_register_plugin_arg(ctx->other_soap,glite_gsplugin,plugin_ctx);
 		ctx->other_soap->user = ctx;
 	}
-	return 0;
+	return ret;
 }
 
 static check_fault(glite_jp_context_t ctx,struct soap *soap,int ec)
@@ -118,6 +123,7 @@ static int glite_jpps_single_feed_wrapped(
 	in.feedId = (char *) feed; /* XXX: const */
 	in.feedDone = done;
 	in.__sizejobAttributes = 1;
+#warning FIXME for valtri
 	in.jobAttributes = &jrp;
 
 	for (i=0; attrs[i].name; i++);

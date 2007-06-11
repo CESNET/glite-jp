@@ -133,7 +133,7 @@ static void glite_jp_server_err2fault(const glite_jp_context_t ctx,struct soap *
 	// no error in JP context?
 	if (!item) return;
 
-	detail = soap_faultdetail(soap);
+	detail = (struct SOAP_ENV__Detail *)soap_faultdetail(soap);
 #if GSOAP_VERSION >= 20700
 	detail->fault = (void *)f;
 #else

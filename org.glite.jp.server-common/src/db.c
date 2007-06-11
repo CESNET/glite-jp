@@ -76,7 +76,7 @@ static int jp_err(glite_jp_context_t ctx, int code, const char *desc, const char
 	memset(&err,0,sizeof err); 
 	err.code = code;
 	err.source = fullsource;
-	err.desc = desc; 
+	err.desc = desc && desc[0] ? desc : "(error without description)";
 
 	ret = glite_jp_stack_error(ctx,&err); 
 	free(fullsource);
@@ -90,7 +90,7 @@ static int my_err(glite_jp_context_t ctx, const char *source, int line)
 }
 
 
-static int my_errstmt(glite_jp_db_stmt_t jpstmt, const char *source, int line) {	
+static int my_errstmt(glite_jp_db_stmt_t jpstmt, const char *source, int line) {
 	return jp_err(jpstmt->ctx, EIO, mysql_stmt_error(jpstmt->stmt), source, line);
 }
 
@@ -116,6 +116,7 @@ static int my_isokstmt(glite_jp_db_stmt_t jpstmt, const char *source, int line, 
 				(*retry)--;
 				return 0;
 			} else
+				jp_err(jpstmt->ctx, EIO, "CR_SERVER_LOST", source, line);
 				return -1;
 			break;
 		default:

@@ -14,7 +14,6 @@
 #include <stdsoap2.h>
 #include <glite/security/glite_gss.h>
 #include <glite/security/glite_gsplugin.h>
-#include <glite/security/glite_gsplugin-int.h>
 
 #include "conf.h"
 #include "db_ops.h"
@@ -326,6 +325,7 @@ int newconn(int conn,struct timeval *to,void *data)
 	gss_buffer_desc		token = GSS_C_EMPTY_BUFFER;
 	OM_uint32		maj_stat,min_stat;
 	int			ret = 0;
+	edg_wll_GssConnection	connection;
 
 
 	soap_init2(soap,SOAP_IO_KEEPALIVE,SOAP_IO_KEEPALIVE);
@@ -333,9 +333,6 @@ int newconn(int conn,struct timeval *to,void *data)
 						// buffer set to SOAP_BUFLEN (default = 8k)
 	soap_set_namespaces(soap,jp__namespaces);
 	soap->user = (void *) private;
-
-	glite_gsplugin_init_context(&plugin_ctx);
-	plugin_ctx->connection = calloc(1,sizeof *plugin_ctx->connection);
 
 	switch (edg_wll_gss_watch_creds(server_cert,&cert_mtime)) {
 		case 0: break;
@@ -354,8 +351,8 @@ int newconn(int conn,struct timeval *to,void *data)
 	}
 
 	/* TODO: DNS paranoia etc. */
-
-	if (edg_wll_gss_accept(mycred,conn,to,plugin_ctx->connection,&gss_code)) {
+	memset(&connection, 0, sizeof(connection));
+	if (edg_wll_gss_accept(mycred,conn,to,&connection,&gss_code)) {
 		char	*et;
 
 		edg_wll_gss_get_error(&gss_code,"",&et);
@@ -366,7 +363,7 @@ int newconn(int conn,struct timeval *to,void *data)
 		goto cleanup;
 	}
 
-	maj_stat = gss_inquire_context(&min_stat,plugin_ctx->connection->context,
+	maj_stat = gss_inquire_context(&min_stat,connection.context,
 			&client_name, NULL, NULL, NULL, NULL, NULL, NULL);
 
 	if (!GSS_ERROR(maj_stat))
@@ -387,6 +384,8 @@ int newconn(int conn,struct timeval *to,void *data)
 	if (client_name != GSS_C_NO_NAME) gss_release_name(&min_stat, &client_name);
 	if (token.value) gss_release_buffer(&min_stat, &token);
 
+	glite_gsplugin_init_context(&plugin_ctx);
+	glite_gsplugin_set_connection(plugin_ctx, &connection);
 	soap_register_plugin_arg(soap,glite_gsplugin,plugin_ctx);
 
 	return 0;

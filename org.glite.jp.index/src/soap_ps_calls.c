@@ -7,7 +7,6 @@
 #include "glite/jp/types.h"
 #include "glite/jp/context.h"
 #include "glite/security/glite_gsplugin.h"
-#include "glite/security/glite_gsplugin-int.h"
 #include "glite/security/glite_gscompat.h"
 
 #include "jp_H.h"
@@ -58,6 +57,7 @@ int MyFeedIndex(glite_jpis_context_t ctx, glite_jp_is_conf *conf, long int uniqu
 	int 					i, dest_index, status;
 	struct soap             		*soap = soap_new();
 	glite_gsplugin_Context			plugin_ctx;
+	gss_cred_id_t				cred;
 	glite_jp_error_t err;
 	char *src, *desc = NULL;
 	// preventive very long timeout
@@ -67,8 +67,15 @@ int MyFeedIndex(glite_jpis_context_t ctx, glite_jp_is_conf *conf, long int uniqu
 
 	glite_gsplugin_init_context(&plugin_ctx);
 	glite_gsplugin_set_timeout(plugin_ctx, &to);
-	if (ctx->conf->server_key) plugin_ctx->key_filename = strdup(ctx->conf->server_key);
-	if (ctx->conf->server_cert) plugin_ctx->cert_filename = strdup(ctx->conf->server_cert);
+	if (edg_wll_gss_acquire_cred_gsi(ctx->conf->server_cert, ctx->conf->server_key, &cred, NULL, NULL) != 0) {
+
+		err.code = EINVAL;
+		err.desc = "can't set credentials";
+		asprintf(&src, "%s/%s():%d", __FILE__, __FUNCTION__, __LINE__);
+		fprintf(stderr, "%s\n", src);
+		goto err;
+	}
+	glite_gsplugin_set_credential(plugin_ctx, cred);
 	
 	soap_init(soap);
         soap_set_namespaces(soap, jp__namespaces);
