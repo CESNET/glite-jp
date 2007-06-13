@@ -13,8 +13,8 @@ use strict;
 use pch;
 use Data::Dumper;
 
-my $ps='https://skurut1.cesnet.cz:8901';
-my $is='https://skurut1.cesnet.cz:8902';
+my $ps=$pch::ps;
+my $is=$pch::is;
 my @attributes = ("$pch::jpsys:jobId", "$pch::jpwf:ancestor", @pch::view_attributes);
 
 my @according_jobs = (); # sequencially jobid list
@@ -95,7 +95,8 @@ foreach my $jobid (sort { $according_jobs{$b}{attributes}{"$pch::jplbtag:IPAW_ST
 	my %attributes = %{$job{attributes}};
 	my $stage = $attributes{"$pch::jplbtag:IPAW_STAGE"}{value}[0];
 
-	if ( $stage == 3 || $stage == 4 || $stage == 5) {
+#	if ( $stage == 3 || $stage == 4 || $stage == 5) {
+	if ( $stage == 2 || $stage == 3) {
 		print "jobid $jobid:\n";
 
 		# query & output all desired atributes

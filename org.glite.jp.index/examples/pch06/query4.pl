@@ -15,8 +15,8 @@ use strict;
 use pch;
 use Data::Dumper;
 
-my $ps='https://skurut1.cesnet.cz:8901';
-my $is='https://skurut1.cesnet.cz:8902';
+my $ps=$pch::ps;
+my $is=$pch::is;
 my $program_name='align_warp';
 my $program_params='-m 12';
 my $runday=1;
@@ -30,6 +30,8 @@ my $according_count = 0;
 # debug calls
 $pch::debug = 0;
 my $debug = 0;
+
+if ($#ARGV + 1 > 1) { $program_name=$ARGV[0]; }
 
 #
 # find out processes with given name ant parameters

@@ -12,6 +12,9 @@ use warnings;
 use XML::Twig;
 use Data::Dumper;
 
+our $ps='https://skurut1,cesnet.cz:8901';
+our $is='https://scientific.civ.zcu.cz:8904';
+
 our $lbattr='http://egee.cesnet.cz/en/Schema/LB/Attributes';
 our $jpsys='http://egee.cesnet.cz/en/Schema/JP/System';
 our $jpwf='http://egee.cesnet.cz/en/Schema/JP/Workflow';

@@ -15,8 +15,8 @@ use strict;
 use pch;
 use Data::Dumper;
 
-my $ps='https://skurut1.cesnet.cz:8901';
-my $is='https://skurut1.cesnet.cz:8902';
+my $ps=$pch::ps;
+my $is=$pch::is;
 
 my @according_jobs = (); # sequencially jobid list
 my %according_jobs = (); # hash jobid list

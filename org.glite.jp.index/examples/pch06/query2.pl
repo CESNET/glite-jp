@@ -14,8 +14,8 @@ use strict;
 use pch;
 use Data::Dumper;
 
-my $ps='https://skurut1.cesnet.cz:8901';
-my $is='https://skurut1.cesnet.cz:8902';
+my $ps=$pch:ps;
+my $is=$pch:is;
 my $program_name = "softmean";
 
 my @according_jobs = (); # sequencially jobid list
@@ -24,11 +24,12 @@ my $according_count = 0;
 my $output;
 
 
-if ($#ARGV + 1 != 1) {
-	print STDERR "Usage: $0 OUTPUT_FILE\n";
+if ($#ARGV + 1 < 1) {
+	print STDERR "Usage: $0 OUTPUT_FILE [PROGRAM]\n";
 	exit 1
 }
 $output = $ARGV[0];
+if ($#ARGV + 1 > 1) { $program_name = $ARGV[1]; }
 
 # debug calls
 $pch::debug = 0;
