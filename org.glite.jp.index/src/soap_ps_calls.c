@@ -6,6 +6,7 @@
 #include "soap_version.h"
 #include "glite/jp/types.h"
 #include "glite/jp/context.h"
+#include "glite/security/glite_gss.h"
 #include "glite/security/glite_gsplugin.h"
 #include "glite/security/glite_gscompat.h"
 
@@ -15,6 +16,7 @@
 #include "db_ops.h"
 #include "ws_ps_typeref.h"
 #include "context.h"
+#include "common.h"
 
 #include "stdsoap2.h"
 
@@ -46,8 +48,32 @@ static int find_dest_index(glite_jp_is_conf *conf, long int uniqueid)
 }
 
 
+static int refresh_gsoap(glite_jpis_context_t ctx, struct soap *soap) {
+	gss_cred_id_t		cred;
+	edg_wll_GssStatus	gss_code;
+	char			*et;
+	// preventive very long timeout
+	static const struct timeval to = {tv_sec: 7200, tv_usec: 0};
+	glite_gsplugin_Context	plugin_ctx;
+
+	if (edg_wll_gss_acquire_cred_gsi(ctx->conf->server_cert, ctx->conf->server_key, &cred, NULL, &gss_code) != 0) {
+		edg_wll_gss_get_error(&gss_code,"",&et);
+		glite_jpis_stack_error(ctx->jpctx, EINVAL, "can't refresh certificates (%s)", et);
+		free(et);
+		return EINVAL;
+		//printf("[%d] %s: %s\n", getpid(), __FUNCTION__, err.desc);
+	}
+
+	plugin_ctx = glite_gsplugin_get_context(soap);
+	glite_gsplugin_set_timeout(plugin_ctx, &to);
+	glite_gsplugin_set_credential(plugin_ctx, cred);
+
+	return 0;
+}
+
+
 // call PS FeedIndex for a given destination
-int MyFeedIndex(glite_jpis_context_t ctx, glite_jp_is_conf *conf, long int uniqueid, char *dest)
+int MyFeedIndex(struct soap *soap, glite_jpis_context_t ctx, long int uniqueid, const char *dest)
 {
 	struct _jpelem__FeedIndex		in;
 	struct _jpelem__FeedIndexResponse 	out;
@@ -55,54 +81,31 @@ int MyFeedIndex(glite_jpis_context_t ctx, glite_jp_is_conf *conf, long int uniqu
 //	struct jptype__stringOrBlob		value;
 //	struct xsd__base64Binary		blob;
 	int 					i, dest_index, status;
-	struct soap             		*soap = soap_new();
-	glite_gsplugin_Context			plugin_ctx;
-	gss_cred_id_t				cred;
-	glite_jp_error_t err;
-	char *src, *desc = NULL;
-	// preventive very long timeout
-	static const struct timeval to = {tv_sec: 7200, tv_usec: 0};
+	glite_jp_is_conf *conf = ctx->conf;
 
 	lprintf("(%ld) for %s called\n", uniqueid, dest);
 
-	glite_gsplugin_init_context(&plugin_ctx);
-	glite_gsplugin_set_timeout(plugin_ctx, &to);
-	if (edg_wll_gss_acquire_cred_gsi(ctx->conf->server_cert, ctx->conf->server_key, &cred, NULL, NULL) != 0) {
-
-		err.code = EINVAL;
-		err.desc = "can't set credentials";
-		asprintf(&src, "%s/%s():%d", __FILE__, __FUNCTION__, __LINE__);
-		fprintf(stderr, "%s\n", src);
-		goto err;
-	}
-	glite_gsplugin_set_credential(plugin_ctx, cred);
-	
-	soap_init(soap);
-        soap_set_namespaces(soap, jp__namespaces);
-	soap_set_omode(soap, SOAP_IO_BUFFER);   // set buffered response
-                                                // buffer set to SOAP_BUFLEN (default = 8k)	
-	soap_register_plugin_arg(soap,glite_gsplugin,plugin_ctx);
+	if (refresh_gsoap(ctx, soap) != 0)
+		return glite_jpis_stack_error(ctx->jpctx, EINVAL, "can't refresh credentials");
 
 	memset(&in, 0, sizeof(in));
-	memset(&err, 0, sizeof(err));
 
 	for (i=0; conf->attrs[i]; i++) ;
 	in.__sizeattributes = i;
 	in.attributes = conf->attrs;
 
-	if ((dest_index = find_dest_index(conf, uniqueid)) < 0) goto err;
+	if ((dest_index = find_dest_index(conf, uniqueid)) < 0)
+		return glite_jpis_stack_error(ctx->jpctx, EINVAL, "internal error (feed index %ld not found)", uniqueid);
 
+	soap_begin(soap);
 	for (i=0; conf->feeds[dest_index]->query[i].attr; i++);
 	GLITE_SECURITY_GSOAP_LIST_CREATE(soap, &in, conditions, struct jptype__primaryQuery, i);
 
 	for (i=0; conf->feeds[dest_index]->query[i].attr; i++) {
 		if (glite_jpis_QueryCondToSoap(soap, &conf->feeds[dest_index]->query[i], 
 				GLITE_SECURITY_GSOAP_LIST_GET(in.conditions, i)) != SOAP_OK) {
-			err.code = EINVAL;
-			err.desc = "error during conds conversion";
-			asprintf(&src, "%s/%s():%d", __FILE__, __FUNCTION__, __LINE__);
-			fprintf(stderr, "%s\n", src);
-			goto err;
+			soap_end(soap);
+			return glite_jpis_stack_error(ctx->jpctx, EINVAL, "error during conds conversion");
 		}
 	}
 
@@ -114,35 +117,54 @@ int MyFeedIndex(glite_jpis_context_t ctx, glite_jp_is_conf *conf, long int uniqu
 	if (check_fault(soap,soap_call___jpsrv__FeedIndex(soap,dest,"", &in, &out)) != 0) {
 		fprintf(stderr, "\n");
 		glite_jpis_unlockFeed(ctx, uniqueid);
-		err.code = EIO;
-		asprintf(&desc, "soap_call___jpsrv__FeedIndex() returned error %d", soap->error);
-		err.desc = desc;
-		asprintf(&src, "%s/%s():%d", __FILE__, __FUNCTION__, __LINE__);
-		fprintf(stderr, "%s\n", err.desc);
-		goto err;
+		glite_jpis_stack_error(ctx->jpctx, EIO, "soap_call___jpsrv__FeedIndex() returned error %d", soap->error);
+		soap_end(soap);
+		return EIO;
 	}
 	else {
 		status = (conf->feeds[dest_index]->history ? GLITE_JP_IS_STATE_HIST : 0) | (conf->feeds[dest_index]->continuous ? GLITE_JP_IS_STATE_CONT : 0);
 		lprintf("(%ld) FeedId: %s\n", uniqueid, out.feedId);
 		lprintf("(%ld) Expires: %s", uniqueid, ctime(&out.feedExpires));
-		glite_jpis_initFeed(ctx, uniqueid, out.feedId, out.feedExpires, status);
+		glite_jpis_initFeed(ctx, uniqueid, out.feedId, time(NULL) + (out.feedExpires - time(NULL)) / 2, status);
 		glite_jpis_unlockFeed(ctx, uniqueid);
 	}
 
 	soap_end(soap);
-	soap_done(soap);
 
 	return 0;
+}
 
-err:
-	err.source = src;
-	glite_jp_stack_error(ctx->jpctx, &err);
-	free(src);
-	free(desc);
+
+int MyFeedRefresh(struct soap *soap, glite_jpis_context_t ctx, long int uniqueid, const char *dest, int status, const char *feedid)
+{
+	struct _jpelem__FeedIndexRefresh		in;
+	struct _jpelem__FeedIndexRefreshResponse 	out;
+
+	lprintf("(%ld) for %s called, status = %d\n", uniqueid, feedid, status);
+
+	if (refresh_gsoap(ctx, soap) != 0)
+		return glite_jpis_stack_error(ctx->jpctx, EINVAL, "can't refresh credentials");
+
+	soap_begin(soap);
+	memset(&in, 0, sizeof(in));
+	in.feedId = soap_strdup(soap, feedid);
+	if (check_fault(soap,soap_call___jpsrv__FeedIndexRefresh(soap,dest,"", &in, &out)) != 0) {
+		fprintf(stderr, "\n");
+		glite_jpis_unlockFeed(ctx, uniqueid);
+		glite_jpis_stack_error(ctx->jpctx, EIO, "soap_call___jpsrv__FeedRefresh() returned error %d", soap->error);
+		soap_end(soap);
+		return EIO;
+	}
+	else {
+		status &= (~GLITE_JP_IS_STATE_ERROR);
+		lprintf("(%ld) FeedId: %s\n", uniqueid, feedid);
+		lprintf("(%ld) Expires: %s", uniqueid, ctime(&out.feedExpires));
+		glite_jpis_initFeed(ctx, uniqueid, feedid, time(NULL) + (out.feedExpires - time(NULL)) / 2, status);
+		glite_jpis_unlockFeed(ctx, uniqueid);
+	}
+
 	soap_end(soap);
-	soap_done(soap);
-
-	return err.code;
+	return 0;
 }
 
 

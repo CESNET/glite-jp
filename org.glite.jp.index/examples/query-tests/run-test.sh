@@ -161,6 +161,7 @@ run_is() {
 		exit 1;
 	fi
 	echo -n "S "
+	sleep 1
 }
 
 kill_is() {

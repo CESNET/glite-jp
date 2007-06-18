@@ -14,8 +14,8 @@ use strict;
 use pch;
 use Data::Dumper;
 
-my $ps=$pch:ps;
-my $is=$pch:is;
+my $ps=$pch::ps;
+my $is=$pch::is;
 my $program_name = "softmean";
 
 my @according_jobs = (); # sequencially jobid list

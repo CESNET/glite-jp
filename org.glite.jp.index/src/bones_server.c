@@ -19,6 +19,7 @@
 #include "db_ops.h"
 #include "soap_ps_calls.h"
 #include "context.h"
+#include "common.h"
 #include "common_server.h"
 
 #include "soap_version.h"
@@ -198,43 +199,89 @@ int main(int argc, char *argv[])
 }
 
 
+static int get_soap(struct soap *soap, glite_jpis_context_t ctx) {
+	glite_gsplugin_Context			plugin_ctx;
+
+	glite_gsplugin_init_context(&plugin_ctx);
+	
+	soap_init(soap);
+	soap_set_namespaces(soap, jp__namespaces);
+	soap_set_omode(soap, SOAP_IO_BUFFER);   // set buffered response
+                                                // buffer set to SOAP_BUFLEN (default = 8k)	
+	if (soap_register_plugin_arg(soap,glite_gsplugin,plugin_ctx))
+		return glite_jpis_stack_error(ctx->jpctx, EIO, "can't register gsoap plugin");
+
+	return 0;
+}
+
+
 /* looking for some feed in DB */
-int feed_caller(glite_jpis_context_t isctx, glite_jp_is_conf *conf) {
-	char *PS_URL;
+static int feed_caller(struct soap *soap, glite_jpis_context_t isctx) {
+	char *PS_URL, *feedid, *errs;
 	long int uniqueid;
-	int i, ok;
+	int i, ok, ret, status, initialized, result = 0;
 
 	// dirty hack - try quicker several times first
 	glite_jp_clear_error(isctx->jpctx);
-	switch (glite_jpis_lockUninitializedFeed(isctx,&uniqueid,&PS_URL)) {
+
+	feedid = NULL;
+	for (initialized = 0; initialized <= 1; initialized++) {
+		switch (glite_jpis_lockSearchFeed(isctx,initialized,&uniqueid,&PS_URL,&status,&feedid)) {
 		case 0: 
 			ok = 0;
 			for (i = 0; i < 10; i++) {
-				// contact PS server, ask for data, save
-				// feedId and expiration to DB and unlock feed
-				if (MyFeedIndex(isctx, conf, uniqueid, PS_URL) != 0) {
-					// error when connecting to PS
-					printf("[%d] %s: %s (%s), reconnecting later\n", getpid(), __FUNCTION__, isctx->jpctx->error->desc, isctx->jpctx->error->source);
+				if (!initialized) {
+					// contact PS server, ask for data, save
+					// feedId and expiration to DB and unlock the feed
+					ret = MyFeedIndex(soap, isctx, uniqueid, PS_URL);
 				} else {
-					free(PS_URL);
+					ret = MyFeedRefresh(soap, isctx, uniqueid, PS_URL, status, feedid);
+				}
+				if (ret) {
+					// error when connecting to PS
+					errs = glite_jp_error_chain(isctx->jpctx);
+					printf("[%d] %s: %s, reconnecting later\n", getpid(), __FUNCTION__, errs);
+					free(errs);
+				} else {
+					lprintf("%s %s (%ld) ok\n", initialized ? "refresh" : "init", feedid, uniqueid);
 					ok = 1;
 					break;
 				}
 			}
-			if (!ok) glite_jpis_tryReconnectFeed(isctx, uniqueid, time(NULL) + RECONNECT_TIME);
+			if (!ok) {
+				// when unintialized feed: always reconnect
+				// when not refreshed feed: reconnect only once and two times quicker
+				if (!initialized || (status & GLITE_JP_IS_STATE_ERROR) == 0) {
+					lprintf("reconnecting %s (%ld)\n", feedid, uniqueid);
+					glite_jpis_tryReconnectFeed(isctx, uniqueid, time(NULL) + RECONNECT_TIME / (initialized  + 1), status | GLITE_JP_IS_STATE_ERROR);
+				} else {
+					lprintf("destroying %s (%ld)\n", feedid, uniqueid);
+					glite_jpis_destroyTryReconnectFeed(isctx, uniqueid, time(NULL) - 1);
+				}
+			}
+			free(PS_URL); PS_URL = NULL;
+			free(feedid); feedid = NULL;
+
 			sleep(RECONNECT_TIME_QUICK);
 
-			return 1;
+			result = 1;
+			break;
 		case ENOENT:
 			// no more feeds to initialize
-			return 0;
+			break;
 		default:
 			// error during locking
 			printf("[%d] %s: Locking error: ", getpid(), __FUNCTION__);
-			if (isctx->jpctx->error) printf("%s (%d)\n", isctx->jpctx->error->desc, isctx->jpctx->error->code);
-			else printf("\n");
+			if (isctx->jpctx->error) {
+				errs = glite_jp_error_chain(isctx->jpctx);
+				printf("%s\n", errs);
+				free(errs);
+			} else printf("(no detail)\n");
 			return -1;
+		}
 	}
+
+	return result;
 }
 
 
@@ -242,6 +289,8 @@ int feed_caller(glite_jpis_context_t isctx, glite_jp_is_conf *conf) {
 int feed_loop_slave(void) {
 	pid_t pid;
 	glite_jpis_context_t isctx;
+	struct soap soap;
+	char *errs;
 
 	if ( (pid = fork()) ) return pid;
 
@@ -251,16 +300,31 @@ int feed_loop_slave(void) {
 		exit(1);
 	}
 
+	if (get_soap(&soap, isctx) != 0) {
+		printf("[%d] %s: ", getpid(), __FUNCTION__);
+		if (isctx->jpctx->error) {
+			errs = glite_jp_error_chain(isctx->jpctx);
+			printf("%s\n", errs);
+			free(errs);
+		} else printf("(no detail)\n");
+		exit(1);
+	}
+
 	printf("[%d] %s: waiting before feed requests...\n", getpid(), __FUNCTION__);
 	sleep(LAUNCH_TIME);
 	printf("[%d] %s: feeder slave started\n", getpid(), __FUNCTION__);
 	do {
-		switch (feed_caller(isctx, conf)) {
+		switch (feed_caller(&soap, isctx)) {
 			case 1: break;
 			case 0:
 				sleep(REACTION_TIME);
 				break;
 			default:
+				if (isctx->jpctx->error) {
+					errs = glite_jp_error_chain(isctx->jpctx);
+					printf("[%d] %s: %s\n", getpid(), __FUNCTION__, errs);
+					free(errs);
+				}
 				printf("[%d] %s: feed locking error, slave terminated\n", getpid(), __FUNCTION__);
 				exit(1);
 		}
@@ -288,9 +352,19 @@ int data_init(void **data)
 	private->soap = soap_new();
 
 #if ONETIME_FEEDS
+	if (get_soap(private->soap, ctx) != 0) {
+		printf("[%d] %s: ", getpid(), __FUNCTION__);
+		if (isctx->jpctx->error) {
+			errs = glite_jp_error_chain(ctx->jpctx);
+			printf("%s\n", errs);
+			free(errs);
+		} else printf("(no error)\n");
+		exit(1);
+	}
+
 	/* ask PS server for data */
 	do {
-		switch (feed_caller(private->ctx, conf)) {
+		switch (feed_caller(private->soap, private->ctx)) {
 			case 1:
 				// one feed handled
 				break;

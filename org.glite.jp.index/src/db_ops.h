@@ -32,10 +32,11 @@ int glite_jpis_dropDatabase(glite_jpis_context_t ctx);
 int glite_jpis_init_db(glite_jpis_context_t isctx);
 void glite_jpis_free_db(glite_jpis_context_t ctx);
 
-int glite_jpis_lockUninitializedFeed(glite_jpis_context_t ctx, long int *uinqueid, char **PS_URL);
-int glite_jpis_initFeed(glite_jpis_context_t ctx, long int uniqueid, char *feedId, time_t feedExpires, int status);
+int glite_jpis_lockSearchFeed(glite_jpis_context_t ctx, int initialized, long int *uinqueid, char **PS_URL, int *status, char **feedid);
+int glite_jpis_initFeed(glite_jpis_context_t ctx, long int uniqueid, const char *feedId, time_t feedExpires, int status);
 int glite_jpis_unlockFeed(glite_jpis_context_t ctx, long int uniqueid);
-int glite_jpis_tryReconnectFeed(glite_jpis_context_t ctx, long int uniqueid, time_t reconn_time);
+int glite_jpis_tryReconnectFeed(glite_jpis_context_t ctx, long int uniqueid, time_t reconn_time, int state);
+int glite_jpis_destroyTryReconnectFeed(glite_jpis_context_t ctx, long int uniqueid, time_t reconn_time);
 
 int glite_jpis_insertAttrVal(glite_jpis_context_t ctx, const char *jobid, glite_jp_attrval_t *av);
 
