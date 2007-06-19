@@ -17,8 +17,8 @@ use Data::Dumper;
 
 my $ps=$pch::ps;
 my $is=$pch::is;
-my $program_name='align_warp';
-my $end_program_name='convert';
+my %program_names=(align_warp => 1);
+my %end_program_names=(convert => 1);
 my $header="GLOBAL_MAXIMUM=4095"; # test for exact equal (scripts already prepared it)
 
 my @according_jobs = (); # sequencially jobid list
@@ -30,14 +30,29 @@ my $according_count = 0;
 $pch::debug = 0;
 my $debug = 0;
 
-if ($#ARGV + 1 >= 1) { $program_name = $ARGV[0]; }
-if ($#ARGV + 1 >= 2) { $end_program_name = $ARGV[1]; }
+if ($#ARGV + 1 >= 1) {
+	%program_names = ();
+	foreach (split(/  */, $ARGV[0])) {
+        	$program_names{$_} = 1;
+	}
+}
+if ($#ARGV + 1 >= 2) {
+	%end_program_names = ();
+	foreach (split(/  */, $ARGV[1])) {
+        	$end_program_names{$_} = 1;
+	}
+}
 
 #
 # find out processes with given name and parameters
 #
+my @query_programs = ();
+foreach (keys %program_names) {
+	my @qitem = ['EQUAL', "<string>$_</string>"];
+	push @query_programs, @qitem;
+}
 my @jobs = pch::isquery($is, [
-	["$pch::jplbtag:IPAW_PROGRAM", ['EQUAL', "<string>$program_name</string>"]],
+	["$pch::jplbtag:IPAW_PROGRAM", @query_programs],
 	["$pch::jplbtag:IPAW_HEADER", ['EQUAL', "<string>$header</string>"]],
 ], \@pch::view_attributes);
 print Dumper(@jobs) if ($debug);
@@ -76,11 +91,13 @@ undef @jobs;
 $according_count = 0;
 foreach my $jobid (@according_jobs) {
 	my @succs;
+	my $pname;
 
 	print "Handling $jobid (position $according_count)\n" if ($debug);
 
-	if ($according_jobs{$jobid}{attributes}{"$pch::IPAW_PROGRAM"}{value}[0] eq $end_program_name) {
-		print "It's $end_program_name\n" if $debug;
+	$pname = $according_jobs{$jobid}{attributes}{"$pch::IPAW_PROGRAM"}{value}[0];
+	if (exists $end_program_names{$pname}) {
+		print "It's $pname\n" if $debug;
 		next;
 	}
 

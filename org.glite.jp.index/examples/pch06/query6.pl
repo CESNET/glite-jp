@@ -19,9 +19,9 @@ use Data::Dumper;
 
 my $ps=$pch::ps;
 my $is=$pch::is;
-my $program_name='align_warp';
+my %program_names=(align_warp=>1);
 my $program_param='-m 12';
-my $end_program_name='softmean';
+my %end_program_names=(softmean=>1);
 
 #my %jobs = ();          # just information cache
 my @workflow_jobs = (); # sequencially jobid list
@@ -35,14 +35,29 @@ my $workflow_count = 0;
 $pch::debug = 0;
 my $debug = 0;
 
-if ($#ARGV + 1 >= 1) { $program_name = $ARGV[0]; }
-if ($#ARGV + 1 >= 2) { $end_program_name = $ARGV[1]; }
+if ($#ARGV + 1 >= 1) {
+	%program_names = ();
+	foreach (split(/  */, $ARGV[0])) {
+        	$program_names{$_} = 1;
+	}
+}
+if ($#ARGV + 1 >= 2) {
+	%end_program_names = ();
+	foreach (split(/  */, $ARGV[1])) {
+        	$end_program_names{$_} = 1;
+	}
+}
 
 #
 # find out processes with given name and parameters
 #
+my @query_programs = ();
+foreach (keys %program_names) {
+	my @qitem = ['EQUAL', "<string>$_</string>"];
+	push @query_programs, @qitem;
+}
 my @jobs = pch::isquery($is, [
-	["$pch::jplbtag:IPAW_PROGRAM", ['EQUAL', "<string>$program_name</string>"]],
+	["$pch::jplbtag:IPAW_PROGRAM", @query_programs],
 	["$pch::jplbtag:IPAW_PARAM", ['EQUAL', "<string>$program_param</string>"]],
 ], ["$pch::jpwf:successor", @pch::view_attributes]);
 print Dumper(@jobs) if ($debug);
@@ -71,12 +86,14 @@ undef @jobs;
 $workflow_count = 0;
 foreach my $jobid (@workflow_jobs) {
 	my @succs;
+	my $pname;
 
 	print "Handling $jobid (position $workflow_count)\n" if ($debug);
 	print "  progname: ".$workflow_jobs{$jobid}{attributes}{"$pch::jplbtag:IPAW_PROGRAM"}{value}[0]."\n" if ($debug);
 
-	if ($workflow_jobs{$jobid}{attributes}{"$pch::jplbtag:IPAW_PROGRAM"}{value}[0] eq $end_program_name) {
-		print "It's $end_program_name, adding\n" if $debug;
+	$pname = $workflow_jobs{$jobid}{attributes}{"$pch::jplbtag:IPAW_PROGRAM"}{value}[0];
+	if (exists $end_program_names{$pname}) {
+		print "It's $pname, adding\n" if $debug;
 		$according_jobs{$jobid} = \%{$workflow_jobs{$jobid}};
 		next;
 	}

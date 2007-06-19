@@ -133,9 +133,11 @@ sub jobs_handler {
 
 	$xmlattribute = $xmljobs->first_child('attributes');
 	while ($xmlattribute) {
-		my ($xmlname, $xmlvalue);
+		my ($xmlname, $xmlvalue, $xmlorigin);
 		my @values = ();
+		my @origins = ();
 		my %attribute = ();
+		my $nvalues = 0;
 
 		$xmlname = $xmlattribute->first_child('name');
 		die "No name on '".$xmlattribute->text."'" if (!$xmlname);
@@ -148,14 +150,26 @@ sub jobs_handler {
 			@values = @{$attribute{value}};
 		}
 #print "  prev values: ".Dumper(@values)."\n";
+		if (exists $attribute{origin}) {
+			@origins = @{$attribute{origin}};
+		}
+#print "  prev origins: ".Dumper(@origins)."\n";
 		$xmlvalue = $xmlattribute->first_child('value');
 		while ($xmlvalue) {
 #print "  to add: ".$xmlvalue->text."\n";
 			push @values, $xmlvalue->text;
 			$xmlvalue = $xmlvalue->next_sibling('value');
+			$nvalues = $nvalues + 1;
 		}
 		@{$attribute{value}} = @values;
 #print "  new values: ".Dumper($attribute{value})."\n";
+		$xmlorigin = $xmlattribute->first_child('origin');
+		for ($nvalues..1) {
+			if ($xmlorigin and $xmlorigin->text) { push @origins, $xmlorigin->text; }
+			else { push @origins, undef; }
+		}
+		@{$attribute{origin}} = @origins;
+#print "  new origins: ".Dumper($attribute{origin})."\n";
 		$attribute{timestamp} = $xmlattribute->first_child('timestamp')->text;
 		$xmlattribute = $xmlattribute->next_sibling('attributes');
 

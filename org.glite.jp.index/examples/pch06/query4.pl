@@ -17,7 +17,7 @@ use Data::Dumper;
 
 my $ps=$pch::ps;
 my $is=$pch::is;
-my $program_name='align_warp';
+my %program_names=(align_warp => 1);
 my $program_params='-m 12';
 my $runday=1;
 #my $runday=4;
@@ -31,13 +31,24 @@ my $according_count = 0;
 $pch::debug = 0;
 my $debug = 0;
 
-if ($#ARGV + 1 > 1) { $program_name=$ARGV[0]; }
+if ($#ARGV + 1 > 1) {
+	%program_names = ();
+	foreach (split(/  */, $ARGV[1])) {
+		$program_names{$_} = 1;
+	}
+}
+
 
 #
 # find out processes with given name ant parameters
 #
+my @query_programs = ();
+foreach (keys %program_names) {
+	my @qitem = ['EQUAL', "<string>$_</string>"];
+	push @query_programs, @qitem;
+}
 my @jobs = pch::isquery($is, [
-	["$pch::jplbtag:IPAW_PROGRAM", ['EQUAL', "<string>$program_name</string>"]],
+	["$pch::jplbtag:IPAW_PROGRAM", @query_programs],
 	["$pch::jplbtag:IPAW_PARAM", ['EQUAL', "<string>$program_params</string>"]],
 ], \@attributes);
 print Dumper(@jobs) if ($debug);
@@ -50,12 +61,26 @@ die "...so exit on error" if ($pch::err);
 $according_count = 0;
 foreach my $job (@jobs) {
 	my %job = %$job;
-	my @time;
+	my (@time, @timesep, @origin);
+	my $itime;
 
 	print "Handling $job{jobid} ($according_count.)\n" if ($debug);
 
-	@time =@{ $job{attributes}{"$pch::jpsys:regtime"}{value}};
-	my @timesep = gmtime($time[0]);
+	# search first regtime with origin USER,
+	# be satisfied with first regime too if no value has USER origin
+	@time = @{$job{attributes}{"$pch::jpsys:regtime"}{value}};
+	@origin = @{$job{attributes}{"$pch::jpsys:regtime"}{origin}};
+	@timesep = ();
+	foreach $itime (0..$#time) {
+#print "check ".$time[$itime]." ".$origin[$itime]."\n";
+		if ($origin[$itime] eq 'USER') {
+			@timesep = gmtime($time[$itime]);
+			last;
+		}
+	}
+	if ($#timesep == -1) { @timesep = gmtime($time[0]); }
+#print join(',', @timesep)."\n";
+
 	if ($timesep[6] == $runday) {
 		if (!exists $according_jobs{$job{jobid}}) {
 			$according_jobs{$job{jobid}} = \%job;

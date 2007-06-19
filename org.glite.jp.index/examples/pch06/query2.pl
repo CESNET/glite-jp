@@ -16,7 +16,7 @@ use Data::Dumper;
 
 my $ps=$pch::ps;
 my $is=$pch::is;
-my $program_name = "softmean";
+my %program_names = (softmean => 1);
 
 my @according_jobs = (); # sequencially jobid list
 my %according_jobs = (); # hash jobid list
@@ -29,7 +29,12 @@ if ($#ARGV + 1 < 1) {
 	exit 1
 }
 $output = $ARGV[0];
-if ($#ARGV + 1 > 1) { $program_name = $ARGV[1]; }
+if ($#ARGV + 1 > 1) {
+	%program_names = ();
+	foreach (split(/  */,$ARGV[1])) {
+		$program_names{$_} = 1;
+	}
+}
 
 # debug calls
 $pch::debug = 0;
@@ -73,8 +78,8 @@ foreach my $jobid (@according_jobs) {
 	# stop on given program name
 	@program = pch::psquery($ps, $jobid, "$pch::jplbtag:IPAW_PROGRAM");
 	die "More program names of $jobid?" if ($#program > 0);
-	if ($program[0] eq $program_name) { 
-		print "$jobid is $program_name, stop here\n" if $debug;
+	if (exists $program_names{$program[0]}) { 
+		print "$jobid is $program[0], stop here\n" if $debug;
 		next;
 	}
 
