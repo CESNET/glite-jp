@@ -8,7 +8,7 @@
 # a header file can be extracted as text using the scanheader AIR utility.
 #
 # call:
-#   ./query5.pl 2>/dev/null
+#   ./query5.pl [PROGRAMS] [END_PROGRAMS] 2>/dev/null
 #
 
 use strict;

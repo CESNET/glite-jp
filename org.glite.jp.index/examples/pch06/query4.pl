@@ -8,7 +8,7 @@
 # "-m 12" of align_warp) that ran on a Monday.
 #
 # call:
-#   ./query4.pl 2>/dev/null
+#   ./query4.pl [PROGRAMS] 2>/dev/null
 #
 
 use strict;
@@ -31,9 +31,9 @@ my $according_count = 0;
 $pch::debug = 0;
 my $debug = 0;
 
-if ($#ARGV + 1 > 1) {
+if ($#ARGV + 1 >= 1) {
 	%program_names = ();
-	foreach (split(/  */, $ARGV[1])) {
+	foreach (split(/  */, $ARGV[0])) {
 		$program_names{$_} = 1;
 	}
 }
