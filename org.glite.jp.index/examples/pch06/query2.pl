@@ -7,7 +7,7 @@
 # the averaging of images with softmean.
 #
 # call:
-#   ./query2.pl OUTPUT_FILE_NAME 2>/dev/null
+#   ./query2.pl OUTPUT_FILE_NAME [SOFTMEAN_PROGRAM] 2>/dev/null
 #
 
 use strict;

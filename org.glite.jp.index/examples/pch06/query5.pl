@@ -1,4 +1,4 @@
-#! /usr/bin/perl
+#! /usr/bin/perl -W
 
 #
 # 5. query:
@@ -8,7 +8,7 @@
 # a header file can be extracted as text using the scanheader AIR utility.
 #
 # call:
-#   ./query5.pl [PROGRAMS] [END_PROGRAMS] 2>/dev/null
+#   ./query5.pl [PROGRAMS] [END_PROGRAMS] [HEADER] 2>/dev/null
 #
 
 use strict;
@@ -23,7 +23,6 @@ my $header="GLOBAL_MAXIMUM=4095"; # test for exact equal (scripts already prepar
 
 my @according_jobs = (); # sequencially jobid list
 my %according_jobs = (); # hash jobid list
-my $according_count = 0;
 
 
 # debug calls
@@ -42,6 +41,10 @@ if ($#ARGV + 1 >= 2) {
         	$end_program_names{$_} = 1;
 	}
 }
+if ($#ARGV + 1 >= 3) {
+	$header = $ARGV[2];
+}
+
 
 #
 # find out processes with given name and parameters
@@ -55,68 +58,37 @@ my @jobs = pch::isquery($is, [
 	["$pch::jplbtag:IPAW_PROGRAM", @query_programs],
 	["$pch::jplbtag:IPAW_HEADER", ['EQUAL', "<string>$header</string>"]],
 ], \@pch::view_attributes);
-print Dumper(@jobs) if ($debug);
+print STDERR Dumper(@jobs) if ($debug);
 die "...so exit on error" if ($pch::err);
-
-#
-# initial set of DAGs from index server
-#
-foreach my $job (@jobs) {
-	my %job = %$job;
-	my %attributes = %{$job{attributes}};
-	my $dagjobid = $attributes{"$pch::lbattr:parent"}{value}[0];
-
-	print "Consider DAG $dagjobid\n" if $debug;
-	if (!exists $according_jobs{$dagjobid}) {
-		%job = ();
-		push @according_jobs, $dagjobid;
-		# query to primary storage when searching by jobid
-		$job{jobid} = $dagjobid;
-		foreach my $attr (@pch::view_attributes) {
-			my @value;
-
-			@value = pch::psquery($ps, $dagjobid, $attr);
-			if (defined @value) { @{$job{attributes}{$attr}{value}} = @value; }
-		}
-		$according_jobs{$dagjobid} = \%job;
-		print "Added DAG $dagjobid\n" if $debug;
-	}
-}
-undef @jobs;
-
 
 #
 # collect all jobs (tree browsing down)
 #
-$according_count = 0;
-foreach my $jobid (@according_jobs) {
+foreach my $job (@jobs) {
+	my %job = %$job;
+	my $jobid = $job{jobid};
 	my @succs;
 	my $pname;
 
-	print "Handling $jobid (position $according_count)\n" if ($debug);
+	$pname = $job{attributes}{"$pch::jplbtag:IPAW_PROGRAM"}{value}[0];
+	print "Handling $jobid ($pname)\n" if ($debug);
 
-	$pname = $according_jobs{$jobid}{attributes}{"$pch::IPAW_PROGRAM"}{value}[0];
 	if (exists $end_program_names{$pname}) {
 		print "It's $pname\n" if $debug;
+		if (!exists $according_jobs{$jobid}) {
+			$according_jobs{$jobid} = \%job;
+			push @according_jobs, $jobid;
+			print "Added $jobid to $#according_jobs\n" if ($debug);
+		}
+		else {
+			print "Already existing $jobid\n" if ($debug);
+		}
 		next;
 	}
 
 	@succs = pch::isquery($is, [["$pch::jpwf:ancestor", ['EQUAL', "<string>$jobid</string>"]]], \@pch::view_attributes);
 	die "...so exit on error" if ($pch::err);
-
-	for my $succ (@succs) {
-		my %succ = %$succ;
-		print "Considered: $succ{jobid}\n" if ($debug);
-		if (!exists $according_jobs{$succ{jobid}}) {
-			$according_jobs{$succ{jobid}} = \%succ;
-			push @according_jobs, $succ{jobid};
-			print "Added $succ{jobid} to $#according_jobs\n" if ($debug);
-		}
-		else {
-			print "Already existing $succ{jobid}\n" if ($debug);
-		}
-	}
-	$according_count++;
+	push @jobs, @succs;
 }
 
 
