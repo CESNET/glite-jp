@@ -8,7 +8,7 @@
 # "-m 12" of align_warp) that ran on a Monday.
 #
 # call:
-#   ./query4.pl [PROGRAMS] 2>/dev/null
+#   ./query4.pl [PROGRAMS [PARAMS]] 2>/dev/null
 #
 
 use strict;
@@ -19,7 +19,7 @@ my $ps=$pch::ps;
 my $is=$pch::is;
 my %program_names=(align_warp => 1);
 my $program_params='-m 12';
-my $runday=1;
+my $runday=3;
 #my $runday=4;
 my @attributes = ("$pch::jpsys:jobId", @pch::view_attributes);
 
@@ -36,6 +36,9 @@ if ($#ARGV + 1 >= 1) {
 	foreach (split(/  */, $ARGV[0])) {
 		$program_names{$_} = 1;
 	}
+}
+if ($#ARGV + 1 >= 2) {
+	$program_params=$ARGV[1];
 }
 
 

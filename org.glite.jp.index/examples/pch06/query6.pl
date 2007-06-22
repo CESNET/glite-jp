@@ -10,7 +10,7 @@
 # -m 12. 
 #
 # call:
-#   ./query6.pl [PROGRAMS] [END_PROGRAMS] 2>/dev/null
+#   ./query6.pl [PROGRAMS [END_PROGRAMS] [PARAM] ]2>/dev/null
 #
 
 use strict;
@@ -46,6 +46,9 @@ if ($#ARGV + 1 >= 2) {
 	foreach (split(/  */, $ARGV[1])) {
         	$end_program_names{$_} = 1;
 	}
+}
+if ($#ARGV + 1 >= 3) {
+	$program_param=$ARGV[2];
 }
 
 #
