@@ -42,6 +42,8 @@ LTCOMPILE:=libtool --mode=compile ${CC} ${CFLAGS}
 LINKXX:=libtool --mode=link ${CXX} ${LDFLAGS} 
 INSTALL:=libtool --mode=install install
 
+LIBTAR:=-L${libtar}/lib -ltar
+
 STAGE_HDRS:=jpcl_ctx_int.h
 HDRS:=jp_client.h jpimporter.h
 
@@ -78,18 +80,16 @@ compile: ${daemon} ${LIB} ${EXAMPLES}
 
 examples: ${EXAMPLES}
 
-# XXX: should depend on -ltar but we have no dynamic version so far :-(
 ${LIB}: ${LIBOBJS}
-	${LINK} ${version_info} -o $@ ${LIBLOBJS} -rpath ${glite_location}/lib ${LBMAILDIRLIB} 
+	${LINK} ${version_info} -o $@ ${LIBLOBJS} -rpath ${glite_location}/lib ${LBMAILDIRLIB} ${LIBTAR}
 
 ${daemon}: ${OBJS}
 	${LINK} -o $@ ${OBJS} ${LBMAILDIRLIB} ${GSOAPLIB} ${GLOBUS_LIBS}
 
 ${EXAMPLES}: ${LIB}
 
-# XXX: -ltar should be in the library
 ${EXAMPLES}: %: %.o
-	${LINK} -o $@ $< ${LIB} ${LBMAILDIRLIB}  -ltar
+	${LINK} -o $@ $< ${LIB} ${LBMAILDIRLIB} 
 
 
 
