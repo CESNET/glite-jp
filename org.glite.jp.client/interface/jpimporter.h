@@ -1,6 +1,22 @@
 #ifndef __GLITE_JPIMPORTER__
 #define __GLITE_JPIMPORTER__
 
+#ifndef GLITE_REG_IMPORTER_MDIR
+#define GLITE_REG_IMPORTER_MDIR		"/tmp/jpreg"
+#endif 
+
+#ifndef GLITE_DUMP_IMPORTER_MDIR
+#define GLITE_DUMP_IMPORTER_MDIR	"/tmp/jpdump"
+#endif 
+
+#ifndef GLITE_SANDBOX_IMPORTER_MDIR
+#define GLITE_SANDBOX_IMPORTER_MDIR	"/tmp/jpsandbox"
+#endif 
+
+#define PERF_JOBID_START_PREFIX "https://start.megajob/"
+#define PERF_JOBID_STOP_PREFIX "https://stop.megajob/"
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif

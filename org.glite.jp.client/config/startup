@@ -55,7 +55,8 @@ start()
 #		-i $pidfile $jpreg_maildir $jpdump_maildir $jpps $sandbox_maildir $creds" \
 
 	su - $GLITE_USER -c "$GLITE_LOCATION/bin/glite-jp-importer \
-		-i $pidfile $jpreg_maildir $jpdump_maildir $jpps $sandbox_maildir $keep_jobs $creds" \
+		-i $pidfile $jpreg_maildir $jpdump_maildir $jpps $sandbox_maildir $keep_jobs \
+		$creds $GLITE_JP_IMPORTER_ARGS" \
 	&& echo " done" || echo " FAILED"
 }
 

@@ -24,6 +24,10 @@ STAGETO=include/${globalprefix}/${jpprefix}
 
 VPATH=${top_srcdir}/src:${top_srcdir}/examples:${top_srcdir}/project$:${top_srcdir}/interface:${stagedir}/interface:${top_srcdir}/build
 
+ifdef JP_PERF
+	JP_PERF_CFLAGS:=-DJP_PERF=1
+endif
+
 GLOBUS_LIBS:=-L${globus_prefix}/lib \
 	-lglobus_common_${nothrflavour} \
 	-lglobus_gssapi_gsi_${nothrflavour} \
@@ -34,7 +38,7 @@ GLOBUS_CFLAGS:=-I${globus_prefix}/include/${nothrflavour}
 
 DEBUG:=-g -O0 -DDEBUG
 
-CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${gsoap_prefix} -I${stagedir}/include ${GLOBUS_CFLAGS} -I${libtar}/include
+CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${gsoap_prefix} -I${stagedir}/include ${GLOBUS_CFLAGS} -I${libtar}/include ${JP_PERF_CFLAGS}
 LDFLAGS:=-L${stagedir}/lib -L${libtar}/lib
 
 LINK:=libtool --mode=link ${CC} ${LDFLAGS} 
@@ -47,7 +51,7 @@ LIBTAR:=-L${libtar}/lib -ltar
 STAGE_HDRS:=jpcl_ctx_int.h
 HDRS:=jp_client.h jpimporter.h
 
-EXAMPLES:=jpps_upload_files
+EXAMPLES:=jpps_upload_files mill_feed
 
 LIBOBJS:=jpcl_ctx.o jpimp_lib.o
 LIBTHROBJS:=${LIBOBJS:.o=.thr.o}
@@ -88,8 +92,11 @@ ${daemon}: ${OBJS}
 
 ${EXAMPLES}: ${LIB}
 
-${EXAMPLES}: %: %.o
+jpps_upload_files: %: %.o
 	${LINK} -o $@ $< ${LIB} ${LBMAILDIRLIB} 
+
+mill_feed: %: %.o
+	${LINK} -o $@ $< ${LBMAILDIRLIB} -lglite_lb_common_${nothrflavour}
 
 
 
@@ -149,6 +156,7 @@ install:
 	${INSTALL} -m 755 ${daemon} ${PREFIX}/bin
 	${INSTALL} -m 644 ${LIB} ${PREFIX}/lib
 	${INSTALL} -m 644 jpps_upload_files ${PREFIX}/examples/glite-jp-primary-upload_files
+	${INSTALL} -m 755 mill_feed ${PREFIX}/examples/glite-jp-mill_feed
 	cd ${top_srcdir}/examples && ${INSTALL} -m 755 glite-jp-importer.sh ${PREFIX}/examples/
 	${INSTALL} -m 755 ${top_srcdir}/config/startup ${PREFIX}/etc/init.d/glite-jp-importer
 	cd ${top_srcdir}/interface && ${INSTALL} -m 644 ${HDRS} ${PREFIX}/${STAGETO}

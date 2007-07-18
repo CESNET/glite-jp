@@ -6,6 +6,7 @@
 #include <string.h>
 #include <assert.h>
 #include <linux/limits.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
@@ -24,6 +25,8 @@
 #include "glite/security/glite_gscompat.h"
 
 #include "globus_ftp_client.h"
+#include "jp_client.h"
+#include "jpimporter.h"
 
 #if GSOAP_VERSION <= 20602
 #define soap_call___jpsrv__RegisterJob soap_call___ns1__RegisterJob
@@ -46,26 +49,12 @@ typedef struct {
 #define GLITE_JPIMPORTER_PIDFILE	"/var/run/glite-jpimporter.pid"
 #endif 
 
-#ifndef GLITE_REG_IMPORTER_MDIR
-#define GLITE_REG_IMPORTER_MDIR		"/tmp/jpreg"
-#endif 
-
-#ifndef GLITE_DUMP_IMPORTER_MDIR
-#define GLITE_DUMP_IMPORTER_MDIR	"/tmp/jpdump"
-#endif 
-
-#ifndef GLITE_SANDBOX_IMPORTER_MDIR
-#define GLITE_SANDBOX_IMPORTER_MDIR	"/tmp/jpsandbox"
-#endif 
-
 #ifndef GLITE_JPPS
 #define GLITE_JPPS					"http://localhost:8901"
 #endif 
 
-
 #define	MAX_REG_CONNS				500
 #define JPPS_NO_RESPONSE_TIMEOUT		120
-
 
 static int		debug = 0;
 static int		die = 0;
@@ -86,6 +75,12 @@ static char	   	*server_cert = NULL,
 static gss_cred_id_t	mycred = GSS_C_NO_CREDENTIAL;
 static char		*mysubj;
 struct timeval		to = {JPPS_NO_RESPONSE_TIMEOUT, 0};
+#ifdef JP_PERF
+int			sink = 0;
+int			perf_regs, perf_dumps, perf_sandboxes;
+char 			*perf_id = NULL;
+double			perf_start, perf_end;
+#endif
 
 
 static struct option opts[] = {
@@ -101,10 +96,18 @@ static struct option opts[] = {
 	{ "pidfile",     1, NULL,    'i'},
 	{ "poll",        1, NULL,    't'},
 	{ "store",       1, NULL,    'S'},
+	{ "store",       1, NULL,    'S'},
+#ifdef JP_PERF
+	{ "perf-sink",   1, NULL,    'K'},
+#endif
 	{ NULL,          0, NULL,     0}
 };
 
-static const char *get_opt_string = "hgp:r:d:s:i:t:c:k:C:";
+static const char *get_opt_string = "hgp:r:d:s:i:t:c:k:C:"
+#ifdef JP_PERF
+	"K:"
+#endif
+;
 
 #include "glite/jp/ws_fault.c"
 
@@ -121,9 +124,12 @@ static void usage(char *me)
 		"\t-d, --dump-mdir    path to the 'LB maildir' subtree for LB dumps\n"
 		"\t-s, --sandbox-mdir path to the 'LB maildir' subtree for input/output sandboxes\n"
 		"\t-i, --pidfile      file to store master pid\n"
-		"\t-t, --poll         maildir polling interval (in seconds)\n",
-		"\t-S, --store        keep uploaded jobs in this directory\n",
-		me);
+		"\t-t, --poll         maildir polling interval (in seconds)\n"
+		"\t-S, --store        keep uploaded jobs in this directory\n"
+#ifdef JP_PERF
+		"\t-K, --perf-sink    1=stats, 2=stats+run w/o WS calls\n"
+#endif
+		, me);
 }
 
 static void catchsig(int sig)
@@ -179,6 +185,9 @@ int main(int argc, char *argv[])
 		case 'd': strcpy(dump_mdir, optarg); break;
 		case 's': strcpy(sandbox_mdir, optarg); break;
 		case 'i': strcpy(pidfile, optarg); break;
+#ifdef JP_PERF
+		case 'K': sink = atoi(optarg); break;
+#endif
 		case '?': usage(name); return 1;
 	}
 	if ( optind < argc ) { usage(name); return 1; }
@@ -368,7 +377,11 @@ static int slave(int (*fn)(void), const char *nm)
 
 	dprintf("[%s] slave started - pid [%d]\n", name, getpid());
 
-	while ( !die && conn_cnt < MAX_REG_CONNS ) {
+#ifdef JP_PERF
+	while ( !die && (conn_cnt < MAX_REG_CONNS || (sink & 1)) ) {
+#else
+	while ( !die && (conn_cnt < MAX_REG_CONNS) ) {
+#endif
 		int ret = fn();
 
 		if ( ret > 0 ) conn_cnt++;
@@ -438,8 +451,35 @@ static int reg_importer(void)
 			in.owner = aux;
 			dprintf("[%s] Registering '%s'\n", name, msg);
 			if ( !debug ) syslog(LOG_INFO, "Registering '%s'\n", msg);
+#ifdef JP_PERF
+			if (sink) {
+				struct timeval tv;
+
+				if (strncasecmp(msg, PERF_JOBID_START_PREFIX, sizeof(PERF_JOBID_START_PREFIX) - 1) == 0) {
+					perf_regs = 0;
+					perf_dumps = 0;
+					perf_sandboxes = 0;
+					free(perf_id);
+					perf_id = strdup(msg + sizeof(PERF_JOBID_START_PREFIX) - 1);
+					gettimeofday(&tv, NULL);
+					perf_start = tv.tv_sec + (double)tv.tv_usec / 1000000.0;
+					dprintf("[statistics] %s\n", perf_id);
+				} else if (strncasecmp(msg, PERF_JOBID_STOP_PREFIX, sizeof(PERF_JOBID_STOP_PREFIX) - 1) == 0) {
+					gettimeofday(&tv, NULL);
+					perf_end = tv.tv_sec + (double)tv.tv_usec / 1000000.0;
+					dprintf("[statistics] %s\n", perf_id);
+					dprintf("[statistics] start: %lf\n", perf_start);
+					dprintf("[statistics] stop:  %lf\n", perf_end);
+					dprintf("[statistics] regs:  %d (%lf jobs/day)\n", perf_regs, 86400.0 * perf_regs / (perf_end - perf_start));
+				} else perf_regs++;
+			}
+			if (!(sink & 2)) {
+#endif
 			ret = soap_call___jpsrv__RegisterJob(soap, jpps, "", &in, &empty);
 			if ( (ret = check_soap_fault(soap, ret)) ) break;
+#ifdef JP_PERF
+			} else ret = 0;
+#endif
 		} while (0);
 		edg_wll_MaildirTransEnd(reg_mdir, fname, ret? LBMD_TRANS_FAILED_RETRY: LBMD_TRANS_OK);
 		free(fname);
@@ -510,6 +550,10 @@ static int dump_importer(void)
 		su_in.contentType = "text/lb";
 		dprintf("[%s] Importing LB dump file '%s'\n", name, tab[_file].val);
 		if ( !debug ) syslog(LOG_INFO, "Importing LB dump file '%s'\n", msg);
+#ifdef JP_PERF
+		if (sink) perf_dumps++;
+		if (!(sink & 2)) {
+#endif
 		ret = soap_call___jpsrv__StartUpload(soap, tab[_jpps].val?:jpps, "", &su_in, &su_out);
 		if ( (ret = check_soap_fault(soap, ret)) ) break;
 		dprintf("[%s] Destination: %s\n\tCommit before: %s\n", name, su_out.destination, ctime(&su_out.commitBefore));
@@ -532,6 +576,9 @@ static int dump_importer(void)
 		ret = soap_call___jpsrv__CommitUpload(soap, tab[_jpps].val?:jpps, "", &cu_in, &empty);
 		if ( (ret = check_soap_fault(soap, ret)) ) break;
 		dprintf("[%s] Dump upload succesfull\n", name);
+#ifdef JP_PERF
+		} else ret = 0;
+#endif
 		if (store && *store) {
 			bname = strdup(tab[_file].val);
 			snprintf(fspec, sizeof fspec, "%s/%s", store, basename(bname));
@@ -619,6 +666,10 @@ static int sandbox_importer(void)
 		su_in.contentType = "tar/lb";
 		dprintf("[%s] Importing LB sandbox tar file '%s'\n", name, tab[_file].val);
 		if ( !debug ) syslog(LOG_INFO, "Importing LB sandbox tar file '%s'\n", msg);
+#ifdef JP_PERF
+		if (sink) perf_sandboxes++;
+		if (!(sink & 2)) {
+#endif
 		ret = soap_call___jpsrv__StartUpload(soap, tab[_jpps].val?:jpps, "", &su_in, &su_out);
 		ret = check_soap_fault(soap, ret);
 		/* XXX: grrrrrrr! test it!!!*/
@@ -638,6 +689,9 @@ static int sandbox_importer(void)
 		ret = soap_call___jpsrv__CommitUpload(soap, tab[_jpps].val?:jpps, "", &cu_in, &empty);
 		if ( (ret = check_soap_fault(soap, ret)) ) break;
 		dprintf("[%s] Dump upload succesfull\n", name);
+#ifdef JP_PERF
+		} else ret = 0;
+#endif
 	} while (0);
 
 	edg_wll_MaildirTransEnd(sandbox_mdir, fname, ret? LBMD_TRANS_FAILED_RETRY: LBMD_TRANS_OK);
