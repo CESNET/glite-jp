@@ -38,7 +38,7 @@ GLOBUS_CFLAGS:=-I${globus_prefix}/include/${nothrflavour}
 
 DEBUG:=-g -O0 -DDEBUG
 
-CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${gsoap_prefix} -I${stagedir}/include ${GLOBUS_CFLAGS} -I${libtar}/include ${JP_PERF_CFLAGS}
+CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${gsoap_prefix} -I${stagedir}/include ${GLOBUS_CFLAGS} -I${libtar}/include ${JP_PERF_CFLAGS} -W -Wall -Wno-unused-parameter -D_GNU_SOURCE
 LDFLAGS:=-L${stagedir}/lib -L${libtar}/lib
 
 LINK:=libtool --mode=link ${CC} ${LDFLAGS} 

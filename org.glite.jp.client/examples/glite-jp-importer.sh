@@ -81,10 +81,10 @@ while [ 1 ]; do
       if [ -n "$GLITE_LB_EXPORT_DUMPDIR_KEEP" ]; then
         mv $file $GLITE_LB_EXPORT_DUMPDIR_KEEP
       else
-        rm $file
+        rm -f $file
       fi
     else
-      rm $file
+      rm -f $file
     fi
   done
 

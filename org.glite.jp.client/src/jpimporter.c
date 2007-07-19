@@ -14,6 +14,7 @@
 #include <syslog.h>
 #include <fcntl.h>
 #include <libgen.h>
+#include <ctype.h>
 
 #include "glite/lb/lb_maildir.h"
 
@@ -37,7 +38,6 @@ typedef struct {
 	char	   *key;
 	char	   *val;
 } msg_pattern_t;
-
 
 #ifndef dprintf
 #define dprintf(FMT, ARGS...)		{ if (debug) printf(FMT, ##ARGS); }
@@ -76,10 +76,14 @@ static gss_cred_id_t	mycred = GSS_C_NO_CREDENTIAL;
 static char		*mysubj;
 struct timeval		to = {JPPS_NO_RESPONSE_TIMEOUT, 0};
 #ifdef JP_PERF
+typedef struct {
+	char *id, *name;
+	long int count, limit;
+	double start, end;
+} perf_t;
+
 int			sink = 0;
-int			perf_regs, perf_dumps, perf_sandboxes;
-char 			*perf_id = NULL;
-double			perf_start, perf_end;
+perf_t			perf = {name:NULL,};
 #endif
 
 
@@ -111,6 +115,12 @@ static const char *get_opt_string = "hgp:r:d:s:i:t:c:k:C:"
 
 #include "glite/jp/ws_fault.c"
 
+#ifdef JP_PERF
+static void stats_init(perf_t *perf, const char *name);
+static void stats_set_jobid(perf_t *perf, const char *jobid);
+static void stats_done(perf_t *perf);
+#endif
+
 static void usage(char *me)
 {
 	fprintf(stderr,"usage: %s [option]\n"
@@ -137,7 +147,7 @@ static void catchsig(int sig)
 	die = sig;
 }
 
-static void catch_chld(int sig)
+static void catch_chld(int sig __attribute__((unused)))
 {
 	child_died = 1;
 }
@@ -394,7 +404,7 @@ static int slave(int (*fn)(void), const char *nm)
 	}
 
 	if ( die ) {
-		dprintf("[%s] Terminating on signal %d\n", name, getpid(), die);
+		dprintf("[%s] %d: Terminating on signal %d\n", name, getpid(), die);
 		if ( !debug ) syslog(LOG_INFO, "Terminating on signal %d", die);
 	}
     dprintf("[%s] Terminating after %d connections\n", name, conn_cnt);
@@ -453,25 +463,12 @@ static int reg_importer(void)
 			if ( !debug ) syslog(LOG_INFO, "Registering '%s'\n", msg);
 #ifdef JP_PERF
 			if (sink) {
-				struct timeval tv;
-
 				if (strncasecmp(msg, PERF_JOBID_START_PREFIX, sizeof(PERF_JOBID_START_PREFIX) - 1) == 0) {
-					perf_regs = 0;
-					perf_dumps = 0;
-					perf_sandboxes = 0;
-					free(perf_id);
-					perf_id = strdup(msg + sizeof(PERF_JOBID_START_PREFIX) - 1);
-					gettimeofday(&tv, NULL);
-					perf_start = tv.tv_sec + (double)tv.tv_usec / 1000000.0;
-					dprintf("[statistics] %s\n", perf_id);
-				} else if (strncasecmp(msg, PERF_JOBID_STOP_PREFIX, sizeof(PERF_JOBID_STOP_PREFIX) - 1) == 0) {
-					gettimeofday(&tv, NULL);
-					perf_end = tv.tv_sec + (double)tv.tv_usec / 1000000.0;
-					dprintf("[statistics] %s\n", perf_id);
-					dprintf("[statistics] start: %lf\n", perf_start);
-					dprintf("[statistics] stop:  %lf\n", perf_end);
-					dprintf("[statistics] regs:  %d (%lf jobs/day)\n", perf_regs, 86400.0 * perf_regs / (perf_end - perf_start));
-				} else perf_regs++;
+					stats_init(&perf, name);
+					stats_set_jobid(&perf, msg);
+				}
+				else if (strncasecmp(msg, PERF_JOBID_STOP_PREFIX, sizeof(PERF_JOBID_STOP_PREFIX) - 1) == 0) stats_done(&perf);
+				else perf.count++;
 			}
 			if (!(sink & 2)) {
 #endif
@@ -499,7 +496,6 @@ static int dump_importer(void)
 	static int		readnew = 1;
 	char		   *msg = NULL,
 				   *fname = NULL,
-				   *aux,
 				   *bname;
 	char                        fspec[PATH_MAX];
 	int				ret;
@@ -551,7 +547,45 @@ static int dump_importer(void)
 		dprintf("[%s] Importing LB dump file '%s'\n", name, tab[_file].val);
 		if ( !debug ) syslog(LOG_INFO, "Importing LB dump file '%s'\n", msg);
 #ifdef JP_PERF
-		if (sink) perf_dumps++;
+		if (sink) {
+		/* statistics started by file, ended by count limit (from the appropriate result fikle) */
+			FILE *f;
+			char *fn, item[200];
+			int count;
+
+			/* starter */
+			if (!perf.name) {
+				f = fopen(PERF_START_FILE, "rt");
+				if (f) {
+					stats_init(&perf, name);
+					fscanf(f, "%s", item);
+					fclose(f);
+					unlink(PERF_START_FILE);
+					stats_set_jobid(&perf, item);
+				} else
+					dprintf("[%s statistics]: not started, fopen(\"" PERF_START_FILE "\") => %d\n", name, errno);
+			}
+			if (perf.name) {
+				perf.count++;
+				if (perf.limit) {
+					dprintf("[%s statistics] done %ld/%ld\n", name, perf.count, perf.limit);
+					if (perf.count >= perf.limit) stats_done(&perf);
+				} else {
+					dprintf("[%s statistics] done %ld/no limit\n", name, perf.count);
+					/* stopper */
+					asprintf(&fn, PERF_STOP_FILE_FORMAT, perf.id);
+					f = fopen(fn, "rt");
+					free(fn);
+					if (f) {
+						fscanf(f, "%s\t%d", item, &count);
+						fscanf(f, "%s\t%d", item, &count);
+						dprintf("[%s statistics] expected %d %s\n", name, count, item);
+						fclose(f);
+						perf.limit = count;
+					}
+				}
+			}
+		}
 		if (!(sink & 2)) {
 #endif
 		ret = soap_call___jpsrv__StartUpload(soap, tab[_jpps].val?:jpps, "", &su_in, &su_out);
@@ -612,8 +646,7 @@ static int sandbox_importer(void)
 	struct _jpelem__CommitUploadResponse	empty;
 	static int	readnew = 1;
 	char		*msg = NULL,
-			*fname = NULL,
-			*aux;
+			*fname = NULL;
 	int		ret;
 	int		fhnd;
 	msg_pattern_t	tab[] = {
@@ -667,7 +700,6 @@ static int sandbox_importer(void)
 		dprintf("[%s] Importing LB sandbox tar file '%s'\n", name, tab[_file].val);
 		if ( !debug ) syslog(LOG_INFO, "Importing LB sandbox tar file '%s'\n", msg);
 #ifdef JP_PERF
-		if (sink) perf_sandboxes++;
 		if (!(sink & 2)) {
 #endif
 		ret = soap_call___jpsrv__StartUpload(soap, tab[_jpps].val?:jpps, "", &su_in, &su_out);
@@ -859,6 +891,38 @@ static int gftp_put_file(const char *url, int fhnd)
 
     return (gError == GLOBUS_TRUE)? 1: 0;
 }
+
+#ifdef JP_PERF
+static void stats_init(perf_t *perf, const char *name) {
+	struct timeval tv;
+
+	memset(perf, 0, sizeof *perf);
+	perf->count = 0;
+	perf->name = strdup(name);
+	gettimeofday(&tv, NULL);
+	perf->start = tv.tv_sec + (double)tv.tv_usec / 1000000.0;
+	dprintf("[%s statistics] start detected\n", name);
+}
+
+static void stats_set_jobid(perf_t *perf, const char *jobid) {
+	perf->id = strdup(jobid + sizeof(PERF_JOBID_START_PREFIX) - 1);
+	dprintf("[%s statistics] ID %s\n", perf->name, perf->id);
+}
+
+static void stats_done(perf_t *perf) {
+	struct timeval tv;
+
+	gettimeofday(&tv, NULL);
+	perf->end = tv.tv_sec + (double)tv.tv_usec / 1000000.0;
+	dprintf("[%s statistics] %s\n", perf->name, perf->id);
+	dprintf("[%s statistics] start: %lf\n", perf->name, perf->start);
+	dprintf("[%s statistics] stop:  %lf\n", perf->name, perf->end);
+	dprintf("[%s statistics] count: %ld (%lf job/day)\n", perf->name, perf->count, 86400.0 * perf->count / (perf->end - perf->start));
+	free(perf->id);
+	free(perf->name);
+	memset(perf, 0, sizeof *perf);
+}
+#endif
 
 /* XXX: we don't use it */
 SOAP_NMAC struct Namespace namespaces[] = { {NULL,NULL} };

@@ -1,3 +1,7 @@
+#include <sys/time.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -33,7 +37,9 @@ char perf_ts[100];
 static int register_init();
 static int register_add(const char *jobid);
 static void get_time(char *s, size_t maxs, double *t);
-static int dump_init();
+static int dump_init(const char *start_jobid);
+static int dump_add(const char *filename);
+static void dump_done();
 
 
 static void handler(int sig) {
@@ -41,17 +47,19 @@ static void handler(int sig) {
 	signal(sig, SIG_DFL);
 }
 
+
 int main(int argc, char *argv[]) {
-	char start_jobid[256], stop_jobid[256];
+	char start_jobid[256], stop_jobid[256], *fn;
 	double ts, ts2;
 	int ret;
+	FILE *f;
 
 	get_time(perf_ts, sizeof(perf_ts), &ts);
 	snprintf(start_jobid, sizeof(start_jobid), PERF_JOBID_START_PREFIX "%s", perf_ts);
 	snprintf(stop_jobid, sizeof(stop_jobid), PERF_JOBID_STOP_PREFIX "%s", perf_ts);
 
 	if ((ret = register_init()) != 0) return ret;
-	if ((ret = dump_init()) != 0) return ret;
+	if ((ret = dump_init(start_jobid)) != 0) return ret;
 	if ((ret = register_add(start_jobid)) != 0) return ret;
 	if (signal(SIGINT, handler) == SIG_ERR) {
 		ret = errno;
@@ -65,7 +73,20 @@ int main(int argc, char *argv[]) {
 		if (argc > 1)
 			if ((ret = dump_add(argv[1])) != 0) return ret;
 	}
+	asprintf(&fn, PERF_STOP_FILE_FORMAT, perf_ts);
+	if ((f = fopen(fn, "wt")) == NULL) {
+		ret = errno;
+		free(fn);
+		fprintf(stderr, "Can' create file '%s': %s\n", fn, strerror(errno));
+		return ret;
+	}
+	free(fn);
+	fprintf(f, "regs\t%d\n", perf_regs);
+	fprintf(f, "dumps\t%d\n", perf_dumps);
+	fclose(f);
 	if ((ret = register_add(stop_jobid)) != 0) return ret;
+	dump_done();
+
 	get_time(NULL, -1, &ts2);
 	printf("stop:  %lf\n", ts2);
 	printf("regs:  %d (%lf jobs/day)\n", perf_regs, 86400.0 * perf_regs / (ts2-ts));
@@ -133,9 +154,11 @@ static int register_add(const char *jobid) {
 }
 
 
-static int dump_init() {
+static int dump_init(const char *start_jobid) {
         char *env;
+	FILE *f;
 
+	unlink(PERF_START_FILE);
 	// FIXME: is it OK? (probably different HEAD and branch)
         env = getenv("GLITE_LB_EXPORT_DUMPDIR");
         if (!env) env = EDG_DUMP_STORAGE;
@@ -143,7 +166,14 @@ static int dump_init() {
 	mkdir(dump_dir, 0755);
 	perf_dumps = 0;
 
-        return 0;       
+	if ((f = fopen(PERF_START_FILE, "wt")) == NULL) {
+		fprintf(stderr, "Can't create file '" PERF_START_FILE "': %s\n", strerror(errno));
+		return EIO;
+	}
+	if (start_jobid) fprintf(f, "%s\n", start_jobid);
+	fclose(f);
+
+        return 0;
 }
 
 
@@ -159,4 +189,8 @@ static int dump_add(const char *filename) {
 
 	perf_dumps++;
 	return ret;
+}
+
+
+static void dump_done() {
 }

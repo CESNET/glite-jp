@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <dirent.h>
+#include <stdio.h>
 
 
 #define COMPILE_WITH_LIBTAR
