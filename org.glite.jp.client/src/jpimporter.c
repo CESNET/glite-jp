@@ -137,7 +137,7 @@ static void usage(char *me)
 		"\t-t, --poll         maildir polling interval (in seconds)\n"
 		"\t-S, --store        keep uploaded jobs in this directory\n"
 #ifdef JP_PERF
-		"\t-K, --perf-sink    1=stats, 2=stats+run w/o WS calls\n"
+		"\t-K, --perf-sink    1=stats, 2=without WS calls, 3=stats+without WS\n"
 #endif
 		, me);
 }
@@ -462,13 +462,12 @@ static int reg_importer(void)
 			dprintf("[%s] Registering '%s'\n", name, msg);
 			if ( !debug ) syslog(LOG_INFO, "Registering '%s'\n", msg);
 #ifdef JP_PERF
-			if (sink) {
+			if ((sink & 1)) {
 				if (strncasecmp(msg, PERF_JOBID_START_PREFIX, sizeof(PERF_JOBID_START_PREFIX) - 1) == 0) {
 					stats_init(&perf, name);
 					stats_set_jobid(&perf, msg);
 				}
 				else if (strncasecmp(msg, PERF_JOBID_STOP_PREFIX, sizeof(PERF_JOBID_STOP_PREFIX) - 1) == 0) stats_done(&perf);
-				else perf.count++;
 			}
 			if (!(sink & 2)) {
 #endif
@@ -476,6 +475,10 @@ static int reg_importer(void)
 			if ( (ret = check_soap_fault(soap, ret)) ) break;
 #ifdef JP_PERF
 			} else ret = 0;
+			if ((sink & 1) && ret == 0) {
+				perf.count++;
+				dprintf("[%s statistics] done %ld\n", name, perf.count);
+			}
 #endif
 		} while (0);
 		edg_wll_MaildirTransEnd(reg_mdir, fname, ret? LBMD_TRANS_FAILED_RETRY: LBMD_TRANS_OK);
@@ -547,7 +550,7 @@ static int dump_importer(void)
 		dprintf("[%s] Importing LB dump file '%s'\n", name, tab[_file].val);
 		if ( !debug ) syslog(LOG_INFO, "Importing LB dump file '%s'\n", msg);
 #ifdef JP_PERF
-		if (sink) {
+		if ((sink & 1)) {
 		/* statistics started by file, ended by count limit (from the appropriate result fikle) */
 			FILE *f;
 			char *fn, item[200];
@@ -563,15 +566,10 @@ static int dump_importer(void)
 					unlink(PERF_START_FILE);
 					stats_set_jobid(&perf, item);
 				} else
-					dprintf("[%s statistics]: not started, fopen(\"" PERF_START_FILE "\") => %d\n", name, errno);
+					dprintf("[%s statistics]: not started/too much dumps: %s\n", name, strerror(errno));
 			}
 			if (perf.name) {
-				perf.count++;
-				if (perf.limit) {
-					dprintf("[%s statistics] done %ld/%ld\n", name, perf.count, perf.limit);
-					if (perf.count >= perf.limit) stats_done(&perf);
-				} else {
-					dprintf("[%s statistics] done %ld/no limit\n", name, perf.count);
+				if (!perf.limit) {
 					/* stopper */
 					asprintf(&fn, PERF_STOP_FILE_FORMAT, perf.id);
 					f = fopen(fn, "rt");
@@ -612,6 +610,14 @@ static int dump_importer(void)
 		dprintf("[%s] Dump upload succesfull\n", name);
 #ifdef JP_PERF
 		} else ret = 0;
+		if (perf.name && ret == 0) {
+			perf.count++;
+			if (perf.limit) {
+				dprintf("[%s statistics] done %ld/%ld\n", name, perf.count, perf.limit);
+				if (perf.count >= perf.limit) stats_done(&perf);
+			} else
+				dprintf("[%s statistics] done %ld/no limit\n", name, perf.count);
+		}
 #endif
 		if (store && *store) {
 			bname = strdup(tab[_file].val);
