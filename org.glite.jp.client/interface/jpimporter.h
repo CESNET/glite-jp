@@ -13,8 +13,8 @@
 #define GLITE_SANDBOX_IMPORTER_MDIR	"/tmp/jpsandbox"
 #endif 
 
-#define PERF_JOBID_START_PREFIX "https://start.megajob/START/"
-#define PERF_JOBID_STOP_PREFIX "https://stop.megajob/STOP/"
+#define PERF_JOBID_START_PREFIX "https://start.megajob/START-"
+#define PERF_JOBID_STOP_PREFIX "https://stop.megajob/STOP-"
 #define PERF_START_FILE		"/tmp/jp_megajob_start"
 #define PERF_STOP_FILE_FORMAT   "/tmp/jp_megajob_%s"
 

@@ -467,7 +467,7 @@ static int reg_importer(void)
 					stats_init(&perf, name);
 					stats_set_jobid(&perf, msg);
 				}
-				else if (strncasecmp(msg, PERF_JOBID_STOP_PREFIX, sizeof(PERF_JOBID_STOP_PREFIX) - 1) == 0) stats_done(&perf);
+				else if (perf.name && strncasecmp(msg, PERF_JOBID_STOP_PREFIX, sizeof(PERF_JOBID_STOP_PREFIX) - 1) == 0) stats_done(&perf);
 			}
 			if (!(sink & 2)) {
 #endif
@@ -475,7 +475,7 @@ static int reg_importer(void)
 			if ( (ret = check_soap_fault(soap, ret)) ) break;
 #ifdef JP_PERF
 			} else ret = 0;
-			if ((sink & 1) && ret == 0) {
+			if (perf.name && ret == 0) {
 				perf.count++;
 				dprintf("[%s statistics] done %ld\n", name, perf.count);
 			}
