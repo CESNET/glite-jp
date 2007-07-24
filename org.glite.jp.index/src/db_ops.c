@@ -342,7 +342,7 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 		GLITE_JP_DB_TYPE_INT, &locked,
 		GLITE_JP_DB_TYPE_VARCHAR, source, &source_len,
 		GLITE_JP_DB_TYPE_MEDIUMBLOB, dbconds, &dbconds_len);
-	if (glite_jp_db_prepare(jpctx, "INSERT INTO feeds (state, locked, source, condition) VALUES (?, ?, ?, ?)", &stmt, param, NULL) != 0) goto fail;
+	if (glite_jp_db_prepare(jpctx, "INSERT INTO feeds (state, locked, source, conditions) VALUES (?, ?, ?, ?)", &stmt, param, NULL) != 0) goto fail;
 	feeds = ctx->conf->feeds;
 	i = 0;
 	if (feeds) while (feeds[i]) {
