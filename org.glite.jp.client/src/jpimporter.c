@@ -74,7 +74,6 @@ static char	   	*server_cert = NULL,
 			*cadir = NULL;
 static gss_cred_id_t	mycred = GSS_C_NO_CREDENTIAL;
 static char		*mysubj;
-struct timeval		to = {JPPS_NO_RESPONSE_TIMEOUT, 0};
 #ifdef JP_PERF
 typedef struct {
 	char *id, *name;
@@ -118,6 +117,7 @@ static const char *get_opt_string = "hgp:r:d:s:i:t:c:k:C:"
 #ifdef JP_PERF
 static void stats_init(perf_t *perf, const char *name);
 static void stats_set_jobid(perf_t *perf, const char *jobid);
+static void stats_get_limit(perf_t *perf, const char *name);
 static void stats_done(perf_t *perf);
 #endif
 
@@ -159,7 +159,7 @@ static int dump_importer(void);
 static int sandbox_importer(void);
 static int parse_msg(char *, msg_pattern_t []);
 static int gftp_put_file(const char *, int);
-
+static int refresh_gsoap(struct soap *soap);
 
 
 int main(int argc, char *argv[])
@@ -290,7 +290,6 @@ int main(int argc, char *argv[])
 	glite_gsplugin_init_context(&plugin_ctx);
 	if (server_key) plugin_ctx->key_filename = strdup(server_key);
 	if (server_cert) plugin_ctx->cert_filename = strdup(server_cert);
-	glite_gsplugin_set_timeout(plugin_ctx, &to);
 
 	soap_register_plugin_arg(soap, glite_gsplugin,plugin_ctx);
 
@@ -424,6 +423,7 @@ static int reg_importer(void)
 			   *fname = NULL,
 			   *aux;
 
+	refresh_gsoap(soap);
 	if ( readnew ) ret = edg_wll_MaildirTransStart(reg_mdir, &msg, &fname);
 	else ret = edg_wll_MaildirRetryTransStart(reg_mdir, (time_t)30, (time_t)500, &msg, &fname);
 	if ( !ret ) { 
@@ -467,7 +467,7 @@ static int reg_importer(void)
 					stats_init(&perf, name);
 					stats_set_jobid(&perf, msg);
 				}
-				else if (perf.name && strncasecmp(msg, PERF_JOBID_STOP_PREFIX, sizeof(PERF_JOBID_STOP_PREFIX) - 1) == 0) stats_done(&perf);
+				if (perf.name && !perf.limit) stats_get_limit(&perf, name);
 			}
 			if (!(sink & 2)) {
 #endif
@@ -477,7 +477,11 @@ static int reg_importer(void)
 			} else ret = 0;
 			if (perf.name && ret == 0) {
 				perf.count++;
-				dprintf("[%s statistics] done %ld\n", name, perf.count);
+				if (perf.limit) {
+					dprintf("[%s statistics] done %ld/%ld\n", name, perf.count, perf.limit);
+					if (perf.count >= perf.limit) stats_done(&perf);
+				} else
+					dprintf("[%s statistics] done %ld/no limit\n", name, perf.count);
 			}
 #endif
 		} while (0);
@@ -515,6 +519,7 @@ static int dump_importer(void)
 #define				_proxy 3
 
 
+	refresh_gsoap(soap);
 	if ( readnew ) ret = edg_wll_MaildirTransStart(dump_mdir, &msg, &fname);
 	else ret = edg_wll_MaildirRetryTransStart(dump_mdir, (time_t)60, (time_t)600, &msg, &fname);
 	if ( !ret ) { 
@@ -553,8 +558,7 @@ static int dump_importer(void)
 		if ((sink & 1)) {
 		/* statistics started by file, ended by count limit (from the appropriate result fikle) */
 			FILE *f;
-			char *fn, item[200];
-			int count;
+			char item[200];
 
 			/* starter */
 			if (!perf.name) {
@@ -568,21 +572,7 @@ static int dump_importer(void)
 				} else
 					dprintf("[%s statistics]: not started/too much dumps: %s\n", name, strerror(errno));
 			}
-			if (perf.name) {
-				if (!perf.limit) {
-					/* stopper */
-					asprintf(&fn, PERF_STOP_FILE_FORMAT, perf.id);
-					f = fopen(fn, "rt");
-					free(fn);
-					if (f) {
-						fscanf(f, "%s\t%d", item, &count);
-						fscanf(f, "%s\t%d", item, &count);
-						dprintf("[%s statistics] expected %d %s\n", name, count, item);
-						fclose(f);
-						perf.limit = count;
-					}
-				}
-			}
+			if (perf.name && !perf.limit) stats_get_limit(&perf, name);
 		}
 		if (!(sink & 2)) {
 #endif
@@ -668,6 +658,7 @@ static int sandbox_importer(void)
 #define			_proxy 3
 
 
+	refresh_gsoap(soap);
 	if ( readnew ) ret = edg_wll_MaildirTransStart(sandbox_mdir, &msg, &fname);
 	else ret = edg_wll_MaildirRetryTransStart(sandbox_mdir, (time_t)60, (time_t) 600,&msg, &fname);
 	if ( !ret ) { 
@@ -898,6 +889,15 @@ static int gftp_put_file(const char *url, int fhnd)
     return (gError == GLOBUS_TRUE)? 1: 0;
 }
 
+
+static int refresh_gsoap(struct soap *soap) {
+	struct timeval		to = {JPPS_NO_RESPONSE_TIMEOUT, 0};
+
+	glite_gsplugin_set_timeout(glite_gsplugin_get_context(soap), &to);
+	return 0;
+}
+
+
 #ifdef JP_PERF
 static void stats_init(perf_t *perf, const char *name) {
 	struct timeval tv;
@@ -913,6 +913,24 @@ static void stats_init(perf_t *perf, const char *name) {
 static void stats_set_jobid(perf_t *perf, const char *jobid) {
 	perf->id = strdup(jobid + sizeof(PERF_JOBID_START_PREFIX) - 1);
 	dprintf("[%s statistics] ID %s\n", perf->name, perf->id);
+}
+
+static void stats_get_limit(perf_t *perf, const char *name) {
+	FILE *f;
+	char *fn, item[200];
+	int count;
+
+	/* stopper */
+	asprintf(&fn, PERF_STOP_FILE_FORMAT, perf->id);
+	f = fopen(fn, "rt");
+	free(fn);
+	if (f) {
+		fscanf(f, "%s\t%d", item, &count);
+		if (strcasecmp(item, name) != 0) fscanf(f, "%s\t%d", item, &count);
+		dprintf("[%s statistics] expected %d %s\n", name, count, item);
+		fclose(f);
+		perf->limit = count;
+	}
 }
 
 static void stats_done(perf_t *perf) {

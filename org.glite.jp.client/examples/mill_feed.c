@@ -124,6 +124,7 @@ int main(int argc, char *argv[]) {
 		if (now < last + duration) usleep(last + duration - now);
 		last = now;
 	}
+	if ((ret = register_add(stop_jobid, NULL)) != 0) return ret;
 	asprintf(&fn, PERF_STOP_FILE_FORMAT, perf_ts);
 	if ((f = fopen(fn, "wt")) == NULL) {
 		ret = errno;
@@ -132,10 +133,9 @@ int main(int argc, char *argv[]) {
 		return ret;
 	}
 	free(fn);
-	fprintf(f, "regs\t%d\n", perf_regs);
-	fprintf(f, "dumps\t%d\n", perf_dumps);
+	fprintf(f, "reg-imp\t%d\n", perf_regs);
+	fprintf(f, "dump-imp\t%d\n", perf_dumps);
 	fclose(f);
-	if ((ret = register_add(stop_jobid, NULL)) != 0) return ret;
 	dump_done();
 
 	get_time(NULL, -1, &ts2);
