@@ -485,7 +485,7 @@ int glite_jppsbe_start_upload(
 		/* XXX: gsoap does not like so much, one year should be enough
 		*commit_before_inout = (time_t) LONG_MAX;
 		*/
-		*commit_before_inout = time(NULL) + 365*24*60*60;
+		*commit_before_inout = time(NULL) + 5*60;//365*24*60*60;
 	
 	/* 
 	if (add_to_gridmap(ctx, peername)) {
@@ -494,6 +494,8 @@ int glite_jppsbe_start_upload(
 		goto error_out;
 	}
 	*/
+	else if (commit_before_inout > time(NULL) + 5*60)
+		commit_before_inout = time(NULL) + 5*60;
 
 	peerhash = str2md5(peername); /* static buffer */
 	if (store_user(ctx, peerhash, peername)) {
@@ -503,9 +505,21 @@ int glite_jppsbe_start_upload(
 	}
 
 	free(stmt); stmt = NULL;
+        trio_asprintf(&stmt,"delete from files where jobid = '%|Ss' and state = 'uploading' and deadline < %s", ju, glite_jp_db_timetodb(time(NULL)));
+        if (!stmt) {
+                err.code = ENOMEM;
+                goto error_out;
+        }
+        if (glite_jp_db_execstmt(ctx, stmt, NULL) < 0) {
+                err.code = EIO;
+                err.desc = "DB access failed";
+                goto error_out;
+        }
+
+	free(stmt); stmt = NULL;
 	trio_asprintf(&stmt,"insert into files"
 		"(jobid,filename,int_path,ext_url,state,deadline,ul_userid) "
-		"values ('%|Ss','%|Ss','%|Ss','%|Ss','%|Ss', '%|Ss', '%|Ss')",
+		"values ('%|Ss','%|Ss','%|Ss','%|Ss','%|Ss', %s, '%|Ss')",
 		ju, data_basename, data_fname, *destination_out, "uploading", 
 		glite_jp_db_timetodb(*commit_before_inout), peerhash);
 	if (!stmt) {
@@ -523,7 +537,7 @@ int glite_jppsbe_start_upload(
 		}
 		goto error_out;
 	}
-	
+
 error_out:
 	free(db_row[0]); free(db_row[1]);
 	free(stmt);
