@@ -32,7 +32,11 @@ fi
 # dump directory of bkserver
 if [ -z "$GLITE_LB_EXPORT_DUMPDIR" ]; then
   GLITE_LB_EXPORT_DUMPDIR=/tmp/dump
-  echo "GLITE_LB_EXPORT_DUMPDIR not specified (-D arguent of the bkserver), used $GLITE_LB_EXPORT_DUMPDIR"
+  echo "GLITE_LB_EXPORT_DUMPDIR not specified (-D argument of the bkserver), used $GLITE_LB_EXPORT_DUMPDIR"
+fi
+if [ -z "$GLITE_LB_EXPORT_PURGEDIR" ]; then
+  GLITE_LB_EXPORT_PURGEDIR=/tmp/purge
+  echo "GLITE_LB_EXPORT_PURGEDIR not specified (-S argument of the bkserver), used $GLITE_LB_EXPORT_PURGEDIR"
 fi
 # LB maildir for job registration
 if [ -z "$GLITE_LB_EXPORT_JPREG_MAILDIR" ]; then
@@ -74,8 +78,8 @@ trap "kill $JP_PID; exit 0" SIGINT
 
 while [ 1 ]; do
   $PREFIX/sbin/glite-lb-purge $GLITE_LB_EXPORT_PURGE_ARGS -l -m $GLITE_LB_EXPORT_BKSERVER -s
-
-  for file in $GLITE_LB_EXPORT_DUMPDIR/*; do
+  list=`ls $GLITE_LB_EXPORT_PURGEDIR/* 2>/dev/null`
+  for file in $list; do
     if [ -s $file ]; then
       $PREFIX/sbin/glite-lb-lb_dump_exporter -d $file -s $GLITE_LB_EXPORT_JOBSDIR -m $GLITE_LB_EXPORT_JPDUMP_MAILDIR
       if [ -n "$GLITE_LB_EXPORT_DUMPDIR_KEEP" ]; then

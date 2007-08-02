@@ -104,6 +104,7 @@ int main(int argc, char *argv[]) {
 	}
 	if (speed) printf("speed:     %d jobs/day (delay %lf)\n", speed, duration / 1000000.0);
 	else printf("speed:     unlimited\n");
+	printf("dump:      %s\n", dumpfile ? dumpfile : "(none)");
 	printf("reg-mdir:  %s\n", jpreg_dir);
 	printf("dump-mdir: %s\n", dump_dir);
 	printf("start:     %lf\n", ts);
@@ -260,9 +261,9 @@ static int dump_init(const char *start_jobid, const char *filename) {
 	}
 //for (i = 0; i < dump_tokens; i++) printf("####%s\n", dump_index[i]);
 
-	// FIXME: is it OK? (probably different HEAD and branch)
 	if (!dump_dir) {
-	        env = getenv("GLITE_LB_EXPORT_DUMPDIR");
+		// wrong purging to GLITE_LB_EXPORT_DUMPDIR on older versions
+	        env = getenv("GLITE_LB_EXPORT_PURGEDIR");
         	if (env) dump_dir = strdup(env);
 		else dump_dir = strdup(EDG_DUMP_STORAGE);
 	}
