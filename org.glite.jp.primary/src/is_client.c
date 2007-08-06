@@ -44,7 +44,7 @@ static int check_other_soap(glite_jp_context_t ctx)
 	if (!ctx->other_soap) {
 		glite_gsplugin_init_context(&plugin_ctx);
 		if (server_key || server_cert) {
-			gss_cred_id_t cred;
+			edg_wll_GssCred cred;
 
 			ret = edg_wll_gss_acquire_cred_gsi(server_cert, server_key, &cred, NULL, NULL);
 			glite_gsplugin_set_credential(plugin_ctx, cred);
