@@ -60,7 +60,7 @@ static struct glite_srvbones_service stab = {
 
 static time_t 		cert_mtime;
 static char 		*server_cert, *server_key, *cadir;
-static gss_cred_id_t 	mycred = GSS_C_NO_CREDENTIAL;
+static edg_wll_GssCred 	mycred = NULL;
 static char 		*mysubj;
 
 static char 		*port = GLITE_JPIS_DEFAULT_PORT_STR;
@@ -393,12 +393,10 @@ int newconn(int conn,struct timeval *to,void *data)
 	glite_jp_context_t	ctx = private->ctx->jpctx;
 	glite_gsplugin_Context	plugin_ctx;
 
-	gss_cred_id_t		newcred = GSS_C_NO_CREDENTIAL;
+	edg_wll_GssCred		newcred = NULL;
 	edg_wll_GssStatus	gss_code;
-	gss_name_t		client_name = GSS_C_NO_NAME;
-	gss_buffer_desc		token = GSS_C_EMPTY_BUFFER;
-	OM_uint32		maj_stat,min_stat;
 	int			ret = 0;
+	edg_wll_GssPrincipal	client = NULL;
 	edg_wll_GssConnection	connection;
 
 
@@ -415,7 +413,7 @@ int newconn(int conn,struct timeval *to,void *data)
 			{
 
 				printf("[%d] reloading credentials\n",getpid()); /* XXX: log */
-				gss_release_cred(&min_stat,&mycred);
+				edg_wll_gss_release_cred(&mycred, NULL);
 				mycred = newcred;
 			}
 			break;
@@ -437,26 +435,19 @@ int newconn(int conn,struct timeval *to,void *data)
 		goto cleanup;
 	}
 
-	maj_stat = gss_inquire_context(&min_stat,connection.context,
-			&client_name, NULL, NULL, NULL, NULL, NULL, NULL);
-
-	if (!GSS_ERROR(maj_stat))
-		maj_stat = gss_display_name(&min_stat,client_name,&token,NULL);
+        ret = edg_wll_gss_get_client_conn(&connection, &client, NULL);
 
 	if (ctx->peer) free(ctx->peer);
-	if (!GSS_ERROR(maj_stat)) {
-		printf("[%d] client DN: %s\n",getpid(),(char *) token.value); /* XXX: log */
-
-		ctx->peer = strdup(token.value);
-		memset(&token, 0, sizeof(token));
-	}
-	else {
+	if (ret || client->flags & EDG_WLL_GSS_FLAG_ANON) {
 		printf("[%d] annonymous client\n",getpid());
 		ctx->peer = NULL;
 	}
+	else {
+		printf("[%d] client DN: %s\n",getpid(),client->name); /* XXX: log */
 
-	if (client_name != GSS_C_NO_NAME) gss_release_name(&min_stat, &client_name);
-	if (token.value) gss_release_buffer(&min_stat, &token);
+		ctx->peer = strdup(client->name);
+		edg_wll_gss_free_princ(client);
+	}
 
 	glite_gsplugin_init_context(&plugin_ctx);
 	glite_gsplugin_set_connection(plugin_ctx, &connection);

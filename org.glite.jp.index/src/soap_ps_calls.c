@@ -49,7 +49,7 @@ static int find_dest_index(glite_jp_is_conf *conf, long int uniqueid)
 
 
 static int refresh_gsoap(glite_jpis_context_t ctx, struct soap *soap) {
-	gss_cred_id_t		cred;
+	edg_wll_GssCred		cred;
 	edg_wll_GssStatus	gss_code;
 	char			*et;
 	// preventive very long timeout
