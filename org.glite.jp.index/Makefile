@@ -11,7 +11,6 @@ version=0.0.0
 PREFIX=/opt/glite
 
 glite_location=/opt/glite
-globus_prefix=/opt/globus
 nothrflavour=gcc32
 thrflavour=gcc32pthr
 expat_prefix=/opt/expat
@@ -24,14 +23,8 @@ CC=gcc
 
 VPATH=${top_srcdir}/src:${top_srcdir}/examples:${top_srcdir}/project:${top_srcdir}/doc:${jpproject}:${stagedir}/interface
 
-GLOBUS_LIBS:=-L${globus_prefix}/lib \
-	-lglobus_common_${nothrflavour} \
-	-lglobus_gssapi_gsi_${nothrflavour}
-
-GLOBUS_CFLAGS:=-I${globus_prefix}/include/${nothrflavour}
-
 DEBUG:=-W -Wall -g -O0
-CPPFLAGS:=-DDEBUG -D_GNU_SOURCE -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${gsoap_prefix} -I${stagedir}/include ${GLOBUS_CFLAGS} -I${gsoap_prefix}/include
+CPPFLAGS:=-DDEBUG -D_GNU_SOURCE -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${gsoap_prefix} -I${stagedir}/include -I${gsoap_prefix}/include
 CFLAGS:=${DEBUG} ${CFLAGS}
 LDFLAGS:=-L${stagedir}/lib
 
@@ -77,13 +70,14 @@ COMMONLIB:=-lglite_jp_common_${nothrflavour}
 SRVCOMMONLIB:=-lglite_jp_server_common
 BONESLIB:=-lglite_lb_server_bones
 TRIOLIB:=-lglite_jp_trio
+GSSLIB:=-lglite_security_gss_${nothrflavour}
 
 default all: compile doc
 
 compile: ${daemon} ${examples}
 
 ${daemon}: ${OBJS}
-	${LINK} -o $@ -export-dynamic ${OBJS} ${BONESLIB} ${TRIOLIB} ${COMMONLIB} ${GSOAPLIB} ${SRVCOMMONLIB}
+	${LINK} -o $@ -export-dynamic ${OBJS} ${BONESLIB} ${TRIOLIB} ${COMMONLIB} ${GSOAPLIB} ${SRVCOMMONLIB} ${GSSLIB}
 
 glite-jpis-test: ${EXA_TEST_OBJS}
 	${LINK} -o $@ $+ ${GSOAPLIB} ${COMMONLIB} ${TRIOLIB} ${SRVCOMMONLIB}
