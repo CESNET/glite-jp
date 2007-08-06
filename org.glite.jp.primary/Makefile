@@ -11,7 +11,6 @@ version=0.0.0
 PREFIX=/opt/glite
 
 glite_location=/opt/glite
-globus_prefix=/opt/globus
 nothrflavour=gcc32
 thrflavour=gcc32pthr
 expat_prefix=/opt/expat
@@ -24,10 +23,6 @@ CC=gcc
 
 VPATH=${top_srcdir}/src:${top_srcdir}/examples:${top_srcdir}/test:${top_srcdir}/project:${stagedir}/interface
 
-GLOBUS_LIBS:=-L${globus_prefix}/lib \
-	-lglobus_common_${nothrflavour} \
-	-lglobus_gssapi_gsi_${nothrflavour}
-
 ifneq (${classads_prefix},/usr)
         classadslib := -L${classads_prefix}/lib -lclassad
 endif
@@ -36,11 +31,9 @@ CLASSADPLUGIN_LIBS:= ${classadslib} -lstdc++
 
 CLASSADPLUGIN_LOBJS:= classad_plugin.lo
 
-GLOBUS_CFLAGS:=-I${globus_prefix}/include/${nothrflavour}
-
 DEBUG:=-g -O0  -DDEBUG
 
-CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${gsoap_prefix} -I${stagedir}/include ${GLOBUS_CFLAGS} -I${mysql_prefix}/include -I${mysql_prefix}/include/mysql -I${classads_prefix}/include -I${libtar_prefix}/include
+CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${gsoap_prefix} -I${stagedir}/include -I${mysql_prefix}/include -I${mysql_prefix}/include/mysql -I${classads_prefix}/include -I${libtar_prefix}/include
 LDFLAGS:=-L${stagedir}/lib
 
 LINK:=libtool --mode=link ${CC} ${LDFLAGS} 
@@ -89,6 +82,7 @@ BONESLIB:=-lglite_lb_server_bones
 GSOAPLIB:=-L${stagedir}/lib -lglite_security_gsoap_plugin_${dotless_soap_ver}_${nothrflavour} 
 TRIOLIB:=-lglite_jp_trio
 LIBTARLIB:=-L${libtar_prefix}/lib -ltar
+GSSLIB:=-lglite_security_gss_${nothrflavour}
 
 archlib:=lib
 host_cpu:=${shell uname -m}
@@ -111,7 +105,7 @@ default all: compile
 compile: ${daemon} ${example} ${plugins}
 
 ${daemon}: ${OBJS}
-	${LINK} -o $@ -export-dynamic ${OBJS} ${BONESLIB} ${TRIOLIB} ${COMMONLIB} ${GSOAPLIB} ${GLOBUS_LIBS} ${MYSQLIB} 
+	${LINK} -o $@ -export-dynamic ${OBJS} ${BONESLIB} ${TRIOLIB} ${COMMONLIB} ${GSOAPLIB} ${MYSQLIB} ${GSSLIB}
 
 jpps-test: ${TEST_OBJS}
 	${LINK} -o $@ ${TEST_OBJS} ${GSOAPLIB}
