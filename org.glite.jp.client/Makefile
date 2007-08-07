@@ -26,8 +26,6 @@ STAGETO=include/${globalprefix}/${jpprefix}
 VPATH=${top_srcdir}/src:${top_srcdir}/examples:${top_srcdir}/project$:${top_srcdir}/interface:${stagedir}/interface:${top_srcdir}/build
 
 GLOBUS_LIBS:=-L${globus_prefix}/lib \
-	-lglobus_common_${nothrflavour} \
-	-lglobus_gssapi_gsi_${nothrflavour} \
 	-lglobus_ftp_client_${nothrflavour} \
 	-lglobus_ftp_control_${nothrflavour}
 

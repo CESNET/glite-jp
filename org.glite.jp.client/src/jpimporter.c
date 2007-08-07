@@ -83,7 +83,7 @@ static time_t		cert_mtime;
 static char	   	*server_cert = NULL,
 			*server_key = NULL,
 			*cadir = NULL;
-static gss_cred_id_t	mycred = GSS_C_NO_CREDENTIAL;
+static edg_wll_GssCred	mycred = NULL;
 static char		*mysubj;
 struct timeval		to = {JPPS_NO_RESPONSE_TIMEOUT, 0};
 
@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
 	char			*name,
 				pidfile[PATH_MAX] = GLITE_JPIMPORTER_PIDFILE;
 	glite_gsplugin_Context	plugin_ctx;
-	gss_cred_id_t		cred;
+	edg_wll_GssCred		cred;
 
 	name = strrchr(argv[0],'/');
 	if (name) name++; else name = argv[0];
