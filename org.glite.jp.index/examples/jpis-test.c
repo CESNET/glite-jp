@@ -92,7 +92,7 @@ int main(int argc,char *argv[])
 			memset(rec, 0, sizeof(*rec));
 			rec->jobid = soap_strdup(soap, "https://localhost:7846/pokus1");
 			{
-				gss_cred_id_t		cred = GSS_C_NO_CREDENTIAL;
+				edg_wll_GssCred		cred = NULL;
 				edg_wll_GssStatus	gss_code;
 				char			*subject = NULL;
 
