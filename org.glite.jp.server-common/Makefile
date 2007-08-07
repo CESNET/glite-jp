@@ -11,7 +11,6 @@ version=0.0.0
 PREFIX=/opt/glite
 
 glite_location=/opt/glite
-globus_prefix=/opt/globus
 nothrflavour=gcc32
 thrflavour=gcc32pthr
 
@@ -36,10 +35,6 @@ COMPILE:=libtool --mode=compile ${CC} ${CPPFLAGS} ${CFLAGS}
 LINK:=libtool --mode=link ${CC} -rpath ${stagedir}/lib ${LDFLAGS} 
 LIBLINK:=${LINK} ${version_info}
 INSTALL:=libtool --mode=install install
-
-GLOBUS_LIBS:=-L${globus_prefix}/lib \
-	-lglobus_common_${nothrflavour} \
-	-lglobus_gssapi_gsi_${nothrflavour}
 
 STATICLIB:=libglite_jp_server_common.a
 LTLIB:=libglite_jp_server_common.la
@@ -77,7 +72,7 @@ ${LTLIB} ${STATICLIB}: ${OBJS}
 examples: db-test-int
 
 db-test-int: db-test-int.o
-	${LINK} -o $@ $+ ${STATICLIB} ${MYSQLIB} -lglite_jp_common_${nothrflavour}  ${GLOBUS_LIBS}
+	${LINK} -o $@ $+ ${STATICLIB} ${MYSQLIB} -lglite_jp_common_${nothrflavour}
 
 check: 
 	-echo nothing yet
