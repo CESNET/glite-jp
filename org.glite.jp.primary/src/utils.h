@@ -1,5 +1,5 @@
-#ifndef __GLITE_JP_UTILS
-#define __GLITE_JP_UTILS
+#ifndef GLITE_JP_UTILS_H
+#define GLITE_JP_UTILS_H
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -24,5 +24,4 @@ char* glite_jpps_get_namespace(
 	const char* attr
 );
 
-#endif
-
+#endif /* GLITE_JP_UTILS_H */

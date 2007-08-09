@@ -1,5 +1,5 @@
-#ifndef __GLITE_JP_KNOWN_ATTR
-#define __GLITE_JP_KNOWN_ATTR
+#ifndef GLITE_JP_KNOWN_ATTR_H
+#define GLITE_JP_KNOWN_ATTR_H
 
 /** Namespace of JP system attributes */
 #define GLITE_JP_SYSTEM_NS	"http://egee.cesnet.cz/en/Schema/JP/System"
@@ -38,4 +38,4 @@
 #define GLITE_JP_ISB_CONTENT_NS     GLITE_JP_ISB_NS ":content"
 #define GLITE_JP_OSB_CONTENT_NS     GLITE_JP_OSB_NS ":content"
 
-#endif
+#endif /* GLITE_JP_KNOWN_ATTR_H */

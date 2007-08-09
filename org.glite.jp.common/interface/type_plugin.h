@@ -1,5 +1,5 @@
-#ifndef __GLITE_JP_TYPEPLUGIN
-#define __GLITE_JP_TYPEPLUGIN
+#ifndef GLITE_JP_TYPEPLUGIN_H
+#define GLITE_JP_TYPEPLUGIN_H
 
 typedef struct _glite_jp_tplug_data_t {
 	
@@ -71,4 +71,4 @@ typedef int (*glite_jp_tplug_init_t)(
 	glite_jp_tplug_data_t	*plugin_data
 );
 
-#endif
+#endif /* GLITE_JP_TYPEPLUGIN_H */

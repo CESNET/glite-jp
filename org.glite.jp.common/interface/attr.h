@@ -1,5 +1,5 @@
-#ifndef __GLITE_JP_ATTR
-#define __GLITE_JP_ATTR
+#ifndef GLITE_JP_ATTR_H
+#define GLITE_JP_ATTR_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,4 +29,4 @@ char * glite_jp_time2attr(time_t);
 #endif
 
 
-#endif
+#endif /* GLITE_JP_ATTR_H */

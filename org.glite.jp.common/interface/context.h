@@ -1,5 +1,5 @@
-#ifndef __GLITE_JP_CONTEXT
-#define __GLITE_JP_CONTEXT
+#ifndef GLITE_JP_CONTEXT_H
+#define GLITE_JP_CONTEXT_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -23,4 +23,4 @@ int glite_jp_run_deferred(glite_jp_context_t);
 };
 #endif
 
-#endif
+#endif /* GLITE_JP_CONTEXT_H */

@@ -1,5 +1,5 @@
-#ifndef __GLITE_JP_BACKEND
-#define __GLITE_JP_BACKEND
+#ifndef GLITE_JP_BACKEND_H
+#define GLITE_JP_BACKEND_H
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -160,4 +160,4 @@ int glite_jppsbe_read_feeds(
 	glite_jp_context_t ctx
 );
 
-#endif
+#endif /* GLITE_JP_BACKEND_H */

@@ -1,5 +1,5 @@
-#ifndef __GLITE_JP_TYPES
-#define __GLITE_JP_TYPES
+#ifndef GLITE_JP_TYPES_H
+#define GLITE_JP_TYPES_H
 
 #include <sys/time.h>
 
@@ -63,4 +63,4 @@ typedef struct {
 	glite_jp_attr_orig_t origin;
 } glite_jp_query_rec_t;
 
-#endif
+#endif /* GLITE_JP_TYPES_H */
