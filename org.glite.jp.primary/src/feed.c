@@ -495,15 +495,13 @@ static int feed_query_callback(
 			goto cleanup;
 	}
 
-/* no attributes known -- can't match */
-	if (!other) goto cleanup;
-
 /* filter on non-meta query items */
-	for (i=0; i<f->nother_qry; i++) {
-		for (j=0; other[j].name; j++) 
-			if (check_qry_item(ctx,f->other_qry+i,other+j)) break;
-		if (!other[j].name) goto cleanup; /* no match is not an error */
-	}
+	if (other)
+		for (i=0; i<f->nother_qry; i++) {
+			for (j=0; other[j].name; j++) 
+				if (check_qry_item(ctx,f->other_qry+i,other+j)) break;
+			if (!other[j].name) goto cleanup; /* no match is not an error */
+		}
 
 /* extract attributes to be fed, stack the job for a batch feed */
 	for (i=0; meta && meta[i].name; i++)
@@ -514,13 +512,14 @@ static int feed_query_callback(
 				nout++;
 			}
 
-	for (i=0; other[i].name; i++) 
-		for (j=0; j<f->int_other_attr; j++)
-			if (!strcmp(other[i].name,f->other_attr[j])) {
-				out = realloc(out,(nout+2) * sizeof *out);
-				glite_jp_attrval_copy(out+nout,other+i);
-				nout++;
-			}
+	if (other)
+		for (i=0; other[i].name; i++) 
+			for (j=0; j<f->int_other_attr; j++)
+				if (!strcmp(other[i].name,f->other_attr[j])) {
+					out = realloc(out,(nout+2) * sizeof *out);
+					glite_jp_attrval_copy(out+nout,other+i);
+					nout++;
+				}
 
 	if (nout) {
 		int	oi;
