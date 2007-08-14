@@ -28,10 +28,10 @@
 #define TABLE_PREFIX_DATA "attr_"
 #define SQLCMD_DROP_DATA_TABLE "DROP TABLE " TABLE_PREFIX_DATA "%s"
 #define SQLCMD_CREATE_DATA_TABLE "CREATE TABLE " TABLE_PREFIX_DATA "%s (\n\
-        jobid          CHAR(32)    BINARY NOT NULL,\n\
-        value          %s          BINARY NOT NULL,\n\
-        full_value     %s          NOT NULL,\n\
-        origin         INT         NOT NULL,\n\
+        `jobid`          CHAR(32)    BINARY NOT NULL,\n\
+        `value`          %s          BINARY NOT NULL,\n\
+        `full_value`     %s          NOT NULL,\n\
+        `origin`         INT         NOT NULL,\n\
 \n\
         INDEX (jobid),\n\
         INDEX (value)\n\
@@ -343,7 +343,7 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 		GLITE_JP_DB_TYPE_INT, &locked,
 		GLITE_JP_DB_TYPE_VARCHAR, source, &source_len,
 		GLITE_JP_DB_TYPE_MEDIUMBLOB, dbconds, &dbconds_len);
-	if (glite_jp_db_prepare(jpctx, "INSERT INTO feeds (state, locked, source, conditions) VALUES (?, ?, ?, ?)", &stmt, param, NULL) != 0) goto fail;
+	if (glite_jp_db_prepare(jpctx, "INSERT INTO feeds (state, locked, source, condition) VALUES (?, ?, ?, ?)", &stmt, param, NULL) != 0) goto fail;
 	feeds = ctx->conf->feeds;
 	i = 0;
 	if (feeds) while (feeds[i]) {

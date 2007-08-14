@@ -515,7 +515,7 @@ CREATE TABLE `feeds` (
   `locked` int(11) NOT NULL default '0',
   `source` varchar(255) NOT NULL default '',
   `expires` datetime default NULL,
-  `conditions` mediumblob,
+  `condition` mediumblob,
   PRIMARY KEY  (`uniqueid`),
   UNIQUE KEY `feedid` (`feedid`),
   KEY `uniqueid` (`uniqueid`),
