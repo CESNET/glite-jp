@@ -18,6 +18,7 @@
 #include "conf.h"
 #include "context.h"
 #include "db_ops.h"
+#include "common.h"
 
 
 #ifndef LOG_SQL
@@ -647,6 +648,10 @@ int glite_jpis_lazyInsertJob(glite_jpis_context_t ctx, const char *ps, const cha
 
 	lprintf("\n");
 
+	if (!jobid || !owner) {
+		glite_jpis_stack_error(ctx->jpctx, EINVAL, "jobid and owner is mandatory (jobid=%s, owner=%s)!\n", jobid, owner);
+		goto fail;
+	}
 	md5_jobid = str2md5(jobid);
 	md5_cert = str2md5(owner);
 	GLITE_JPIS_PARAM(ctx->param_jobid, ctx->param_jobid_len, md5_jobid);
