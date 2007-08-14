@@ -297,6 +297,9 @@ int glite_jpps_match_file(
 		attrs = attrs2;
 	}
 
+	vals = malloc(sizeof *vals);
+	vals[0].name = NULL;
+
 	for (pi=0; pd[pi]; pi++) {
 		int	ci;
 		for (ci=0; pd[pi]->uris[ci]; ci++) if (!strcmp(pd[pi]->classes[ci],class)) {
