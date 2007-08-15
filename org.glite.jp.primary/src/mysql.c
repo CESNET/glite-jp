@@ -122,6 +122,7 @@ int glite_jp_db_execstmt(glite_jp_context_t ctx,char *txt,glite_jp_db_stmt_t *st
 					glite_jp_stack_error(ctx,&err);
 					return -1;
 					break;
+				case CR_SERVER_GONE_ERROR:
 				case CR_SERVER_LOST:
 					if (retry_nr <= 0) 
 						do_reconnect = 1;
