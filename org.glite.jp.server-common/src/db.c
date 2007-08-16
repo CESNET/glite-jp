@@ -111,6 +111,7 @@ static int my_isokstmt(glite_jp_db_stmt_t jpstmt, const char *source, int line, 
 			jp_err(jpstmt->ctx, EEXIST, mysql_stmt_error(jpstmt->stmt), source, line);
 			return -1;
 			break;
+		case CR_SERVER_GONE_ERROR:
 		case CR_SERVER_LOST:
 			if (*retry > 0) {
 				(*retry)--;
@@ -212,6 +213,7 @@ int glite_jp_db_execstmt(glite_jp_context_t ctx,const char *txt,glite_jp_db_stmt
 					JP_ERR(ctx, EEXIST, mysql_error((MYSQL *) ctx->dbhandle));
 					return -1;
 					break;
+				case CR_SERVER_GONE_ERROR:
 				case CR_SERVER_LOST:
 					if (retry_nr <= 0) 
 						do_reconnect = 1;
