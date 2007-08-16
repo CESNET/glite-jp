@@ -153,7 +153,7 @@ static int checkIndexedConditions(glite_jpis_context_t ctx, struct _jpelem__Quer
 	for (k=0; k < in->__sizeconditions; k++) {
 		for (j=0; j < i; j++) {
 			char *attr = GLITE_SECURITY_GSOAP_LIST_GET(in->conditions, k)->attr;
-			if (!strcmp(attr, GLITE_JP_ATTR_JOBID) || !strcmp(attr, indexed_attrs[j])) {
+			if (!strcasecmp(attr, GLITE_JP_ATTR_JOBID) || !strcasecmp(attr, indexed_attrs[j])) {
 				ret = 0;
 				goto end;
 			}
@@ -295,7 +295,7 @@ static char *get_sql_or(glite_jpis_context_t ctx, struct jptype__indexQuery *con
 		if (record->op == jptype__queryOp__EXISTS) {
 			/* no additional conditions needed when existing is enough */
 		} else {
-			if (strcmp(condition->attr, GLITE_JP_ATTR_JOBID) == 0) {
+			if (strcasecmp(condition->attr, GLITE_JP_ATTR_JOBID) == 0) {
 				value = get_sql_stringvalue(record->value);
 				if (!value) goto err;
 				value2 = get_sql_stringvalue(record->value2);
@@ -340,12 +340,12 @@ static int get_jobids(glite_jpis_context_t ctx, struct _jpelem__QueryJobs *in, c
 		condition = GLITE_SECURITY_GSOAP_LIST_GET(in->conditions, i);
 
 		/* attr name */
-		if (strcmp(condition->attr, GLITE_JP_ATTR_JOBID) == 0) {
+		if (strcasecmp(condition->attr, GLITE_JP_ATTR_JOBID) == 0) {
 			/* no subset from attr_ table, used jobs table instead */
 			attr_md5 = NULL;
 			qa = strdup("");
 		} else {
-			attr_md5 = str2md5(condition->attr);
+			attr_md5 = glite_jpis_attr_name2id(condition->attr);
 			add_attr_table(attr_md5, &attr_tables);
 
 			/* origin */
@@ -459,7 +459,7 @@ static int get_attr(struct soap *soap, glite_jpis_context_t ctx, char *jobid, ch
 
 	memset(&jav,0,sizeof(jav));
 	jobid_md5 = str2md5(jobid);
-	attr_md5 = str2md5(attr_name);
+	attr_md5 = glite_jpis_attr_name2id(attr_name);
 	trio_asprintf(&query,"SELECT full_value FROM attr_%|Ss WHERE jobid = \"%s\"",
 		attr_md5, jobid_md5);
 	free(attr_md5);

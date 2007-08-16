@@ -7,6 +7,7 @@
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>
+#include <ctype.h>
 
 #include <glite/jp/types.h>
 #include <glite/jp/context.h>
@@ -260,7 +261,17 @@ fail:
  * Convert attribute name to attribute id.
  */
 char *glite_jpis_attr_name2id(const char *name) {
-	return str2md5(name);
+	size_t i, len;
+	char *lname, *id;
+
+	len = strlen(name);
+	lname = malloc(len + 1);
+	for (i = 0; i < len + 1; i++) lname[i] = tolower(name[i]);
+	id = str2md5(lname);
+	free(lname);
+
+	return id;
+//	return str2md5(name);
 }
 
 
