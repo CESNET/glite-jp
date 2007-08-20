@@ -189,8 +189,11 @@ static int match_feed(
 	}
 	else {
 		if (!owner) {
+			for (i=0; meta[i].name; i++) glite_jp_attrval_free(meta+i,0);
+			memset(meta,0,sizeof meta);
+			meta[0].name = strdup(GLITE_JP_ATTR_OWNER);
 			glite_jppsbe_get_job_metadata(ctx,job,meta);
-			for (i=0; meta[i].name && strcmp(meta[i].name,GLITE_JP_ATTR_OWNER); i++);
+			owner = meta[0].value;
 		}
 		glite_jpps_single_feed(ctx,feed->id,0,feed->destination,job,owner,attrs);
 	}
