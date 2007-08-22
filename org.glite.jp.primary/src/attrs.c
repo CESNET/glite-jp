@@ -144,7 +144,7 @@ int glite_jpps_get_attrs(glite_jp_context_t ctx,const char *job,char **attr,int 
 			nout = merge_attrvals(&out, nout, tag_out);
 			free(tag_out); tag_out = NULL;
 		}
-		for (j = 0; known_namespaces[j].namespace; j++) {
+		for (j = 0; known_namespaces && known_namespaces[j].namespace; j++) {
 			char* attr_namespace = glite_jpps_get_namespace(other[i]);
 			if (strcmp(attr_namespace, known_namespaces[j].namespace) == 0){
 				for (k = 0; known_namespaces[j].plugins[k]; k++)
