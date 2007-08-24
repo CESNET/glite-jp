@@ -42,6 +42,7 @@ int glite_jp_db_connect(glite_jp_context_t ctx,char *cs)
 	char	*buf = NULL;
 	char	*host,*user,*pw,*db; 
 	char	*slash,*at,*colon;
+	my_bool	reconnect = 1;
 
 	glite_jp_error_t err;
 
@@ -57,6 +58,7 @@ int glite_jp_db_connect(glite_jp_context_t ctx,char *cs)
 	}
 
 	mysql_options(ctx->dbhandle, MYSQL_READ_DEFAULT_FILE, "my");
+	mysql_options(ctx->dbhandle, MYSQL_OPT_RECONNECT, &reconnect);
 
 	host = user = pw = db = NULL;
 
