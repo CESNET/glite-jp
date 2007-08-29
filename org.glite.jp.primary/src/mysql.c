@@ -58,7 +58,9 @@ int glite_jp_db_connect(glite_jp_context_t ctx,char *cs)
 	}
 
 	mysql_options(ctx->dbhandle, MYSQL_READ_DEFAULT_FILE, "my");
+#ifdef MYSQL_OPT_RECONNECT
 	mysql_options(ctx->dbhandle, MYSQL_OPT_RECONNECT, &reconnect);
+#endif
 
 	host = user = pw = db = NULL;
 
