@@ -7,7 +7,7 @@
 #include "glite/jp/strmd5.h"
 #include "glite/jp/attr.h"
 #include "glite/jp/known_attr.h"
-#include "glite/lb/trio.h"
+#include "glite/jp/trio.h"
 
 #include "jp_H.h"
 #include "soap_version.h"
