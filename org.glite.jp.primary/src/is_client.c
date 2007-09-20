@@ -174,6 +174,7 @@ int glite_jpps_single_feed(
 )
 {
 	int	retry,ret;
+	assert(owner);
 	for (retry = 0; retry < MAX_RETRY; retry++) {
 		if ((ret = glite_jpps_single_feed_wrapped(ctx,feed,done,destination,job,owner,attrs)) == 0) break;
 		sleep(RETRY_SLEEP);
@@ -221,6 +222,8 @@ static int glite_jpps_multi_feed_wrapped(
 		jr->jobid = jobs[i];
 		jr->owner = owners[i];
 
+		assert(jr->owner);
+
 		jr->__sizeattributes = jp2s_attrValues(ctx->other_soap,
 			attrs[i],
 			&jr->attributes,0);
@@ -230,6 +233,7 @@ static int glite_jpps_multi_feed_wrapped(
 		jr->primaryStorage = &ctx->myURL;
 	}
 
+	//#ifndef JP_PERF
 	SWITCH_SOAP_CTX
 	check_fault(ctx,ctx->other_soap,
 		soap_call___jpsrv__UpdateJobs(ctx->other_soap,destination,"", &in,&out));
@@ -239,6 +243,7 @@ static int glite_jpps_multi_feed_wrapped(
 		attrValues_free(ctx->other_soap,jr->attributes,jr->__sizeattributes);
 	}
 	GLITE_SECURITY_GSOAP_LIST_DESTROY(ctx->other_soap, &in, jobAttributes);
+	//#endif
 
 	return err.code;
 }

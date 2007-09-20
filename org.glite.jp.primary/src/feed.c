@@ -207,12 +207,20 @@ cleanup:
  * kdyby ne, stejne se to nepovede ;
  * totez pro match_file */
 
-int glite_jpps_match_attr(
+typedef struct{
+	char *job;
+	glite_jp_attrval_t *attrs;
+} match_attr;
+
+
+int match_attr_deferred(
 		glite_jp_context_t ctx,
-		const char *job,
-		const glite_jp_attrval_t attrs[]
+		void *ma
 )
 {
+	char *job = ((match_attr*)ma)->job;
+	glite_jp_attrval_t *attrs = ((match_attr*)ma)->attrs;
+
 	struct jpfeed	*f = (struct jpfeed *) ctx->feeds;
 	int	i,j,doit;
 
@@ -227,7 +235,28 @@ int glite_jpps_match_attr(
 		if (doit) match_feed(ctx,f,job,attrs);
 	}
 
+	free(((match_attr*)ma)->job);
+	//free(((match_attr*)ma)->attrs);
+
 	return glite_jp_clear_error(ctx);
+}
+
+int glite_jpps_match_attr(
+                glite_jp_context_t ctx,
+                const char *job,
+                const glite_jp_attrval_t attrs[]
+)
+{
+	match_attr *ma = malloc(sizeof *ma);
+	ma->job = strdup(job);
+	ma->attrs = malloc(sizeof(*ma->attrs));
+	ma->attrs[0].name = NULL;
+	int i;
+	for (i = 0; attrs[i].name; i++){
+		ma->attrs = realloc(ma->attrs, (i+2)*sizeof(*ma->attrs));
+		ma->attrs[i+1].name = NULL;
+	}
+	glite_jp_add_deferred(ctx, match_attr_deferred, ma);
 }
 
 static int attr_void_cmp(const void *a, const void *b)
@@ -261,13 +290,21 @@ static void attr_union(char **a, char **b, char ***c)
 	*c = out;
 }
 
-int glite_jpps_match_file(
+typedef struct{
+	char *job;
+	char *class;
+	char *name;
+} match_file;
+
+int match_file_deferred(
 	glite_jp_context_t ctx,
-	const char *job,
-	const char *class,
-	const char *name
+	void *mf
 )
 {
+	char *job = ((match_file*)mf)->job;
+	char *class = ((match_file*)mf)->class;
+	char *name = ((match_file*)mf)->name;
+
 	glite_jpps_fplug_data_t	**pd = NULL;
 	int	pi;
 	void	*bh = NULL;
@@ -372,7 +409,29 @@ int glite_jpps_match_file(
 
 	for (i=0; meta[i].name; i++) glite_jp_attrval_free(meta+i,0);
 
+	free(((match_file*)mf)->job);
+	free(((match_file*)mf)->class);
+	free(((match_file*)mf)->name);
+
 	return 0;
+}
+
+int glite_jpps_match_file(
+        glite_jp_context_t ctx,
+        const char *job,
+        const char *class,
+        const char *name
+)
+{
+	match_file* mf = malloc(sizeof(*mf));
+	mf->job = strdup(job);
+	mf->class = strdup(class);
+	if (name)
+		mf->name = strdup(name);
+	else
+		mf->name = NULL;
+
+	glite_jp_add_deferred(ctx, match_file_deferred, mf);
 }
 
 static char *generate_feedid(void)
