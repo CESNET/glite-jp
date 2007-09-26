@@ -12,7 +12,6 @@ PREFIX=/opt/glite
 glite_location=/opt/glite
 nothrflavour=gcc32
 thrflavour=gcc32pthr
-expat_prefix=/opt/expat
 gsoap_prefix=/software/gsoap-2.6
 
 CC=gcc
@@ -22,8 +21,15 @@ CC=gcc
 
 VPATH=${top_srcdir}/src:${top_srcdir}/examples:${top_srcdir}/test:${top_srcdir}/project:${stagedir}/interface
 
+archlib:=lib
+host_cpu:=${shell uname -m}
+ifeq (${host_cpu},x86_64) 
+    archlib:=lib64
+endif   
+
+
 ifneq (${classads_prefix},/usr)
-        classadslib := -L${classads_prefix}/lib -lclassad
+        classadslib := -L${classads_prefix}/${archlib} -lclassad
 endif
 
 CLASSADPLUGIN_LIBS:= ${classadslib} -lstdc++ 
@@ -40,10 +46,6 @@ LTCOMPILE:=libtool --mode=compile ${CC} ${CFLAGS}
 SOLINK:=libtool --mode=link ${CC} -module ${LDFLAGS} -rpath ${stagedir}/lib
 LINKXX:=libtool --mode=link ${CXX} ${LDFLAGS} 
 INSTALL:=libtool --mode=install install
-
-ifneq (${classads_prefix},/usr)
-	classadslib := -L${classads_prefix}/lib -lclassad
-endif
 
 daemon:=glite-jp-primarystoraged
 example:=jpps-test dag-deps
@@ -82,12 +84,6 @@ GSOAPLIB:=-L${stagedir}/lib -lglite_security_gsoap_plugin_${dotless_soap_ver}_${
 TRIOLIB:=-lglite_jp_trio
 LIBTARLIB:=-L${libtar_prefix}/lib -ltar
 GSSLIB:=-lglite_security_gss_${nothrflavour}
-
-archlib:=lib
-host_cpu:=${shell uname -m}
-ifeq (${host_cpu},x86_64) 
-    archlib:=lib64
-endif   
 
 ifneq (${mysql_prefix},/usr)
 	ifeq ($(shell test -f ${mysql_prefix}/${archlib}/libmysqlclient.a -o -f ${mysql_prefix}/${archlib}/libmysqlclient.so && echo ok),ok)
