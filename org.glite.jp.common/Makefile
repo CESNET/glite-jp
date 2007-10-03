@@ -38,7 +38,7 @@ LINKXX:=libtool --mode=link ${CXX} ${LDFLAGS}
 INSTALL:=libtool --mode=install install
 COMPILE:=libtool --mode=compile ${CC} ${CFLAGS}
 
-HDRS:=types.h context.h strmd5.h attr.h known_attr.h trio.h escape.h
+HDRS:=types.h context.h strmd5.h attr.h known_attr.h
 
 SRCS:=context.c strmd5.c attr.c
 OBJS:=${SRCS:.c=.lo}
@@ -49,17 +49,13 @@ THRLIBS:=-L${globus_prefix}/lib -lcrypto_${thrflavour}
 commonlib:= libglite_jp_common_${nothrflavour}.la
 commonlib_thr:= libglite_jp_common_${thrflavour}.la
 
-TRIO_OBJS:=escape.o trio.o strio.o
-TRIO_LIB:=libglite_jp_trio.la
-TRIO_LOBJS:=${TRIO_OBJS:.o=.lo}
-
 TEST_LIBS:=-L${cppunit}/lib -lcppunit -ldl
 TEST_INC:=-I${cppunit}/include
 
 
 default all: compile
 
-compile: ${commonlib} ${commonlib_thr} ${TRIO_LIB}
+compile: ${commonlib} ${commonlib_thr}
 
 ${commonlib}: ${OBJS}
 	${LINK} -o $@ ${OBJS} ${LIBS}
@@ -67,16 +63,13 @@ ${commonlib}: ${OBJS}
 ${commonlib_thr}: ${THROBJS}
 	${LINK} -o $@ ${THROBJS} ${THRLIBS}
 
-${TRIO_LIB}: ${TRIO_LOBJS}
-	${LINK} ${version_info} -o $@ ${TRIO_LOBJS} -lm
-
 check: base64_test type_test
 	./base64_test base64_test.xml
 	./type_test type_test.xml
 
 type_test base64_test: %: %.cpp compile
 	${CXX} -c ${CFLAGS} ${TEST_INC} $<
-	${LINKXX} -o $@ $@.o ${commonlib} ${TRIO_LIB} ${TEST_LIBS} 
+	${LINKXX} -o $@ $@.o ${commonlib} ${TEST_LIBS} 
 
 doc:
 
@@ -87,7 +80,7 @@ install:
 	-mkdir -p ${PREFIX}/include/${globalprefix}/${jpprefix}
 	cd ${top_srcdir}/interface && install -m 644 ${HDRS} ${PREFIX}/include/${globalprefix}/${jpprefix}
 	-mkdir -p ${PREFIX}/lib
-	${INSTALL} -m 755 ${commonlib} ${commonlib_thr} ${TRIO_LIB} ${PREFIX}/lib
+	${INSTALL} -m 755 ${commonlib} ${commonlib_thr} ${PREFIX}/lib
 
 clean:
 	rm -rvf *.o *.lo .libs lib*
@@ -98,6 +91,3 @@ clean:
 
 %.lo: %.c
 	${COMPILE} ${GLOBUSINC} -o $@ -c $< 
-
-${TRIO_LOBJS}: %.lo: %.c
-	${COMPILE} -o $@ -c -DDATAGRID_EXTENSION $< 

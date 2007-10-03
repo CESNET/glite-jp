@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <stdint.h>
 
+#include <glite/lbu/trio.h>
 #include <glite/jp/types.h>
 #include "tags.h"
 #include "backend.h"

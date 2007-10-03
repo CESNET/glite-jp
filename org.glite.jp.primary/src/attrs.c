@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 
+#include "glite/lbu/trio.h"
 #include "glite/jp/types.h"
 #include "glite/jp/attr.h"
 

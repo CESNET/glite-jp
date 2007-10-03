@@ -16,7 +16,6 @@
 #include "glite/jp/strmd5.h"
 #include "glite/jp/known_attr.h"
 #include "glite/jp/attr.h"
-#include "glite/jp/escape.h"
 
 #include "feed.h"
 #include "tags.h"

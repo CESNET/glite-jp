@@ -69,7 +69,7 @@ EXA_CLIENT_OBJS:=${EXA_CLIENT_SRCS:.c=.o}
 COMMONLIB:=-lglite_jp_common_${nothrflavour}
 SRVCOMMONLIB:=-lglite_jp_server_common
 BONESLIB:=-lglite_lb_server_bones
-TRIOLIB:=-lglite_jp_trio
+TRIOLIB:=-lglite_lbu_trio
 GSSLIB:=-lglite_security_gss_${nothrflavour}
 
 default all: compile doc

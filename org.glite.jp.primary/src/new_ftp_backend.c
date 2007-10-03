@@ -13,12 +13,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "glite/lbu/trio.h"
+#include "glite/lbu/escape.h"
 #include "glite/jp/types.h"
 #include "glite/jp/context.h"
 #include "glite/jp/strmd5.h"
 #include "glite/jp/known_attr.h"
 #include "glite/jp/attr.h"
-#include "glite/jp/escape.h"
 
 #include "feed.h"
 #include "tags.h"
@@ -2132,7 +2133,7 @@ int glite_jppsbe_store_feed(
 		trio_asprintf(&aux,"%s%s%s",
 				alist ? alist : "",
 				alist ? "\n" : "",
-				e = edg_wll_LogEscape(feed->attrs[i]));
+				e = glite_lbu_EscapeULM(feed->attrs[i]));
 		free(e);
 		free(alist);
 		alist = aux;
@@ -2157,9 +2158,9 @@ int glite_jppsbe_store_feed(
 		trio_asprintf(&aux,"%s%s%s\n%c\n%s",
 				qlist ? qlist : "",
 				qlist ? "\n" : "",
-				e1 = edg_wll_LogEscape(feed->qry[i].attr),
+				e1 = glite_lbu_EscapeULM(feed->qry[i].attr),
 				op,
-				op != 'E' ? e2 = edg_wll_LogEscape(feed->qry[i].value) : "E");
+				op != 'E' ? e2 = glite_lbu_EscapeULM(feed->qry[i].value) : "E");
 		free(e1); free(e2);
 
 		free(qlist);
@@ -2288,7 +2289,7 @@ int glite_jppsbe_read_feeds(
 		n = 0;
 		for (p = strtok(res[3],"\n"); p; p = strtok(NULL,"\n")) {
 			f->attrs = realloc(f->attrs,(n+2) * sizeof *f->attrs);
-			f->attrs[n] = edg_wll_LogUnescape(p);
+			f->attrs[n] = glite_lbu_UnescapeULM(p);
 			f->attrs[++n] = NULL;
 		}
 
@@ -2296,7 +2297,7 @@ int glite_jppsbe_read_feeds(
 		for (p = strtok(res[4],"\n"); p; p = strtok(NULL,"\n")) {
 			f->qry = realloc(f->qry,(n+2) * sizeof *f->qry);
 			memset(&f->qry[n],0,sizeof *f->qry);
-			f->qry[n].attr = edg_wll_LogUnescape(p);
+			f->qry[n].attr = glite_lbu_EscapeULM(p);
 			p = strtok(NULL,"\n");
 			switch (*p) {
 				case '=': f->qry[n].op = GLITE_JP_QUERYOP_EQUAL; break;
@@ -2308,7 +2309,7 @@ int glite_jppsbe_read_feeds(
 			}
 			p = strtok(NULL,"\n");
 			if (f->qry[n].op != GLITE_JP_QUERYOP_EXISTS) 
-				f->qry[n].value = edg_wll_LogUnescape(p);
+				f->qry[n].value = glite_lbu_EscapeULM(p);
 
 			memset(&f->qry[++n],0,sizeof *f->qry);
 		}

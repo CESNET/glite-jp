@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <stdio.h>
 
 #include <glite/security/glite_gss.h>
 

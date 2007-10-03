@@ -81,7 +81,7 @@ dotless_soap_ver:=${shell echo ${gsoap_version} | tr -d . }
 COMMONLIB:=-lglite_jp_common_${nothrflavour}
 BONESLIB:=-lglite_lb_server_bones
 GSOAPLIB:=-L${stagedir}/lib -lglite_security_gsoap_plugin_${dotless_soap_ver}_${nothrflavour} 
-TRIOLIB:=-lglite_jp_trio
+TRIOLIB:=-lglite_lbu_trio
 LIBTARLIB:=-L${libtar_prefix}/lib -ltar
 GSSLIB:=-lglite_security_gss_${nothrflavour}
 

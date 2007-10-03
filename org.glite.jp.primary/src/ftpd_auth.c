@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "glite/lbu/trio.h"
 #include "glite/jp/types.h"
 #include "glite/jp/context.h"
 
