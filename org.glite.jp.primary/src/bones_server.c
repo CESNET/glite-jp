@@ -7,7 +7,7 @@
 #include "glite/jp/types.h"
 #include "glite/jp/context.h"
 
-#include "glite/lb/srvbones.h"
+#include "glite/lbu/srvbones.h"
 #include "glite/security/glite_gss.h"
 
 #include <stdsoap2.h>

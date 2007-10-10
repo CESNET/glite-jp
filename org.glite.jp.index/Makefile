@@ -54,7 +54,7 @@ ps_prefix:=${ws_prefix}
 
 SRCS:= conf.c bones_server.c soap_ops.c soap_ps_calls.c common.c \
 	${is_prefix}Server.c ${ps_prefix}Client.c ${ws_prefix}C.c \
-	ws_ps_typeref.c ws_is_typeref.c db_ops.c context.c common_server.c 
+	ws_ps_typeref.c ws_is_typeref.c db_ops.c context.c
 
 EXA_TEST_SRCS:=jpis-test.c ${is_prefix}Client.c ${is_prefix}C.c context.c db_ops.c conf.c ws_is_typeref.c common.c
 EXA_DB_SRCS:=jpis-db-internal.c db_ops.c conf.c context.c ws_is_typeref.c common.c
@@ -68,7 +68,7 @@ EXA_CLIENT_OBJS:=${EXA_CLIENT_SRCS:.c=.o}
 
 COMMONLIB:=-lglite_jp_common_${nothrflavour}
 SRVCOMMONLIB:=-lglite_jp_server_common
-BONESLIB:=-lglite_lb_server_bones
+BONESLIB:=-lglite_lbu_server_bones
 TRIOLIB:=-lglite_lbu_trio
 GSSLIB:=-lglite_security_gss_${nothrflavour}
 
@@ -159,7 +159,6 @@ soap_ps_calls.o: soap_ps_calls.c ${ps_prefix}H.h ${ps_prefix}.nsmap soap_version
 soap_ops.o: soap_ops.c jp_H.h ${is_prefix}.nsmap soap_version.h db_ops.h ws_ps_typeref.h ws_is_typeref.h context.h
 ws_ps_typeref.o: ws_ps_typeref.c ${ps_prefix}H.h ws_typemap.h ws_ps_typeref.h soap_version.h
 ws_is_typeref.o: ws_is_typeref.c ${is_prefix}H.h ws_typemap.h ws_is_typeref.h soap_version.h
-comon_server.o: common_server.c common_server.h
 jpis-client.o: jpis-client.c ${is_prefix}H.h soap_version.h
 jpis-test.o: jpis-client.c ${is_prefix}H.h soap_version.h
 conf.o: conf.c ${is_prefix}H.h soap_version.h

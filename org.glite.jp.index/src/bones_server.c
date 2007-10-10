@@ -9,7 +9,7 @@
 #include <glite/jp/types.h>
 #include <glite/jp/context.h>
 
-#include <glite/lb/srvbones.h>
+#include <glite/lbu/srvbones.h>
 
 #include <stdsoap2.h>
 #include <glite/security/glite_gss.h>
@@ -20,7 +20,6 @@
 #include "soap_ps_calls.h"
 #include "context.h"
 #include "common.h"
-#include "common_server.h"
 
 #include "soap_version.h"
 #include "jp_H.h"
@@ -96,7 +95,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* daemonize */
-	if (!conf->debug) glite_jpis_daemonize("glite-jp-indexd", conf->pidfile, conf->logfile);
+	if (!conf->debug) glite_srvbones_daemonize("glite-jp-indexd", conf->pidfile, conf->logfile);
 
 	/* XXX preliminary support for plugins 
 	for (i=0; conf->plugins[i]; i++)
