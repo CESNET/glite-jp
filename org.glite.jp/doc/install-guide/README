@@ -1,6 +1,0 @@
-See LB-JP interaction guide in this directory (LaTeX) for description
-of details of JP installation process and LB-JP interaction internals.
-
-See also deployment modules: org.glite.deployment.jpps and 
-org.glite.deployment.lb and gLite installation guide
-(new chapters for JP and LB temporarily stored here).
