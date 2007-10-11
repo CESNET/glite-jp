@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <assert.h>
+#include <sys/stat.h>
 
 #undef SOAP_FMAC1
 #define SOAP_FMAC1	static
@@ -37,6 +38,8 @@
 #define err2fault(CTX, SOAP) glite_jp_server_err2fault((CTX), (SOAP));
 
 #define CONTEXT_FROM_SOAP(soap,ctx) glite_jp_context_t	ctx = (glite_jp_context_t) ((soap)->user)
+
+#define SIZE_TO_COMPRESS 1024
 
 int glite_jpps_srv_init(glite_jp_context_t ctx)
 {
@@ -171,6 +174,16 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__CommitUpload(
 
                                 	}
                 }
+
+	char *fname;
+	//XXX ignore error
+	if (!glite_jppsbe_open_file(ctx,job,class, name, O_RDONLY, &beh)){
+		struct stat fattr;
+		glite_jppsbe_file_attrs(ctx, beh, &fattr);
+		glite_jppsbe_close_file(ctx, beh);
+		if (fattr.st_size > SIZE_TO_COMPRESS)
+			glite_jppsbe_compress_and_remove_file(ctx,job,class, name);
+	}
 
 	free(job); free(class); free(name);
 
