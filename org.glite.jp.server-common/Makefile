@@ -36,7 +36,6 @@ LINK:=libtool --mode=link ${CC} -rpath ${stagedir}/lib ${LDFLAGS}
 LIBLINK:=${LINK} ${version_info}
 INSTALL:=libtool --mode=install install
 
-
 STATICLIB:=libglite_jp_server_common.a
 LTLIB:=libglite_jp_server_common.la
 
@@ -53,13 +52,13 @@ ifeq (${host_cpu},x86_64)
 endif   
 
 ifneq (${mysql_prefix},/usr)
-	ifeq ($(shell test -f ${mysql_prefix}/${archlib}/libmysqlclient.a -o -f ${mysql_prefix}/${archlib}/libmysqlclient.so && echo ok),ok)
-		MYSQLIB := -L${mysql_prefix}/${archlib} -lmysqlclient -lz
+	ifeq ($(shell test -f ${mysql_prefix}/${archlib}/libmysqlclient.a && echo ok),ok)
+		MYSQLIB := ${mysql_prefix}/${archlib}/libmysqlclient.a -lz
 	else
-		MYSQLIB := -L${mysql_prefix}/${archlib}/mysql -lmysqlclient -lz
+		MYSQLIB := ${mysql_prefix}/${archlib}/mysql/libmysqlclient.a -lz
 	endif
 else
-	MYSQLIB := -lmysqlclient -lz
+	MYSQLIB := /usr/lib/libmysqlclient.a -lz
 endif
 
 
@@ -70,10 +69,11 @@ compile: ${LTLIB} ${STATICLIB}
 ${LTLIB} ${STATICLIB}: ${OBJS}
 	${LIBLINK} ${version_info} -o $@ ${LOBJS} ${MYSQLIB}
 
-examples: db-test-int
+examples:
+# db-test-int
 
 db-test-int: db-test-int.o
-	${LINK} -o $@ $+ ${STATICLIB} ${MYSQLIB} -lglite_jp_common_${nothrflavour} 
+	${LINK} -o $@ $+ ${STATICLIB} ${MYSQLIB} -lglite_jp_common_${nothrflavour}
 
 check: 
 	-echo nothing yet
