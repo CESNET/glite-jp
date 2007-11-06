@@ -11,6 +11,7 @@ version=0.0.0
 PREFIX=/opt/glite
 
 glite_location=/opt/glite
+globus_prefix=/opt/globus
 nothrflavour=gcc32
 thrflavour=gcc32pthr
 
@@ -52,28 +53,28 @@ ifeq (${host_cpu},x86_64)
 endif   
 
 ifneq (${mysql_prefix},/usr)
-	ifeq ($(shell test -f ${mysql_prefix}/${archlib}/libmysqlclient.a && echo ok),ok)
-		MYSQLIB := ${mysql_prefix}/${archlib}/libmysqlclient.a -lz
+	ifeq ($(shell test -f ${mysql_prefix}/${archlib}/libmysqlclient.a -o -f ${mysql_prefix}/${archlib}/libmysqlclient.so && echo ok),ok)
+		MYSQLIB := -L${mysql_prefix}/${archlib} -lmysqlclient -lz
 	else
-		MYSQLIB := ${mysql_prefix}/${archlib}/mysql/libmysqlclient.a -lz
+		MYSQLIB := -L${mysql_prefix}/${archlib}/mysql -lmysqlclient -lz
 	endif
 else
-	MYSQLIB := /usr/lib/libmysqlclient.a -lz
+	MYSQLIB := -lmysqlclient -lz
 endif
 
+GLOBUS_SSL_LIBS:=-L${globus_prefix}/lib -lglobus_openssl_${nothrflavour}
 
 default all: compile examples
 
 compile: ${LTLIB} ${STATICLIB}
 
 ${LTLIB} ${STATICLIB}: ${OBJS}
-	${LIBLINK} ${version_info} -o $@ ${LOBJS} ${MYSQLIB}
+	${LIBLINK} ${version_info} -o $@ ${LOBJS} ${GLOBUS_SSL_LIBS} ${MYSQLIB}
 
-examples:
-# db-test-int
+examples: db-test-int
 
 db-test-int: db-test-int.o
-	${LINK} -o $@ $+ ${STATICLIB} ${MYSQLIB} -lglite_jp_common_${nothrflavour}
+	${LINK} -o $@ $+ ${STATICLIB} ${MYSQLIB} -lglite_jp_common_${nothrflavour} 
 
 check: 
 	-echo nothing yet
