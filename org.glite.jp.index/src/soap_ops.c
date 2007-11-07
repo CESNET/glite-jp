@@ -153,6 +153,12 @@ static int checkIndexedConditions(glite_jpis_context_t ctx, struct _jpelem__Quer
 	for (k=0; k < in->__sizeconditions; k++) {
 		for (j=0; j < i; j++) {
 			char *attr = GLITE_SECURITY_GSOAP_LIST_GET(in->conditions, k)->attr;
+
+			if (!attr) {
+				glite_jpis_stack_error(ctx->jpctx, EINVAL, "condition attribute no %d is NULL", j);
+				ret = 0;
+				goto end;
+			}
 			if (!strcasecmp(attr, GLITE_JP_ATTR_JOBID) || !strcasecmp(attr, indexed_attrs[j])) {
 				ret = 0;
 				goto end;
