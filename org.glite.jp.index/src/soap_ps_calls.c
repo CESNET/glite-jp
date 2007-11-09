@@ -56,7 +56,7 @@ static int refresh_gsoap(glite_jpis_context_t ctx, struct soap *soap) {
 	static const struct timeval to = {tv_sec: 7200, tv_usec: 0};
 	glite_gsplugin_Context	plugin_ctx;
 
-	if (edg_wll_gss_acquire_cred_gsi(ctx->conf->server_cert, ctx->conf->server_key, &cred, NULL, &gss_code) != 0) {
+	if (edg_wll_gss_acquire_cred_gsi(ctx->conf->server_cert, ctx->conf->server_key, &cred, &gss_code) != 0) {
 		edg_wll_gss_get_error(&gss_code,"",&et);
 		glite_jpis_stack_error(ctx->jpctx, EINVAL, "can't refresh certificates (%s)", et);
 		free(et);

@@ -7,6 +7,7 @@
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>
+#include <ctype.h>
 
 #include <glite/lbu/trio.h>
 #include <glite/jp/types.h>
@@ -28,10 +29,10 @@
 #define TABLE_PREFIX_DATA "attr_"
 #define SQLCMD_DROP_DATA_TABLE "DROP TABLE " TABLE_PREFIX_DATA "%s"
 #define SQLCMD_CREATE_DATA_TABLE "CREATE TABLE " TABLE_PREFIX_DATA "%s (\n\
-        jobid          CHAR(32)    BINARY NOT NULL,\n\
-        value          %s          BINARY NOT NULL,\n\
-        full_value     %s          NOT NULL,\n\
-        origin         INT         NOT NULL,\n\
+        `jobid`          CHAR(32)    BINARY NOT NULL,\n\
+        `value`          %s          BINARY NOT NULL,\n\
+        `full_value`     %s          NOT NULL,\n\
+        `origin`         INT         NOT NULL,\n\
 \n\
         INDEX (jobid),\n\
         INDEX (value)\n\
@@ -260,7 +261,17 @@ fail:
  * Convert attribute name to attribute id.
  */
 char *glite_jpis_attr_name2id(const char *name) {
-	return str2md5(name);
+	size_t i, len;
+	char *lname, *id;
+
+	len = strlen(name);
+	lname = malloc(len + 1);
+	for (i = 0; i < len + 1; i++) lname[i] = tolower(name[i]);
+	id = str2md5(lname);
+	free(lname);
+
+	return id;
+//	return str2md5(name);
 }
 
 
@@ -667,6 +678,10 @@ int glite_jpis_lazyInsertJob(glite_jpis_context_t ctx, const char *ps, const cha
 
 	lprintf("\n");
 
+	if (!jobid || !owner) {
+		glite_jpis_stack_error(ctx->jpctx, EINVAL, "jobid and owner is mandatory (jobid=%s, owner=%s)!\n", jobid, owner);
+		goto fail;
+	}
 	md5_jobid = str2md5(jobid);
 	md5_cert = str2md5(owner);
 	GLITE_JPIS_PARAM(ctx->param_jobid, ctx->param_jobid_len, md5_jobid);

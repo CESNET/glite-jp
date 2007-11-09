@@ -94,14 +94,12 @@ int main(int argc,char *argv[])
 			{
 				edg_wll_GssCred		cred = NULL;
 				edg_wll_GssStatus	gss_code;
-				char			*subject = NULL;
 
-				if ( edg_wll_gss_acquire_cred_gsi(NULL, NULL, &cred, &subject, &gss_code) ) {
+				if ( edg_wll_gss_acquire_cred_gsi(NULL, NULL, &cred, &gss_code) ) {
 					printf("Cannot obtain credentials - exiting.\n");
 					return EINVAL;
 				}
-				rec->owner = soap_strdup(soap, subject);
-				free(subject);
+				rec->owner = soap_strdup(soap, cred->name);
 			}
 			rec->__sizeprimaryStorage = 0;
 			rec->primaryStorage = NULL;

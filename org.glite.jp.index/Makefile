@@ -5,7 +5,7 @@ top_builddir=${top_srcdir}/${builddir}
 stagedir=.
 distdir=.
 globalprefix=glite
-lbprefix=lb
+jpprefix=jp
 package=glite-lb-server
 version=0.0.0
 PREFIX=/opt/glite
@@ -13,7 +13,6 @@ PREFIX=/opt/glite
 glite_location=/opt/glite
 nothrflavour=gcc32
 thrflavour=gcc32pthr
-expat_prefix=/opt/expat
 gsoap_prefix=/software/gsoap-2.6
 
 CC=gcc
@@ -162,6 +161,7 @@ ws_is_typeref.o: ws_is_typeref.c ${is_prefix}H.h ws_typemap.h ws_is_typeref.h so
 jpis-client.o: jpis-client.c ${is_prefix}H.h soap_version.h
 jpis-test.o: jpis-client.c ${is_prefix}H.h soap_version.h
 conf.o: conf.c ${is_prefix}H.h soap_version.h
+common.o: common.h common.c
 
 ${ws_prefix}C.o: ${ws_prefix}C.c
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) -Wno-unused-parameter $<
