@@ -172,8 +172,10 @@ int main(int argc, char *argv[])
 	if ( cadir ) setenv("X509_CERT_DIR", cadir, 1);
 	edg_wll_gss_watch_creds(server_cert, &cert_mtime);
 
-	if ( !edg_wll_gss_acquire_cred_gsi(server_cert, server_key, &mycred, &mysubj, &gss_code)) 
+	if ( !edg_wll_gss_acquire_cred_gsi(server_cert, server_key, &mycred, &gss_code)) {
+		mysubj = strdup(mycred->name);
 		fprintf(stderr,"Server idenity: %s\n",mysubj);
+        }
 	else fputs("WARNING: Running unauthenticated\n",stderr);
 
 	/* XXX: daemonise */
@@ -256,7 +258,7 @@ static int newconn(int conn,struct timeval *to,void *data)
 	switch (edg_wll_gss_watch_creds(server_cert,&cert_mtime)) {
 		case 0: break;
 		case 1: if (!edg_wll_gss_acquire_cred_gsi(server_cert,server_key,
-						&newcred,NULL,&gss_code))
+						&newcred,&gss_code))
 			{
 
 				printf("[%d] reloading credentials\n",getpid()); /* XXX: log */
