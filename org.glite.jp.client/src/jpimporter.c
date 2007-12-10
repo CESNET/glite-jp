@@ -440,12 +440,6 @@ static int reg_importer(void)
 		dprintf("[%s] edg_wll_MaildirTransStart: %s (%s)\n", name, strerror(errno), lbm_errdesc);
 		if ( !debug ) syslog(LOG_ERR, "edg_wll_MaildirTransStart: %s (%s)", strerror(errno), lbm_errdesc);
 		return -1;
-	}
-
-	if ( ret < 0 ) {
-		dprintf("[%s] edg_wll_MaildirTransStart: %s (%s)\n", name, strerror(errno), lbm_errdesc);
-		if ( !debug ) syslog(LOG_ERR, "edg_wll_MaildirTransStart: %s (%s)", strerror(errno), lbm_errdesc);
-		return -1;
 	} else if ( ret > 0 ) {
 		dprintf("[%s] JP registration request received\n", name);
 		if ( !debug ) syslog(LOG_INFO, "JP registration request received\n");
