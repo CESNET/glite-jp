@@ -69,6 +69,8 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__UpdateJobs(
 	CONTEXT_FROM_SOAP(soap, ctx);
 	glite_jp_context_t jpctx = ctx->jpctx;
 	char *err, *ps;
+	char *res[3];
+	long int uniqueid;
 
 	// XXX: test client in examples/jpis-test
 	//      sends to this function some data for testing
@@ -79,28 +81,31 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__UpdateJobs(
 	feedid = jpelem__UpdateJobs->feedId;
 	lprintf("feedid='%s'\n", feedid);
 
-	GLITE_JPIS_PARAM(ctx->param_feedid, ctx->param_feedid_len, feedid);
-	if ((ret = glite_jp_db_execute(ctx->select_info_feed_stmt)) != 1) {
+	if ((ret = glite_jp_db_ExecPreparedStmt(ctx->jpctx, ctx->select_info_feed_stmt, 1, GLITE_LBU_DB_TYPE_CHAR, feedid)) != 1) {
 		fprintf(stderr, "can't get info about feed '%s', returned %d records", feedid, ret);
 		if (jpctx->error) fprintf(stderr, ": %s (%s)\n", jpctx->error->desc, jpctx->error->source);
 		else fprintf(stderr, "\n");
 		goto fail;
 	}
-	if (glite_jp_db_fetch(ctx->select_info_feed_stmt) != 0) {
+	if (glite_jp_db_FetchRow(ctx->jpctx, ctx->select_info_feed_stmt, 3, NULL, res) <= 0) {
 		fprintf(stderr, "can't fetch feed '%s'", feedid);
 		if (jpctx->error) fprintf(stderr, ": %s (%s)\n", jpctx->error->desc, jpctx->error->source);
 		else fprintf(stderr, "\n");
+		glite_jpis_stack_error(ctx->jpctx, ENODATA, "can't fetch feed '%s'", feedid);
 		goto fail;
 	}
-	lprintf("uniqueid=%ld, state=%d, source='%s'\n", ctx->param_uniqueid, ctx->param_state, ctx->param_ps);
-	ps = strdup(ctx->param_ps);
+	lprintf("uniqueid=%s, state=%s, source='%s'\n", res[0], res[1], res[2]);
+	uniqueid = atol(res[0]); free(res[0]);
+	status = atoi(res[1]); free(res[1]);
+	ps = res[2];
 
 	// update status, if needed (only orig)
-	status = ctx->param_state;
 	done = jpelem__UpdateJobs->feedDone ? GLITE_JP_IS_STATE_DONE : 0;
 	if ((done != (status & GLITE_JP_IS_STATE_DONE)) && done) {
-		ctx->param_state |= done;
-		if ((ret = glite_jp_db_execute(ctx->update_state_feed_stmt)) != 1) {
+		status |= done;
+		if ((ret = glite_jp_db_ExecPreparedStmt(ctx->jpctx, ctx->update_state_feed_stmt, 2,
+		    GLITE_LBU_DB_TYPE_INT, status,
+		    GLITE_LBU_DB_TYPE_INT, uniqueid)) != 1) {
 			fprintf(stderr, "can't update state of '%s', returned %d records", feedid, ret);
 			if (jpctx->error) fprintf(stderr, ": %s (%s)\n", jpctx->error->desc, jpctx->error->source);
 			else fprintf(stderr, "\n");
@@ -132,21 +137,20 @@ static int checkIndexedConditions(glite_jpis_context_t ctx, struct _jpelem__Quer
 {
 	char 			**indexed_attrs = NULL, *res;
 	int			i, j, k, ret;
-	glite_jp_db_stmt_t      stmt;
+	glite_lbu_Statement      stmt;
 
 
-	if ((ret = glite_jp_db_execstmt(ctx->jpctx, 
+	if ((ret = glite_jp_db_ExecSQL(ctx->jpctx, 
 		"SELECT name FROM attrs WHERE (indexed=1)", &stmt)) < 0) goto end;
 	
 	i = 0;
-        while ( (ret = glite_jp_db_fetchrow(stmt, &res)) > 0 ) {
+        while ( (ret = glite_jp_db_FetchRow(ctx->jpctx, stmt, 1, NULL, &res)) > 0 ) {
 		if (!(i % INDEXED_STRIDE)) {
 			indexed_attrs = realloc(indexed_attrs, 
 				((i / INDEXED_STRIDE + 1) * INDEXED_STRIDE)  
 				* sizeof(*indexed_attrs));
 		}
-		indexed_attrs[i++] = strdup(res);
-		free(res);
+		indexed_attrs[i++] = res;
         }
         if ( ret < 0 ) goto end;
 
@@ -340,7 +344,7 @@ static int get_jobids(glite_jpis_context_t ctx, struct _jpelem__QueryJobs *in, c
 				*qwhere = NULL, *query = NULL, *res[2], 
 				**jids = NULL, **pss = NULL, **attr_tables = NULL;
 	int 			i, ret;
-	glite_jp_db_stmt_t	stmt = NULL;
+	glite_lbu_Statement	stmt = NULL;
 	glite_jp_attr_orig_t	orig;
 
 	
@@ -404,11 +408,11 @@ static int get_jobids(glite_jpis_context_t ctx, struct _jpelem__QueryJobs *in, c
 	free(qwhere);
 	free(qa);
 	
-	if ((ret = glite_jp_db_execstmt(ctx->jpctx, query, &stmt)) < 0) goto err;
+	if ((ret = glite_jp_db_ExecSQL(ctx->jpctx, query, &stmt)) < 0) goto err;
 	free(query);
 
 	i = 0;
-	while ( (ret = glite_jp_db_fetchrow(stmt, res)) > 0 ) {
+	while ( (ret = glite_jp_db_FetchRow(ctx->jpctx, stmt, sizeof(res)/sizeof(res[0]), NULL, res)) > 0 ) {
 		if (!(i % JOBIDS_STRIDE)) {
                         jids = realloc(jids,
                                 ((i / JOBIDS_STRIDE + 1) * JOBIDS_STRIDE + 1)
@@ -428,7 +432,7 @@ static int get_jobids(glite_jpis_context_t ctx, struct _jpelem__QueryJobs *in, c
 
 	if ( ret < 0 ) goto err;
 
-	glite_jp_db_freestmt(&stmt);	
+	glite_jp_db_FreeStmt(&stmt);	
 
 	*jobids = jids;
 	*ps_list = pss;
@@ -441,7 +445,7 @@ err:
 	free(pss);
 	for (i=0; (jids && jids[i]); i++) free(jids[i]);
 	free(jids);
-	glite_jp_db_freestmt(&stmt);
+	glite_jp_db_FreeStmt(&stmt);
 
 	return ret;
 }
@@ -466,7 +470,7 @@ static int get_attr(struct soap *soap, glite_jpis_context_t ctx, char *jobid, ch
 	enum jptype__attrOrig		*origin;
 	char 				*query, *fv, *jobid_md5, *attr_md5;
 	int 				i, ret;
-	glite_jp_db_stmt_t      	stmt;
+	glite_lbu_Statement      	stmt;
 
 	memset(&jav,0,sizeof(jav));
 	jobid_md5 = str2md5(jobid);
@@ -476,7 +480,7 @@ static int get_attr(struct soap *soap, glite_jpis_context_t ctx, char *jobid, ch
 	free(attr_md5);
 	free(jobid_md5);
 
-	if ((ret = glite_jp_db_execstmt(ctx->jpctx, query, &stmt)) < 0) {
+	if ((ret = glite_jp_db_ExecSQL(ctx->jpctx, query, &stmt)) < 0) {
 		glite_jpis_stack_error(ctx->jpctx, EIO, "SELECT from attribute '%s' failed", attr_name);
 		goto err;
 	}
@@ -484,7 +488,7 @@ static int get_attr(struct soap *soap, glite_jpis_context_t ctx, char *jobid, ch
 
 	av = *out;
 	i = *size;
-	while ( (ret = glite_jp_db_fetchrow(stmt, &fv)) > 0 ) {	
+	while ( (ret = glite_jp_db_FetchRow(ctx->jpctx, stmt, 1, NULL, &fv)) > 0 ) {
 		av = realloc(av, (i+1) * sizeof(*av));
 		memset(&av[i], 0, sizeof(av[i]));
 
@@ -516,14 +520,14 @@ static int get_attr(struct soap *soap, glite_jpis_context_t ctx, char *jobid, ch
 	} 
 	if (ret < 0) goto err;
 	
-	glite_jp_db_freestmt(&stmt);
+	glite_jp_db_FreeStmt(&stmt);
 	*size = i;
 	*out = av;
 
 	return 0;
 
 err:
-	glite_jp_db_freestmt(&stmt);	
+	glite_jp_db_FreeStmt(&stmt);	
 	freeAttval_t(jav);
 	return 1;
 }
@@ -533,7 +537,7 @@ err:
 static int get_owner(glite_jpis_context_t ctx, char *jobid, char **owner)
 {
 	char			*ownerid = NULL, *jobid_md5, *query, *fv = NULL;
-	glite_jp_db_stmt_t     	stmt;
+	glite_lbu_Statement     	stmt;
 
 
 	/* get ownerid correspondig to jobid */
@@ -542,26 +546,26 @@ static int get_owner(glite_jpis_context_t ctx, char *jobid, char **owner)
                 jobid_md5);
         free(jobid_md5);
 
-	if ((glite_jp_db_execstmt(ctx->jpctx, query, &stmt)) < 0) goto err;
+	if ((glite_jp_db_ExecSQL(ctx->jpctx, query, &stmt)) < 0) goto err;
         free(query);
 
-        if (glite_jp_db_fetchrow(stmt, &ownerid) <= 0 ) goto err; 
+        if (glite_jp_db_FetchRow(ctx->jpctx, stmt, 1, NULL, &ownerid) <= 0 ) goto err; 
 	
 	/* DB consistency check - only one record per jobid ! */
-	assert (glite_jp_db_fetchrow(stmt, &fv) <=0); free(fv);
+	assert (glite_jp_db_FetchRow(ctx->jpctx, stmt, 1, NULL, &fv) <=0); free(fv);
 	
 
 	/* get cert_subj corresponding to ownerid */
 	trio_asprintf(&query,"SELECT cert_subj FROM users WHERE userid = \"%s\"",
 		ownerid);
 
-	if ((glite_jp_db_execstmt(ctx->jpctx, query, &stmt)) < 0) goto err;
+	if ((glite_jp_db_ExecSQL(ctx->jpctx, query, &stmt)) < 0) goto err;
         free(query);
 
-	if (glite_jp_db_fetchrow(stmt, owner) <= 0 ) goto err;
+	if (glite_jp_db_FetchRow(ctx->jpctx, stmt, 1, NULL, owner) <= 0 ) goto err;
 
         /* DB consistency check - only one record per userid ! */
-        assert (glite_jp_db_fetchrow(stmt, &fv) <=0); free(fv);
+        assert (glite_jp_db_FetchRow(ctx->jpctx, stmt, 1, NULL, &fv) <=0); free(fv);
 
 
 	return 0;

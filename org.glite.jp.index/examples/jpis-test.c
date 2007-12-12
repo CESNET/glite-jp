@@ -41,7 +41,6 @@ int main(int argc,char *argv[])
 /*---------------------------------------------------------------------------*/
 	// simulate FeedIndex PS response
 	{
-		glite_jp_db_stmt_t      stmt;
 		glite_jp_context_t      ctx;
 		glite_jpis_context_t	isctx = NULL;
 		glite_jp_is_conf        *conf;
@@ -64,8 +63,8 @@ int main(int argc,char *argv[])
 			goto end;
 		}
 		
-		if (glite_jp_db_execstmt(ctx, DELETE, &stmt) < 0) goto end;
-		if (glite_jp_db_execstmt(ctx, INSERT, &stmt) < 0) goto end;
+		if (glite_jp_db_ExecSQL(ctx, DELETE, NULL) < 0) goto end;
+		if (glite_jp_db_ExecSQL(ctx, INSERT, NULL) < 0) goto end;
 	end:
 		glite_jpis_free_context(isctx);
 		glite_jp_free_context(ctx);

@@ -282,27 +282,19 @@ char *glite_jpis_attr_name2id(const char *name) {
  */
 
 int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
-	char **attrs, *tmp;
+	char **attrs, *attrid;
 	const char *type_index, *type_full;
 	size_t i;
-	void *param;
-	unsigned long attrid_len, name_len, type_len, source_len, dbconds_len;
-	char attrid[33], name[256], type[33], source[256], dbconds[1024];
 	int indexed, state, locked;
 	size_t conds_len;
 	char sql[512];
 	glite_jp_is_feed **feeds;
 	void *conds;
 	glite_jp_context_t jpctx = ctx->jpctx;
-	glite_jp_db_stmt_t stmt = NULL;
+	glite_lbu_Statement stmt = NULL;
 
 	jpctx = ctx->jpctx;
-	glite_jp_db_create_params(&param, 4,
-		GLITE_JP_DB_TYPE_VARCHAR, attrid, &attrid_len,
-		GLITE_JP_DB_TYPE_VARCHAR, name, &name_len,
-		GLITE_JP_DB_TYPE_INT, &indexed,
-		GLITE_JP_DB_TYPE_VARCHAR, type, &type_len);
-	if (glite_jp_db_prepare(jpctx, "INSERT INTO attrs (attrid, name, indexed, type) VALUES (?, ?, ?, ?)", &stmt, param, NULL) != 0) goto fail;
+	if (glite_jp_db_PrepareStmt(jpctx, "INSERT INTO attrs (attrid, name, indexed, type) VALUES (?, ?, ?, ?)", &stmt) != 0) goto fail;
 
 	// attrs table and attrid_* tables
 	attrs = ctx->conf->attrs;
@@ -311,69 +303,62 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 		type_full = glite_jp_attrval_db_type_full(jpctx, attrs[i]);
 		type_index = glite_jp_attrval_db_type_index(jpctx, attrs[i], INDEX_LENGTH);
 
-		// attrid column
-		tmp = glite_jpis_attr_name2id(attrs[i]);
-		GLITE_JPIS_PARAM(attrid, attrid_len, tmp);
-		free(tmp);
-		GLITE_JPIS_PARAM(name, name_len, attrs[i]);
-		// indexed column
-		indexed = is_indexed(ctx->conf, name);
-		// type column
-		GLITE_JPIS_PARAM(type, type_len, type_full);
-		// insert
-		if (glite_jp_db_execute(stmt) == -1) goto fail;
+		attrid = glite_jpis_attr_name2id(attrs[i]);
+		indexed = is_indexed(ctx->conf, attrs[i]);
+		if (glite_jp_db_ExecPreparedStmt(jpctx, stmt, 4,
+		  GLITE_LBU_DB_TYPE_VARCHAR, attrid,
+		  GLITE_LBU_DB_TYPE_VARCHAR, attrs[i],
+		  GLITE_LBU_DB_TYPE_INT, indexed,
+		  GLITE_LBU_DB_TYPE_VARCHAR, type_full) == -1) goto fail;
+		free(attrid);
 
 		// silently drop
 		sql[sizeof(sql) - 1] = '\0';
 		snprintf(sql, sizeof(sql), SQLCMD_DROP_DATA_TABLE, attrid);
 		llprintf(LOG_SQL, "preventive dropping '%s' ==> '%s'\n", attrid, sql);
-		glite_jp_db_execstmt(jpctx, sql, NULL);
+		glite_jp_db_ExecSQL(jpctx, sql, NULL);
 
 		// create table
 		sql[sizeof(sql) - 1] = '\0';
 		snprintf(sql, sizeof(sql) - 1, SQLCMD_CREATE_DATA_TABLE, attrid, type_index, type_full);
 		llprintf(LOG_SQL, "creating table: '%s'\n", sql);
-		if ((glite_jp_db_execstmt(jpctx, sql, NULL)) == -1) {
+		if ((glite_jp_db_ExecSQL(jpctx, sql, NULL)) == -1) {
 			glite_jpis_stack_error(ctx->jpctx, EAGAIN, "if the atribute table already exists, restart may help");
 			goto fail;
 		}
 
 		i++;
 	}
-	glite_jp_db_freestmt(&stmt);
+	glite_jp_db_FreeStmt(&stmt);
 
 	// feeds table
-	glite_jp_db_create_params(&param, 4,
-		GLITE_JP_DB_TYPE_INT, &state,
-		GLITE_JP_DB_TYPE_INT, &locked,
-		GLITE_JP_DB_TYPE_VARCHAR, source, &source_len,
-		GLITE_JP_DB_TYPE_MEDIUMBLOB, dbconds, &dbconds_len);
-	if (glite_jp_db_prepare(jpctx, "INSERT INTO feeds (state, locked, source, condition) VALUES (?, ?, ?, ?)", &stmt, param, NULL) != 0) goto fail;
+	if (glite_jp_db_PrepareStmt(jpctx, "INSERT INTO feeds (state, locked, source, condition) VALUES (?, ?, ?, ?)", &stmt) != 0) goto fail;
 	feeds = ctx->conf->feeds;
 	i = 0;
 	if (feeds) while (feeds[i]) {
 		state = (feeds[i]->history ? GLITE_JP_IS_STATE_HIST : 0) |
 		        (feeds[i]->continuous ? GLITE_JP_IS_STATE_CONT : 0);
 		locked = 0;
-		GLITE_JPIS_PARAM(source, source_len, feeds[i]->PS_URL);
 		assert(glite_jpis_db_queries_serialize(ctx, &conds, &conds_len, feeds[i]->query) == 0);
-		assert(conds_len <= sizeof(dbconds));
-		dbconds_len = conds_len;
-		memcpy(dbconds, conds, conds_len);
+		if (glite_jp_db_ExecPreparedStmt(jpctx, stmt, 4,
+		  GLITE_LBU_DB_TYPE_INT, state,
+		  GLITE_LBU_DB_TYPE_INT, locked,
+		  GLITE_LBU_DB_TYPE_VARCHAR, feeds[i]->PS_URL,
+		  GLITE_LBU_DB_TYPE_MEDIUMBLOB, conds, conds_len) == -1)
+			goto fail_conds;
 		free(conds);
-		if (glite_jp_db_execute(stmt) == -1) goto fail_conds;
-		feeds[i]->uniqueid = glite_jp_db_lastid(stmt);
+		feeds[i]->uniqueid = glite_lbu_Lastid(stmt);
 
 		i++;
 	}
-	glite_jp_db_freestmt(&stmt);
+	glite_jp_db_FreeStmt(&stmt);
 
 	return 0;
 
 fail_conds:
 	free(conds);
 fail:
-	glite_jp_db_freestmt(&stmt);
+	glite_jp_db_FreeStmt(&stmt);
 	return jpctx->error->code;
 }
 
@@ -385,130 +370,98 @@ fail:
  */
 
 int glite_jpis_dropDatabase(glite_jpis_context_t ctx) {
-	void *res;
-	char attrid[33], sql[256];
+	char *attrid, sql[256];
 	unsigned long len;
 	int ret;
 	glite_jp_context_t jpctx = ctx->jpctx;
-	glite_jp_db_stmt_t stmt_tabs = NULL;
+	glite_lbu_Statement stmt_tabs = NULL;
 
 	// search data tables and drop them
-	glite_jp_db_create_results(&res, 1, GLITE_JP_DB_TYPE_CHAR, NULL, attrid, sizeof(attrid), &len);
-	if (glite_jp_db_prepare(jpctx, "SELECT attrid FROM attrs", &stmt_tabs, NULL, res) != 0) goto fail;
-	if (glite_jp_db_execute(stmt_tabs) == -1) goto fail;
-	while ((ret = glite_jp_db_fetch(stmt_tabs)) == 0) {
+	if (glite_jp_db_PrepareStmt(jpctx, "SELECT attrid FROM attrs", &stmt_tabs) != 0) goto fail;
+	if (glite_jp_db_ExecPreparedStmt(jpctx, stmt_tabs, 0) == -1) goto fail;
+	while ((ret = glite_jp_db_FetchRow(jpctx, stmt_tabs, 1, &len, &attrid)) > 0) {
 		snprintf(sql, sizeof(sql), SQLCMD_DROP_DATA_TABLE, attrid);
 		llprintf(LOG_SQL, "dropping '%s' ==> '%s'\n", attrid, sql);
-		if (glite_jp_db_execstmt(jpctx, sql, NULL) == -1) printf("warning: can't drop table '" TABLE_PREFIX_DATA "%s': %s (%s)\n", attrid, jpctx->error->desc, jpctx->error->source);
+		if (glite_jp_db_ExecSQL(jpctx, sql, NULL) == -1) printf("warning: can't drop table '" TABLE_PREFIX_DATA "%s': %s (%s)\n", attrid, jpctx->error->desc, jpctx->error->source);
 	}
-	if (ret != ENODATA) goto fail;
-	glite_jp_db_freestmt(&stmt_tabs);
+	if (ret != 0) goto fail;
+	glite_jp_db_FreeStmt(&stmt_tabs);
 
 	// drop feeds and atributes
-	if (glite_jp_db_execstmt(jpctx, "DELETE FROM attrs", NULL) == -1) goto fail;
-	if (glite_jp_db_execstmt(jpctx, "DELETE FROM feeds", NULL) == -1) goto fail;
-	if (glite_jp_db_execstmt(jpctx, "DELETE FROM jobs", NULL) == -1) goto fail;
-	if (glite_jp_db_execstmt(jpctx, "DELETE FROM users", NULL) == -1) goto fail;
-	if (glite_jp_db_execstmt(jpctx, "DELETE FROM acls", NULL) == -1) goto fail;
+	if (glite_jp_db_ExecSQL(jpctx, "DELETE FROM attrs", NULL) == -1) goto fail;
+	if (glite_jp_db_ExecSQL(jpctx, "DELETE FROM feeds", NULL) == -1) goto fail;
+	if (glite_jp_db_ExecSQL(jpctx, "DELETE FROM jobs", NULL) == -1) goto fail;
+	if (glite_jp_db_ExecSQL(jpctx, "DELETE FROM users", NULL) == -1) goto fail;
+	if (glite_jp_db_ExecSQL(jpctx, "DELETE FROM acls", NULL) == -1) goto fail;
 
 	return 0;
 
 fail:
-	glite_jp_db_freestmt(&stmt_tabs);
+	glite_jp_db_FreeStmt(&stmt_tabs);
 	return jpctx->error->code;
 }
 
 
 int glite_jpis_init_db(glite_jpis_context_t isctx) {
 	int ret;
-	void *myparam;
-	void *myres;
 	const char *cs;
 	glite_jp_context_t jpctx;
 
 	jpctx = isctx->jpctx;
+	if (glite_lbu_InitDBContext(((glite_lbu_DBContext *)&jpctx->dbhandle)) != 0) goto fail_db;
 	if ((cs = isctx->conf->cs) == NULL) cs = GLITE_JP_IS_DEFAULTCS;
-	if ((ret = glite_jp_db_connect(jpctx, cs)) != 0) goto fail;
+	if (glite_lbu_DBConnect(jpctx->dbhandle, cs) != 0) goto fail_db;
 
 	// sql command: lock the feed (via uniqueid)
-	glite_jp_db_create_params(&myparam, 1, GLITE_JP_DB_TYPE_INT, &isctx->param_uniqueid);
-	if ((ret = glite_jp_db_prepare(jpctx, "UPDATE feeds SET locked=1 WHERE (locked = 0) AND (uniqueid = ?)", &isctx->lock_feed_stmt, myparam, NULL)) != 0) goto fail;
+	if ((ret = glite_jp_db_PrepareStmt(jpctx, "UPDATE feeds SET locked=1 WHERE (locked = 0) AND (uniqueid = ?)", &isctx->lock_feed_stmt)) != 0) goto fail;
 
 	// sql command: assign the feed (via uniqueid)
-	glite_jp_db_create_params(&myparam, 4,
-		GLITE_JP_DB_TYPE_CHAR, isctx->param_feedid, &isctx->param_feedid_len,
-		GLITE_JP_DB_TYPE_DATETIME, &isctx->param_expires,
-		GLITE_JP_DB_TYPE_INT, &isctx->param_state,
-		GLITE_JP_DB_TYPE_INT, &isctx->param_uniqueid);
-	if ((ret = glite_jp_db_prepare(jpctx, "UPDATE feeds SET feedid=?, expires=?, state=? WHERE (uniqueid=?)", &isctx->init_feed_stmt, myparam, NULL)) != 0) goto fail;
+	if ((ret = glite_jp_db_PrepareStmt(jpctx, "UPDATE feeds SET feedid=?, expires=?, state=? WHERE (uniqueid=?)", &isctx->init_feed_stmt)) != 0) goto fail;
 
 	// sql command: unlock the feed (via uniqueid)
-	glite_jp_db_create_params(&myparam, 1, GLITE_JP_DB_TYPE_INT, &isctx->param_uniqueid);
-	if ((ret = glite_jp_db_prepare(jpctx, "UPDATE feeds SET locked=0 WHERE (uniqueid=?)", &isctx->unlock_feed_stmt, myparam, NULL)) != 0) goto fail;
+	if ((ret = glite_jp_db_PrepareStmt(jpctx, "UPDATE feeds SET locked=0 WHERE (uniqueid=?)", &isctx->unlock_feed_stmt)) != 0) goto fail;
 
 	// sql command: get info about the feed (via feedid)
-	glite_jp_db_create_params(&myparam, 1, GLITE_JP_DB_TYPE_CHAR, isctx->param_feedid, &isctx->param_feedid_len);
-	glite_jp_db_create_results(&myres, 3,
-		GLITE_JP_DB_TYPE_INT, NULL, &isctx->param_uniqueid,
-		GLITE_JP_DB_TYPE_INT, NULL, &isctx->param_state,
-		GLITE_JP_DB_TYPE_VARCHAR, NULL, isctx->param_ps, sizeof(isctx->param_ps), &isctx->param_ps_len);
-	if ((ret = glite_jp_db_prepare(jpctx, "SELECT uniqueid, state, source FROM feeds WHERE (feedid=?)", &isctx->select_info_feed_stmt, myparam, myres)) != 0) goto fail;
+	if ((ret = glite_jp_db_PrepareStmt(jpctx, "SELECT uniqueid, state, source FROM feeds WHERE (feedid=?)", &isctx->select_info_feed_stmt)) != 0) goto fail;
 
 	// sql command: update state of the feed (via uniqueid)
-	glite_jp_db_create_params(&myparam, 2, 
-		GLITE_JP_DB_TYPE_INT, &isctx->param_state,
-		GLITE_JP_DB_TYPE_INT, &isctx->param_uniqueid);
-	if ((ret = glite_jp_db_prepare(jpctx, "UPDATE feeds SET state=? WHERE (uniqueid=?)", &isctx->update_state_feed_stmt, myparam, NULL)) != 0) goto fail;
-
-	// sql command: get info about indexed attributes
-	glite_jp_db_create_results(&myres, 1,
-		GLITE_JP_DB_TYPE_VARCHAR, NULL, isctx->param_indexed,  sizeof(isctx->param_indexed), &isctx->param_indexed_len);
-	if ((ret = glite_jp_db_prepare(jpctx, "SELECT name FROM attrs WHERE (indexed=1)", &isctx->select_info_attrs_indexed, NULL, myres)) != 0) goto fail;
+	if ((ret = glite_jp_db_PrepareStmt(jpctx, "UPDATE feeds SET state=? WHERE (uniqueid=?)", &isctx->update_state_feed_stmt)) != 0) goto fail;
 
 	// sql command: check for job with jobid
-	glite_jp_db_create_params(&myparam, 1,
-		GLITE_JP_DB_TYPE_CHAR, isctx->param_jobid, &isctx->param_jobid_len);
-	if ((glite_jp_db_prepare(jpctx, "SELECT jobid FROM jobs WHERE jobid=?", &isctx->select_jobid_stmt, myparam, NULL)) != 0) goto fail;
+	if ((ret = glite_jp_db_PrepareStmt(jpctx, "SELECT jobid FROM jobs WHERE jobid=?", &isctx->select_jobid_stmt)) != 0) goto fail;
 
 	// sql command: insert the job
-	glite_jp_db_create_params(&myparam, 4,
-		GLITE_JP_DB_TYPE_CHAR, isctx->param_jobid, &isctx->param_jobid_len,
-		GLITE_JP_DB_TYPE_VARCHAR, isctx->param_dg_jobid, &isctx->param_dg_jobid_len,
-		GLITE_JP_DB_TYPE_CHAR, isctx->param_ownerid, &isctx->param_ownerid_len,
-		GLITE_JP_DB_TYPE_CHAR, isctx->param_feedid, &isctx->param_feedid_len);
-	if ((glite_jp_db_prepare(jpctx, "INSERT INTO jobs (jobid, dg_jobid, ownerid, ps) VALUES (?, ?, ?, (SELECT source FROM feeds WHERE feedid=?))", &isctx->insert_job_stmt, myparam, NULL)) != 0) goto fail;
+	if ((ret = glite_jp_db_PrepareStmt(jpctx, "INSERT INTO jobs (jobid, dg_jobid, ownerid, ps) VALUES (?, ?, ?, ?)", &isctx->insert_job_stmt)) != 0) goto fail;
 
 	// sql command: check the user
-	glite_jp_db_create_params(&myparam, 1,
-		GLITE_JP_DB_TYPE_CHAR, isctx->param_ownerid, &isctx->param_ownerid_len);
-	if ((glite_jp_db_prepare(jpctx, "SELECT userid FROM users WHERE userid=?", &isctx->select_user_stmt, myparam, NULL)) != 0) goto fail;
+	if ((ret = glite_jp_db_PrepareStmt(jpctx, "SELECT userid FROM users WHERE userid=?", &isctx->select_user_stmt)) != 0) goto fail;
 
 	// sql command: insert the user
-	glite_jp_db_create_params(&myparam, 2,
-		GLITE_JP_DB_TYPE_CHAR, isctx->param_ownerid, &isctx->param_ownerid_len,
-		GLITE_JP_DB_TYPE_VARCHAR, isctx->param_cert, &isctx->param_cert_len);
-	if ((glite_jp_db_prepare(jpctx, "INSERT INTO users (userid, cert_subj) VALUES (?, ?)", &isctx->insert_user_stmt, myparam, NULL)) != 0) goto fail;
+	if ((ret = glite_jp_db_PrepareStmt(jpctx, "INSERT INTO users (userid, cert_subj) VALUES (?, ?)", &isctx->insert_user_stmt)) != 0) goto fail;
 
 	return 0;
 
-fail:	
+fail_db:
+	ret = glite_jp_db_SetError(jpctx, __FUNCTION__);
+fail:
 	glite_jpis_free_db(isctx);
 	return ret;
 }
 
 
 void glite_jpis_free_db(glite_jpis_context_t ctx) {
-	glite_jp_db_freestmt(&ctx->lock_feed_stmt);
-	glite_jp_db_freestmt(&ctx->init_feed_stmt);
-	glite_jp_db_freestmt(&ctx->unlock_feed_stmt);
-	glite_jp_db_freestmt(&ctx->select_info_feed_stmt);
-	glite_jp_db_freestmt(&ctx->update_state_feed_stmt);
-	glite_jp_db_freestmt(&ctx->select_info_attrs_indexed);
-	glite_jp_db_freestmt(&ctx->select_jobid_stmt);
-	glite_jp_db_freestmt(&ctx->select_user_stmt);
-	glite_jp_db_freestmt(&ctx->insert_job_stmt);
-	glite_jp_db_freestmt(&ctx->insert_user_stmt);
-	glite_jp_db_close(ctx->jpctx);
+	glite_jp_db_FreeStmt(&ctx->lock_feed_stmt);
+	glite_jp_db_FreeStmt(&ctx->init_feed_stmt);
+	glite_jp_db_FreeStmt(&ctx->unlock_feed_stmt);
+	glite_jp_db_FreeStmt(&ctx->select_info_feed_stmt);
+	glite_jp_db_FreeStmt(&ctx->update_state_feed_stmt);
+	glite_jp_db_FreeStmt(&ctx->select_jobid_stmt);
+	glite_jp_db_FreeStmt(&ctx->select_user_stmt);
+	glite_jp_db_FreeStmt(&ctx->insert_job_stmt);
+	glite_jp_db_FreeStmt(&ctx->insert_user_stmt);
+	glite_lbu_DBClose(ctx->jpctx->dbhandle);
+	glite_lbu_FreeDBContext(ctx->jpctx->dbhandle);
+	ctx->jpctx->dbhandle = NULL;
 }
 
 
@@ -523,59 +476,56 @@ int glite_jpis_lockSearchFeed(glite_jpis_context_t ctx, int initialized, long in
 {
 	int ret;
 	static int uninit_msg = 1;
-	char *sql, *res[4], *t;
-	glite_jp_db_stmt_t stmt;
+	char *sql, *res[4], *t, *ps;
+	glite_lbu_Statement stmt;
 
 	if (feedid) *feedid = NULL;
 	do {
-		t = glite_jp_db_timetodb(time(NULL));
+		glite_lbu_TimeToDB(time(NULL), &t);
 		if (initialized) {
 			trio_asprintf(&sql, "SELECT uniqueid, source, state, feedid FROM feeds WHERE (locked=0) AND (feedid IS NOT NULL) AND (expires <= %s)", t);
 		} else
 			trio_asprintf(&sql, "SELECT uniqueid, source, state, feedid FROM feeds WHERE (locked=0) AND (feedid IS NULL) AND ((state < " GLITE_JP_IS_STATE_ERROR_STR ") OR (expires <= %s))", t);
 		free(t);
-		ret = glite_jp_db_execstmt(ctx->jpctx, sql, &stmt);
+		ret = glite_jp_db_ExecSQL(ctx->jpctx, sql, &stmt);
 		free(sql);
 		switch (ret) {
 		case -1:
 			glite_jpis_stack_error(ctx->jpctx, ENOLCK, "error selecting unlocked feed");
 			uninit_msg = 1;
-			glite_jp_db_freestmt(&stmt);
+			glite_jp_db_FreeStmt(&stmt);
 			return ENOLCK;
 		case 0:
 			if (uninit_msg) {
 				lprintf("no more %s feeds for now\n", initialized ? "not-refreshed" : "uninitialized");
 				uninit_msg = 0;
 			}
-			glite_jp_db_freestmt(&stmt);
+			glite_jp_db_FreeStmt(&stmt);
 			return ENOENT;
 		default: break;
 		}
 		uninit_msg = 1;
-		if (glite_jp_db_fetchrow(stmt, res) <= 0) {
+		if (glite_jp_db_FetchRow(ctx->jpctx, stmt, sizeof(res)/sizeof(res[0]), NULL, res) <= 0) {
 			glite_jpis_stack_error(ctx->jpctx, ENOLCK, "error fetching unlocked feed");
-			glite_jp_db_freestmt(&stmt);
+			glite_jp_db_FreeStmt(&stmt);
 			return ENOLCK;
 		}
-		glite_jp_db_freestmt(&stmt);
-		ctx->param_uniqueid = atol(res[0]);
-		strncpy(ctx->param_ps, res[1], sizeof ctx->param_ps);
-		lprintf("selected feed, uniqueid=%s\n", res[0]);
-		if (status) *status = atoi(res[2]);
-		free(res[0]);
-		free(res[1]);
-		free(res[2]);
+		glite_jp_db_FreeStmt(&stmt);
+		*uniqueid = atol(res[0]); free(res[0]);
+		ps = res[1];
+		if (status) *status = atoi(res[2]); free(res[2]);
+		lprintf("selected feed, uniqueid=%s\n", *uniqueid);
 		if (feedid) {
 			free(*feedid);
 			*feedid = res[3];
 		} else free(res[3]);
 
-		ret = glite_jp_db_execute(ctx->lock_feed_stmt);
-		lprintf("locked %d feeds (uniqueid=%ld)\n", ret, ctx->param_uniqueid);
+		ret = glite_jp_db_ExecPreparedStmt(ctx->jpctx, ctx->lock_feed_stmt, 1, GLITE_LBU_DB_TYPE_INT, *uniqueid);
+		lprintf("locked %d feeds (uniqueid=%ld)\n", ret, *uniqueid);
 	} while (ret != 1);
 
-	*uniqueid = ctx->param_uniqueid;
-	if (PS_URL) *PS_URL = strdup(ctx->param_ps);
+	if (PS_URL) *PS_URL = ps;
+	else free(ps);
 
 	return 0;
 }
@@ -586,15 +536,16 @@ int glite_jpis_lockSearchFeed(glite_jpis_context_t ctx, int initialized, long in
 int glite_jpis_initFeed(glite_jpis_context_t ctx, long int uniqueid, const char *feedId, time_t feedExpires, int status)
 {
 	int ret;
-	time_t tnow;
+	time_t tnow, expires;
 
-	GLITE_JPIS_PARAM(ctx->param_feedid, ctx->param_feedid_len, feedId);
 	tnow = time(NULL);
-	glite_jp_db_set_time(ctx->param_expires, tnow + (feedExpires - tnow) / 2);
-	ctx->param_uniqueid = uniqueid;
-	ctx->param_state = status;
+	expires = tnow + (feedExpires - tnow) / 2;
 
-	ret = glite_jp_db_execute(ctx->init_feed_stmt);
+	ret = glite_jp_db_ExecPreparedStmt(ctx->jpctx, ctx->init_feed_stmt, 4,
+		GLITE_LBU_DB_TYPE_CHAR, feedId,
+		GLITE_LBU_DB_TYPE_DATETIME, expires,
+		GLITE_LBU_DB_TYPE_INT, status,
+		GLITE_LBU_DB_TYPE_INT, uniqueid);
 	lprintf("initializing feed, uniqueid=%ld, result=%d\n", uniqueid, ret);
 
 	return ret == 1 ? 0 : ENOLCK;
@@ -606,8 +557,7 @@ int glite_jpis_initFeed(glite_jpis_context_t ctx, long int uniqueid, const char 
 int glite_jpis_unlockFeed(glite_jpis_context_t ctx, long int uniqueid) {
 	int ret;
 
-	ctx->param_uniqueid = uniqueid;
-	ret = glite_jp_db_execute(ctx->unlock_feed_stmt);
+	ret = glite_jp_db_ExecPreparedStmt(ctx->jpctx, ctx->unlock_feed_stmt, 1, GLITE_LBU_DB_TYPE_INT, uniqueid);
 	lprintf("unlocking feed, uniqueid=%ld, result=%d\n", uniqueid, ret);
 
 	return ret == 1 ? 0 : ENOLCK;
@@ -620,11 +570,11 @@ int glite_jpis_tryReconnectFeed(glite_jpis_context_t ctx, long int uniqueid, tim
 	int ret;
 	char *sql, *t;
 
-	t = glite_jp_db_timetodb(reconn_time);
+	glite_lbu_TimeToDB(reconn_time, &t);
 	lprintf("reconnect, un=%ld, %s\n", uniqueid, t);
 	trio_asprintf(&sql, "UPDATE feeds SET state=%d, expires=%s WHERE (uniqueid=%ld)", state, t, uniqueid);
 	free(t);
-	if ((ret = glite_jp_db_execstmt(ctx->jpctx, sql, NULL)) != 1)
+	if ((ret = glite_jp_db_ExecSQL(ctx->jpctx, sql, NULL)) != 1)
 		glite_jpis_stack_error(ctx->jpctx, EIO, "can't update feed no. %ld in DB", uniqueid);
 	free(sql);
 	return ret == -1 ? ctx->jpctx->error->code : 0;
@@ -636,11 +586,11 @@ int glite_jpis_destroyTryReconnectFeed(glite_jpis_context_t ctx, long int unique
 	int ret;
 	char *sql, *t;
 
-	t = glite_jp_db_timetodb(reconn_time);
+	glite_lbu_TimeToDB(reconn_time, &t);
 	lprintf("destroy not refreshed feed, un=%ld, %s\n", uniqueid, t);
 	trio_asprintf(&sql, "UPDATE feeds SET feedid=NULL, state=0, expires=%s WHERE (uniqueid=%ld)", t, uniqueid);
 	free(t);
-	if ((ret = glite_jp_db_execstmt(ctx->jpctx, sql, NULL)) != 1)
+	if ((ret = glite_jp_db_ExecSQL(ctx->jpctx, sql, NULL)) != 1)
 		glite_jpis_stack_error(ctx->jpctx, EIO, "can't destroy non-refreshable feed no. %ld in DB", uniqueid);
 	free(sql);
 	return ret == -1 ? ctx->jpctx->error->code : 0;
@@ -662,7 +612,7 @@ int glite_jpis_insertAttrVal(glite_jpis_context_t ctx, const char *jobid, glite_
 	free(value);
 	free(full_value);
 	llprintf(LOG_SQL, "(%s) sql=%s\n", av->name, sql);
-	if (glite_jp_db_execstmt(ctx->jpctx, sql, NULL) != 1) {
+	if (glite_jp_db_ExecSQL(ctx->jpctx, sql, NULL) != 1) {
 		free(sql);
 		return ctx->jpctx->error->code;
 	}
@@ -684,28 +634,27 @@ int glite_jpis_lazyInsertJob(glite_jpis_context_t ctx, const char *ps, const cha
 	}
 	md5_jobid = str2md5(jobid);
 	md5_cert = str2md5(owner);
-	GLITE_JPIS_PARAM(ctx->param_jobid, ctx->param_jobid_len, md5_jobid);
-	switch (ret = glite_jp_db_execute(ctx->select_jobid_stmt)) {
+	switch (ret = glite_jp_db_ExecPreparedStmt(ctx->jpctx, ctx->select_jobid_stmt, 1, GLITE_LBU_DB_TYPE_CHAR, md5_jobid)) {
 	case 1: lprintf("jobid '%s' found\n", jobid); goto ok0;
 	case 0:
 		lprintf("inserting jobid %s (%s)\n", jobid, md5_jobid);
-
-		GLITE_JPIS_PARAM(ctx->param_dg_jobid, ctx->param_dg_jobid_len, jobid);
-		GLITE_JPIS_PARAM(ctx->param_ownerid, ctx->param_ownerid_len, md5_cert);
-		GLITE_JPIS_PARAM(ctx->param_ps, ctx->param_ps_len, ps);
-		if (glite_jp_db_execute(ctx->insert_job_stmt) != 1) goto fail;
+		if (glite_jp_db_ExecPreparedStmt(ctx->jpctx, ctx->insert_job_stmt, 4,
+			GLITE_LBU_DB_TYPE_CHAR, md5_jobid,
+			GLITE_LBU_DB_TYPE_VARCHAR, jobid,
+			GLITE_LBU_DB_TYPE_CHAR, md5_cert,
+			GLITE_LBU_DB_TYPE_CHAR, ps) != 1) goto fail;
 		break;
 	default: assert(ret != 1); break;
 	}
 ok0:
 
-	GLITE_JPIS_PARAM(ctx->param_ownerid, ctx->param_ownerid_len, md5_cert);
-	switch (ret = glite_jp_db_execute(ctx->select_user_stmt)) {
+	switch (ret = glite_jp_db_ExecPreparedStmt(ctx->jpctx, ctx->select_user_stmt, 1, GLITE_LBU_DB_TYPE_CHAR, md5_cert)) {
 	case 1: lprintf("owner '%s' found\n", owner); goto ok;
 	case 0:
 		lprintf("inserting user %s (%s)\n", owner, md5_cert);
-		GLITE_JPIS_PARAM(ctx->param_cert, ctx->param_cert_len, owner);
-		if (glite_jp_db_execute(ctx->insert_user_stmt) != 1) goto fail;
+		if (glite_jp_db_ExecPreparedStmt(ctx->jpctx, ctx->insert_user_stmt, 2,
+			GLITE_LBU_DB_TYPE_CHAR, md5_cert,
+			GLITE_LBU_DB_TYPE_VARCHAR, owner) != 1) goto fail;
 		break;
 	default: assert(ret != 1); break;
 	}

@@ -411,7 +411,7 @@ int newconn(int conn,struct timeval *to,void *data)
 			{
 
 				printf("[%d] reloading credentials\n",getpid()); /* XXX: log */
-				edg_wll_gss_release_cred(mycred, NULL);
+				edg_wll_gss_release_cred(&mycred, NULL);
 				mycred = newcred;
 			}
 			break;

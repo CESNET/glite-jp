@@ -45,34 +45,14 @@ HDRS:=db.h
 OBJS:=${SRCS:.c=.o}
 LOBJS:=${OBJS:.o=.lo}
 
-archlib:=lib
-host_cpu:=${shell uname -m}
-ifeq (${host_cpu},x86_64) 
-    archlib:=lib64
-endif   
-
-ifneq (${mysql_prefix},/usr)
-	ifeq ($(shell test -f ${mysql_prefix}/${archlib}/libmysqlclient.a -o -f ${mysql_prefix}/${archlib}/libmysqlclient.so && echo ok),ok)
-		MYSQLIB := -L${mysql_prefix}/${archlib} -lmysqlclient -lz
-	else
-		MYSQLIB := -L${mysql_prefix}/${archlib}/mysql -lmysqlclient -lz
-	endif
-else
-	MYSQLIB := -lmysqlclient -lz
-endif
-
-
 default all: compile examples
 
 compile: ${LTLIB} ${STATICLIB}
 
 ${LTLIB} ${STATICLIB}: ${OBJS}
-	${LIBLINK} ${version_info} -o $@ ${LOBJS} ${MYSQLIB}
+	${LIBLINK} -o $@ ${LOBJS} -lglite_lbu_db 
 
-examples: db-test-int
-
-db-test-int: db-test-int.o
-	${LINK} -o $@ $+ ${STATICLIB} ${MYSQLIB} -lglite_jp_common_${nothrflavour}
+examples:
 
 check: 
 	-echo nothing yet
@@ -82,19 +62,6 @@ doc:
 stage: compile
 	$(MAKE) install PREFIX=${stagedir}
 
-dist: distsrc distbin
-
-distsrc:
-	mkdir -p ${top_srcdir}/${package}-${version}
-	cd ${top_srcdir} && GLOBIGNORE="${package}-${version}" && cp -Rf * ${package}-${version}
-	cd ${top_srcdir} && tar -czf ${distdir}/${package}-${version}_src.tar.gz --exclude-from=project/tar_exclude ${package}-${version}
-	rm -rf ${top_srcdir}/${package}-${version}
-
-distbin:
-	$(MAKE) install PREFIX=`pwd`/tmpbuilddir${stagedir}
-	save_dir=`pwd`; cd tmpbuilddir${stagedir} && tar -czf $$save_dir/${top_srcdir}/${distdir}/${package}-${version}_bin.tar.gz *; cd $$save_dir
-	rm -rf tmpbuilddir
-	
 install:
 	-mkdir -p  ${PREFIX}/lib ${PREFIX}/include/${globalprefix}/${jpprefix}
 	${INSTALL} -m 755 ${LTLIB} ${PREFIX}/lib

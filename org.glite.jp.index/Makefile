@@ -6,7 +6,7 @@ stagedir=.
 distdir=.
 globalprefix=glite
 jpprefix=jp
-package=glite-lb-server
+package=glite-jp-index
 version=0.0.0
 PREFIX=/opt/glite
 
@@ -104,19 +104,6 @@ doc: ${MANS} ${HTMLS}
 stage: compile doc
 	${MAKE} PREFIX=${stagedir} DOSTAGE=yes install
 
-dist: distsrc distbin
-
-distsrc:
-	mkdir -p ${top_srcdir}/${package}-${version}
-	cd ${top_srcdir} && GLOBIGNORE="${package}-${version}" && cp -Rf * ${package}-${version}
-	cd ${top_srcdir} && tar -czf ${distdir}/${package}-${version}_src.tar.gz --exclude-from=project/tar_exclude ${package}-${version}
-	rm -rf ${top_srcdir}/${package}-${version}
-
-distbin:
-	$(MAKE) install PREFIX=`pwd`/tmpbuilddir${stagedir}
-	save_dir=`pwd`; cd tmpbuilddir${stagedir} && tar -czf $$save_dir/${top_srcdir}/${distdir}/${package}-${version}_bin.tar.gz *; cd $$save_dir
-	rm -rf tmpbuilddir
-	
 install:
 	-mkdir -p ${PREFIX}/bin ${PREFIX}/etc ${PREFIX}/etc/init.d
 	-mkdir -p ${PREFIX}/share/doc/${package}-${version} 
@@ -140,6 +127,8 @@ install:
 	${INSTALL} -m 644 ${top_srcdir}/interface/JobProvenanceISClient.xsd ${PREFIX}/interface
 
 clean:
+	rm -rvf *.c *.h *.ch *.xh *.xml *.nsmap *.o *.lo .libs glite-jp*
+	rm -rvf log.xml project/ rpmbuild/ RPMS/ tgz/
 
 soap_ops.o bones_server.o simple_server.o: ${is_prefix}H.h ${ps_prefix}H.h
 
