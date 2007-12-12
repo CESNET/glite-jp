@@ -56,18 +56,22 @@ int glite_jp_db_FetchRow(glite_jp_context_t ctx, glite_lbu_Statement stmt, unsig
 
 
 int glite_jp_db_PrepareStmt(glite_jp_context_t ctx, const char *sql, glite_lbu_Statement *stmt) {
-	glite_lbu_PrepareStmt(ctx->dbhandle, sql, stmt);
+	int ret;
+
+	ret = glite_lbu_PrepareStmt(ctx->dbhandle, sql, stmt);
+	if (ret < 0) glite_jp_db_SetError(ctx, __FUNCTION__);
 	return glite_jp_db_SetError(ctx, __FUNCTION__);
 }
 
 
 int glite_jp_db_ExecPreparedStmt(glite_jp_context_t ctx, glite_lbu_Statement stmt, int n,...) {
 	va_list ap;
+	int ret;
 
 	va_start(ap, n);
-	glite_lbu_ExecPreparedStmt_v(stmt, n, ap);
+	ret = glite_lbu_ExecPreparedStmt_v(stmt, n, ap);
 	va_end(ap);
-	return glite_jp_db_SetError(ctx, __FUNCTION__);
+	return ret;
 }
 
 

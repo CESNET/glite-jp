@@ -75,6 +75,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__UpdateJobs(
 	// XXX: test client in examples/jpis-test
 	//      sends to this function some data for testing
 	puts(__FUNCTION__);
+	glite_jp_clear_error(jpctx);
 	ps = NULL;
 
 	// get info about the feed
@@ -215,7 +216,7 @@ static void add_attr_table(char *new, char ***attr_tables)
 
 /* transform soap enum queryOp to mysql quivalent */
 static int get_op(const enum jptype__queryOp in, char **out)
-{			
+{
 	char 			*qop;
 	glite_jp_queryop_t      op;
 
@@ -618,6 +619,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__QueryJobs(
 
 
 	puts(__FUNCTION__);
+	glite_jp_clear_error(ctx->jpctx);
 	memset(out, 0, sizeof(*out));
 	
 	/* test whether there is any indexed attribudes in the condition */
@@ -712,4 +714,3 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__ServerConfiguration(
         puts(__FUNCTION__);
         return SOAP_OK;
 }
-

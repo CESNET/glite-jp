@@ -310,7 +310,6 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 		  GLITE_LBU_DB_TYPE_VARCHAR, attrs[i],
 		  GLITE_LBU_DB_TYPE_INT, indexed,
 		  GLITE_LBU_DB_TYPE_VARCHAR, type_full) == -1) goto fail;
-		free(attrid);
 
 		// silently drop
 		sql[sizeof(sql) - 1] = '\0';
@@ -321,6 +320,7 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 		// create table
 		sql[sizeof(sql) - 1] = '\0';
 		snprintf(sql, sizeof(sql) - 1, SQLCMD_CREATE_DATA_TABLE, attrid, type_index, type_full);
+		free(attrid);
 		llprintf(LOG_SQL, "creating table: '%s'\n", sql);
 		if ((glite_jp_db_ExecSQL(jpctx, sql, NULL)) == -1) {
 			glite_jpis_stack_error(ctx->jpctx, EAGAIN, "if the atribute table already exists, restart may help");
@@ -487,6 +487,7 @@ int glite_jpis_lockSearchFeed(glite_jpis_context_t ctx, int initialized, long in
 		} else
 			trio_asprintf(&sql, "SELECT uniqueid, source, state, feedid FROM feeds WHERE (locked=0) AND (feedid IS NULL) AND ((state < " GLITE_JP_IS_STATE_ERROR_STR ") OR (expires <= %s))", t);
 		free(t);
+		//llprintf(LOG_SQL, "sql=%s\n", sql);
 		ret = glite_jp_db_ExecSQL(ctx->jpctx, sql, &stmt);
 		free(sql);
 		switch (ret) {
@@ -511,10 +512,10 @@ int glite_jpis_lockSearchFeed(glite_jpis_context_t ctx, int initialized, long in
 			return ENOLCK;
 		}
 		glite_jp_db_FreeStmt(&stmt);
+		lprintf("selected feed, uniqueid=%s\n", res[0]);
 		*uniqueid = atol(res[0]); free(res[0]);
 		ps = res[1];
 		if (status) *status = atoi(res[2]); free(res[2]);
-		lprintf("selected feed, uniqueid=%s\n", *uniqueid);
 		if (feedid) {
 			free(*feedid);
 			*feedid = res[3];
