@@ -9,7 +9,7 @@
 #include "glite/jp/types.h"
 #include "glite/jp/context.h"
 
-#include "db.h"
+#include "glite/jp/db.h"
 
 extern void reply(int n, char *fmt,...);
 
@@ -33,7 +33,11 @@ static int open_db()
 	}
 
 	glite_jp_init_context(&ctx);
-	if (glite_jp_db_connect(ctx, db_cs)) {
+	if (glite_lbu_InitDBContext(((glite_lbu_DBContext *)&ctx->dbhandle)) != 0) {
+		reply(550, "Internal error: backend DB initialization failed");
+		return 0;
+	}
+	if (glite_lbu_DBConnect(ctx->dbhandle, db_cs) != 0) {
 		reply(550, "Internal error: backend DB access failed");
 		return 0;
 	}
@@ -43,7 +47,8 @@ static int open_db()
 
 static void close_db()
 {
-	glite_jp_db_close(ctx);
+	glite_lbu_DBClose(ctx->dbhandle);
+	glite_lbu_FreeDBContext(ctx->dbhandle);
 }
 
 
@@ -84,7 +89,7 @@ int checknoretrieve(char *name)
 
 	char *stmt = NULL;
 	int db_retn;
-	glite_jp_db_stmt_t db_res;
+	glite_lbu_Statement db_res;
 	char *db_row[1] = { NULL };
 
 	trio_asprintf(&stmt,"select j.owner from jobs j,files f where "
@@ -97,7 +102,7 @@ int checknoretrieve(char *name)
 
 	if (!open_db()) return 1;
 
-	if ((db_retn = glite_jp_db_execstmt(ctx, stmt, &db_res)) <= 0) {
+	if ((db_retn = glite_jp_db_ExecSQL(ctx, stmt, &db_res)) <= 0) {
 		if (db_retn == 0) {
 			reply(553, "No such file registered");
 		} else {
@@ -106,13 +111,13 @@ int checknoretrieve(char *name)
 		goto out;
 	}
 	
-	db_retn = glite_jp_db_fetchrow(db_res, db_row);
+	db_retn = glite_jp_db_FetchRow(ctx, db_res, 1, NULL, db_row);
 	if (db_retn != 1) {
-		glite_jp_db_freestmt(&db_res);
+		glite_jp_db_FreeStmt(&db_res);
 		reply(550, "Internal error: backend DB access failed");
 		goto out;
 	}
-	glite_jp_db_freestmt(&db_res);
+	glite_jp_db_FreeStmt(&db_res);
 
 	if (!strcmp(db_row[0], user_subj)) {
 		result = 0;
@@ -133,7 +138,7 @@ int upl_check(char *name, uid_t * uid, gid_t * gid, int *f_mode, int *valid)
 
 	char *stmt = NULL;
 	int db_retn;
-	glite_jp_db_stmt_t db_res;
+	glite_lbu_Statement db_res;
 	char *db_row[1] = { NULL };
 
 	*valid = 0; /* don't used uid & gid */
@@ -148,7 +153,7 @@ int upl_check(char *name, uid_t * uid, gid_t * gid, int *f_mode, int *valid)
 
 	if (!open_db()) return -1;
 
-	if ((db_retn = glite_jp_db_execstmt(ctx, stmt, &db_res)) <= 0) {
+	if ((db_retn = glite_jp_db_ExecSQL(ctx, stmt, &db_res)) <= 0) {
 		if (db_retn == 0) {
 			reply(553, "No such upload in progress");
 		} else {
@@ -157,13 +162,13 @@ int upl_check(char *name, uid_t * uid, gid_t * gid, int *f_mode, int *valid)
 		goto out;
 	}
 	
-	db_retn = glite_jp_db_fetchrow(db_res, db_row);
+	db_retn = glite_jp_db_FetchRow(ctx, db_res, 1, NULL, db_row);
 	if (db_retn != 1) {
-		glite_jp_db_freestmt(&db_res);
+		glite_jp_db_FreeStmt(&db_res);
 		reply(550, "Internal error: backend DB access failed");
 		goto out;
 	}
-	glite_jp_db_freestmt(&db_res);
+	glite_jp_db_FreeStmt(&db_res);
 
 	if (!strcmp(db_row[0], "uploading")) {
 		result = 1;

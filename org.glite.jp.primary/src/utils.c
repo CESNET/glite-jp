@@ -19,7 +19,6 @@
 
 #include "feed.h"
 #include "tags.h"
-#include "db.h"
 
 #include "utils.h"
 #include "backend.h"

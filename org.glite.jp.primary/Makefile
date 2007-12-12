@@ -38,7 +38,7 @@ CLASSADPLUGIN_LOBJS:= classad_plugin.lo
 
 DEBUG:=-g -O0  -DDEBUG
 
-CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${gsoap_prefix} -I${stagedir}/include -I${mysql_prefix}/include -I${mysql_prefix}/include/mysql -I${classads_prefix}/include -I${libtar_prefix}/include
+CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${gsoap_prefix} -I${stagedir}/include -I${classads_prefix}/include -I${libtar_prefix}/include
 LDFLAGS:=-L${stagedir}/lib
 
 LINK:=libtool --mode=link ${CC} ${LDFLAGS} 
@@ -59,7 +59,7 @@ HDRS_I=file_plugin.h
 HDRS_S=builtin_plugins.h backend.h feed.h utils.h
 
 SRCS:= bones_server.c soap_ops.c \
-	new_ftp_backend.c mysql.c file_plugin.c utils.c\
+	new_ftp_backend.c file_plugin.c utils.c\
 	feed.c authz.c attrs.c \
 	tags.c\
 	is_client.c \
@@ -79,28 +79,19 @@ DAG_OBJS:=${DAG_SRCS:.c=.o}
 
 dotless_soap_ver:=${shell echo ${gsoap_version} | tr -d . }
 COMMONLIB:=-lglite_jp_common_${nothrflavour}
+SRVCOMMONLIB:=-lglite_jp_server_common
 BONESLIB:=-lglite_lbu_server_bones
 GSOAPLIB:=-L${stagedir}/lib -lglite_security_gsoap_plugin_${dotless_soap_ver}_${nothrflavour} 
 TRIOLIB:=-lglite_lbu_trio
 LIBTARLIB:=-L${libtar_prefix}/lib -ltar
 GSSLIB:=-lglite_security_gss_${nothrflavour}
 
-ifneq (${mysql_prefix},/usr)
-	ifeq ($(shell test -f ${mysql_prefix}/${archlib}/libmysqlclient.a -o -f ${mysql_prefix}/${archlib}/libmysqlclient.so && echo ok),ok)
-		MYSQLIB := -L${mysql_prefix}/${archlib} -lmysqlclient -lz
-        else
-		MYSQLIB := -L${mysql_prefix}/${archlib}/mysql -L${mysql_prefix}/${archlib} -lmysqlclient -lz
-        endif
-else
-	MYSQLIB := -lmysqlclient
-endif
-
 default all: compile
 
 compile: ${daemon} ${example} ${plugins}
 
 ${daemon}: ${OBJS}
-	${LINK} -o $@ -export-dynamic ${OBJS} ${BONESLIB} ${TRIOLIB} ${COMMONLIB} ${GSOAPLIB} ${MYSQLIB} ${GSSLIB}
+	${LINK} -o $@ -export-dynamic ${OBJS} ${BONESLIB} ${TRIOLIB} ${COMMONLIB} ${GSOAPLIB} ${GSSLIB} ${SRVCOMMONLIB}
 
 jpps-test: ${TEST_OBJS}
 	${LINK} -o $@ ${TEST_OBJS} ${GSOAPLIB}
@@ -192,8 +183,8 @@ simple_server.o soap_ops.o jpps-test.o: ${ps_prefix}H.h
 glite-jp-sandbox.la: sandbox_plugin.lo
 	${SOLINK} -o $@ sandbox_plugin.lo ${LIBTARLIB}
 
-glite-jp-ftpdauth.la: ftpd_auth.lo mysql.lo
-	${SOLINK} -o $@ ftpd_auth.lo mysql.lo ${COMMONLIB} ${TRIOLIB} ${MYSQLIB}
+glite-jp-ftpdauth.la: ftpd_auth.lo
+	${SOLINK} -o $@ ftpd_auth.lo ${COMMONLIB} ${TRIOLIB} ${SRVCOMMONLIB}
 
 #glite-jp-classad.lo: classad_plugin.c
 #	${LTCOMPILE} -DPLUGIN_DEBUG -o $@ -c $<

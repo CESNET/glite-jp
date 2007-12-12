@@ -21,11 +21,11 @@
 #include "glite/jp/strmd5.h"
 #include "glite/jp/known_attr.h"
 #include "glite/jp/attr.h"
+#include "glite/jp/db.h"
 
 #include "feed.h"
 #include "tags.h"
 #include "backend.h"
-#include "db.h"
 
 #include "jpps_H.h"	/* XXX: SOAP_TYPE___jpsrv__GetJob */
 
@@ -158,7 +158,7 @@ static int store_user(glite_jp_context_t ctx, const char *userid, const char *su
 		return glite_jp_stack_error(ctx,&err);
 	}
 
-	if (glite_jp_db_execstmt(ctx, stmt, NULL) < 0) {
+	if (glite_jp_db_ExecSQL(ctx, stmt, NULL) < 0) {
 		if (ctx->error->code == EEXIST) 
 			glite_jp_clear_error(ctx);
 		else {
@@ -226,12 +226,19 @@ int glite_jppsbe_init(
 		return glite_jp_stack_error(ctx,&err);
 	}
 
-	if (glite_jp_db_connect(ctx, config->db_cs)) {
+	if (glite_lbu_InitDBContext(((glite_lbu_DBContext *)&ctx->dbhandle)) != 0) {
+		err.code = EINVAL;
+		err.desc = "Cannot init backend's database";
+		return glite_jp_stack_error(ctx,&err);
+	}
+	if (glite_lbu_DBConnect(ctx->dbhandle, config->db_cs)) {
 		err.code = EIO;
 		err.desc = "Cannot access backend's database (during init)";
 		return glite_jp_stack_error(ctx,&err);
 	} else {
-		glite_jp_db_close(ctx); /* slaves open their own connections */
+		/* slaves open their own connections */
+		glite_lbu_DBClose(ctx->dbhandle);
+		glite_lbu_FreeDBContext(ctx->dbhandle);
 	}
 
 	return 0;
@@ -247,7 +254,12 @@ int glite_jppsbe_init_slave(
 	memset(&err,0,sizeof err);
 	err.source = __FUNCTION__;
 	
-	if (glite_jp_db_connect(ctx, config->db_cs)) {
+	if (glite_lbu_InitDBContext(((glite_lbu_DBContext *)&ctx->dbhandle)) != 0) {
+		err.code = EINVAL;
+		err.desc = "Cannot init backend's database";
+		return glite_jp_stack_error(ctx,&err);
+	}
+	if (glite_lbu_DBConnect(ctx->dbhandle, config->db_cs)) {
 		err.code = EIO;
 		err.desc = "Cannot access backend's database";
 		return glite_jp_stack_error(ctx,&err);
@@ -293,7 +305,7 @@ int glite_jppsbe_register_job(
 		goto error_out;
 	}
 
-	dbtime = glite_jp_db_timetodb(reg_tv.tv_sec);
+	glite_lbu_TimeToDB(reg_tv.tv_sec, &dbtime);
 	if (!dbtime) {
 		err.code = ENOMEM;
 		goto error_out;
@@ -307,7 +319,7 @@ int glite_jppsbe_register_job(
 		goto error_out;
 	}
 	
-	if (glite_jp_db_execstmt(ctx, stmt, NULL) < 0) {
+	if (glite_jp_db_ExecSQL(ctx, stmt, NULL) < 0) {
 		if (ctx->error->code == EEXIST) {
 			err.code = EEXIST;
 			err.desc = "Job already registered";
@@ -402,9 +414,10 @@ int glite_jppsbe_start_upload(
 	char *ju_path = NULL;
 	char *peername = NULL;
 	char *peerhash = NULL;
+	char *commit_before_inout_str;
 
 	char *stmt = NULL;
-	glite_jp_db_stmt_t db_res;
+	glite_lbu_Statement db_res;
 	int db_retn;
 	char *db_row[2] = { NULL, NULL };
 
@@ -440,7 +453,7 @@ int glite_jppsbe_start_upload(
 		goto error_out;
 	}
 
-	if ((db_retn = glite_jp_db_execstmt(ctx, stmt, &db_res)) <= 0) {
+	if ((db_retn = glite_jp_db_ExecSQL(ctx, stmt, &db_res)) <= 0) {
 		if (db_retn == 0) {
 			err.code = ENOENT;
 			err.desc = "No such job registered";
@@ -451,15 +464,15 @@ int glite_jppsbe_start_upload(
 		goto error_out;
 	}
 	
-	db_retn = glite_jp_db_fetchrow(db_res, db_row);
+	db_retn = glite_jp_db_FetchRow(ctx, db_res, sizeof(db_row)/sizeof(db_row[0]), NULL, db_row);
 	if (db_retn != 2) {
-		glite_jp_db_freestmt(&db_res);
+		glite_jp_db_FreeStmt(&db_res);
 		err.code = EIO;
 		err.desc = "DB access failed";
 		goto error_out;
 	}
 
-	glite_jp_db_freestmt(&db_res);
+	glite_jp_db_FreeStmt(&db_res);
 	
 	/* XXX authorization done in soap_ops.c */
 
@@ -474,14 +487,14 @@ int glite_jppsbe_start_upload(
 
 	if (asprintf(&data_fname, "%s/data/%s/%d/%s/%s",
 			config->internal_path, db_row[0],
-			regtime_trunc(glite_jp_db_dbtotime(db_row[1])),
+			regtime_trunc(glite_lbu_DBToTime(db_row[1])),
 			ju, data_basename) == -1) {
 		err.code = ENOMEM;
 		goto error_out;
 	}
 	if (asprintf(destination_out, "%s/data/%s/%d/%s/%s",
 			config->external_path, db_row[0],
-			regtime_trunc(glite_jp_db_dbtotime(db_row[1])),
+			regtime_trunc(glite_lbu_DBToTime(db_row[1])),
 			ju, data_basename) == -1) {
 		err.code = ENOMEM;
 		goto error_out;
@@ -510,17 +523,19 @@ int glite_jppsbe_start_upload(
 	}
 
 	free(stmt); stmt = NULL;
+	glite_lbu_TimeToDB(*commit_before_inout, &commit_before_inout_str);
 	trio_asprintf(&stmt,"insert into files"
 		"(jobid,filename,int_path,ext_url,state,deadline,ul_userid) "
 		"values ('%|Ss','%|Ss','%|Ss','%|Ss','%|Ss', '%|Ss', '%|Ss')",
 		ju, data_basename, data_fname, *destination_out, "uploading", 
-		glite_jp_db_timetodb(*commit_before_inout), peerhash);
+		commit_before_inout_str, peerhash);
+	free(commit_before_inout_str);
 	if (!stmt) {
 		err.code = ENOMEM;
 		goto error_out;
 	}
 
-	if (glite_jp_db_execstmt(ctx, stmt, NULL) < 0) {
+	if (glite_jp_db_ExecSQL(ctx, stmt, NULL) < 0) {
 		if (ctx->error->code == EEXIST) {
 			err.code = EEXIST;
 			err.desc = "File already stored or upload in progress";
@@ -553,7 +568,7 @@ int glite_jppsbe_commit_upload(
 	char *peerhash = NULL;
 
 	char *stmt = NULL;
-	glite_jp_db_stmt_t db_res;
+	glite_lbu_Statement db_res;
 	int db_retn;
 	char *db_row[7] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL };
 	int i;
@@ -573,7 +588,7 @@ int glite_jppsbe_commit_upload(
 		goto error_out;
 	}
 	
-	if ((db_retn = glite_jp_db_execstmt(ctx, stmt, &db_res)) <= 0) {
+	if ((db_retn = glite_jp_db_ExecSQL(ctx, stmt, &db_res)) <= 0) {
 		if (db_retn == 0) {
 			err.code = ENOENT;
 			err.desc = "No such upload in progress";
@@ -584,14 +599,14 @@ int glite_jppsbe_commit_upload(
 		goto error_out;
 	}
 
-	db_retn = glite_jp_db_fetchrow(db_res, db_row);
+	db_retn = glite_jp_db_FetchRow(ctx, db_res, sizeof(db_row)/sizeof(db_row[0]), NULL, db_row);
 	if (db_retn != 7) {
-		glite_jp_db_freestmt(&db_res);
+		glite_jp_db_FreeStmt(&db_res);
 		err.code = EIO;
 		err.desc = "DB access failed";
 		goto error_out;
 	}
-	glite_jp_db_freestmt(&db_res);
+	glite_jp_db_FreeStmt(&db_res);
 
 	peername = glite_jp_peer_name(ctx);
 	if (peername == NULL) {
@@ -616,7 +631,7 @@ int glite_jppsbe_commit_upload(
 		goto error_out;
 	}
 
-	if (glite_jp_db_execstmt(ctx, stmt, NULL) < 0) {
+	if (glite_jp_db_ExecSQL(ctx, stmt, NULL) < 0) {
 		err.code = EIO;
 		err.desc = "DB access failed";
 		goto error_out;
@@ -641,13 +656,12 @@ int glite_jppsbe_destination_info(
 )
 {
 	char *stmt = NULL;
-	glite_jp_db_stmt_t db_res;
+	glite_lbu_Statement db_res;
 	int db_retn;
 	char *db_row[2] = { NULL, NULL};
 	int i;
 	char *cp = NULL;
 	
-	char *classname = NULL;
 	glite_jp_error_t err;
 
 	assert(destination != NULL);
@@ -667,7 +681,7 @@ int glite_jppsbe_destination_info(
 		goto error_out;
 	}
 	
-	if ((db_retn = glite_jp_db_execstmt(ctx, stmt, &db_res)) <= 0) {
+	if ((db_retn = glite_jp_db_ExecSQL(ctx, stmt, &db_res)) <= 0) {
 		if (db_retn == 0) {
 			err.code = ENOENT;
 			err.desc = "Invalid destination string";
@@ -678,14 +692,14 @@ int glite_jppsbe_destination_info(
 		goto error_out;
 	}
 
-	db_retn = glite_jp_db_fetchrow(db_res, db_row);
+	db_retn = glite_jp_db_FetchRow(ctx, db_res, sizeof(db_row)/sizeof(db_row[0]), NULL, db_row);
 	if (db_retn != 2) {
-		glite_jp_db_freestmt(&db_res);
+		glite_jp_db_FreeStmt(&db_res);
 		err.code = EIO;
 		err.desc = "DB access failed";
 		goto error_out;
 	}
-	glite_jp_db_freestmt(&db_res);
+	glite_jp_db_FreeStmt(&db_res);
 
 	*job = strdup(db_row[0]);
 
@@ -723,16 +737,14 @@ int glite_jppsbe_get_job_url(
 )
 {
 	char *data_basename = NULL;
-	char *data_fname = NULL;
 	char *ju = NULL;
 	char *ju_path = NULL;
 
 	char *stmt = NULL;
-	glite_jp_db_stmt_t db_res;
+	glite_lbu_Statement db_res;
 	int db_retn;
 	char *db_row[3] = { NULL, NULL, NULL };
 
-	long reg_time;
 	glite_jp_error_t err;
 
 	glite_jp_clear_error(ctx);
@@ -758,7 +770,7 @@ int glite_jppsbe_get_job_url(
 		goto error_out;
 	}
 
-	if ((db_retn = glite_jp_db_execstmt(ctx, stmt, &db_res)) <= 0) {
+	if ((db_retn = glite_jp_db_ExecSQL(ctx, stmt, &db_res)) <= 0) {
 		if (db_retn == 0) {
 			err.code = ENOENT;
 			err.desc = "No such job registered";
@@ -771,15 +783,15 @@ int glite_jppsbe_get_job_url(
 
 	free(stmt); stmt = NULL;
 	
-	db_retn = glite_jp_db_fetchrow(db_res, db_row);
+	db_retn = glite_jp_db_FetchRow(ctx, db_res, sizeof(db_row)/sizeof(db_row[0]), NULL, db_row);
 	if (db_retn != 3) {
-		glite_jp_db_freestmt(&db_res);
+		glite_jp_db_FreeStmt(&db_res);
 		err.code = EIO;
 		err.desc = "DB access failed";
 		goto error_out;
 	}
 
-	glite_jp_db_freestmt(&db_res);
+	glite_jp_db_FreeStmt(&db_res);
 
 	if (glite_jpps_authz(ctx,SOAP_TYPE___jpsrv__GetJobFiles,job,db_row[2])) {
 		err.code = EPERM;
@@ -796,17 +808,19 @@ int glite_jppsbe_get_job_url(
 
 	if (asprintf(url_out, "%s/data/%s/%d/%s/%s",
 			config->external_path, db_row[0],
-			regtime_trunc(glite_jp_db_dbtotime(db_row[1])),
+			regtime_trunc(glite_lbu_DBToTime(db_row[1])),
 			ju, data_basename) == -1) {
 		err.code = ENOMEM;
 		goto error_out;
 	}
 
+// FIXME: relict?
+#if 0
 	trio_asprintf(&stmt,"select 'x' from files where jobid='%|Ss' "
 				"and ext_url = '%|Ss' "
 				"and state='committed' ",ju,*url_out);
 
-	if ((db_retn = glite_jp_db_execstmt(ctx,stmt,&db_res)) <= 0) {
+	if ((db_retn = glite_jp_db_ExecSQL(ctx,stmt,&db_res)) <= 0) {
 		if (db_retn == 0) {
 			err.code = ENOENT;
 			err.desc = "not uploaded yet";
@@ -817,6 +831,7 @@ int glite_jppsbe_get_job_url(
 		}
 		/* goto error_out; */
 	}
+#endif
 
 error_out:
 	free(db_row[0]); free(db_row[1]);
@@ -843,11 +858,10 @@ static int get_job_fname(
 	char *ju_path = NULL;
 
 	char *stmt = NULL;
-	glite_jp_db_stmt_t db_res;
+	glite_lbu_Statement db_res;
 	int db_retn;
 	char *db_row[2] = { NULL, NULL };
 
-	long reg_time;
 	glite_jp_error_t err;
 
 	glite_jp_clear_error(ctx);
@@ -873,7 +887,7 @@ static int get_job_fname(
 		goto error_out;
 	}
 
-	if ((db_retn = glite_jp_db_execstmt(ctx, stmt, &db_res)) <= 0) {
+	if ((db_retn = glite_jp_db_ExecSQL(ctx, stmt, &db_res)) <= 0) {
 		if (db_retn == 0) {
 			err.code = ENOENT;
 			err.desc = "No such job registered";
@@ -884,15 +898,15 @@ static int get_job_fname(
 		goto error_out;
 	}
 	
-	db_retn = glite_jp_db_fetchrow(db_res, db_row);
+	db_retn = glite_jp_db_FetchRow(ctx, db_res, sizeof(db_row)/sizeof(db_row[0]), NULL, db_row);
 	if (db_retn != 2) {
-		glite_jp_db_freestmt(&db_res);
+		glite_jp_db_FreeStmt(&db_res);
 		err.code = EIO;
 		err.desc = "DB access failed";
 		goto error_out;
 	}
 
-	glite_jp_db_freestmt(&db_res);
+	glite_jp_db_FreeStmt(&db_res);
 	
 	/* XXX name length */
 	if (asprintf(&data_basename, "%s%s%s", class,
@@ -903,7 +917,7 @@ static int get_job_fname(
 
 	if (asprintf(fname_out, "%s/data/%s/%d/%s/%s",
 			config->internal_path, db_row[0],
-			regtime_trunc(glite_jp_db_dbtotime(db_row[1])),
+			regtime_trunc(glite_lbu_DBToTime(db_row[1])),
 			ju, data_basename) == -1) {
 		err.code = ENOMEM;
 		goto error_out;
@@ -1239,7 +1253,7 @@ static int get_job_info(
 	char	*qry,*col[2];
 	int	rows;
 	glite_jp_error_t	err;
-	glite_jp_db_stmt_t	s = NULL;
+	glite_lbu_Statement	s = NULL;
 
 	memset(&err,0,sizeof err);
 	err.source = __FUNCTION__;
@@ -1250,7 +1264,7 @@ static int get_job_info(
 		"where j.owner = u.userid "
 		"and j.dg_jobid = '%|Ss'",job);
 
-	if ((rows = glite_jp_db_execstmt(ctx,qry,&s)) <= 0) {
+	if ((rows = glite_jp_db_ExecSQL(ctx,qry,&s)) <= 0) {
 		if (rows == 0) {
 			err.code = ENOENT;
 			err.desc = "No records for this job";
@@ -1263,7 +1277,7 @@ static int get_job_info(
 		goto cleanup;
 	}
 
-	if (glite_jp_db_fetchrow(s,col) < 0) {
+	if (glite_jp_db_FetchRow(ctx,s,sizeof(col)/sizeof(col[0]), NULL, col) < 0) {
 		err.code = EIO;
 		err.desc = "DB call fail retrieving job files";
 		glite_jp_stack_error(ctx,&err);
@@ -1271,13 +1285,13 @@ static int get_job_info(
 	}
 
 	*owner = col[0];
-	tv_reg->tv_sec = glite_jp_db_dbtotime(col[1]);
+	tv_reg->tv_sec = glite_lbu_DBToTime(col[1]);
 	tv_reg->tv_usec = 0;
 	free(col[1]);
 
 cleanup:
 	free(qry);
-	if (s) glite_jp_db_freestmt(&s);
+	if (s) glite_jp_db_FreeStmt(&s);
 	return err.code;
 }
 
@@ -1359,7 +1373,7 @@ int glite_jppsbe_get_job_metadata(
 	void *tags_handle = NULL;
 	glite_jp_tagval_t* tags = NULL;
 */
-	int i,j;
+	int i;
 	glite_jp_error_t err;
 
 	assert(job != NULL);
@@ -1913,11 +1927,11 @@ int glite_jppsbe_query(
 {
 	glite_jp_error_t	err;
 	int	i,ret;
-	int	quser = 0, muser = -1, mtime = -1;
+	int	quser = 0;
 	char	*where = NULL,*stmt = NULL,*aux = NULL, *cols = NULL;
 	char	*qres[3] = { NULL, NULL, NULL };
 	int	cmask = 0, owner_idx = -1, reg_idx = -1;
-	glite_jp_db_stmt_t	q = NULL;
+	glite_lbu_Statement	q = NULL;
 	glite_jp_attrval_t	metadata[3];
 
 	memset(&err,0,sizeof err);
@@ -1954,8 +1968,9 @@ int glite_jppsbe_query(
 		}
 		else if (!strcmp(query[i].attr,GLITE_JP_ATTR_REGTIME)) {
 			time_t 	t = glite_jp_attr2time(query[i].value);
-			char	*t1 = glite_jp_db_timetodb(t),*t2 = NULL;
+			char	*t1,*t2 = NULL;
 
+			glite_lbu_TimeToDB(t, &t1);
 			switch (query[i].op) {
 				case GLITE_JP_QUERYOP_EQUAL:
 					trio_asprintf(&qitem,"j.reg_time = %s",t1);
@@ -1971,8 +1986,8 @@ int glite_jppsbe_query(
 					break;
 				case GLITE_JP_QUERYOP_WITHIN:
 					free(t2);
-					trio_asprintf(&qitem,"j.reg_time >= %s and j.reg_time <= %s",
-							t1,t2 = glite_jp_db_timetodb(glite_jp_attr2time(query[i].value2)+1));
+					glite_lbu_TimeToDB(glite_jp_attr2time(query[i].value2)+1, &t2);
+					trio_asprintf(&qitem,"j.reg_time >= %s and j.reg_time <= %s",t1,t2);
 					break;
 				default:
 					err.code = EINVAL;
@@ -2021,7 +2036,7 @@ int glite_jppsbe_query(
 			where,
 			cmask & 1 ? "and u.userid = j.owner" : "");
 
-	if ((ret = glite_jp_db_execstmt(ctx,stmt,&q)) < 0) {
+	if ((ret = glite_jp_db_ExecSQL(ctx,stmt,&q)) < 0) {
 		err.code = EIO;
 		err.desc = "DB call fail";
 		glite_jp_stack_error(ctx,&err);
@@ -2034,7 +2049,7 @@ int glite_jppsbe_query(
 		goto cleanup;
 	}
 
-	while ((ret = glite_jp_db_fetchrow(q,qres)) > 0) {
+	while ((ret = glite_jp_db_FetchRow(ctx,q,sizeof(qres)/sizeof(qres[0]), NULL, qres)) > 0) {
 		if (cmask & 1) {
 			/* XXX: owner always first */
 			metadata[owner_idx].value = qres[1];
@@ -2043,7 +2058,7 @@ int glite_jppsbe_query(
 		}
 		if (cmask & 2) {
 			int	qi = cmask == 2 ? 1 : 2;
-			time_t	t = glite_jp_db_dbtotime(qres[qi]);
+			time_t	t = glite_lbu_DBToTime(qres[qi]);
 			metadata[reg_idx].value = glite_jp_time2attr(t);
 			metadata[reg_idx].origin = GLITE_JP_ATTR_ORIG_SYSTEM;
 			free(qres[qi]);
@@ -2076,7 +2091,7 @@ cleanup:
 	free(stmt);
 	free(qres[0]); free(qres[1]); free(qres[2]);
 	free(metadata[0].value); free(metadata[1].value);
-	if (q) glite_jp_db_freestmt(&q);
+	if (q) glite_jp_db_FreeStmt(&q);
 
 	return err.code;
 }
@@ -2103,7 +2118,7 @@ int glite_jppsbe_get_names(
 {
 	char	*qry = NULL,*file = NULL,*dot;
 	char	**out = NULL;
-	glite_jp_db_stmt_t	s = NULL;
+	glite_lbu_Statement	s = NULL;
 	int rows,nout = 0;
 	glite_jp_error_t	err;
 
@@ -2114,7 +2129,7 @@ int glite_jppsbe_get_names(
 	trio_asprintf(&qry,"select filename from files f,jobs j "
 			"where j.dg_jobid = '%|Ss' and j.jobid = f.jobid and f.state = 'committed'",job);
 
-	if ((rows = glite_jp_db_execstmt(ctx,qry,&s)) <= 0) {
+	if ((rows = glite_jp_db_ExecSQL(ctx,qry,&s)) <= 0) {
 		if (rows == 0) {
 			err.code = ENOENT;
 			err.desc = "No files for this job";
@@ -2127,9 +2142,7 @@ int glite_jppsbe_get_names(
 		goto cleanup;
 	}
 
-	while ((rows = glite_jp_db_fetchrow(s,&file))) {
-		int	l;
-
+	while ((rows = glite_jp_db_FetchRow(ctx,s,1,NULL,&file))) {
 		if (rows < 0) {
 			err.code = EIO;
 			err.desc = "DB call fail retrieving job files";
@@ -2147,7 +2160,7 @@ int glite_jppsbe_get_names(
 	}
 
 cleanup:
-	if (s) glite_jp_db_freestmt(&s);
+	if (s) glite_jp_db_FreeStmt(&s);
 	free(qry);
 	free(file);
 
@@ -2181,7 +2194,7 @@ int glite_jppsbe_set_fed(
 		"values ('%|Ss','%|Ss')", feed,u);
 	free(u);
 
-	if ((rows = glite_jp_db_execstmt(ctx,stmt,NULL)) < 0) {
+	if ((rows = glite_jp_db_ExecSQL(ctx,stmt,NULL)) < 0) {
 		err.source = __FUNCTION__;
 		err.code = EIO;
 		err.desc = "insert into fed_jobs";
@@ -2223,7 +2236,7 @@ int glite_jppsbe_check_fed(
 
 	free(u);
 
-	if ((rows = glite_jp_db_execstmt(ctx,stmt,NULL)) < 0) {
+	if ((rows = glite_jp_db_ExecSQL(ctx,stmt,NULL)) < 0) {
 		err.source = __FUNCTION__;
 		err.code = EIO;
 		err.desc = "select from fed_jobs";
@@ -2293,15 +2306,16 @@ int glite_jppsbe_store_feed(
 		aux = NULL;
 	}
 
+	glite_lbu_TimeToDB(feed->expires, &e);
 	trio_asprintf(&stmt,"insert into feeds(feedid,destination,expires,cols,query) "
 			"values ('%|Ss','%|Ss',%s,'%|Ss','%|Ss')",
 			feed->id,feed->destination,
-			e = glite_jp_db_timetodb(feed->expires),
+			e,
 			alist,qlist);
 
 	free(alist); free(qlist); free(e);
 
-	if ((rows = glite_jp_db_execstmt(ctx,stmt,NULL)) < 0) {
+	if ((rows = glite_jp_db_ExecSQL(ctx,stmt,NULL)) < 0) {
 		err.source = __FUNCTION__;
 		err.code = EIO;
 		err.desc = "insert into fed_jobs";
@@ -2329,26 +2343,27 @@ int glite_jppsbe_purge_feeds(
 )
 {
 	char	*stmt = NULL,*feed = NULL;
-	char	*expires = glite_jp_db_timetodb(time(NULL));
+	char	*expires;
 	glite_jp_error_t	err;
-	glite_jp_db_stmt_t	q = NULL;
+	glite_lbu_Statement	q = NULL;
 	int	rows;
 
+	glite_lbu_TimeToDB(time(NULL), &expires);
 	memset(&err,0,sizeof err);
 
 	trio_asprintf(&stmt,"select feedid from feeds where expires < %s",expires);
 
-	if ((rows = glite_jp_db_execstmt(ctx, stmt, &q)) < 0) {
+	if ((rows = glite_jp_db_ExecSQL(ctx, stmt, &q)) < 0) {
 		err.code = EIO;
 		err.desc = "select from feeds";
 		glite_jp_stack_error(ctx,&err);
 		goto cleanup;
 	}
 
-	while ((rows = glite_jp_db_fetchrow(q,&feed)) > 0) {
+	while ((rows = glite_jp_db_FetchRow(ctx,q,1,NULL,&feed)) > 0) {
 		free(stmt);
 		trio_asprintf(&stmt,"delete from fed_jobs where feedid = '%|Ss'",feed);
-		if ((rows = glite_jp_db_execstmt(ctx, stmt, NULL)) < 0) {
+		if ((rows = glite_jp_db_ExecSQL(ctx, stmt, NULL)) < 0) {
 			err.code = EIO;
 			err.desc = "delete from fed_jobs";
 			glite_jp_stack_error(ctx,&err);
@@ -2358,7 +2373,7 @@ int glite_jppsbe_purge_feeds(
 
 	free(stmt);
 	trio_asprintf(&stmt,"delete from feeds where expires < %s",expires);
-	if ((rows = glite_jp_db_execstmt(ctx, stmt, NULL)) < 0) {
+	if ((rows = glite_jp_db_ExecSQL(ctx, stmt, NULL)) < 0) {
 		err.code = EIO;
 		err.desc = "select from feeds";
 		glite_jp_stack_error(ctx,&err);
@@ -2366,7 +2381,7 @@ int glite_jppsbe_purge_feeds(
 	}
 
 cleanup:
-	glite_jp_db_freestmt(&q);
+	glite_jp_db_FreeStmt(&q);
 	free(feed);
 	free(stmt);
 	free(expires);
@@ -2381,7 +2396,7 @@ int glite_jppsbe_read_feeds(
 {
 	char	*stmt,*res[5],*expires;
 	glite_jp_error_t	err;
-	glite_jp_db_stmt_t	q = NULL;
+	glite_lbu_Statement	q = NULL;
 	int	rows;
 
 	stmt = expires = NULL;
@@ -2389,27 +2404,27 @@ int glite_jppsbe_read_feeds(
 	memset(&res,0,sizeof res);
 	err.source = __FUNCTION__;
 
-	expires = glite_jp_db_timetodb(time(NULL));
+	glite_lbu_TimeToDB(time(NULL), &expires);
 	trio_asprintf(&stmt,"select feedid,destination,expires,cols,query "
 			"from feeds "
 			"where expires > %s",expires);
 	free(expires); expires = NULL;
 
-	if ((rows = glite_jp_db_execstmt(ctx, stmt, &q)) < 0) {
+	if ((rows = glite_jp_db_ExecSQL(ctx, stmt, &q)) < 0) {
 		err.code = EIO;
 		err.desc = "select from feeds";
 		glite_jp_stack_error(ctx,&err);
 		goto cleanup;
 	}
 
-	while ((rows = glite_jp_db_fetchrow(q,res)) > 0) {
+	while ((rows = glite_jp_db_FetchRow(ctx,q,sizeof(res)/sizeof(res[0]),NULL, res)) > 0) {
 		struct jpfeed *f = calloc(1,sizeof *f);
 		int	n;
 		char	*p;
 
 		f->id = res[0]; res[0] = NULL;
 		f->destination = res[1]; res[1] = NULL;
-		f->expires = glite_jp_db_dbtotime(res[2]); free(res[2]); res[2] = NULL;
+		f->expires = glite_lbu_DBToTime(res[2]); free(res[2]); res[2] = NULL;
 
 		n = 0;
 		for (p = strtok(res[3],"\n"); p; p = strtok(NULL,"\n")) {
@@ -2450,7 +2465,7 @@ int glite_jppsbe_read_feeds(
 	}
 
 cleanup:
-	glite_jp_db_freestmt(&q);
+	glite_jp_db_FreeStmt(&q);
 	free(res[0]); free(res[1]); free(res[2]); free(res[3]); free(res[4]);
 	return err.code;
 }
