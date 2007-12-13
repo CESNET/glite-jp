@@ -180,6 +180,7 @@ install:
 	-mkdir -p ${PREFIX}/bin ${PREFIX}/etc ${PREFIX}/examples ${PREFIX}/etc/init.d  ${PREFIX}/lib
 	${INSTALL} -m 755 ${daemon} ${PREFIX}/bin
 	${INSTALL} -m 755 jpps-test ${PREFIX}/examples/glite-jp-primary-test
+	${INSTALL} -m 755 ${top_srcdir}/examples/getjobattr.pl ${PREFIX}/examples/glite-jpps-getjobattr.pl
 	if [ x${DOSTAGE} = xyes ]; then \
 		mkdir -p ${PREFIX}/include/${globalprefix}/${jpprefix} ; \
 		(cd ${top_srcdir}/interface && install -m 644 ${HDRS_I} ${PREFIX}/include/${globalprefix}/${jpprefix}) ; \
