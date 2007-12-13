@@ -125,7 +125,6 @@ int glite_jp_db_execstmt(glite_jp_context_t ctx,char *txt,glite_jp_db_stmt_t *st
 					err.code = EEXIST;
 					err.desc = mysql_error((MYSQL *) ctx->dbhandle);
 					glite_jp_stack_error(ctx,&err);
-					printf("glite_jp_db_execstmt return from 127, ctx->error = %i\n", ctx->error);
 					return -1;
 					break;
 				case CR_SERVER_GONE_ERROR:
@@ -135,7 +134,6 @@ int glite_jp_db_execstmt(glite_jp_context_t ctx,char *txt,glite_jp_db_stmt_t *st
 					break;
 				default:
 					my_err(ctx, __FUNCTION__);
-					printf("glite_jp_db_execstmt return from 137, ctx->error = %i\n", ctx->error);
 					return -1;
 					break;
 			}
@@ -148,7 +146,6 @@ int glite_jp_db_execstmt(glite_jp_context_t ctx,char *txt,glite_jp_db_stmt_t *st
 		if (!*stmt) {
 			err.code = ENOMEM;
 			glite_jp_stack_error(ctx,&err);
-			printf("glite_jp_db_execstmt return from 150, ctx->error = %i\n", ctx->error);
 			return -1;
 		}
 		memset(*stmt,0,sizeof(**stmt));
@@ -157,7 +154,6 @@ int glite_jp_db_execstmt(glite_jp_context_t ctx,char *txt,glite_jp_db_stmt_t *st
 		if (!(**stmt).result) {
 			if (mysql_errno((MYSQL *) ctx->dbhandle)) {
 				my_err(ctx, __FUNCTION__);
-				printf("glite_jp_db_execstmt return from 159, ctx->error = %i\n", ctx->error);
 				return -1;
 			}
 		}
@@ -166,7 +162,6 @@ int glite_jp_db_execstmt(glite_jp_context_t ctx,char *txt,glite_jp_db_stmt_t *st
 		mysql_free_result(r);
 	}
 	
-	printf("glite_jp_db_execstmt return from 168, ctx->error = %i\n", ctx->error);
 	return mysql_affected_rows((MYSQL *) ctx->dbhandle);
 }
 
