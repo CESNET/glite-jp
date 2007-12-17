@@ -561,12 +561,13 @@ static int feed_query_callback(
 	}
 
 /* filter on non-meta query items */
-	if (other)
-		for (i=0; i<f->nother_qry; i++) {
-			for (j=0; other[j].name; j++) 
-				if (check_qry_item(ctx,f->other_qry+i,other+j)) break;
-			if (!other[j].name) goto cleanup; /* no match is not an error */
-		}
+	if (f->nother_qry && !other) goto cleanup;	/* unknown values can't match */
+
+	for (i=0; i<f->nother_qry; i++) {
+		for (j=0; other[j].name; j++) 
+			if (check_qry_item(ctx,f->other_qry+i,other+j)) break;
+		if (!other[j].name) goto cleanup; /* no match is not an error */
+	}
 
 /* extract attributes to be fed, stack the job for a batch feed */
 	for (i=0; meta && meta[i].name; i++)
