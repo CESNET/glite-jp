@@ -18,6 +18,7 @@ PDFLATEX = $(KPATH) pdflatex
 BIBTEX = $(KPATHBIB) bibtex
 DVIPS = $(KPATH) dvips
 AT3=${stagedir}/sbin/glite-lb-at3
+INSTALL=install
 
 default all: generate JPUG.pdf JPAG.pdf JPDG.pdf
 
@@ -42,6 +43,14 @@ generate:
 	rm -f $@
 	${AT3} $< >$@ || rm -f $@
 	chmod -w $@ >/dev/null
+
+install:
+	-mkdir -p ${PREFIX}/share/doc/${package}-${version}
+	$(INSTALL) -m 644 ${top_srcdir}/LICENSE ${PREFIX}/share/doc/${package}-${version}
+	$(INSTALL) -m 644 ${top_srcdir}/src/README ${PREFIX}/share/doc/${package}-${version}
+	$(INSTALL) -m 644 JPUG.pdf ${PREFIX}/share/doc/${package}-${version}
+	$(INSTALL) -m 644 JPAG.pdf ${PREFIX}/share/doc/${package}-${version}
+	$(INSTALL) -m 644 JPDG.pdf ${PREFIX}/share/doc/${package}-${version}
 
 clean:
 	rm -rvf JPUG* JPAG* JPDG* 
