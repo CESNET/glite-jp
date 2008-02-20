@@ -430,7 +430,8 @@ int newconn(int conn,struct timeval *to,void *data)
 		fprintf(stderr,"[%d] GSS connection accept failed: %s\nClosing connection.\n",getpid(),et);
 		free(et);
 		ret = 1;
-		goto cleanup;
+		soap_end(soap);
+		return 1;
 	}
 
         ret = edg_wll_gss_get_client_conn(&connection, &client, NULL);
@@ -452,12 +453,6 @@ int newconn(int conn,struct timeval *to,void *data)
 	soap_register_plugin_arg(soap,glite_gsplugin,plugin_ctx);
 
 	return 0;
-
-cleanup:
-	glite_gsplugin_free_context(plugin_ctx);
-	soap_end(soap);
-
-	return ret;
 }
 
 int request(int conn UNUSED,struct timeval *to,void *data)
