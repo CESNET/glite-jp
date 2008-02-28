@@ -396,8 +396,21 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__FeedIndexRefresh(
 		struct _jpelem__FeedIndexRefresh *in,
 		struct _jpelem__FeedIndexRefreshResponse *out)
 {
-	fprintf(stderr,"%s: not implemented\n",__FUNCTION__);
-	abort();
+	CONTEXT_FROM_SOAP(soap,ctx);
+
+	time_t  expires = 0;
+        int     ret = SOAP_OK;
+
+	glite_jp_clear_error(ctx);
+	
+	if (glite_jpps_refresh_feed(ctx, in->feedId, &expires)){
+		err2fault(ctx,soap);
+                ret = SOAP_FAULT;
+		return ret;
+	}
+	out->feedExpires = expires;
+
+	return ret;
 }
 
 SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__GetJobFiles(

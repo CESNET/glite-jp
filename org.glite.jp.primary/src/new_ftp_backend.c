@@ -477,7 +477,6 @@ int glite_jppsbe_start_upload(
 	/* XXX authorization done in soap_ops.c */
 
 	/* XXX name length */
-	printf("data_basename: %s\n", data_basename);
 	if (asprintf(&data_basename, "%s%s%s", class,
 		(name != NULL) ? "." : "",
 		(name != NULL) ? name : "") == -1) {
@@ -2336,6 +2335,37 @@ cleanup:
 
 }
 
+int glite_jppsbe_refresh_feed(
+        glite_jp_context_t ctx,
+        char *feed_id,
+	time_t *expires
+)
+{
+	glite_jp_error_t        err;
+        memset(&err,0,sizeof err);
+
+	char *stmt = NULL;
+
+	trio_asprintf(&stmt, "update feeds set expires=%s where feedid='%ISs'",
+		expires, feed_id);
+	if (!stmt) {
+                err.code = ENOMEM;
+                goto error_out;
+        }
+
+        if (glite_jp_db_ExecSQL(ctx, stmt, NULL) < 0) {
+                err.code = EIO;
+                err.desc = "DB access failed";
+                goto error_out;
+        }
+
+error_out:
+        free(stmt);
+        if (err.code)
+                return glite_jp_stack_error(ctx,&err);
+        else
+                return 0;
+}
 
 /** purge expired feeds */
 int glite_jppsbe_purge_feeds(
@@ -2361,6 +2391,7 @@ int glite_jppsbe_purge_feeds(
 	}
 
 	while ((rows = glite_jp_db_FetchRow(ctx,q,1,NULL,&feed)) > 0) {
+		printf("feed %s has expired.\n", feed);
 		free(stmt);
 		trio_asprintf(&stmt,"delete from fed_jobs where feedid = '%|Ss'",feed);
 		if ((rows = glite_jp_db_ExecSQL(ctx, stmt, NULL)) < 0) {

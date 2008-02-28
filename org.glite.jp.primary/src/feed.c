@@ -23,7 +23,8 @@ extern pid_t	master;
  * seconds before feed expires: should be 
  * XXX: should be configurable, default for real deployment sort of 1 hour
  */
-#define FEED_TTL	36000000
+//#define FEED_TTL	36000000
+#define FEED_TTL      360
 
 /* XXX: configurable */
 #define BATCH_FEED_SIZE	200
@@ -675,7 +676,7 @@ int glite_jpps_run_feed(
        	f = make_jpfeed(destination,attrs,qry,*feed_id,(time_t) 0);
 	f->continuous = continuous;
 	glite_jp_add_deferred(ctx,run_feed_deferred,f);
-
+	
 	return 0;
 }
 
@@ -708,5 +709,13 @@ int glite_jpps_register_feed(
 	glite_jp_add_deferred(ctx,register_feed_deferred,f);
 
 	return 0;
+}
+
+int glite_jpps_refresh_feed(glite_jp_context_t ctx, char *feed_id,  time_t *expires){
+	time(expires); *expires += FEED_TTL;
+
+	glite_jppsbe_refresh_feed(ctx, feed_id, expires);
+	
+	return 0;	
 }
 
