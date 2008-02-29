@@ -254,6 +254,11 @@ int glite_jpps_match_attr(
 	int i;
 	for (i = 0; attrs[i].name; i++){
 		ma->attrs = realloc(ma->attrs, (i+2)*sizeof(*ma->attrs));
+
+		memcpy(&(ma->attrs[i]), &(attrs[i]), sizeof(*ma->attrs));
+		ma->attrs[i].name = strdup(attrs[i].name);
+                ma->attrs[i].value = strdup(attrs[i].value);
+
 		ma->attrs[i+1].name = NULL;
 	}
 	glite_jp_add_deferred(ctx, match_attr_deferred, ma);
