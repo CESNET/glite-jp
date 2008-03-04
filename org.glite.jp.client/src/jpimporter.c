@@ -886,8 +886,24 @@ static int gftp_put_file(const char *url, int fhnd)
 
 static int refresh_gsoap(struct soap *soap) {
 	struct timeval		to = {JPPS_NO_RESPONSE_TIMEOUT, 0};
+	gss_cred_id_t newcred;
+	edg_wll_GssStatus	gss_code;
+	OM_uint32	min_stat;
 
 	glite_gsplugin_set_timeout(glite_gsplugin_get_context(soap), &to);
+
+	switch ( edg_wll_gss_watch_creds(server_cert, &cert_mtime) ) {
+	case 0: break;
+	case 1:
+		if ( !edg_wll_gss_acquire_cred_gsi(server_cert, server_key, &newcred, NULL, &gss_code) ) {
+			dprintf(("[%s] reloading credentials successful\n", name));
+			gss_release_cred(&min_stat, &mycred);
+			mycred = newcred;
+		} else { dprintf(("[%s] reloading credentials failed, using old ones\n", name)); }
+		break;
+	case -1: dprintf(("[%s] edg_wll_gss_watch_creds failed\n", name)); break;
+	}
+
 	return 0;
 }
 
