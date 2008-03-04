@@ -58,10 +58,11 @@ int glite_jp_db_connect(glite_jp_context_t ctx,char *cs)
 	}
 
 	mysql_options(ctx->dbhandle, MYSQL_READ_DEFAULT_FILE, "my");
-	if (MYSQL_VERSION_ID >= 50013){
-		mysql_options(ctx->dbhandle, MYSQL_OPT_RECONNECT, &reconnect);
-		printf("Set MYSQL_OPT_RECONNECT\n");
-	}
+#if MYSQL_VERSION_ID >= 50013
+        /* XXX: may result in weird behaviour in the middle of transaction */
+	mysql_options(ctx->dbhandle, MYSQL_OPT_RECONNECT, &reconnect);
+	printf("Set MYSQL_OPT_RECONNECT\n");
+#endif
 
 	host = user = pw = db = NULL;
 
