@@ -206,7 +206,6 @@ int glite_jpps_get_attrs(glite_jp_context_t ctx,const char *job,char **attr,int 
 							, &known_namespaces[j].file_handles[k]);
 				break;
 			}
-			free(attr_namespace); attr_namespace = NULL;
 		}
 		free(attr_namespace);
 	}
