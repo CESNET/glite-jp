@@ -27,6 +27,12 @@ ifeq (${host_cpu},x86_64)
     archlib:=lib64
 endif   
 
+archlib:=lib
+host_cpu:=${shell uname -m}
+ifeq (${host_cpu},x86_64) 
+    archlib:=lib64
+endif   
+
 
 ifneq (${classads_prefix},/usr)
         classadslib := -L${classads_prefix}/${archlib} -lclassad
@@ -36,9 +42,13 @@ CLASSADPLUGIN_LIBS:= ${classadslib} -lstdc++
 
 CLASSADPLUGIN_LOBJS:= classad_plugin.lo
 
+GLOBUS_CFLAGS:=-I${globus_prefix}/include/${nothrflavour}
+
 DEBUG:=-g -O0  -DDEBUG
 
-CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${gsoap_prefix} -I${stagedir}/include -I${classads_prefix}/include -I${libtar_prefix}/include
+CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${gsoap_prefix} -I${stagedir}/include -I${classads_prefix}/include -I${libtar_prefix}/include ${GLOBUS_CFLAGS}
+# 3.1 CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${gsoap_prefix} -I${stagedir}/include ${GLOBUS_CFLAGS} -I${mysql_prefix}/include -I${mysql_prefix}/include/mysql -I${classads_prefix}/include -I${libtar_prefix}/include
+
 LDFLAGS:=-L${stagedir}/lib
 
 LINK:=libtool --mode=link ${CC} ${LDFLAGS} 
@@ -151,6 +161,7 @@ install:
 	-mkdir -p ${PREFIX}/bin ${PREFIX}/etc ${PREFIX}/examples ${PREFIX}/etc/init.d  ${PREFIX}/lib
 	${INSTALL} -m 755 ${daemon} ${PREFIX}/bin
 	${INSTALL} -m 755 jpps-test ${PREFIX}/examples/glite-jp-primary-test
+	${INSTALL} -m 755 ${top_srcdir}/examples/getjobattr.pl ${PREFIX}/examples/glite-jpps-getjobattr.pl
 	if [ x${DOSTAGE} = xyes ]; then \
 		mkdir -p ${PREFIX}/include/${globalprefix}/${jpprefix} ; \
 		(cd ${top_srcdir}/interface && install -m 644 ${HDRS_I} ${PREFIX}/include/${globalprefix}/${jpprefix}) ; \
@@ -185,6 +196,9 @@ glite-jp-sandbox.la: sandbox_plugin.lo
 
 glite-jp-ftpdauth.la: ftpd_auth.lo
 	${SOLINK} -o $@ ftpd_auth.lo ${COMMONLIB} ${TRIOLIB} ${SRVCOMMONLIB}
+
+#glite-jp-classad.lo: classad_plugin.c
+#	${LTCOMPILE} -DPLUGIN_DEBUG -o $@ -c $<
 
 #glite-jp-classad.lo: classad_plugin.c
 #	${LTCOMPILE} -DPLUGIN_DEBUG -o $@ -c $<
