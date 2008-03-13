@@ -16,6 +16,7 @@
 #define HEADER_SIZE 48
 #define TAGS_MAGIC 0x74c016f2   /* two middle digits encode version, i.e. 01 */
 
+static int tagsread(void *fpctx,struct tags_handle *h);
 
 /*int glite_jpps_tag_append(
 	glite_jp_context_t ctx,

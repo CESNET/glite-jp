@@ -14,7 +14,6 @@ glite_location=/opt/glite
 globus_prefix=/opt/globus
 nothrflavour=gcc32
 thrflavour=gcc32pthr
-expat_prefix=/opt/expat
 gsoap_prefix=/software/gsoap-2.6
 
 CC=gcc
@@ -28,8 +27,15 @@ GLOBUS_LIBS:=-L${globus_prefix}/lib \
 	-lglobus_common_${nothrflavour} \
 	-lglobus_gssapi_gsi_${nothrflavour}
 
+archlib:=lib
+host_cpu:=${shell uname -m}
+ifeq (${host_cpu},x86_64) 
+    archlib:=lib64
+endif   
+
+
 ifneq (${classads_prefix},/usr)
-        classadslib := -L${classads_prefix}/lib -lclassad
+        classadslib := -L${classads_prefix}/${archlib} -lclassad
 endif
 
 CLASSADPLUGIN_LIBS:= ${classadslib} -lstdc++ 
@@ -48,10 +54,6 @@ LTCOMPILE:=libtool --mode=compile ${CC} ${CFLAGS}
 SOLINK:=libtool --mode=link ${CC} -module ${LDFLAGS} -rpath ${stagedir}/lib
 LINKXX:=libtool --mode=link ${CXX} ${LDFLAGS} 
 INSTALL:=libtool --mode=install install
-
-ifneq (${classads_prefix},/usr)
-	classadslib := -L${classads_prefix}/lib -lclassad
-endif
 
 daemon:=glite-jp-primarystoraged
 example:=jpps-test dag-deps
@@ -91,10 +93,10 @@ TRIOLIB:=-lglite_jp_trio
 LIBTARLIB:=-L${libtar_prefix}/lib -ltar
 
 ifneq (${mysql_prefix},/usr)
-	ifeq ($(shell test -f ${mysql_prefix}/lib/libmysqlclient.a -o -f ${mysql_prefix}/lib/libmysqlclient.so && echo ok),ok)
-		MYSQLIB := -L${mysql_prefix}/lib -lmysqlclient -lz
+	ifeq ($(shell test -f ${mysql_prefix}/${archlib}/libmysqlclient.a -o -f ${mysql_prefix}/${archlib}/libmysqlclient.so && echo ok),ok)
+		MYSQLIB := -L${mysql_prefix}/${archlib} -lmysqlclient -lz
         else
-		MYSQLIB := -L${mysql_prefix}/lib/mysql -L${mysql_prefix}/lib -lmysqlclient -lz
+		MYSQLIB := -L${mysql_prefix}/${archlib}/mysql -L${mysql_prefix}/${archlib} -lmysqlclient -lz
         endif
 else
 	MYSQLIB := -lmysqlclient
@@ -178,6 +180,7 @@ install:
 	-mkdir -p ${PREFIX}/bin ${PREFIX}/etc ${PREFIX}/examples ${PREFIX}/etc/init.d  ${PREFIX}/lib
 	${INSTALL} -m 755 ${daemon} ${PREFIX}/bin
 	${INSTALL} -m 755 jpps-test ${PREFIX}/examples/glite-jp-primary-test
+	${INSTALL} -m 755 ${top_srcdir}/examples/getjobattr.pl ${PREFIX}/examples/glite-jpps-getjobattr.pl
 	if [ x${DOSTAGE} = xyes ]; then \
 		mkdir -p ${PREFIX}/include/${globalprefix}/${jpprefix} ; \
 		(cd ${top_srcdir}/interface && install -m 644 ${HDRS_I} ${PREFIX}/include/${globalprefix}/${jpprefix}) ; \

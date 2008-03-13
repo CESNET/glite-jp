@@ -32,7 +32,11 @@ fi
 # dump directory of bkserver
 if [ -z "$GLITE_LB_EXPORT_DUMPDIR" ]; then
   GLITE_LB_EXPORT_DUMPDIR=/tmp/dump
-  echo "GLITE_LB_EXPORT_DUMPDIR not specified (-D arguent of the bkserver), used $GLITE_LB_EXPORT_DUMPDIR"
+  echo "GLITE_LB_EXPORT_DUMPDIR not specified (-D argument of the bkserver), used $GLITE_LB_EXPORT_DUMPDIR"
+fi
+if [ -z "$GLITE_LB_EXPORT_PURGEDIR" ]; then
+  GLITE_LB_EXPORT_PURGEDIR=/tmp/purge
+  echo "GLITE_LB_EXPORT_PURGEDIR not specified (-S argument of the bkserver), used $GLITE_LB_EXPORT_PURGEDIR"
 fi
 # LB maildir for job registration
 if [ -z "$GLITE_LB_EXPORT_JPREG_MAILDIR" ]; then
@@ -67,24 +71,24 @@ fi
 
 echo "Using cert args $CERT_ARGS"
 
-$PREFIX/bin/glite-jp-importer --reg-mdir $GLITE_LB_EXPORT_JPREG_MAILDIR --dump-mdir $GLITE_LB_EXPORT_JPDUMP_MAILDIR $CERT_ARGS --sandbox-mdir $GLITE_LB_EXPORT_SANDBOX_MAILDIR -g --jpps $GLITE_LB_EXPORT_JPPS $pidfile$keep_jobs> $LOGDIR/jp-importer.log 2>&1 &
+$PREFIX/bin/glite-jp-importer --reg-mdir $GLITE_LB_EXPORT_JPREG_MAILDIR --dump-mdir $GLITE_LB_EXPORT_JPDUMP_MAILDIR $CERT_ARGS --sandbox-mdir $GLITE_LB_EXPORT_SANDBOX_MAILDIR -g --jpps $GLITE_LB_EXPORT_JPPS $pidfile$keep_jobs$GLITE_JP_IMPORTER_ARGS > $LOGDIR/jp-importer.log 2>&1 &
 
 JP_PID=$!
 trap "kill $JP_PID; exit 0" SIGINT
 
 while [ 1 ]; do
-  $PREFIX/sbin/glite-lb-purge $GLITE_LB_EXPORT_PURGE_ARGS -l -m $GLITE_LB_EXPORT_BKSERVER
-
-  for file in $GLITE_LB_EXPORT_DUMPDIR/*; do
+  $PREFIX/sbin/glite-lb-purge $GLITE_LB_EXPORT_PURGE_ARGS -l -m $GLITE_LB_EXPORT_BKSERVER -s
+  list=`ls $GLITE_LB_EXPORT_PURGEDIR/* 2>/dev/null`
+  for file in $list; do
     if [ -s $file ]; then
       $PREFIX/sbin/glite-lb-lb_dump_exporter -d $file -s $GLITE_LB_EXPORT_JOBSDIR -m $GLITE_LB_EXPORT_JPDUMP_MAILDIR
       if [ -n "$GLITE_LB_EXPORT_DUMPDIR_KEEP" ]; then
         mv $file $GLITE_LB_EXPORT_DUMPDIR_KEEP
       else
-        rm $file
+        rm -f $file
       fi
     else
-      rm $file
+      rm -f $file
     fi
   done
 

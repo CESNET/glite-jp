@@ -23,7 +23,7 @@ extern pid_t	master;
  * seconds before feed expires: should be 
  * XXX: should be configurable, default for real deployment sort of 1 hour
  */
-#define FEED_TTL	3600
+#define FEED_TTL	36000000
 
 /* XXX: configurable */
 #define BATCH_FEED_SIZE	200
@@ -189,8 +189,11 @@ static int match_feed(
 	}
 	else {
 		if (!owner) {
+			for (i=0; meta[i].name; i++) glite_jp_attrval_free(meta+i,0);
+			memset(meta,0,sizeof meta);
+			meta[0].name = strdup(GLITE_JP_ATTR_OWNER);
 			glite_jppsbe_get_job_metadata(ctx,job,meta);
-			for (i=0; meta[i].name && strcmp(meta[i].name,GLITE_JP_ATTR_OWNER); i++);
+			owner = meta[0].value;
 		}
 		glite_jpps_single_feed(ctx,feed->id,0,feed->destination,job,owner,attrs);
 	}
@@ -204,12 +207,20 @@ cleanup:
  * kdyby ne, stejne se to nepovede ;
  * totez pro match_file */
 
-int glite_jpps_match_attr(
+typedef struct{
+	char *job;
+	glite_jp_attrval_t *attrs;
+} match_attr;
+
+
+int match_attr_deferred(
 		glite_jp_context_t ctx,
-		const char *job,
-		const glite_jp_attrval_t attrs[]
+		void *ma
 )
 {
+	char *job = ((match_attr*)ma)->job;
+	glite_jp_attrval_t *attrs = ((match_attr*)ma)->attrs;
+
 	struct jpfeed	*f = (struct jpfeed *) ctx->feeds;
 	int	i,j,doit;
 
@@ -224,7 +235,33 @@ int glite_jpps_match_attr(
 		if (doit) match_feed(ctx,f,job,attrs);
 	}
 
+	free(((match_attr*)ma)->job);
+	//free(((match_attr*)ma)->attrs);
+
 	return glite_jp_clear_error(ctx);
+}
+
+int glite_jpps_match_attr(
+                glite_jp_context_t ctx,
+                const char *job,
+                const glite_jp_attrval_t attrs[]
+)
+{
+	match_attr *ma = malloc(sizeof *ma);
+	ma->job = strdup(job);
+	ma->attrs = malloc(sizeof(*ma->attrs));
+	ma->attrs[0].name = NULL;
+	int i;
+	for (i = 0; attrs[i].name; i++){
+		ma->attrs = realloc(ma->attrs, (i+2)*sizeof(*ma->attrs));
+
+		memcpy(&(ma->attrs[i]), &(attrs[i]), sizeof(*ma->attrs));
+		ma->attrs[i].name = strdup(attrs[i].name);
+                ma->attrs[i].value = strdup(attrs[i].value);
+
+		ma->attrs[i+1].name = NULL;
+	}
+	glite_jp_add_deferred(ctx, match_attr_deferred, ma);
 }
 
 static int attr_void_cmp(const void *a, const void *b)
@@ -258,13 +295,21 @@ static void attr_union(char **a, char **b, char ***c)
 	*c = out;
 }
 
-int glite_jpps_match_file(
+typedef struct{
+	char *job;
+	char *class;
+	char *name;
+} match_file;
+
+int match_file_deferred(
 	glite_jp_context_t ctx,
-	const char *job,
-	const char *class,
-	const char *name
+	void *mf
 )
 {
+	char *job = ((match_file*)mf)->job;
+	char *class = ((match_file*)mf)->class;
+	char *name = ((match_file*)mf)->name;
+
 	glite_jpps_fplug_data_t	**pd = NULL;
 	int	pi;
 	void	*bh = NULL;
@@ -296,6 +341,9 @@ int glite_jpps_match_file(
 		free(attrs);
 		attrs = attrs2;
 	}
+
+	vals = malloc(sizeof *vals);
+	vals[0].name = NULL;
 
 	for (pi=0; pd[pi]; pi++) {
 		int	ci;
@@ -336,6 +384,9 @@ int glite_jpps_match_file(
 		int 	k,fed;
 		glite_jp_attrval_t	* fattr;
 
+		match_feed(ctx,f,job,vals);
+
+/* covered by match_feed() 
 		glite_jppsbe_check_fed(ctx,f->id,job,&fed);
 		if (!fed) full_feed(ctx,f,job,&fattr);
 		else {
@@ -355,6 +406,7 @@ int glite_jpps_match_file(
 
 		if (!fed) for (i=0; fattr[i].name; i++) glite_jp_attrval_free(fattr+i,0);
 		free(fattr);
+*/
 	}
 
 	for (i=0; vals[i].name; i++) glite_jp_attrval_free(vals+i,0);
@@ -362,7 +414,29 @@ int glite_jpps_match_file(
 
 	for (i=0; meta[i].name; i++) glite_jp_attrval_free(meta+i,0);
 
+	free(((match_file*)mf)->job);
+	free(((match_file*)mf)->class);
+	free(((match_file*)mf)->name);
+
 	return 0;
+}
+
+int glite_jpps_match_file(
+        glite_jp_context_t ctx,
+        const char *job,
+        const char *class,
+        const char *name
+)
+{
+	match_file* mf = malloc(sizeof(*mf));
+	mf->job = strdup(job);
+	mf->class = strdup(class);
+	if (name)
+		mf->name = strdup(name);
+	else
+		mf->name = NULL;
+
+	glite_jp_add_deferred(ctx, match_file_deferred, mf);
 }
 
 static char *generate_feedid(void)
@@ -444,11 +518,9 @@ static void drop_jobs(struct jpfeed *f)
 		free(f->jobs[i]);
 		free(f->owners[i]);
 	}
-	free(f->job_attrs);
-	free(f->jobs);
-	free(f->owners);
-	f->job_attrs = NULL;
-	f->jobs = NULL;
+	free(f->job_attrs); f->job_attrs = NULL;
+	free(f->jobs); f->jobs = NULL;
+	free(f->owners); f->owners = NULL;
 	f->njobs = 0;
 }
 
@@ -493,10 +565,9 @@ static int feed_query_callback(
 			goto cleanup;
 	}
 
-/* no attributes known -- can't match */
-	if (!other) goto cleanup;
-
 /* filter on non-meta query items */
+	if (f->nother_qry && !other) goto cleanup;	/* unknown values can't match */
+
 	for (i=0; i<f->nother_qry; i++) {
 		for (j=0; other[j].name; j++) 
 			if (check_qry_item(ctx,f->other_qry+i,other+j)) break;
@@ -512,13 +583,14 @@ static int feed_query_callback(
 				nout++;
 			}
 
-	for (i=0; other[i].name; i++) 
-		for (j=0; j<f->int_other_attr; j++)
-			if (!strcmp(other[i].name,f->other_attr[j])) {
-				out = realloc(out,(nout+2) * sizeof *out);
-				glite_jp_attrval_copy(out+nout,other+i);
-				nout++;
-			}
+	if (other)
+		for (i=0; other[i].name; i++) 
+			for (j=0; j<f->int_other_attr; j++)
+				if (!strcmp(other[i].name,f->other_attr[j])) {
+					out = realloc(out,(nout+2) * sizeof *out);
+					glite_jp_attrval_copy(out+nout,other+i);
+					nout++;
+				}
 
 	if (nout) {
 		int	oi;

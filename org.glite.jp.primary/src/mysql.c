@@ -42,6 +42,7 @@ int glite_jp_db_connect(glite_jp_context_t ctx,char *cs)
 	char	*buf = NULL;
 	char	*host,*user,*pw,*db; 
 	char	*slash,*at,*colon;
+	my_bool	reconnect = 1;
 
 	glite_jp_error_t err;
 
@@ -57,6 +58,11 @@ int glite_jp_db_connect(glite_jp_context_t ctx,char *cs)
 	}
 
 	mysql_options(ctx->dbhandle, MYSQL_READ_DEFAULT_FILE, "my");
+#if MYSQL_VERSION_ID >= 50013
+        /* XXX: may result in weird behaviour in the middle of transaction */
+	mysql_options(ctx->dbhandle, MYSQL_OPT_RECONNECT, &reconnect);
+	printf("Set MYSQL_OPT_RECONNECT\n");
+#endif
 
 	host = user = pw = db = NULL;
 
@@ -122,6 +128,7 @@ int glite_jp_db_execstmt(glite_jp_context_t ctx,char *txt,glite_jp_db_stmt_t *st
 					glite_jp_stack_error(ctx,&err);
 					return -1;
 					break;
+				case CR_SERVER_GONE_ERROR:
 				case CR_SERVER_LOST:
 					if (retry_nr <= 0) 
 						do_reconnect = 1;

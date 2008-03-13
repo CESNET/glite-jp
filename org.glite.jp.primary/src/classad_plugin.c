@@ -6,11 +6,13 @@
 #include <cclassad.h>
 #include <errno.h>
 
+/*
 #include "glite/lb/context.h"
 #include "glite/lb/jobstat.h"
 #include "glite/lb/events.h"
 #include "glite/lb/events_parse.h"
 #include "glite/lb/trio.h"
+*/
 #include "glite/jp/types.h"
 #include "glite/jp/context.h"
 #include "glite/jp/attr.h"
@@ -174,13 +176,17 @@ static int classad_query(void *fpctx,void *handle, const char *attr,glite_jp_att
                 return glite_jp_stack_error(ctx,&err);
 	}
 
-	if (cclassad_evaluate_to_string(h->ad, strrchr(attr, ':')+1, &str)) {
+	if (!cclassad_evaluate_to_string(h->ad, strrchr(attr, ':')+1, &str) &&
+		cclassad_evaluate_to_expr(h->ad, strrchr(attr, ':')+1, &str) &&
+			!strcasecmp(str,"undefined")) { free(str); str = NULL; }
+
+	if (str) {
         	//struct stat fattr;
 		/*XXX ignore error */
 		//glite_jppsbe_file_attrs(ctx, h->bhandle, &fattr);
 		av = calloc(2, sizeof(glite_jp_attrval_t));
                 av[0].name = strdup(attr);
-                av[0].value = strdup(str);
+                av[0].value = str; str = NULL;
 		av[0].size = -1;
                 av[0].timestamp = h->timestamp;
 		av[0].origin = GLITE_JP_ATTR_ORIG_FILE;

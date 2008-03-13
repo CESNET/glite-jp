@@ -31,7 +31,7 @@ static void usage(const char *me)
 			"		RegisterJob jobid owner\n"
 			"		StartUpload jobid class commit_before mimetype\n"
 			"		CommitUpload destination\n"
-			"		RecordTag jobid tagname stringvalue\n"
+			"		RecordTag jobid tagname stringvalue ...\n"
 			"		GetJobFiles jobid\n"
 			"		GetJobAttr jobid attr\n"
 			"		FeedIndex [yes (history)]\n"
@@ -138,21 +138,24 @@ int main(int argc,char *argv[])
 		struct _jpelem__RecordTagResponse	empty;
 		struct jptype__tagValue tagval;
 		struct jptype__stringOrBlob	val;
-		
-		int seq = 0;
+		int idx;
 	
-		if (argc != 5) usage(argv[0]);
-		
+		if (argc < 5 && argc % 2 == 0) usage(argv[0]);
+
 		in.jobid = argv[2];
 		in.tag = &tagval;
-		tagval.name = argv[3];
 		tagval.value = &val;
-		memset(&val, 0, sizeof(val));
-		GSOAP_SETSTRING(&val, argv[4]);
 		
-		if (!(ret = check_fault(soap,
-				soap_call___jpsrv__RecordTag(soap, server, "",&in, &empty)))) {
-			/* OK */
+		for  (idx = 3; idx < argc; idx += 2) {
+			tagval.name = argv[idx];
+			memset(&val, 0, sizeof(val));
+			GSOAP_SETSTRING(&val, argv[idx+1]);
+			
+			printf("%s ... ",tagval.name);
+			if (!(ret = check_fault(soap,
+					soap_call___jpsrv__RecordTag(soap, server, "",&in, &empty)))) {
+				/* OK */
+			}
 		}
 	} 
    	 else if (!strcasecmp(argv[1],"FeedIndex")) {
