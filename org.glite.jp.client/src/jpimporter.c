@@ -55,6 +55,10 @@ typedef struct {
 
 #define	MAX_REG_CONNS				500
 #define JPPS_NO_RESPONSE_TIMEOUT		120
+#define JPREG_REPEAT_TIMEOUT			300
+#define JPREG_GIVUP_TIMEOUT			3000
+#define JP_REPEAT_TIMEOUT			360
+#define JP_GIVUP_TIMEOUT			3600
 
 static int		debug = 0;
 static int		die = 0;
@@ -159,7 +163,7 @@ static int dump_importer(void);
 static int sandbox_importer(void);
 static int parse_msg(char *, msg_pattern_t []);
 static int gftp_put_file(const char *, int);
-static int refresh_gsoap(struct soap *soap);
+static int refresh_connection(struct soap *soap);
 
 
 int main(int argc, char *argv[])
@@ -423,13 +427,12 @@ static int reg_importer(void)
 			   *fname = NULL,
 			   *aux;
 
-	refresh_gsoap(soap);
 	if ( readnew ) ret = edg_wll_MaildirTransStart(reg_mdir, &msg, &fname);
-	else ret = edg_wll_MaildirRetryTransStart(reg_mdir, (time_t)30, (time_t)500, &msg, &fname);
+	else ret = edg_wll_MaildirRetryTransStart(reg_mdir, (time_t)JPREG_REPEAT_TIMEOUT, (time_t)JPREG_GIVUP_TIMEOUT, &msg, &fname);
 	if ( !ret ) { 
 		readnew = !readnew;
 		if ( readnew ) ret = edg_wll_MaildirTransStart(reg_mdir, &msg, &fname);
-		else ret = edg_wll_MaildirRetryTransStart(reg_mdir, (time_t)30, (time_t)500, &msg, &fname);
+		else ret = edg_wll_MaildirRetryTransStart(reg_mdir, (time_t)JPREG_REPEAT_TIMEOUT, (time_t)500, &msg, &fname);
 		if ( !ret ) {
 			readnew = !readnew;
 			return 0;
@@ -465,6 +468,7 @@ static int reg_importer(void)
 			}
 			if (!(sink & 2)) {
 #endif
+			refresh_connection(soap);
 			ret = soap_call___jpsrv__RegisterJob(soap, jpps, "", &in, &empty);
 			if ( (ret = check_soap_fault(soap, ret)) ) break;
 #ifdef JP_PERF
@@ -513,13 +517,12 @@ static int dump_importer(void)
 #define				_proxy 3
 
 
-	refresh_gsoap(soap);
 	if ( readnew ) ret = edg_wll_MaildirTransStart(dump_mdir, &msg, &fname);
-	else ret = edg_wll_MaildirRetryTransStart(dump_mdir, (time_t)60, (time_t)600, &msg, &fname);
+	else ret = edg_wll_MaildirRetryTransStart(dump_mdir, (time_t)JP_REPEAT_TIMEOUT, (time_t)JP_GIVUP_TIMEOUT, &msg, &fname);
 	if ( !ret ) { 
 		readnew = !readnew;
 		if ( readnew ) ret = edg_wll_MaildirTransStart(dump_mdir, &msg, &fname);
-		else ret = edg_wll_MaildirRetryTransStart(dump_mdir, (time_t)60, (time_t)600, &msg, &fname);
+		else ret = edg_wll_MaildirRetryTransStart(dump_mdir, (time_t)JP_REPEAT_TIMEOUT, (time_t)JP_GIVUP_TIMEOUT, &msg, &fname);
 		if ( !ret ) {
 			readnew = !readnew;
 			return 0;
@@ -570,6 +573,7 @@ static int dump_importer(void)
 		}
 		if (!(sink & 2)) {
 #endif
+		refresh_connection(soap);
 		ret = soap_call___jpsrv__StartUpload(soap, tab[_jpps].val?:jpps, "", &su_in, &su_out);
 		if ( (ret = check_soap_fault(soap, ret)) ) break;
 		dprintf("[%s] Destination: %s\n\tCommit before: %s\n", name, su_out.destination, ctime(&su_out.commitBefore));
@@ -589,6 +593,7 @@ static int dump_importer(void)
 		close(fhnd);
 		dprintf("[%s] File sent, commiting the upload\n", name);
 		cu_in.destination = su_out.destination;
+		refresh_connection(soap);
 		ret = soap_call___jpsrv__CommitUpload(soap, tab[_jpps].val?:jpps, "", &cu_in, &empty);
 		if ( (ret = check_soap_fault(soap, ret)) ) break;
 		dprintf("[%s] Dump upload succesfull\n", name);
@@ -652,13 +657,12 @@ static int sandbox_importer(void)
 #define			_proxy 3
 
 
-	refresh_gsoap(soap);
 	if ( readnew ) ret = edg_wll_MaildirTransStart(sandbox_mdir, &msg, &fname);
-	else ret = edg_wll_MaildirRetryTransStart(sandbox_mdir, (time_t)60, (time_t) 600,&msg, &fname);
+	else ret = edg_wll_MaildirRetryTransStart(sandbox_mdir, (time_t)JP_REPEAT_TIMEOUT, (time_t)JP_GIVUP_TIMEOUT ,&msg, &fname);
 	if ( !ret ) { 
 		readnew = !readnew;
 		if ( readnew ) ret = edg_wll_MaildirTransStart(sandbox_mdir, &msg, &fname);
-		else ret = edg_wll_MaildirRetryTransStart(sandbox_mdir, (time_t)60, (time_t) 600,&msg, &fname);
+		else ret = edg_wll_MaildirRetryTransStart(sandbox_mdir, (time_t)JP_REPEAT_TIMEOUT, (time_t)JP_GIVUP_TIMEOUT ,&msg, &fname);
 		if ( !ret ) {
 			readnew = !readnew;
 			return 0;
@@ -693,6 +697,7 @@ static int sandbox_importer(void)
 #ifdef JP_PERF
 		if (!(sink & 2)) {
 #endif
+		refresh_connection(soap);
 		ret = soap_call___jpsrv__StartUpload(soap, tab[_jpps].val?:jpps, "", &su_in, &su_out);
 		ret = check_soap_fault(soap, ret);
 		/* XXX: grrrrrrr! test it!!!*/
@@ -709,6 +714,7 @@ static int sandbox_importer(void)
 		close(fhnd);
 		dprintf("[%s] File sent, commiting the upload\n", name);
 		cu_in.destination = su_out.destination;
+		refresh_connection(soap);
 		ret = soap_call___jpsrv__CommitUpload(soap, tab[_jpps].val?:jpps, "", &cu_in, &empty);
 		if ( (ret = check_soap_fault(soap, ret)) ) break;
 		dprintf("[%s] Dump upload succesfull\n", name);
@@ -884,24 +890,28 @@ static int gftp_put_file(const char *url, int fhnd)
 }
 
 
-static int refresh_gsoap(struct soap *soap) {
+static int refresh_connection(struct soap *soap) {
 	struct timeval		to = {JPPS_NO_RESPONSE_TIMEOUT, 0};
 	gss_cred_id_t newcred;
 	edg_wll_GssStatus	gss_code;
 	OM_uint32	min_stat;
+	glite_gsplugin_Context gp_ctx;
 
-	glite_gsplugin_set_timeout(glite_gsplugin_get_context(soap), &to);
+	gp_ctx = glite_gsplugin_get_context(soap);
+	glite_gsplugin_set_timeout(gp_ctx, &to);
 
 	switch ( edg_wll_gss_watch_creds(server_cert, &cert_mtime) ) {
 	case 0: break;
 	case 1:
 		if ( !edg_wll_gss_acquire_cred_gsi(server_cert, server_key, &newcred, NULL, &gss_code) ) {
-			dprintf(("[%s] reloading credentials successful\n", name));
+			dprintf("[%s] reloading credentials successful\n", name);
 			gss_release_cred(&min_stat, &mycred);
 			mycred = newcred;
-		} else { dprintf(("[%s] reloading credentials failed, using old ones\n", name)); }
+			if (glite_gsplugin_set_credential(gp_ctx, server_cert, server_key) != 0)
+				dprintf("[%s] reloading credentials for WS failed, using old ones\n", name);
+		} else { dprintf("[%s] reloading credentials failed, using old ones\n", name); }
 		break;
-	case -1: dprintf(("[%s] edg_wll_gss_watch_creds failed\n", name)); break;
+	case -1: dprintf("[%s] edg_wll_gss_watch_creds failed\n", name); break;
 	}
 
 	return 0;
