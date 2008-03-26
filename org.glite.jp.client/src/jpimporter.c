@@ -16,7 +16,7 @@
 #include <libgen.h>
 #include <ctype.h>
 
-#include "glite/lb/lb_maildir.h"
+#include "glite/lbu/maildir.h"
 
 #include "jpps_H.h"
 #include "jpps_.nsmap"
@@ -225,9 +225,9 @@ int main(int argc, char *argv[])
 	fprintf(fpid, "%d", getpid());
 	fclose(fpid);
 		
-	edg_wll_MaildirInit(reg_mdir);
-	edg_wll_MaildirInit(dump_mdir);
-	edg_wll_MaildirInit(sandbox_mdir);
+	glite_lbu_MaildirInit(reg_mdir);
+	glite_lbu_MaildirInit(dump_mdir);
+	glite_lbu_MaildirInit(sandbox_mdir);
 	if (store && *store) {
 		if (mkdir(store, 0750) != 0 && errno != EEXIST) {
 			fprintf(stderr, "Can't create directory %s: %s\n", store, strerror(errno));
@@ -422,12 +422,12 @@ static int reg_importer(void)
 			   *fname = NULL,
 			   *aux;
 
-	if ( readnew ) ret = edg_wll_MaildirTransStart(reg_mdir, &msg, &fname);
-	else ret = edg_wll_MaildirRetryTransStart(reg_mdir, (time_t)JPREG_REPEAT_TIMEOUT, (time_t)JPREG_GIVUP_TIMEOUT, &msg, &fname);
+	if ( readnew ) ret = glite_lbu_MaildirTransStart(reg_mdir, &msg, &fname);
+	else ret = glite_lbu_MaildirRetryTransStart(reg_mdir, (time_t)JPREG_REPEAT_TIMEOUT, (time_t)JPREG_GIVUP_TIMEOUT, &msg, &fname);
 	if ( !ret ) { 
 		readnew = !readnew;
-		if ( readnew ) ret = edg_wll_MaildirTransStart(reg_mdir, &msg, &fname);
-		else ret = edg_wll_MaildirRetryTransStart(reg_mdir, (time_t)JPREG_REPEAT_TIMEOUT, (time_t)JPREG_GIVUP_TIMEOUT, &msg, &fname);
+		if ( readnew ) ret = glite_lbu_MaildirTransStart(reg_mdir, &msg, &fname);
+		else ret = glite_lbu_MaildirRetryTransStart(reg_mdir, (time_t)JPREG_REPEAT_TIMEOUT, (time_t)JPREG_GIVUP_TIMEOUT, &msg, &fname);
 		if ( !ret ) {
 			readnew = !readnew;
 			return 0;
@@ -435,8 +435,8 @@ static int reg_importer(void)
 	}
 
 	if ( ret < 0 ) {
-		dprintf("[%s] edg_wll_MaildirTransStart: %s (%s)\n", name, strerror(errno), lbm_errdesc);
-		if ( !debug ) syslog(LOG_ERR, "edg_wll_MaildirTransStart: %s (%s)", strerror(errno), lbm_errdesc);
+		dprintf("[%s] glite_lbu_MaildirTransStart: %s (%s)\n", name, strerror(errno), lbm_errdesc);
+		if ( !debug ) syslog(LOG_ERR, "glite_lbu_MaildirTransStart: %s (%s)", strerror(errno), lbm_errdesc);
 		return -1;
 	} else if ( ret > 0 ) {
 		dprintf("[%s] JP registration request received\n", name);
@@ -478,7 +478,7 @@ static int reg_importer(void)
 			}
 #endif
 		} while (0);
-		edg_wll_MaildirTransEnd(reg_mdir, fname, ret? LBMD_TRANS_FAILED_RETRY: LBMD_TRANS_OK);
+		glite_lbu_MaildirTransEnd(reg_mdir, fname, ret? LBMD_TRANS_FAILED_RETRY: LBMD_TRANS_OK);
 		free(fname);
 		free(msg);
 		return 1;
@@ -512,12 +512,12 @@ static int dump_importer(void)
 #define				_proxy 3
 
 
-	if ( readnew ) ret = edg_wll_MaildirTransStart(dump_mdir, &msg, &fname);
-	else ret = edg_wll_MaildirRetryTransStart(dump_mdir, (time_t)JP_REPEAT_TIMEOUT, (time_t)JP_GIVUP_TIMEOUT, &msg, &fname);
+	if ( readnew ) ret = glite_lbu_MaildirTransStart(dump_mdir, &msg, &fname);
+	else ret = glite_lbu_MaildirRetryTransStart(dump_mdir, (time_t)JP_REPEAT_TIMEOUT, (time_t)JP_GIVUP_TIMEOUT, &msg, &fname);
 	if ( !ret ) { 
 		readnew = !readnew;
-		if ( readnew ) ret = edg_wll_MaildirTransStart(dump_mdir, &msg, &fname);
-		else ret = edg_wll_MaildirRetryTransStart(dump_mdir, (time_t)JP_REPEAT_TIMEOUT, (time_t)JP_GIVUP_TIMEOUT, &msg, &fname);
+		if ( readnew ) ret = glite_lbu_MaildirTransStart(dump_mdir, &msg, &fname);
+		else ret = glite_lbu_MaildirRetryTransStart(dump_mdir, (time_t)JP_REPEAT_TIMEOUT, (time_t)JP_GIVUP_TIMEOUT, &msg, &fname);
 		if ( !ret ) {
 			readnew = !readnew;
 			return 0;
@@ -525,8 +525,8 @@ static int dump_importer(void)
 	}
 
 	if ( ret < 0 ) {
-		dprintf("[%s] edg_wll_MaildirTransStart: %s (%s)\n", name, strerror(errno), lbm_errdesc);
-		if ( !debug ) syslog(LOG_ERR, "edg_wll_MaildirTransStart: %s (%s)", strerror(errno), lbm_errdesc);
+		dprintf("[%s] glite_lbu_MaildirTransStart: %s (%s)\n", name, strerror(errno), lbm_errdesc);
+		if ( !debug ) syslog(LOG_ERR, "glite_lbu_MaildirTransStart: %s (%s)", strerror(errno), lbm_errdesc);
 		return -1;
 	}
 
@@ -619,7 +619,7 @@ static int dump_importer(void)
 		}
 	} while (0);
 
-	edg_wll_MaildirTransEnd(dump_mdir, fname, ret? LBMD_TRANS_FAILED_RETRY: LBMD_TRANS_OK);
+	glite_lbu_MaildirTransEnd(dump_mdir, fname, ret? LBMD_TRANS_FAILED_RETRY: LBMD_TRANS_OK);
 	free(fname);
 	free(msg);
 
@@ -652,12 +652,12 @@ static int sandbox_importer(void)
 #define			_proxy 3
 
 
-	if ( readnew ) ret = edg_wll_MaildirTransStart(sandbox_mdir, &msg, &fname);
-	else ret = edg_wll_MaildirRetryTransStart(sandbox_mdir, (time_t)JP_REPEAT_TIMEOUT, (time_t)JP_GIVUP_TIMEOUT ,&msg, &fname);
+	if ( readnew ) ret = glite_lbu_MaildirTransStart(sandbox_mdir, &msg, &fname);
+	else ret = glite_lbu_MaildirRetryTransStart(sandbox_mdir, (time_t)JP_REPEAT_TIMEOUT, (time_t)JP_GIVUP_TIMEOUT ,&msg, &fname);
 	if ( !ret ) { 
 		readnew = !readnew;
-		if ( readnew ) ret = edg_wll_MaildirTransStart(sandbox_mdir, &msg, &fname);
-		else ret = edg_wll_MaildirRetryTransStart(sandbox_mdir, (time_t)JP_REPEAT_TIMEOUT, (time_t)JP_GIVUP_TIMEOUT ,&msg, &fname);
+		if ( readnew ) ret = glite_lbu_MaildirTransStart(sandbox_mdir, &msg, &fname);
+		else ret = glite_lbu_MaildirRetryTransStart(sandbox_mdir, (time_t)JP_REPEAT_TIMEOUT, (time_t)JP_GIVUP_TIMEOUT ,&msg, &fname);
 		if ( !ret ) {
 			readnew = !readnew;
 			return 0;
@@ -665,8 +665,8 @@ static int sandbox_importer(void)
 	}
 
 	if ( ret < 0 ) {
-		dprintf("[%s] edg_wll_MaildirTransStart: %s (%s)\n", name, strerror(errno), lbm_errdesc);
-		if ( !debug ) syslog(LOG_ERR, "edg_wll_MaildirTransStart: %s (%s)", strerror(errno), lbm_errdesc);
+		dprintf("[%s] glite_lbu_MaildirTransStart: %s (%s)\n", name, strerror(errno), lbm_errdesc);
+		if ( !debug ) syslog(LOG_ERR, "glite_lbu_MaildirTransStart: %s (%s)", strerror(errno), lbm_errdesc);
 		return -1;
 	}
 
@@ -718,7 +718,7 @@ static int sandbox_importer(void)
 #endif
 	} while (0);
 
-	edg_wll_MaildirTransEnd(sandbox_mdir, fname, ret? LBMD_TRANS_FAILED_RETRY: LBMD_TRANS_OK);
+	glite_lbu_MaildirTransEnd(sandbox_mdir, fname, ret? LBMD_TRANS_FAILED_RETRY: LBMD_TRANS_OK);
 	free(fname);
 	free(msg);
 

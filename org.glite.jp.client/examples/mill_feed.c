@@ -11,7 +11,7 @@
 #include <getopt.h>
 #include "jp_client.h"
 #include "jpimporter.h" 
-#include "glite/lb/lb_maildir.h" 
+#include "glite/lbu/maildir.h" 
 #include "glite/jobid/cjobid.h" 
 
 
@@ -174,7 +174,7 @@ static int register_init() {
         if (!env) env = USER;
         user = strdup(env);
 
-        if (edg_wll_MaildirInit(jpreg_dir) != 0) {
+        if (glite_lbu_MaildirInit(jpreg_dir) != 0) {
                 fprintf(stderr, "maildir init on %s failed\n", jpreg_dir);
                 return EIO;
         }
@@ -198,7 +198,7 @@ static int register_add(const char *jobid, char **new_jobid) {
         asprintf(&msg, "%s\n%s", tmpjobid, user);
 	if (new_jobid) *new_jobid = tmpjobid;
 	else free(tmpjobid);
-        if (edg_wll_MaildirStoreMsg(jpreg_dir, BKSERVER, msg) != 0) {
+        if (glite_lbu_MaildirStoreMsg(jpreg_dir, BKSERVER, msg) != 0) {
                 fprintf(stderr, "Can't store message: %s\n", lbm_errdesc);
                 return EIO;
         }

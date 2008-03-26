@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <dirent.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 
 #define COMPILE_WITH_LIBTAR
@@ -13,7 +14,7 @@
 #  include <libtar.h>
 #endif
 
-#include "glite/lb/lb_maildir.h"
+#include "glite/lbu/maildir.h"
 
 #include "jp_client.h"
 #include "jpimporter.h"
@@ -43,8 +44,8 @@ int glite_jpimporter_upload_files(
 	/* TODO: get the user proxy if it is not specified and find its location */
 	assert(proxy != NULL);
 
-	if ( edg_wll_MaildirInit(ctx->lbmd_dir) ) {
-		asprintf(&errs, "edg_wll_MaildirInit(): %s", lbm_errdesc);
+	if ( glite_lbu_MaildirInit(ctx->lbmd_dir) ) {
+		asprintf(&errs, "glite_lbu_MaildirInit(): %s", lbm_errdesc);
 		glite_jpcl_SetError(ctx, errno, errs);
 		free(errs);
 		return -1;
@@ -56,7 +57,7 @@ int glite_jpimporter_upload_files(
 			glite_jpcl_SetError(ctx, ECANCELED, "Can't create temporary tar file");
 			return -1;
 		}
-		snprintf(archive, PATH_MAX, "%s_%ld_%ld.tar",
+		snprintf(archive, PATH_MAX, "%s_%d_%ld.tar",
 				TEMP_FILE_PREFIX, getpid(), time(NULL));
 		if ( (fd = open(archive, O_CREAT|O_EXCL|O_WRONLY, 00600)) < 0 ) {
 			if ( errno == EEXIST ) { sleep(2); continue; }
@@ -93,8 +94,8 @@ int glite_jpimporter_upload_files(
 		asprintf(&msg, "jobid\t%s\nfile\t%s\nproxy\t%s\n",
 				jobid, archive, proxy);
 
-	if ( edg_wll_MaildirStoreMsg(ctx->lbmd_dir, "localhost", msg) ) {
-		asprintf(&errs, "edg_wll_MaildirStoreMsg(): %s", lbm_errdesc);
+	if ( glite_lbu_MaildirStoreMsg(ctx->lbmd_dir, "localhost", msg) ) {
+		asprintf(&errs, "glite_lbu_MaildirStoreMsg(): %s", lbm_errdesc);
 		glite_jpcl_SetError(ctx, errno, errs);
 		rv = -1;
 		goto cleanup;

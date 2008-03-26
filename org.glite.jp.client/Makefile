@@ -69,7 +69,7 @@ gsoap_bin_prefix:=${shell if [ -x  ${gsoap_prefix}/bin/soapcpp2 ]; then echo ${g
 dotless_gsoap_ver:=${shell echo ${gsoap_version} | tr -d . }
 GSOAPLIB:=-lglite_security_gsoap_plugin_${dotless_gsoap_ver}_${nothrflavour} 
 
-LBMAILDIRLIB:=-lglite_lb_maildir
+LBMAILDIRLIB:=-lglite_lbu_maildir
 
 offset=0
 version_info:=-version-info ${shell \
@@ -94,7 +94,7 @@ jpps_upload_files: %: %.o
 	${LINK} -o $@ $< ${LIB} ${LBMAILDIRLIB} 
 
 mill_feed: %: %.o
-	${LINK} -o $@ $< ${LBMAILDIRLIB} -lglite_lb_common_${nothrflavour}
+	${LINK} -o $@ $< ${LBMAILDIRLIB} -lglite_jobid
 
 
 
