@@ -6,6 +6,7 @@
 #include <string.h>
 #include <assert.h>
 #include <linux/limits.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
@@ -13,6 +14,7 @@
 #include <syslog.h>
 #include <fcntl.h>
 #include <libgen.h>
+#include <ctype.h>
 
 #include "glite/lb/lb_maildir.h"
 
@@ -24,6 +26,8 @@
 #include "glite/security/glite_gscompat.h"
 
 #include "globus_ftp_client.h"
+#include "jp_client.h"
+#include "jpimporter.h"
 
 #if GSOAP_VERSION <= 20602
 #define soap_call___jpsrv__RegisterJob soap_call___ns1__RegisterJob
@@ -35,7 +39,6 @@ typedef struct {
 	char	   *val;
 } msg_pattern_t;
 
-
 #ifndef dprintf
 #define dprintf(FMT, ARGS...)		{ if (debug) printf(FMT, ##ARGS); }
 #endif
@@ -46,26 +49,16 @@ typedef struct {
 #define GLITE_JPIMPORTER_PIDFILE	"/var/run/glite-jpimporter.pid"
 #endif 
 
-#ifndef GLITE_REG_IMPORTER_MDIR
-#define GLITE_REG_IMPORTER_MDIR		"/tmp/jpreg"
-#endif 
-
-#ifndef GLITE_DUMP_IMPORTER_MDIR
-#define GLITE_DUMP_IMPORTER_MDIR	"/tmp/jpdump"
-#endif 
-
-#ifndef GLITE_SANDBOX_IMPORTER_MDIR
-#define GLITE_SANDBOX_IMPORTER_MDIR	"/tmp/jpsandbox"
-#endif 
-
 #ifndef GLITE_JPPS
 #define GLITE_JPPS					"http://localhost:8901"
 #endif 
 
-
 #define	MAX_REG_CONNS				500
 #define JPPS_NO_RESPONSE_TIMEOUT		120
-
+#define JPREG_REPEAT_TIMEOUT			300
+#define JPREG_GIVUP_TIMEOUT			3000
+#define JP_REPEAT_TIMEOUT			360
+#define JP_GIVUP_TIMEOUT			3600
 
 static int		debug = 0;
 static int		die = 0;
@@ -84,8 +77,16 @@ static char	   	*server_cert = NULL,
 			*server_key = NULL,
 			*cadir = NULL;
 static edg_wll_GssCred	mycred = NULL;
-static char		*mysubj;
-struct timeval		to = {JPPS_NO_RESPONSE_TIMEOUT, 0};
+#ifdef JP_PERF
+typedef struct {
+	char *id, *name;
+	long int count, limit;
+	double start, end;
+} perf_t;
+
+int			sink = 0;
+perf_t			perf = {name:NULL,};
+#endif
 
 
 static struct option opts[] = {
@@ -101,12 +102,27 @@ static struct option opts[] = {
 	{ "pidfile",     1, NULL,    'i'},
 	{ "poll",        1, NULL,    't'},
 	{ "store",       1, NULL,    'S'},
+	{ "store",       1, NULL,    'S'},
+#ifdef JP_PERF
+	{ "perf-sink",   1, NULL,    'K'},
+#endif
 	{ NULL,          0, NULL,     0}
 };
 
-static const char *get_opt_string = "hgp:r:d:s:i:t:c:k:C:";
+static const char *get_opt_string = "hgp:r:d:s:i:t:c:k:C:"
+#ifdef JP_PERF
+	"K:"
+#endif
+;
 
 #include "glite/jp/ws_fault.c"
+
+#ifdef JP_PERF
+static void stats_init(perf_t *perf, const char *name);
+static void stats_set_jobid(perf_t *perf, const char *jobid);
+static void stats_get_limit(perf_t *perf, const char *name);
+static void stats_done(perf_t *perf);
+#endif
 
 static void usage(char *me)
 {
@@ -121,9 +137,12 @@ static void usage(char *me)
 		"\t-d, --dump-mdir    path to the 'LB maildir' subtree for LB dumps\n"
 		"\t-s, --sandbox-mdir path to the 'LB maildir' subtree for input/output sandboxes\n"
 		"\t-i, --pidfile      file to store master pid\n"
-		"\t-t, --poll         maildir polling interval (in seconds)\n",
-		"\t-S, --store        keep uploaded jobs in this directory\n",
-		me);
+		"\t-t, --poll         maildir polling interval (in seconds)\n"
+		"\t-S, --store        keep uploaded jobs in this directory\n"
+#ifdef JP_PERF
+		"\t-K, --perf-sink    1=stats, 2=without WS calls, 3=stats+without WS\n"
+#endif
+		, me);
 }
 
 static void catchsig(int sig)
@@ -131,7 +150,7 @@ static void catchsig(int sig)
 	die = sig;
 }
 
-static void catch_chld(int sig)
+static void catch_chld(int sig __attribute__((unused)))
 {
 	child_died = 1;
 }
@@ -143,7 +162,7 @@ static int dump_importer(void);
 static int sandbox_importer(void);
 static int parse_msg(char *, msg_pattern_t []);
 static int gftp_put_file(const char *, int);
-
+static int refresh_connection(struct soap *soap);
 
 
 int main(int argc, char *argv[])
@@ -157,7 +176,6 @@ int main(int argc, char *argv[])
 	char			*name,
 				pidfile[PATH_MAX] = GLITE_JPIMPORTER_PIDFILE;
 	glite_gsplugin_Context	plugin_ctx;
-	edg_wll_GssCred		cred;
 
 	name = strrchr(argv[0],'/');
 	if (name) name++; else name = argv[0];
@@ -179,6 +197,9 @@ int main(int argc, char *argv[])
 		case 'd': strcpy(dump_mdir, optarg); break;
 		case 's': strcpy(sandbox_mdir, optarg); break;
 		case 'i': strcpy(pidfile, optarg); break;
+#ifdef JP_PERF
+		case 'K': sink = atoi(optarg); break;
+#endif
 		case '?': usage(name); return 1;
 	}
 	if ( optind < argc ) { usage(name); return 1; }
@@ -237,8 +258,8 @@ int main(int argc, char *argv[])
 						" - unable to watch them for changes!\n", argv[0]);
 	if ( cadir ) setenv("X509_CERT_DIR", cadir, 1);
 	edg_wll_gss_watch_creds(server_cert, &cert_mtime);
-	if ( !edg_wll_gss_acquire_cred_gsi(server_cert, server_key, &mycred, &mysubj, &gss_code) ) {
-		dprintf("[master] Server identity: %s\n", mysubj);
+	if ( !edg_wll_gss_acquire_cred_gsi(server_cert, server_key, &mycred, &gss_code) ) {
+		dprintf("[master] Server identity: %s\n", mycred->name);
 	} else {
 		char *errmsg;
 		edg_wll_gss_get_error(&gss_code, "edg_wll_gss_acquire_cred_gsi()", &errmsg);
@@ -269,13 +290,6 @@ int main(int argc, char *argv[])
 	soap_set_namespaces(soap, jpps__namespaces);
 
 	glite_gsplugin_init_context(&plugin_ctx);
-	if (edg_wll_gss_acquire_cred_gsi(server_cert, server_key, &cred, NULL, NULL) != 0) {
-		perror("can't acquire credentials");
-		exit(1);
-	}
-	glite_gsplugin_set_timeout(plugin_ctx, &to);
-	glite_gsplugin_set_credential(plugin_ctx, mycred);
-
 	soap_register_plugin_arg(soap, glite_gsplugin,plugin_ctx);
 
 	if ( (reg_pid = slave(reg_importer, "reg-imp")) < 0 ) {
@@ -371,7 +385,11 @@ static int slave(int (*fn)(void), const char *nm)
 
 	dprintf("[%s] slave started - pid [%d]\n", name, getpid());
 
-	while ( !die && conn_cnt < MAX_REG_CONNS ) {
+#ifdef JP_PERF
+	while ( !die && (conn_cnt < MAX_REG_CONNS || (sink & 1)) ) {
+#else
+	while ( !die && (conn_cnt < MAX_REG_CONNS) ) {
+#endif
 		int ret = fn();
 
 		if ( ret > 0 ) conn_cnt++;
@@ -384,7 +402,7 @@ static int slave(int (*fn)(void), const char *nm)
 	}
 
 	if ( die ) {
-		dprintf("[%s] Terminating on signal %d\n", name, getpid(), die);
+		dprintf("[%s] %d: Terminating on signal %d\n", name, getpid(), die);
 		if ( !debug ) syslog(LOG_INFO, "Terminating on signal %d", die);
 	}
     dprintf("[%s] Terminating after %d connections\n", name, conn_cnt);
@@ -405,21 +423,15 @@ static int reg_importer(void)
 			   *aux;
 
 	if ( readnew ) ret = edg_wll_MaildirTransStart(reg_mdir, &msg, &fname);
-	else ret = edg_wll_MaildirRetryTransStart(reg_mdir, (time_t)30, (time_t)500, &msg, &fname);
+	else ret = edg_wll_MaildirRetryTransStart(reg_mdir, (time_t)JPREG_REPEAT_TIMEOUT, (time_t)JPREG_GIVUP_TIMEOUT, &msg, &fname);
 	if ( !ret ) { 
 		readnew = !readnew;
 		if ( readnew ) ret = edg_wll_MaildirTransStart(reg_mdir, &msg, &fname);
-		else ret = edg_wll_MaildirRetryTransStart(reg_mdir, (time_t)30, (time_t)500, &msg, &fname);
+		else ret = edg_wll_MaildirRetryTransStart(reg_mdir, (time_t)JPREG_REPEAT_TIMEOUT, (time_t)JPREG_GIVUP_TIMEOUT, &msg, &fname);
 		if ( !ret ) {
 			readnew = !readnew;
 			return 0;
 		}
-	}
-
-	if ( ret < 0 ) {
-		dprintf("[%s] edg_wll_MaildirTransStart: %s (%s)\n", name, strerror(errno), lbm_errdesc);
-		if ( !debug ) syslog(LOG_ERR, "edg_wll_MaildirTransStart: %s (%s)", strerror(errno), lbm_errdesc);
-		return -1;
 	}
 
 	if ( ret < 0 ) {
@@ -441,8 +453,30 @@ static int reg_importer(void)
 			in.owner = aux;
 			dprintf("[%s] Registering '%s'\n", name, msg);
 			if ( !debug ) syslog(LOG_INFO, "Registering '%s'\n", msg);
+#ifdef JP_PERF
+			if ((sink & 1)) {
+				if (strncasecmp(msg, PERF_JOBID_START_PREFIX, sizeof(PERF_JOBID_START_PREFIX) - 1) == 0) {
+					stats_init(&perf, name);
+					stats_set_jobid(&perf, msg);
+				}
+				if (perf.name && !perf.limit) stats_get_limit(&perf, name);
+			}
+			if (!(sink & 2)) {
+#endif
+			refresh_connection(soap);
 			ret = soap_call___jpsrv__RegisterJob(soap, jpps, "", &in, &empty);
 			if ( (ret = check_soap_fault(soap, ret)) ) break;
+#ifdef JP_PERF
+			} else ret = 0;
+			if (perf.name && ret == 0) {
+				perf.count++;
+				if (perf.limit) {
+					dprintf("[%s statistics] done %ld/%ld\n", name, perf.count, perf.limit);
+					if (perf.count >= perf.limit) stats_done(&perf);
+				} else
+					dprintf("[%s statistics] done %ld/no limit\n", name, perf.count);
+			}
+#endif
 		} while (0);
 		edg_wll_MaildirTransEnd(reg_mdir, fname, ret? LBMD_TRANS_FAILED_RETRY: LBMD_TRANS_OK);
 		free(fname);
@@ -462,7 +496,6 @@ static int dump_importer(void)
 	static int		readnew = 1;
 	char		   *msg = NULL,
 				   *fname = NULL,
-				   *aux,
 				   *bname;
 	char                        fspec[PATH_MAX];
 	int				ret;
@@ -480,11 +513,11 @@ static int dump_importer(void)
 
 
 	if ( readnew ) ret = edg_wll_MaildirTransStart(dump_mdir, &msg, &fname);
-	else ret = edg_wll_MaildirRetryTransStart(dump_mdir, (time_t)60, (time_t)600, &msg, &fname);
+	else ret = edg_wll_MaildirRetryTransStart(dump_mdir, (time_t)JP_REPEAT_TIMEOUT, (time_t)JP_GIVUP_TIMEOUT, &msg, &fname);
 	if ( !ret ) { 
 		readnew = !readnew;
 		if ( readnew ) ret = edg_wll_MaildirTransStart(dump_mdir, &msg, &fname);
-		else ret = edg_wll_MaildirRetryTransStart(dump_mdir, (time_t)60, (time_t)600, &msg, &fname);
+		else ret = edg_wll_MaildirRetryTransStart(dump_mdir, (time_t)JP_REPEAT_TIMEOUT, (time_t)JP_GIVUP_TIMEOUT, &msg, &fname);
 		if ( !ret ) {
 			readnew = !readnew;
 			return 0;
@@ -513,6 +546,29 @@ static int dump_importer(void)
 		su_in.contentType = "text/lb";
 		dprintf("[%s] Importing LB dump file '%s'\n", name, tab[_file].val);
 		if ( !debug ) syslog(LOG_INFO, "Importing LB dump file '%s'\n", msg);
+#ifdef JP_PERF
+		if ((sink & 1)) {
+		/* statistics started by file, ended by count limit (from the appropriate result fikle) */
+			FILE *f;
+			char item[200];
+
+			/* starter */
+			if (!perf.name) {
+				f = fopen(PERF_START_FILE, "rt");
+				if (f) {
+					stats_init(&perf, name);
+					fscanf(f, "%s", item);
+					fclose(f);
+					unlink(PERF_START_FILE);
+					stats_set_jobid(&perf, item);
+				} else
+					dprintf("[%s statistics]: not started/too much dumps: %s\n", name, strerror(errno));
+			}
+			if (perf.name && !perf.limit) stats_get_limit(&perf, name);
+		}
+		if (!(sink & 2)) {
+#endif
+		refresh_connection(soap);
 		ret = soap_call___jpsrv__StartUpload(soap, tab[_jpps].val?:jpps, "", &su_in, &su_out);
 		if ( (ret = check_soap_fault(soap, ret)) ) break;
 		dprintf("[%s] Destination: %s\n\tCommit before: %s\n", name, su_out.destination, ctime(&su_out.commitBefore));
@@ -532,9 +588,21 @@ static int dump_importer(void)
 		close(fhnd);
 		dprintf("[%s] File sent, commiting the upload\n", name);
 		cu_in.destination = su_out.destination;
+		refresh_connection(soap);
 		ret = soap_call___jpsrv__CommitUpload(soap, tab[_jpps].val?:jpps, "", &cu_in, &empty);
 		if ( (ret = check_soap_fault(soap, ret)) ) break;
 		dprintf("[%s] Dump upload succesfull\n", name);
+#ifdef JP_PERF
+		} else ret = 0;
+		if (perf.name && ret == 0) {
+			perf.count++;
+			if (perf.limit) {
+				dprintf("[%s statistics] done %ld/%ld\n", name, perf.count, perf.limit);
+				if (perf.count >= perf.limit) stats_done(&perf);
+			} else
+				dprintf("[%s statistics] done %ld/no limit\n", name, perf.count);
+		}
+#endif
 		if (store && *store) {
 			bname = strdup(tab[_file].val);
 			snprintf(fspec, sizeof fspec, "%s/%s", store, basename(bname));
@@ -568,8 +636,7 @@ static int sandbox_importer(void)
 	struct _jpelem__CommitUploadResponse	empty;
 	static int	readnew = 1;
 	char		*msg = NULL,
-			*fname = NULL,
-			*aux;
+			*fname = NULL;
 	int		ret;
 	int		fhnd;
 	msg_pattern_t	tab[] = {
@@ -586,11 +653,11 @@ static int sandbox_importer(void)
 
 
 	if ( readnew ) ret = edg_wll_MaildirTransStart(sandbox_mdir, &msg, &fname);
-	else ret = edg_wll_MaildirRetryTransStart(sandbox_mdir, (time_t)60, (time_t) 600,&msg, &fname);
+	else ret = edg_wll_MaildirRetryTransStart(sandbox_mdir, (time_t)JP_REPEAT_TIMEOUT, (time_t)JP_GIVUP_TIMEOUT ,&msg, &fname);
 	if ( !ret ) { 
 		readnew = !readnew;
 		if ( readnew ) ret = edg_wll_MaildirTransStart(sandbox_mdir, &msg, &fname);
-		else ret = edg_wll_MaildirRetryTransStart(sandbox_mdir, (time_t)60, (time_t) 600,&msg, &fname);
+		else ret = edg_wll_MaildirRetryTransStart(sandbox_mdir, (time_t)JP_REPEAT_TIMEOUT, (time_t)JP_GIVUP_TIMEOUT ,&msg, &fname);
 		if ( !ret ) {
 			readnew = !readnew;
 			return 0;
@@ -622,6 +689,10 @@ static int sandbox_importer(void)
 		su_in.contentType = "tar/lb";
 		dprintf("[%s] Importing LB sandbox tar file '%s'\n", name, tab[_file].val);
 		if ( !debug ) syslog(LOG_INFO, "Importing LB sandbox tar file '%s'\n", msg);
+#ifdef JP_PERF
+		if (!(sink & 2)) {
+#endif
+		refresh_connection(soap);
 		ret = soap_call___jpsrv__StartUpload(soap, tab[_jpps].val?:jpps, "", &su_in, &su_out);
 		ret = check_soap_fault(soap, ret);
 		/* XXX: grrrrrrr! test it!!!*/
@@ -638,9 +709,13 @@ static int sandbox_importer(void)
 		close(fhnd);
 		dprintf("[%s] File sent, commiting the upload\n", name);
 		cu_in.destination = su_out.destination;
+		refresh_connection(soap);
 		ret = soap_call___jpsrv__CommitUpload(soap, tab[_jpps].val?:jpps, "", &cu_in, &empty);
 		if ( (ret = check_soap_fault(soap, ret)) ) break;
 		dprintf("[%s] Dump upload succesfull\n", name);
+#ifdef JP_PERF
+		} else ret = 0;
+#endif
 	} while (0);
 
 	edg_wll_MaildirTransEnd(sandbox_mdir, fname, ret? LBMD_TRANS_FAILED_RETRY: LBMD_TRANS_OK);
@@ -760,7 +835,7 @@ static int gftp_put_file(const char *url, int fhnd)
 		put_file_err("Could not initialise operation attributes");
 	
 	if ( globus_ftp_client_operationattr_set_authorization(
-			&op_attr, server_cert? mycred: GSS_C_NO_CREDENTIAL,
+			&op_attr, server_cert? mycred->gss_cred: GSS_C_NO_CREDENTIAL,
 			NULL, "", 0, NULL) != GLOBUS_SUCCESS )
 		put_file_err("Could not set authorization procedure");
 
@@ -808,6 +883,83 @@ static int gftp_put_file(const char *url, int fhnd)
 
     return (gError == GLOBUS_TRUE)? 1: 0;
 }
+
+
+static int refresh_connection(struct soap *soap) {
+	struct timeval		to = {JPPS_NO_RESPONSE_TIMEOUT, 0};
+	edg_wll_GssCred newcred;
+	edg_wll_GssStatus	gss_code;
+	glite_gsplugin_Context gp_ctx;
+
+	gp_ctx = glite_gsplugin_get_context(soap);
+	glite_gsplugin_set_timeout(gp_ctx, &to);
+
+	switch ( edg_wll_gss_watch_creds(server_cert, &cert_mtime) ) {
+	case 0: break;
+	case 1:
+		if ( !edg_wll_gss_acquire_cred_gsi(server_cert, server_key, &newcred, &gss_code) ) {
+			dprintf("[%s] reloading credentials successful\n", name);
+			edg_wll_gss_release_cred(&mycred, &gss_code);
+			mycred = newcred;
+			glite_gsplugin_set_credential(gp_ctx, newcred);
+		} else { dprintf("[%s] reloading credentials failed, using old ones\n", name); }
+		break;
+	case -1: dprintf("[%s] edg_wll_gss_watch_creds failed\n", name); break;
+	}
+
+	return 0;
+}
+
+
+#ifdef JP_PERF
+static void stats_init(perf_t *perf, const char *name) {
+	struct timeval tv;
+
+	memset(perf, 0, sizeof *perf);
+	perf->count = 0;
+	perf->name = strdup(name);
+	gettimeofday(&tv, NULL);
+	perf->start = tv.tv_sec + (double)tv.tv_usec / 1000000.0;
+	dprintf("[%s statistics] start detected\n", name);
+}
+
+static void stats_set_jobid(perf_t *perf, const char *jobid) {
+	perf->id = strdup(jobid + sizeof(PERF_JOBID_START_PREFIX) - 1);
+	dprintf("[%s statistics] ID %s\n", perf->name, perf->id);
+}
+
+static void stats_get_limit(perf_t *perf, const char *name) {
+	FILE *f;
+	char *fn, item[200];
+	int count;
+
+	/* stopper */
+	asprintf(&fn, PERF_STOP_FILE_FORMAT, perf->id);
+	f = fopen(fn, "rt");
+	free(fn);
+	if (f) {
+		fscanf(f, "%s\t%d", item, &count);
+		if (strcasecmp(item, name) != 0) fscanf(f, "%s\t%d", item, &count);
+		dprintf("[%s statistics] expected %d %s\n", name, count, item);
+		fclose(f);
+		perf->limit = count;
+	}
+}
+
+static void stats_done(perf_t *perf) {
+	struct timeval tv;
+
+	gettimeofday(&tv, NULL);
+	perf->end = tv.tv_sec + (double)tv.tv_usec / 1000000.0;
+	dprintf("[%s statistics] %s\n", perf->name, perf->id);
+	dprintf("[%s statistics] start: %lf\n", perf->name, perf->start);
+	dprintf("[%s statistics] stop:  %lf\n", perf->name, perf->end);
+	dprintf("[%s statistics] count: %ld (%lf job/day)\n", perf->name, perf->count, 86400.0 * perf->count / (perf->end - perf->start));
+	free(perf->id);
+	free(perf->name);
+	memset(perf, 0, sizeof *perf);
+}
+#endif
 
 /* XXX: we don't use it */
 SOAP_NMAC struct Namespace namespaces[] = { {NULL,NULL} };
