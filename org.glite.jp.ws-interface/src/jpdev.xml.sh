@@ -6,7 +6,7 @@
 	elemNs="http://glite.org/wsdl/elements/jp"
 	elemPrefix="jpe">
 
-	<version>CVS revision: <![CDATA[ $Header$: ]]></version>
+	<version>CVS revision: <![CDATA[ \$Header$: ]]></version>
 
 	<import namespace="http://glite.org/wsdl/services/jp" location="JobProvenanceTypes.wsdl"/>
 

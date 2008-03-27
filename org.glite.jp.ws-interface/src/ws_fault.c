@@ -93,6 +93,7 @@ static int glite_jp_clientCheckFault(struct soap *soap, int err, const char *nam
 		break;
 
 	default:
+		fprintf(stderr, "%ssoap err=%d, ", prefix, err);
 		soap_print_fault(soap,stderr);
 		retval = -1;
 	}

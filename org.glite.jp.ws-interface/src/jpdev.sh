@@ -1,4 +1,4 @@
-#!/bin/sh
+#! /bin/bash
 
 xmlcut() {
 	echo -e "\t<!-- $1 -->"
