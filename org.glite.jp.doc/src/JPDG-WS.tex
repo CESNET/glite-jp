@@ -1,0 +1,34 @@
+\section{Web Service Interface}
+
+In source code tree the WSDLs are located in these files:\\
+\texttt{org.glite.jp.ws-interface/src/JobProvenanceIS.xml,\\
+org.glite.jp.ws-interface/src/JobProvenancePS.xml,\\
+org.glite.jp.ws-interface/src/JobProvenanceTypes.xml
+}
+
+\TODO{Add more info about the Web Service Interface...}
+
+% JPWS reference:
+{
+\parindent0pt
+\def\chapter#1{}
+\def\section#1{\subsection{#1}}
+\def\subsection#1{\par\medskip\textbf{#1}\par}
+
+\let\odesc=\description
+\let\oedesc=\enddescription
+\renewenvironment{description}{\odesc\itemindent=1em
+\listparindent=2em
+}{\oedesc}
+%\renewenvironment{description}{\list{}{\labelwidth 5cm\leftmargin 5cm}}
+%{\endlist}
+
+\let\null=\relax
+
+% this file was manually generated using db2latex (http://db2latex.sourceforge.net)
+% from org.glite.jp.ws-interface/build/doc-html.xml
+% TODO: generate it automatically here in Makefile
+
+\input{jpws}
+}
+

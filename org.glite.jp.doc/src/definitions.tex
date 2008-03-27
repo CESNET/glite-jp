@@ -1,5 +1,7 @@
 \usepackage{xspace}
 %\usepackage{doxygen}
+\usepackage{alltt}
+\usepackage{comment}
 
 \def\LB{L\&B\xspace}
 \def\JP{JP\xspace}
@@ -13,5 +15,10 @@
 
 \long\def\TODO#1{\par\noindent\textbf{TODO:} {\sl#1}\par}
 \long\def\ludek#1{}
+
+\def\path#1{{\normalfont\textsf{#1}}}
+\def\code#1{\texttt{#1}}
+
+\specialcomment{hints}{\par\noindent\textbf{Hints: }\begingroup\slshape}{\endgroup}
 
 \hyphenation{plug-in}

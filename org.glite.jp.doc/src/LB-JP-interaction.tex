@@ -1,0 +1,74 @@
+\subsection{Interaction with Logging and Bookeeping (\LB)}
+
+In this section we describe the interaction of JP with Logging and Bookkeeping
+(\LB) service.  The data flows between LB and JP services are displayed in
+Figure~\ref{fig:LB-JP-interactions}.  These flows are numbered and one can use
+this numbers to find additional information about each flow in
+table~\ref{tab:LB-JP-interactions}.
+
+\begin{figure}[htpb]
+  \centering
+  \includegraphics[width=0.9\hsize]{LB-JP-interaction-details}
+  \caption{LB to JP interactions detail overview}
+  \label{fig:LB-JP-interactions}
+\end{figure}
+
+\begin{table}[htpb]
+ \centering
+  \begin{tabular}{|c|p{3cm}|l|p{9cm}|}
+    \hline
+    &spool directory&initiated by&description\\
+    \hline
+    \hline
+    1&lb.export.dump,
+      lb.export.dump.keep&lb-exporter&
+      Export of LB job records into spool directory. It uses glite-lb-purge utility. LB-exporter reads this spool directory in a regular manner and implement next processing of LB dumps. Optionally it can keep handled dumps in lb.export.dump.keep.\\
+    \hline
+    2&lb.export.jpreg&LB server&When new job come to the LB server 
+    it stores its
+    registration into the spool directory. It is responsibility of
+    JP-importer process to handle such registrations.\\
+    \hline
+    3&lb.export.jpdump,
+      lb.export.jobs,
+      lb.export.jobs.keep&lb-exporter&
+      LB-exporter do its processing of LB dumps (they are in per job form) and passes on it to the JP-importer using the spool directory lb.export.jpdump and temporary storage lb.export.jobs. It can keep the job files for futher usage.\\
+    \hline
+    4&none&jp-importer&JP importer handles registrations received from LB
+    server and sends it to the JP primary server front-end (using its WS
+    interface).\\
+    \hline
+    5&none&jp-importer&JP importer handles LB dumps received from LB
+    exporter and sends it to the JP primary server back-end using its
+    gridftp interface.\\
+    \hline
+  \end{tabular}
+  \caption{LB to JP data flows description}
+  \label{tab:LB-JP-interactions}
+\end{table}
+
+
+Notes:
+\begin{itemize}
+ \item Only JP Primary Storage (JPPS) server is involved in described
+   data flows. JP Index Servers are not part of this picture (they are
+   feeded via corresponding JPPS).
+ \item Only flows number 4 and 5 are designed to be inter-host. All
+   the other interactions assume the components are on the same host and
+   do use access to a shared filesystem.
+ \item Data flow number 1 use glite-lb-purge utility (see its
+   documentation) and passes to it argument from lb.export.purgeargs
+   clause of the deployment configuration file. This argument contain
+   the timeouts controlling after how long period of time a job
+   staying in a terminal state is to be purged from the LB server.
+ \item The LB exporter have a feature to store LB job event dumps in a
+   directory for further handling (e.g. for job statistic tool). This behaviour
+   is controled by lb.export.jobs.keep deployment config file clause (leave
+   this clause empty if you don't use dumps for futher handling).
+ \item The LB exporter also have a feature to keep all handled LB
+   dumps (in glite-lb-purge format) in filesystem. This feature is
+   controlled by lb.export.dump.keep.
+ \item LB exporter is not a deamon, it's periodic invocation is
+   provided by cron deamon.
+\end{itemize}
+

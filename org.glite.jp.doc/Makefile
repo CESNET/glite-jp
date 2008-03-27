@@ -54,5 +54,26 @@ install:
 
 clean:
 	rm -rvf JPUG* JPAG* JPDG* 
+	rm -rvf log.xml project/ rpmbuild/ RPMS/ tgz/
 
-.PHONY: all clean purge ps pdf
+
+# dependencies:
+
+JPUG.pdf: JPUG.tex \
+	JPUG-Introduction.tex \
+	JPUG-Tools.tex glite-jpis-client.tex jpimporter.tex gui.tex \
+	JPUG-UseCases.tex 
+
+JPAG.pdf: JPAG.tex \
+	JPAG-Introduction.tex LB-JP-interaction.tex \
+	JPAG-Installation.tex \
+	JPAG-Configuration.tex \
+	JPAG-Running.tex \
+	JPAG-Testing.tex \
+	JPAG-Troubleshooting.tex
+
+JPDG.pdf: JPDG.tex \
+	JPDG-Introduction.tex \
+	JPDG-WS.tex
+
+.PHONY: all clean

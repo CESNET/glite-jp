@@ -1,3 +1,159 @@
-\section{Use Cases}
+\section{Job Provenance use cases}
 
-This section describes usage of \JP\ ...
+\subsection{Prerequisities}
+
+\subsubsection{LB/JP relationship}
+When JP deployed, any job in a terminal state will disappear from LB
+after preconfigured timeout (one week for example). If a user wants
+any information about such a job before this timeout (or before it
+reach a terminal state) he must use the LB service (please refer to LB
+user's guide). After that timeout he must use the JP service.
+
+% TODO: update
+% For LB configuration please see gLite installation guide. For a
+% technical description of LB-JP interactions please see
+% \texttt{http://egee.cesnet.cz/en/JRA1/LB-JP-interaction-guide.pdf}.
+
+\subsubsection{JP service location}
+To call JP you need to know JP services address. There are two services:
+\begin{itemize}
+\item JP primary storage (JPPS)\\
+  From JP design point of view there are only few PS in the
+  grid. Expected implementation is that these JPPS locations
+  are preconfigured in a UI instance while one of them is configured as
+  default JPPS.
+\item JP index server (JPIS)\\
+  Each index server is build (configured and started) by site/VO/user
+  group administrator (or even "senior user") based on given
+  community needs (expected queries and its optimization). So in
+  principle the index server location for a given query is to be
+  provided by the user. We expect that the UI instance will provide
+  mechanism allowing selection from preconfigured JPIS servers list.
+\end{itemize}
+
+\subsection{JP use case 1 -- get job info}
+
+The scenario:
+\begin{itemize}
+\item The user wants information about a particular job. He knows a
+  job id. Job isn't longer in the LB. Procedure: Ask the JPPS to get all
+  or selected attributes of job.
+\end{itemize}
+
+The implementation:
+\begin{itemize}
+ \item Let a user to specify attributes to be returned. See section
+  \ref{attributes}.
+ \item Call GetJobAttributes operation of a JPPS and display the values
+  returned.
+\end{itemize}
+
+Examples and hints:
+\begin{itemize}
+ \item \texttt{org.glite.jp.primary/examples/jpps-test.c}\\
+  This utility is used for all JPPS operations. Some hints how to use it
+  can be find in the test plan document.
+\end{itemize}
+
+\subsection{JP use case 2 -- get job files}
+
+The scenario:
+\begin{itemize}
+ \item The user knows a job id, job is in a terminal state. The user wants
+  all files (LB event dump, sandbox) stored by JP for futher processing.
+\end{itemize}
+
+The implementation:
+\begin{itemize}
+ \item Call GetJobFiles operation of a JPPS. You will get a list of URLs
+  which can be used to download the files.
+\end{itemize}
+
+Examples and hints:
+\begin{itemize}
+ \item The same as use case 1.
+\end{itemize}
+
+\subsection{JP use case 3 -- job lookup}
+
+The scenario:
+\begin{itemize}
+ \item The user is looking for jobs with specific properties. In this case
+  (no job id known) a JPIS must be used. There are the same query interface
+  provided by any JPIS but if a particular query can be answered by
+  the given JPIS depends on its configuration (configuration
+  determines which attributes are uploaded by PS to IS, and which of
+  them are indexed).
+ \item The user should know the proper JPIS to use for its particular
+  needs.
+ \item The scenario can continue by the JP use cases number 1 and 2 described
+  above (JPIS answer will contain job ids and identification of JPPSs
+  to ask for all available JP data about the jobs).
+\end{itemize}
+
+The implementation:
+\begin{itemize}
+ \item The user will select a JPIS and provide query. The JPIS operation
+  QueryJobs is called and list of jobs matching the query is returned.
+\end{itemize}
+
+Examples and hints:
+\begin{itemize}
+ \item JPIS CLI tool\\
+   org.glite.jp.index/examples/jpis-client.c
+
+ \item example in org.glite.jp.index/examples/jpis-test.c (starting
+   from line 161)
+\end{itemize}
+
+\subsection{JP use case 4 -- job annotation}
+
+The scenario:
+\begin{itemize}
+ \item The user wants to add a user tag (annotation) to a job. He must know
+  the job id(s) (or use the JP use case number 3 to find it).
+\end{itemize}
+
+The implementation:
+\begin{itemize}
+ \item Call RecordTag operation of JPPS for the job(s) to add requested
+  user tag.
+\end{itemize}
+
+Examples and hints:
+\begin{itemize}
+ \item The same as use case 1.
+\end{itemize}
+
+
+\subsection{Job attributes}
+\label{attributes}
+Job attributes are referenced by its names. Each attribute belongs to
+one namespace (represented by a prefix in the attribute name).
+
+A namespace is defined by a service (currently we have one for LB and
+one for JP) providing its data to the JP or a user group/experiment
+who wants to attach its own data to the job.
+
+It is expected that UI have preconfigured list of available namespaces
+and XML schema for each namespace (the schema can be automatically
+retrieved based on the namespace name). A list of available attributes
+is generated from these schemas when user have to select attributes to
+be retrieved from JP.
+
+\begin{itemize}
+ \item The namespaces (schema is available at the URL representing namespace):\\
+  http://egee.cesnet.cz/en/Schema/LB/Attributes\\
+  http://egee.cesnet.cz/en/Schema/JP/System   <<<<<<<(NOT YET)\\
+ \item There are header files with known names of attributes generated from
+  these schema files in our build procedure:\\
+  org.glite.lb.server/build/jp\_job\_attrs.h\\
+  org.glite.jp.common/interface/known\_attr.h  <<<<<<<\\
+\end{itemize}
+
+
+\subsection{Authentication and authorization}
+All the calls must be authenticated by user credentials. In the
+current JP release only implicit ACLs are available -- the job
+information is available for job owner only.
+
