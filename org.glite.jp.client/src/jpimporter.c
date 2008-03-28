@@ -503,7 +503,7 @@ static int dump_importer(void)
 				   *fname = NULL,
 				   *bname;
 	char                        fspec[PATH_MAX];
-	int				ret, retry_upload;
+	int				ret, retry_upload, jperrno;
 	int				fhnd;
 	msg_pattern_t	tab[] = {
 						{"jobid", NULL},
@@ -549,8 +549,6 @@ static int dump_importer(void)
 		su_in.name = NULL;
 		su_in.commitBefore = 1000 + time(NULL);
 		su_in.contentType = "text/lb";
-		dprintf("[%s] Importing LB dump file '%s'\n", name, tab[_file].val);
-		if ( !debug ) syslog(LOG_INFO, "Importing LB dump file '%s'\n", msg);
 #ifdef JP_PERF
 		if ((sink & 1)) {
 		/* statistics started by file, ended by count limit (from the appropriate result fikle) */
@@ -576,6 +574,8 @@ static int dump_importer(void)
 #endif
 		retry_upload = 2;
 		do {
+			dprintf("[%s] Importing LB dump file '%s'\n", name, tab[_file].val);
+			if ( !debug ) syslog(LOG_INFO, "Importing LB dump file '%s'\n", msg);
 			refresh_connection(soap);
 			ret = soap_call___jpsrv__StartUpload(soap, tab[_jpps].val?:jpps, "", &su_in, &su_out);
 			if ( (ret = check_soap_fault(soap, ret)) ) {
@@ -588,21 +588,28 @@ static int dump_importer(void)
 				GLITE_SECURITY_GSOAP_LIST_CREATE(soap, &gja_in, attributes, struct _jpelem__GetJobAttributes, 1);
 				GLITE_SECURITY_GSOAP_LIST_GET(gja_in.attributes, 0) = GLITE_JP_ATTR_REGTIME;
 				ret = soap_call___jpsrv__GetJobAttributes(soap, jpps, "", &gja_in, &gja_out);
-				if (ret == 0) {
+				jperrno = glite_jp_clientGetErrno(soap, ret);
+				/* no error ==> some application fault from JP */
+				if (jperrno == 0) {
 					dprintf("[%s] Dump failed when job %s exists\n", name, su_in.job);
 					ret = -1;
 					break;
 				}
+				/* other then "job not found" error ==> other problem, don't register */
+				if (jperrno != ENOENT && jperrno != -2) {
+					ret = check_soap_fault(soap, ret);
+					break;
+				}
 				GLITE_SECURITY_GSOAP_LIST_GET(gja_in.attributes, 0) = NULL;
-				/* register job */
-				dprintf("[%s] Failsafe registration '%s'\n", name, rj_in.job);
-				if ( !debug ) syslog(LOG_INFO, "Failsafe registration '%s'\n",rj_in.job);
+				/* "job not found" error ==> register job */
 				refresh_connection(soap);
 				rj_in.job = su_in.job;
 				rj_in.owner = mycred->name;
+				dprintf("[%s] Failsafe registration\n", name);
+				dprintf("[%s] \tjobid: %s\n[%s] \towner: %s\n", name, rj_in.job, name, rj_in.owner);
+				if ( !debug ) syslog(LOG_INFO, "Failsafe registration '%s'\n",rj_in.job);
 				ret = soap_call___jpsrv__RegisterJob(soap, tab[_jpps].val?:jpps, "", &rj_in, &rj_empty);
 				if ( (ret = check_soap_fault(soap, ret)) ) break;
-				dprintf("[%s] \tjobid: %s\n[%s] \towner: %s\n", name, rj_in.job, name, rj_in.owner);
 				retry_upload--;
 				ret = 1;
 			}

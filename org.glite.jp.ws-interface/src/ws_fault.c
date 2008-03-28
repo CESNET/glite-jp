@@ -32,70 +32,114 @@
 
 
 static int glite_jp_clientCheckFault(struct soap *soap, int err, const char *name, int toSyslog) UNUSED;
-static struct jptype__genericFault* jp2s_error(struct soap *soap, const glite_jp_error_t *err) UNUSED;
+static int glite_jp_clientGetErrno(struct soap *soap, int err) UNUSED;
 static void glite_jp_server_err2fault(const glite_jp_context_t ctx,struct soap *soap) UNUSED;
+
+static struct jptype__genericFault* jp2s_error(struct soap *soap, const glite_jp_error_t *err);
+static int clientGetFault(struct soap *soap, int err, const char **reason, struct jptype__genericFault **f, const char **fallback);
+
+
+/*
+ * get client fault structs
+ *   err - code got from soap call
+ *   reason - error text
+ *   f - extended fault structs or NULL
+ *   fallback - xml fault description or NULL
+ * return values:
+ *   0 - OK
+ *   1 - got a extended fault info
+ *   2 - internal gsoap fault
+ */
+static int clientGetFault(struct soap *soap, int err, const char **reason, struct jptype__genericFault **f, const char **fallback) {
+	struct SOAP_ENV__Detail *detail;
+
+	*f = NULL;
+	if (fallback) *fallback = NULL;
+
+	switch(err) {
+	case SOAP_OK:
+		return 0;
+
+	case SOAP_FAULT:
+	case SOAP_SVR_FAULT:
+		detail = GLITE_SECURITY_GSOAP_DETAIL(soap);
+		if (reason) *reason = GLITE_SECURITY_GSOAP_REASON(soap);
+
+		if (!detail) return 1;
+		if (detail->__type != GFNUM && detail->__any) {
+		// compatibility with clients gSoaps < 2.7.9b
+			if (fallback) *fallback = detail->__any;
+			return 1;
+		}
+		// client is based on gSoap 2.7.9b
+		assert(detail->__type == GFNUM);
+#if GSOAP_VERSIO >= 20709
+		*f = (struct jptype__genericFault *)detail->fault;
+#elif GSOAP_VERSION >= 20700
+		*f = ((struct _genericFault *)detail->fault)->jpelem__genericFault;
+#else
+		*f = ((struct _genericFault *)detail->value)->jpelem__genericFault;
+#endif
+		return 1;
+
+	default:
+		return 2;
+	}
+}
+
+
+static int glite_jp_clientGetErrno(struct soap *soap, int err) {
+	struct jptype__genericFault	*f;
+
+	switch(clientGetFault(soap, err, NULL, &f, NULL)) {
+	case 0: return 0;
+	case 1: return f ? f->code : -2;
+	default: return -1;
+	}
+}
 
 
 static int glite_jp_clientCheckFault(struct soap *soap, int err, const char *name, int toSyslog)
 {
-	struct SOAP_ENV__Detail *detail;
 	struct jptype__genericFault	*f;
-	const char	*reason;
+	const char	*reason, *xml;
 	char	indent[200] = "  ";
 	char *prefix;
 	int retval;
 
 	if (name) asprintf(&prefix, "[%s] ", name);
 	else prefix = strdup("");
-	retval = 0;
 
-	switch(err) {
-	case SOAP_OK:
+	switch(clientGetFault(soap, err, &reason, &f, &xml)) {
+	case 0:
+		retval = 0;
 		dprintf("%sOK\n", prefix);
 		break;
 
-	case SOAP_FAULT:
-	case SOAP_SVR_FAULT:
+	case 1:
 		retval = -1;
-		detail = GLITE_SECURITY_GSOAP_DETAIL(soap);
-		reason = GLITE_SECURITY_GSOAP_REASON(soap);
 		dprintf("%s%s\n", prefix, reason);
 		if (toSyslog) syslog(LOG_ERR, "%s", reason);
-
-		if (!detail) break;
-		if (detail->__type != GFNUM && detail->__any) {
-		// compatibility with clients gSoaps < 2.7.9b
-			dprintf("%s%s%s\n", prefix, indent, detail->__any);
-			if (toSyslog) syslog(LOG_ERR, "%s", detail->__any);
-
-			f = NULL;
-		} else {
-		// client is based on gSoap 2.7.9b
-			assert(detail->__type == GFNUM);
-#if GSOAP_VERSION >= 20709
-			f = (struct jptype__genericFault *)detail->fault;
-#elif GSOAP_VERSION >= 20700
-			f = ((struct _genericFault *)detail->fault)->jpelem__genericFault;
-#else
-			f = ((struct _genericFault *)detail->value)->jpelem__genericFault;
-#endif
+		if (!f && xml) {
+			dprintf("%s%s%s\n", prefix, indent, xml);
+			if (toSyslog) syslog(LOG_ERR, "%s", xml);
 		}
-
 		while (f) {
 			dprintf("%s%s%s: %s (%s)\n",
 					prefix, indent,
 					f->source, f->text, f->description);
 			if (toSyslog) syslog(LOG_ERR, "%s%s: %s (%s)",
-					reason, f->source, f->text, f->description);
+					prefix, f->source, f->text, f->description);
 			f = f->reason;
 			strcat(indent,"  ");
 		}
 		break;
 
-	default:
+	case 2:
 		fprintf(stderr, "%ssoap err=%d, ", prefix, err);
-		soap_print_fault(soap,stderr);
+		soap_print_fault(soap, stderr);
 		retval = -1;
+		break;
 	}
 
 	free(prefix);
