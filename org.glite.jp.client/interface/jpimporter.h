@@ -2,15 +2,15 @@
 #define __GLITE_JPIMPORTER__
 
 #ifndef GLITE_REG_IMPORTER_MDIR
-#define GLITE_REG_IMPORTER_MDIR		"/tmp/jpreg"
+#define GLITE_REG_IMPORTER_MDIR		"/var/glite/jpreg"
 #endif 
 
 #ifndef GLITE_DUMP_IMPORTER_MDIR
-#define GLITE_DUMP_IMPORTER_MDIR	"/tmp/jpdump"
+#define GLITE_DUMP_IMPORTER_MDIR	"/var/glite/jpdump"
 #endif 
 
 #ifndef GLITE_SANDBOX_IMPORTER_MDIR
-#define GLITE_SANDBOX_IMPORTER_MDIR	"/tmp/jpsandbox"
+#define GLITE_SANDBOX_IMPORTER_MDIR	"/var/glite/jpsandbox"
 #endif 
 
 #define PERF_JOBID_START_PREFIX "https://start.megajob/START-"

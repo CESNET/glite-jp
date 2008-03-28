@@ -2,7 +2,6 @@
 
 GLITE_LOCATION=${GLITE_LOCATION:-/opt/glite}
 GLITE_LOCATION_VAR=${GLITE_LOCATION_VAR:-/var/glite}
-GLITE_TMP=${GLITE_TMP:-/tmp}
 
 [ -f /etc/glite.conf ] && . /etc/glite.conf
 [ -f $GLITE_LOCATION/etc/glite-wms.conf ] && . $GLITE_LOCATION/etc/glite-wms.conf
@@ -37,10 +36,10 @@ start()
 
 	[ -z "$creds" ] && echo $0: WARNING: No credentials specified. Using default lookup which is dangerous. >&2
 
-	[ -z "$GLITE_LB_EXPORT_JPREG_MAILDIR" ] && GLITE_LB_EXPORT_JPREG_MAILDIR=$GLITE_TMP/jpreg
+	[ -z "$GLITE_LB_EXPORT_JPREG_MAILDIR" ] && GLITE_LB_EXPORT_JPREG_MAILDIR=$GLITE_LOCATION_VAR/jpreg
 	jpreg_maildir="--reg-mdir $GLITE_LB_EXPORT_JPREG_MAILDIR "
 	[ -d "$GLITE_LB_EXPORT_JPREG_MAILDIR" ] || mkdir "$GLITE_LB_EXPORT_JPREG_MAILDIR" && chown $GLITE_USER:$GLITE_GROUP "$GLITE_LB_EXPORT_JPREG_MAILDIR"
-	[ -z "$GLITE_LB_EXPORT_JPDUMP_MAILDIR" ] && GLITE_LB_EXPORT_JPDUMP_MAILDIR=$GLITE_TMP/jpdump
+	[ -z "$GLITE_LB_EXPORT_JPDUMP_MAILDIR" ] && GLITE_LB_EXPORT_JPDUMP_MAILDIR=$GLITE_LOCATION_VAR/jpdump
 	jpdump_maildir="--dump-mdir $GLITE_LB_EXPORT_JPDUMP_MAILDIR "
 	[ -d "$GLITE_LB_EXPORT_JPDUMP_MAILDIR" ] || mkdir "$GLITE_LB_EXPORT_JPDUMP_MAILDIR" && chown $GLITE_USER:$GLITE_GROUP "$GLITE_LB_EXPORT_JPDUMP_MAILDIR"
 	[ -n "$GLITE_LB_EXPORT_JPPS" ] && jpps="--jpps $GLITE_LB_EXPORT_JPPS "
