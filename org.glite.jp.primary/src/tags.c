@@ -6,11 +6,12 @@
 #include <stdarg.h>
 #include <assert.h>
 #include <stdint.h>
+#include <sys/stat.h>
 
 #include <glite/lbu/trio.h>
 #include <glite/jp/types.h>
+#include "glite/jp/backend.h"
 #include "tags.h"
-#include "backend.h"
 
 /* magic name_len value_len binary sequence timestamp */
 #define HEADER "JP#TAG# %05u %012lu %c %05u %012lu#"
@@ -245,7 +246,7 @@ int tag_append(void *fpctx,void *bhandle,glite_jp_attrval_t * tag)
         char    *hdr,*rec;
         glite_jp_context_t      ctx = fpctx;
         uint32_t                magic,hlen,rlen,rlen_n;
-        size_t                  r;
+        ssize_t                  r;
         glite_jp_error_t        err;
 
         memset(&err,0,sizeof err);
@@ -359,7 +360,7 @@ static int tagsread(void *fpctx,struct tags_handle *h)
         glite_jp_context_t      ctx = fpctx;
         uint32_t                magic,rlen;
         glite_jp_error_t        err;
-        int                     r;
+        ssize_t                     r;
         size_t                  off = sizeof rlen;
         glite_jp_attrval_t      *tp;
         char                    *rp;

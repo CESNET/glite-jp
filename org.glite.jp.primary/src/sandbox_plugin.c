@@ -1,19 +1,21 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <assert.h>
 #include <stdarg.h>
 #include <string.h>
 #include <errno.h>
 #include <stdint.h>
+#include <sys/stat.h>
 
 #include <libtar.h>
 #include <fcntl.h>
 
 #include <glite/jp/types.h>
 #include <glite/jp/known_attr.h>
+#include "glite/jp/backend.h"
 
-#include "file_plugin.h"
+#include "glite/jp/file_plugin.h"
 #include "builtin_plugins.h"
-#include "backend.h"
 
 #define ALLOC_CHUNK	3
 

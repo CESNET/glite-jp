@@ -46,7 +46,7 @@ GLOBUS_CFLAGS:=-I${globus_prefix}/include/${nothrflavour}
 
 DEBUG:=-g -O0  -DDEBUG
 
-CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${gsoap_prefix} -I${stagedir}/include -I${classads_prefix}/include -I${libtar_prefix}/include ${GLOBUS_CFLAGS}
+CFLAGS:=${DEBUG} -I. -I${top_srcdir}/src -I${gsoap_prefix}/include -I${gsoap_prefix} -I${stagedir}/include -I${classads_prefix}/include -I${libtar_prefix}/include ${GLOBUS_CFLAGS}
 # 3.1 CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${gsoap_prefix} -I${stagedir}/include ${GLOBUS_CFLAGS} -I${mysql_prefix}/include -I${mysql_prefix}/include/mysql -I${classads_prefix}/include -I${libtar_prefix}/include
 
 LDFLAGS:=-L${stagedir}/lib
@@ -64,9 +64,6 @@ is_prefix:=jpis_
 sample_jobs:=sample_job_aborted  sample_job_cleared  sample_job_tagged_done  sample_job_waiting
 
 plugins:=glite-jp-ftpdauth.la glite-jp-classad.la glite-jp-sandbox.la
-
-HDRS_I=file_plugin.h
-HDRS_S=builtin_plugins.h backend.h feed.h utils.h
 
 SRCS:= bones_server.c soap_ops.c \
 	new_ftp_backend.c file_plugin.c utils.c\
@@ -162,11 +159,6 @@ install:
 	${INSTALL} -m 755 ${daemon} ${PREFIX}/bin
 	${INSTALL} -m 755 jpps-test ${PREFIX}/examples/glite-jp-primary-test
 	${INSTALL} -m 755 ${top_srcdir}/examples/getjobattr.pl ${PREFIX}/examples/glite-jpps-getjobattr.pl
-	if [ x${DOSTAGE} = xyes ]; then \
-		mkdir -p ${PREFIX}/include/${globalprefix}/${jpprefix} ; \
-		(cd ${top_srcdir}/interface && install -m 644 ${HDRS_I} ${PREFIX}/include/${globalprefix}/${jpprefix}) ; \
-		(cd ${top_srcdir}/src && install -m 644 ${HDRS_S} ${PREFIX}/include/${globalprefix}/${jpprefix}) ; \
-	fi
 	for plugin in ${plugins}; do \
 		${INSTALL} -m 755 $$plugin ${PREFIX}/lib; \
 	done

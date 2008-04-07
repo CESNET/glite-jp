@@ -11,11 +11,12 @@
 #include "glite/jp/context.h"
 #include "glite/jp/strmd5.h"
 #include "glite/jp/known_attr.h"
+#include "glite/jp/file_plugin.h"
+
 #include "feed.h"
-#include "file_plugin.h"
 #include "builtin_plugins.h"
 #include "is_client.h"
-#include "backend.h"
+#include "backend_private.h"
 
 extern pid_t	master;
 

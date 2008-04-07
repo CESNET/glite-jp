@@ -25,7 +25,7 @@
 
 #include "feed.h"
 #include "tags.h"
-#include "backend.h"
+#include "backend_private.h"
 
 #include "jpps_H.h"	/* XXX: SOAP_TYPE___jpsrv__GetJob */
 

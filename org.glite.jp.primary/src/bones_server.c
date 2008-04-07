@@ -6,6 +6,7 @@
 
 #include "glite/jp/types.h"
 #include "glite/jp/context.h"
+#include "glite/jp/file_plugin.h"
 
 #include "glite/lbu/srvbones.h"
 #include "glite/security/glite_gss.h"
@@ -14,8 +15,7 @@
 #include "glite/security/glite_gsplugin.h"
 
 #include "feed.h"
-#include "backend.h"
-#include "file_plugin.h"
+#include "backend_private.h"
 
 #include "soap_version.h"
 #include "jpps_H.h"

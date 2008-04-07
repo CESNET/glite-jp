@@ -3,16 +3,16 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <fcntl.h>
+#include <sys/stat.h>
 
 #include "glite/lbu/trio.h"
 #include "glite/jp/types.h"
 #include "glite/jp/attr.h"
+#include "glite/jp/backend.h"
+#include "glite/jp/file_plugin.h"
 
 #include "feed.h"
-#include "backend.h"
 #include "attrs.h"
-#include "utils.h"
-#include "file_plugin.h"
 #include "builtin_plugins.h"
 
 static struct {
@@ -92,7 +92,7 @@ static int merge_attrvals(glite_jp_attrval_t **out,int nout,const glite_jp_attrv
 	return nout+nin;
 }
 
-void process_files(glite_jp_context_t ctx, const char *job, glite_jp_attrval_t** out, int* nout, const char* attr, const glite_jpps_fplug_data_t* plugin, const char* class, const char* uri, const char **opened_class, const char **opened_file, void **op_handle, void **of_handle){
+static void process_files(glite_jp_context_t ctx, const char *job, glite_jp_attrval_t** out, int* nout, const char* attr, const glite_jpps_fplug_data_t* plugin, const char* class, const char* uri, char **opened_class, char **opened_file, void **op_handle, void **of_handle){
 	void *ph, *beh; 
 	char** names = NULL;
         int nnames;

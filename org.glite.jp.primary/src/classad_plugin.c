@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include <cclassad.h>
 #include <errno.h>
+#include <sys/stat.h>
 
 /*
 #include "glite/lb/context.h"
@@ -18,9 +19,10 @@
 #include "glite/jp/attr.h"
 #include "glite/jp/known_attr.h"
 
-#include "file_plugin.h"
+#include "glite/jp/file_plugin.h"
+#include "glite/jp/backend.h"
+
 #include "builtin_plugins.h"
-#include "backend.h"
 
 //#define INITIAL_NUMBER_EVENTS 100
 //#define INITIAL_NUMBER_STATES EDG_WLL_NUMBER_OF_STATCODES
