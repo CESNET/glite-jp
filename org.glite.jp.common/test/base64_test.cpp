@@ -12,6 +12,9 @@
 
 #include "strmd5.h"
 
+#include "types.h"
+#include "backend.h"
+
 class Base64Test: public  CppUnit::TestFixture
 {
 	CPPUNIT_TEST_SUITE(Base64Test);
@@ -71,5 +74,17 @@ int main (int argc,const char *argv[])
 	return result.wasSuccessful() ? 0 : 1 ;
 }
 
+/* fake to link */
+int glite_jppsbe_pread(
+        glite_jp_context_t ctx,
+        void *handle,
+        void *buf,
+        size_t nbytes,
+        off_t offset,
+        ssize_t *nbytes_ret
+)
+{
+	abort();
+}
 
 

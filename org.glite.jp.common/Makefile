@@ -38,9 +38,9 @@ LINKXX:=libtool --mode=link ${CXX} ${LDFLAGS}
 INSTALL:=libtool --mode=install install
 COMPILE:=libtool --mode=compile ${CC} ${CFLAGS}
 
-HDRS:=types.h context.h strmd5.h attr.h known_attr.h
+HDRS:=types.h context.h strmd5.h attr.h known_attr.h backend.h
 
-SRCS:=context.c strmd5.c attr.c
+SRCS:=context.c strmd5.c attr.c utils.c
 OBJS:=${SRCS:.c=.lo}
 THROBJS:=${OBJS:.o=.thr.lo}
 LIBS:=-L${globus_prefix}/lib -lcrypto_${nothrflavour}
@@ -85,6 +85,7 @@ install:
 clean:
 	rm -rvf *.o *.lo .libs lib*
 	rm -rvf log.xml project/ rpmbuild/ RPMS/ tgz/
+	rm -f glite jp
 
 %.thr.lo: %.c
 	${COMPILE} ${GLOBUSTHRINC} -o $@ -c $<

@@ -13,6 +13,7 @@
 #include "types.h"
 #include "attr.h"
 #include "context.h"
+#include "backend.h"
 
 
 class TypePluginTest: public  CppUnit::TestFixture
@@ -180,5 +181,20 @@ int main (int argc,const char *argv[])
 	return result.wasSuccessful() ? 0 : 1 ;
 }
 
+
+
+
+/* fake to link */
+int glite_jppsbe_pread(
+        glite_jp_context_t ctx,
+        void *handle,
+        void *buf,
+        size_t nbytes,
+        off_t offset,
+        ssize_t *nbytes_ret
+)
+{
+	abort();
+}
 
 
