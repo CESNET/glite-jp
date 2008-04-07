@@ -11,11 +11,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "glite/jp/types.h"
-#include "glite/jp/context.h"
-#include "glite/jp/strmd5.h"
-#include "glite/jp/known_attr.h"
-#include "glite/jp/attr.h"
+#include "types.h"
+#include "context.h"
+#include "strmd5.h"
+#include "known_attr.h"
+#include "attr.h"
 
 /*
 #include "feed.h"
