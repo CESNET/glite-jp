@@ -19,8 +19,8 @@
 #include "jptype_map.h"
 #include "glite/security/glite_gscompat.h"
 
-#include "file_plugin.h"
-#include "builtin_plugins.h"
+#include "glite/jp/file_plugin.h"
+#include "glite/jp/builtin_plugins.h"
 
 /* the same as ServerLib.c but without WITH_NOGLOBAL which breaks the soap_env_ctx trick */
 #define SOAP_FMAC3 static

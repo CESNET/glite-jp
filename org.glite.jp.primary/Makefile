@@ -66,7 +66,7 @@ sample_jobs:=sample_job_aborted  sample_job_cleared  sample_job_tagged_done  sam
 plugins:=glite-jp-ftpdauth.la glite-jp-classad.la glite-jp-sandbox.la
 
 SRCS:= bones_server.c soap_ops.c \
-	new_ftp_backend.c file_plugin.c utils.c\
+	new_ftp_backend.c file_plugin.c \
 	feed.c authz.c attrs.c \
 	tags.c\
 	is_client.c \

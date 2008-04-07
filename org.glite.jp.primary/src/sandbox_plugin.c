@@ -15,7 +15,7 @@
 #include "glite/jp/backend.h"
 
 #include "glite/jp/file_plugin.h"
-#include "builtin_plugins.h"
+#include "glite/jp/builtin_plugins.h"
 
 #define ALLOC_CHUNK	3
 

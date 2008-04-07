@@ -10,10 +10,10 @@
 #include "glite/jp/attr.h"
 #include "glite/jp/backend.h"
 #include "glite/jp/file_plugin.h"
+#include "glite/jp/builtin_plugins.h"
 
 #include "feed.h"
 #include "attrs.h"
-#include "builtin_plugins.h"
 
 static struct {
 	char *namespace;

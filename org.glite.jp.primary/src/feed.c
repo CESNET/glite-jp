@@ -12,9 +12,9 @@
 #include "glite/jp/strmd5.h"
 #include "glite/jp/known_attr.h"
 #include "glite/jp/file_plugin.h"
+#include "glite/jp/builtin_plugins.h"
 
 #include "feed.h"
-#include "builtin_plugins.h"
 #include "is_client.h"
 #include "backend_private.h"
 

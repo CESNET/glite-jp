@@ -5,7 +5,7 @@
 #include <errno.h>
 
 #include <glite/jp/types.h>
-#include "file_plugin.h"
+#include "glite/jp/file_plugin.h"
 
 static struct option opts[] = {
 	{ "plugin", 1, NULL, 'p' },

@@ -21,8 +21,7 @@
 
 #include "glite/jp/file_plugin.h"
 #include "glite/jp/backend.h"
-
-#include "builtin_plugins.h"
+#include "glite/jp/builtin_plugins.h"
 
 //#define INITIAL_NUMBER_EVENTS 100
 //#define INITIAL_NUMBER_STATES EDG_WLL_NUMBER_OF_STATCODES
