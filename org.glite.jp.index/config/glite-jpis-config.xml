@@ -5,28 +5,41 @@
 	<attrs>http://egee.cesnet.cz/en/Schema/JP/System:owner</attrs>
 	<attrs>http://egee.cesnet.cz/en/Schema/JP/System:jobId</attrs>
 	<attrs>http://egee.cesnet.cz/en/Schema/JP/System:regtime</attrs>
+	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:LBserver</attrs>
 	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:user</attrs>
+	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:parent</attrs>
+	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:VO</attrs>
 	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:aTag</attrs>
+	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:rQType</attrs>
+	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:eDuration</attrs>
 	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:eNodes</attrs>
+	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:eProc</attrs>
 	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:RB</attrs>
 	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:CE</attrs>
+	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:host</attrs>
 	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:UIHost</attrs>
 	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:CPUTime</attrs>
 	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:NProc</attrs>
 	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus</attrs>
 	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatusDate</attrs>
+	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatusReason</attrs>
+	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:LRMSDoneStatus</attrs>
+	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:LRMSDoneStatusReason</attrs>
 	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:retryCount</attrs>
+	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:additionalReason</attrs>
 	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:jobType</attrs>
 	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:nsubjobs</attrs>
+	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:subjobs</attrs>
 	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:lastStatusHistory</attrs>
 	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:fullStatusHistory</attrs>
-
+	<attrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:JDL</attrs>
 
 	<!-- List of attributes IS will index -->
 	<indexedAttrs>http://egee.cesnet.cz/en/Schema/JP/System:owner</indexedAttrs>
 	<indexedAttrs>http://egee.cesnet.cz/en/Schema/JP/System:jobId</indexedAttrs>
 	<indexedAttrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:user</indexedAttrs>
 	<indexedAttrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:CE</indexedAttrs>
+	<indexedAttrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:VO</indexedAttrs>
 	<indexedAttrs>http://egee.cesnet.cz/en/Schema/LB/Attributes:finalStatus</indexedAttrs>
 
 	<!-- List of type plugins -->
