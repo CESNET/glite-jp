@@ -1,0 +1,8 @@
+JPIS_FUNCTIONS="
+config_add_pool_env
+config_crl
+config_host_certs
+config_edgusers
+config_globus_clients
+config_glite_jpis
+config_glite_initd"

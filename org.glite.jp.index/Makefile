@@ -125,6 +125,12 @@ install:
 		${INSTALL} -m 644 ../examples/query-tests/$$i ${PREFIX}/examples/query-tests; \
 	done
 	${INSTALL} -m 644 ${top_srcdir}/interface/JobProvenanceISClient.xsd ${PREFIX}/interface
+	-mkdir -p ${PREFIX}/yaim/functions/
+	-mkdir -p ${PREFIX}/yaim/node-info.d
+	-mkdir -p ${PREFIX}/yaim/defaults
+	${INSTALL} -m 0644 ${top_srcdir}/config/functions/config* ${PREFIX}/yaim/functions
+	${INSTALL} -m 0644 ${top_srcdir}/config/node-info.d/glite* ${PREFIX}/yaim/node-info.d
+	${INSTALL} -m 0644 ${top_srcdir}/config/defaults/glite* ${PREFIX}/yaim/defaults
 
 clean:
 	rm -rvf *.c *.h *.ch *.xh *.xml *.nsmap *.o *.lo .libs glite-jp*
