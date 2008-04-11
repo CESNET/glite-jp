@@ -101,6 +101,7 @@ stop()
 				return 1
 			fi
 	 	done
+		kill -9 $pid >/dev/null 2>&1
 		echo " done"
 		rm -f "$pidfile"
 	else
@@ -120,6 +121,7 @@ stop()
 				return 1
 			fi
 	 	done
+		kill -9 $pid >/dev/null 2>&1
 		echo " done"
 		rm -f "$pidfile.ftpd"
 	else
