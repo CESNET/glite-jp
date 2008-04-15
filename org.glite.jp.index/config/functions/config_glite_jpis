@@ -1,3 +1,35 @@
+##############################################################################
+# Copyright (c) Members of the EGEE Collaboration. 2004.
+# See http://www.eu-egee.org/partners/ for details on the copyright
+# holders.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS
+# OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##############################################################################
+#
+# NAME :        config_jpis
+#
+# DESCRIPTION : This function configures Job Provenance Index Server.
+#
+# AUTHORS :     LB/JP team, heavily based on glite-yaim-lb
+#
+# NOTES :
+#
+# YAIM MODULE:  glite-yaim-jpis
+#
+##############################################################################
+
+
 function config_glite_jpis_check(){
   requires MYSQL_PASSWORD
 }
@@ -18,9 +50,9 @@ function config_glite_jpis_setenv(){
 
 function config_glite_jpis() {
 
-  #############################################
-  #   Logging and Bookkeeping configuration   #
-  #############################################
+  #################################################
+  #   Job Provenance Index Server configuration   #
+  #################################################
 	
   HOSTNAME=`hostname -f`
 
@@ -68,7 +100,7 @@ function config_glite_jpis() {
   fi
 
   GLITE_LOCATION_VAR=${GLITE_LOCATION_VAR:-/var/glite}
-  mkdir -p $GLITE_LOCATION_VAR   # Needed to store PID of LB server 
+  mkdir -p $GLITE_LOCATION_VAR   # Needed to store PID of JP IS server 
 
   chown $GLITE_USER:$GLITE_USER $GLITE_LOCATION_VAR
   chmod 0755 $GLITE_LOCATION_VAR

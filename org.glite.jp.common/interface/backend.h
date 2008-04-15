@@ -102,13 +102,6 @@ int glite_jppsbe_query(
 	)
 );
 
-int glite_jppsbe_readline(
-        glite_jp_context_t ctx,
-        void *handle,
-        void **b,
-        char **line
-);
-
 char* glite_jpps_get_namespace(
 	const char* attr
 );
