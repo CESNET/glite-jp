@@ -169,12 +169,12 @@ install:
 	for i in ${sample_jobs}; do \
 		${INSTALL} -m 644 ${top_srcdir}/examples/$$i  ${PREFIX}/examples/glite-jp-primary-$$i.lb; \
 	done
-	@mkdir -p $(prefix)/yaim/functions/
-	@mkdir -p $(prefix)/yaim/node-info.d
-	@mkdir -p $(prefix)/yaim/defaults
-	@install -m 0644 config/functions/config* $(prefix)/yaim/functions
-	@install -m 0644 config/node-info.d/glite* $(prefix)/yaim/node-info.d
-	@install -m 0644 config/defaults/glite* $(prefix)/yaim/defaults
+	-mkdir -p ${PREFIX}/yaim/functions/
+	-mkdir -p ${PREFIX}/yaim/node-info.d
+	-mkdir -p ${PREFIX}/yaim/defaults
+	${INSTALL} -m 0644 ${top_srcdir}/config/functions/config* ${PREFIX}/yaim/functions
+	${INSTALL} -m 0644 ${top_srcdir}/config/node-info.d/glite* ${PREFIX}/yaim/node-info.d
+	${INSTALL} -m 0644 ${top_srcdir}/config/defaults/glite* ${PREFIX}/yaim/defaults
 clean:
 
 simple_server.o soap_ops.o jpps-test.o: ${ps_prefix}H.h
