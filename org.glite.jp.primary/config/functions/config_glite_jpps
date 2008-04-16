@@ -11,9 +11,9 @@ function config_glite_jpps_setenv(){
   yaimgridenv_set GLITE_HOST_KEY ${GLITE_USER_HOME:-/home/glite}/.certs/hostkey.pem
   yaimgridenv_set X509_CERT_DIR /etc/grid-security/certificates
   yaimgridenv_set GLITE_JP_PRIMARY_PEERS ${GLITE_USER_HOME:-/home/glite}/jpps/jp.peers
-  yaimgridenv_set GLITE_JP_PRIMARY_FTP_PORT 8911
+  yaimgridenv_set GLITE_JP_PRIMARY_FTP_PORT ${GLITE_JP_PRIMARY_FTP_PORT:-8911}
   yaimgridenv_set GLITE_JP_PRIMARY_INTERNAL ${GLITE_USER_HOME:-/home/glite}/jpps
-  yaimgridenv_set GLITE_JP_PRIMARY_EXTERNAL gsiftp://`hostname -f`:8911${GLITE_USER_HOME:-/home/glite}/jpps
+  yaimgridenv_set GLITE_JP_PRIMARY_EXTERNAL gsiftp://`hostname -f`:${GLITE_JP_PRIMARY_FTP_PORT:-8911}${GLITE_USER_HOME:-/home/glite}/jpps
 
   yaimgridpath_append LD_LIBRARY_PATH ${INSTALL_ROOT:-opt}/glite/lib  
   yaimgridpath_append LD_LIBRARY_PATH ${INSTALL_ROOT:-opt}/globus/lib  
