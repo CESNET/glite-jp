@@ -99,6 +99,7 @@ function config_glite_jpis() {
     yaimlog "Database jpis already exists"
   fi
 
+  . /opt/glite/etc/profile.d/grid-env.sh
   GLITE_LOCATION_VAR=${GLITE_LOCATION_VAR:-/var/glite}
   mkdir -p $GLITE_LOCATION_VAR   # Needed to store PID of JP IS server 
 
@@ -128,7 +129,6 @@ function config_glite_jpis() {
     echo "${GLITE_LOCATION}/etc/init.d/glite-jp-indexd" >> ${GLITE_LOCATION}/etc/gLiteservices
   fi
 
-  . /opt/glite/etc/profile.d/grid-env.sh
   ${GLITE_LOCATION}/etc/init.d/glite-jp-indexd stop
   ${GLITE_LOCATION}/etc/init.d/glite-jp-indexd start
 

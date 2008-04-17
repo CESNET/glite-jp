@@ -71,6 +71,7 @@ function config_glite_jpps() {
     yaimlog "Database jpps already exists"
   fi
 
+  . /opt/glite/etc/profile.d/grid-env.sh
   GLITE_LOCATION_VAR=${GLITE_LOCATION_VAR:-/var/glite}
   mkdir -p $GLITE_LOCATION_VAR   # Needed to store PID of JPPS 
 
@@ -102,7 +103,6 @@ function config_glite_jpps() {
 
   touch ${GLITE_LOCATION}/etc/JPPS-peers
 
-  . /opt/glite/etc/profile.d/grid-env.sh
   ${GLITE_LOCATION}/etc/init.d/glite-jp-primary stop
   bash -x ${GLITE_LOCATION}/etc/init.d/glite-jp-primary start
 
