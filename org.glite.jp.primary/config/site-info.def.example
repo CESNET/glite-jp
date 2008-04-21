@@ -1,0 +1,61 @@
+#
+# site-info.def example, part for org.glite.jp.primary
+#
+# options configured by YAIM can be overriden by:
+#   - /etc/glite.conf
+#   - $GLITE_LOCATION/etc/glite-wms.conf
+#   - $HOME/.glite.conf  # of root user
+#
+
+#
+# required minimum set of YAIM options given from
+# /opt/glite/yaim/examples/siteinfo/site-info.def
+#
+YAIM_LOGGING_LEVEL=INFO
+MY_DOMAIN=civ.zcu.cz
+INSTALL_ROOT=/opt
+CRON_DIR=/etc/cron.d
+GLOBUS_TCP_PORT_RANGE="20000,25000"
+MYSQL_PASSWORD=set_this_to_a_good_password
+
+#
+# default values of basic options
+#
+
+#GLITE_LOCATION=${INSTALL_ROOT:-opt}/glite
+#GLITE_LOCATION_VAR=${GLITE_LOCATION_VAR:-/var/glite}
+#GLITE_USER=${GLITE_USER:-glite}
+#GLITE_HOST_CERT=${GLITE_USER_HOME:-/home/glite}/.certs/hostcert.pem
+#GLITE_HOST_KEY=${GLITE_USER_HOME:-/home/glite}/.certs/hostkey.pem
+#X509_CERT_DIR=/etc/grid-security/certificates
+
+
+#
+# required external options
+#
+
+#GLOBUS_LOCATION=/opt/globus
+
+
+#
+# JPPS configuration default values
+#
+
+# pidfile
+#GLITE_JP_PRIMARY_PIDFILE=$GLITE_LOCATION_VAR/glite-jp-primarystoraged.pid
+
+# port
+#GLITE_JP_PRIMARY_PORT=8901
+
+# FTP port
+#GLITE_JP_PRIMARY_FTP_PORT=8911
+
+# List of privileged DN subjects
+#GLITE_JP_PRIMARY_PEERS=$GLITE_USER_HOME/jpps/jp.peers
+
+# connection string to database (USER/PASSWORD@HOST:DBNAME)
+# If the default is changed, the database has to be created manually !
+#GLITE_JP_PRIMARY_DBCS=jpps/@localhost:jpps
+
+# Additional switches for JPPS.
+#GLITE_JP_PRIMARY_SPECIAL=""
