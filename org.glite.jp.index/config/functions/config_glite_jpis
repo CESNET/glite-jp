@@ -42,6 +42,14 @@ function config_glite_jpis_setenv(){
   yaimgridenv_set GLITE_HOST_CERT ${GLITE_USER_HOME:-/home/glite}/.certs/hostcert.pem
   yaimgridenv_set GLITE_HOST_KEY ${GLITE_USER_HOME:-/home/glite}/.certs/hostkey.pem
   yaimgridenv_set X509_CERT_DIR /etc/grid-security/certificates
+  yaimgridenv_set GLITE_JPIS_PIDFILE ${GLITE_JPIS_PIDFILE:-$GLITE_LOCATION_VAR/glite-jp-indexd.pid}
+  yaimgridenv_set GLITE_JPIS_LOGFILE ${GLITE_JPIS_LOGFILE:-$GLITE_LOCATION_VAR/glite-jp-indexd.log}
+  yaimgridenv_set GLITE_JPIS_CONFIG ${GLITE_JPIS_CONFIG:-$GLITE_LOCATION/etc/glite-jpis-config.xml}
+  yaimgridenv_set GLITE_JPIS_PORT ${GLITE_JPIS_PORT:-8902}
+  yaimgridenv_set GLITE_JPIS_DB ${GLITE_JPIS_DB:-jpis/@localhost:jpis}
+  yaimgridenv_set GLITE_JPIS_QT ${GLITE_JPIS_QT:-both}
+  yaimgridenv_set GLITE_JPIS_AUTH ${GLITE_JPIS_AUTH}
+  yaimgridenv_set GLITE_JPIS_DEBUG ${GLITE_JPIS_DEBUG}
 
   yaimgridpath_append LD_LIBRARY_PATH ${INSTALL_ROOT:-opt}/glite/lib  
   yaimgridpath_append LD_LIBRARY_PATH ${INSTALL_ROOT:-opt}/globus/lib  

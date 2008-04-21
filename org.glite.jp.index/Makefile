@@ -128,9 +128,11 @@ install:
 	-mkdir -p ${PREFIX}/yaim/functions/
 	-mkdir -p ${PREFIX}/yaim/node-info.d
 	-mkdir -p ${PREFIX}/yaim/defaults
+	-mkdir -m 0700 -p ${PREFIX}/yaim/examples/siteinfo/services
 	${INSTALL} -m 0644 ${top_srcdir}/config/functions/config* ${PREFIX}/yaim/functions
 	${INSTALL} -m 0644 ${top_srcdir}/config/node-info.d/glite* ${PREFIX}/yaim/node-info.d
 	${INSTALL} -m 0644 ${top_srcdir}/config/defaults/glite* ${PREFIX}/yaim/defaults
+	${INSTALL} -m 0600 ${top_srcdir}/config/site-info.def.example ${PREFIX}/yaim/examples/siteinfo/services/glite_jpis
 
 clean:
 	rm -rvf *.c *.h *.ch *.xh *.xml *.nsmap *.o *.lo .libs glite-jp*
