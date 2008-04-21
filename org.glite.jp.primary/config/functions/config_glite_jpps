@@ -5,12 +5,12 @@ function config_glite_jpps_check(){
 function config_glite_jpps_setenv(){
 
   yaimgridenv_set GLITE_LOCATION ${INSTALL_ROOT:-opt}/glite
-  yaimgridenv_set GLITE_LOCATION_VAR /var/glite
+  yaimgridenv_set GLITE_LOCATION_VAR ${GLITE_LOCATION_VAR:-/var/glite}
   yaimgridenv_set GLITE_USER ${GLITE_USER:-glite}
   yaimgridenv_set GLITE_HOST_CERT ${GLITE_USER_HOME:-/home/glite}/.certs/hostcert.pem
   yaimgridenv_set GLITE_HOST_KEY ${GLITE_USER_HOME:-/home/glite}/.certs/hostkey.pem
   yaimgridenv_set X509_CERT_DIR /etc/grid-security/certificates
-  yaimgridenv_set GLITE_JP_PRIMARY_PEERS ${GLITE_USER_HOME:-/home/glite}/jpps/jp.peers
+  yaimgridenv_set GLITE_JP_PRIMARY_PEERS ${GLITE_JP_PRIMARY_PEERS:-$GLITE_LOCATION/etc/JPPS-peers}
   yaimgridenv_set GLITE_JP_PRIMARY_FTP_PORT ${GLITE_JP_PRIMARY_FTP_PORT:-8911}
   yaimgridenv_set GLITE_JP_PRIMARY_INTERNAL ${GLITE_USER_HOME:-/home/glite}/jpps
   yaimgridenv_set GLITE_JP_PRIMARY_EXTERNAL gsiftp://`hostname -f`:${GLITE_JP_PRIMARY_FTP_PORT:-8911}${GLITE_USER_HOME:-/home/glite}/jpps
@@ -72,11 +72,13 @@ function config_glite_jpps() {
   fi
 
   . /opt/glite/etc/profile.d/grid-env.sh
-  GLITE_LOCATION_VAR=${GLITE_LOCATION_VAR:-/var/glite}
   mkdir -p $GLITE_LOCATION_VAR   # Needed to store PID of JPPS 
-
   chown $GLITE_USER:$GLITE_USER $GLITE_LOCATION_VAR
   chmod 0755 $GLITE_LOCATION_VAR
+
+  mkdir -p $GLITE_JP_PRIMARY_INTERNAL
+  chown $GLITE_USER:$GLITE_USER $GLITE_JP_PRIMARY_INTERNAL
+  chmod 0755 $GLITE_JP_PRIMARY_INTERNAL
 
   mkdir -p $GLITE_USER_HOME/.certs
   chown $GLITE_USER:$GLITE_USER $GLITE_USER_HOME/.certs
@@ -101,10 +103,10 @@ function config_glite_jpps() {
     echo "${GLITE_LOCATION}/etc/init.d/glite-jp-primary" >> ${GLITE_LOCATION}/etc/gLiteservices
   fi
 
-  touch ${GLITE_LOCATION}/etc/JPPS-peers
+  touch ${GLITE_JP_PRIMARY_PEERS}
 
   ${GLITE_LOCATION}/etc/init.d/glite-jp-primary stop
-  bash -x ${GLITE_LOCATION}/etc/init.d/glite-jp-primary start
+  ${GLITE_LOCATION}/etc/init.d/glite-jp-primary start
 
   if [ ! $? = 0 ] ; then
     yaimlog ABORT "Service glite-jp-primary failed to start!"
