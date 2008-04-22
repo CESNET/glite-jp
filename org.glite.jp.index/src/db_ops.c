@@ -282,10 +282,10 @@ char *glite_jpis_attr_name2id(const char *name) {
  */
 
 int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
-	char **attrs, *attrid;
+	char **attrs, *attrid, *num;
 	const char *type_index, *type_full;
 	size_t i;
-	int indexed, state, locked;
+	int indexed, state, locked, nattrs;
 	size_t conds_len;
 	char sql[512];
 	glite_jp_is_feed **feeds;
@@ -294,6 +294,25 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 	glite_lbu_Statement stmt = NULL;
 
 	jpctx = ctx->jpctx;
+
+	// check, if database was already created
+	if (glite_jp_db_ExecSQL(jpctx, "SELECT COUNT(*) FROM attrs", &stmt) < 0) {
+		glite_jpis_stack_error(ctx->jpctx, EIO, "error during counting attrs");
+		goto fail;
+	}
+	if (glite_jp_db_FetchRow(jpctx, stmt, 1, NULL, &num) < 0) {
+		glite_jpis_stack_error(ctx->jpctx, EIO, "error during fetching attrs");
+		goto fail;
+	}
+	nattrs = atoi(num);
+	llprintf(LOG_SQL, "found '%s' attributes in attrs table\n", num, nattrs);
+	free(num);
+	glite_jp_db_FreeStmt(&stmt);
+	if (nattrs != 0) {
+		lprintf("database with %d attributes keeped (use -D for delete)\n");
+		return 0;
+	}
+
 	if (glite_jp_db_PrepareStmt(jpctx, "INSERT INTO attrs (attrid, name, indexed, type) VALUES (?, ?, ?, ?)", &stmt) != 0) goto fail;
 
 	// attrs table and attrid_* tables
@@ -359,6 +378,7 @@ fail_conds:
 	free(conds);
 fail:
 	glite_jp_db_FreeStmt(&stmt);
+	if (!jpctx->error) glite_jpis_stack_error(ctx->jpctx, EIO, "error during initial filling of the database");
 	return jpctx->error->code;
 }
 

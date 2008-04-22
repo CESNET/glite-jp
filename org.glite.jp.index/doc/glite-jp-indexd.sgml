@@ -34,6 +34,26 @@
 			</group></arg>
 
 			<arg><group choice='plain'>
+				<arg>-k</arg>
+				<arg>--key</arg>
+			</group></arg>
+
+			<arg><group choice='plain'>
+				<arg>-c</arg>
+				<arg>--cert</arg>
+			</group></arg>
+
+<!--			<arg><group choice='plain'>
+				<arg>-C</arg>
+				<arg>CAdir</arg>
+			</group></arg>
+
+			<arg><group choice='plain'>
+				<arg>-V</arg>
+				<arg>VOMSdir</arg>
+			</group></arg>-->
+
+			<arg><group choice='plain'>
 				<arg>-n</arg>
 				<arg>--no-auth</arg>
 			</group></arg>
@@ -62,6 +82,16 @@
 				<arg>-x</arg>
 				<arg>--config</arg>
 			</group> <replaceable>CONFIG.XML</replaceable></arg>
+
+			<arg><group choice='plain'>
+				<arg>-s</arg>
+				<arg>--slaves</arg>
+			</group> <replaceable>N</replaceable> </arg>
+
+			<arg><group choice='plain'>
+				<arg>-D</arg>
+				<arg>--delete-db</arg>
+			</group></arg>
 
 		</cmdsynopsis>
 	</refsynopsisdiv>
@@ -111,6 +141,34 @@ Type of query: <option>hist</option>, <option>cont</option> or <option>both</opt
 			</varlistentry>
 
 			<varlistentry>
+				<term><option>-k</option>|<option>--key</option></term>
+				<listitem><para>
+Private key file.
+				</para></listitem>
+			</varlistentry>
+
+			<varlistentry>
+				<term><option>-c</option>|<option>--cert</option></term>
+				<listitem><para>
+Certification file.
+				</para></listitem>
+			</varlistentry>
+
+<!--			<varlistentry>
+				<term><option>-C</option>|<option>CAdir</option></term>
+				<listitem><para>
+Trusted certificates directory.
+				</para></listitem>
+			</varlistentry>
+
+			<varlistentry>
+				<term><option>-V</option>|<option>VOMSdir</option></term>
+				<listitem><para>
+Trusted VOMS servers certificates directory.
+				</para></listitem>
+			</varlistentry>-->
+
+			<varlistentry>
 				<term><option>-n</option>|<option>--no-auth</option></term>
 				<listitem><para>
 Don't check user identity with result owner.
@@ -148,14 +206,26 @@ File to store logs (default: <filename>/var/run/glite-jp-indexd.log</filename> o
 			<varlistentry>
 				<term><option>-x</option>|<option>--config</option></term>
 				<listitem><para>
-Configuration file containing information about feeds, primary storages, ... Structure is defined in <filename>server_conf.xsd</filename>.
+Configuration file containing information about feeds, primary storages, ... Structure is defined in <filename>server_conf.xsd</filename> (default: <filename>$GLITE_LOCATION/etc/glite-jpis-config.xml</filename>).
 				</para></listitem>
 			</varlistentry>
+
+			<varlistentry>
+				<term><option>-s</option>|<option>--slaves</option></term>
+				<listitem><para>
+Number of slave processes for responses (default: number of feeds, max. 20).
+				</para></listitem>
+			</varlistentry>
+
+			<varlistentry>
+				<term><option>-D</option>|<option>--delete-db</option></term>
+				<listitem><para>
+Delete and refetch the data in the database. You need use this parameter when feeds from primary storage are already expired.
+				</para></listitem>
+			</varlistentry>
+
 		</variablelist>
 
-		<para>
-Other parameters will be configurable in close future. Its current hard-coded values are in <filename>org.glite.jp.index/src/conf.[ch]</filename>.
-		</para>
 	</refsect1>
 
 	<refsect1>
@@ -257,9 +327,9 @@ GLITE_JPIS_QT=cont
 			</varlistentry>
 
 			<varlistentry>
-				<term><command>glite-jp-indexd -s JPPS:8901 -i $HOME/jpis.log -o $HOME/jpis.pid</command></term>
+				<term><command>glite-jp-indexd -x /opt/glite/etc/glite-jpis-config-custom.xml -i $HOME/jpis.log -o $HOME/jpis.pid</command></term>
 				<listitem><para>
-Manual run of the JP index server. Use local MySQL database, communicates with Job Provenance on JPPS:8901, listen on default port, store logs and pid to given files.
+Manual run of the JP index server. Use local MySQL database, feeds from job provenances and attributes configured in <filename>/opt/glite/etc/glite-jpis-config-custom.xml</filename>, listen on default port, store logs and pid to given files.
 				</para></listitem>
 			</varlistentry>
 		</variablelist>

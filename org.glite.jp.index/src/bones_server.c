@@ -102,13 +102,15 @@ int main(int argc, char *argv[])
 	*/
 	
 
-	if (glite_jpis_dropDatabase(isctx) != 0) {
-		fprintf(stderr, "Drop DB failed: %s (%s)\n", ctx->error->desc, ctx->error->source);
-		glite_jpis_free_db(isctx);
-		glite_jpis_free_context(isctx);
-		glite_jp_free_context(ctx);
-		glite_jp_free_conf(conf);
-		return 1;
+	if (conf->delete_db) {
+		if (glite_jpis_dropDatabase(isctx) != 0) {
+			fprintf(stderr, "Drop DB failed: %s (%s)\n", ctx->error->desc, ctx->error->source);
+			glite_jpis_free_db(isctx);
+			glite_jpis_free_context(isctx);
+			glite_jp_free_context(ctx);
+			glite_jp_free_conf(conf);
+			return 1;
+		}
 	}
 
 	if (glite_jpis_initDatabase(isctx) != 0) {

@@ -49,6 +49,7 @@ typedef struct _glite_jp_is_conf {
 		*server_cert,
 		*server_key;
 	int	slaves;
+	int	delete_db;
 } glite_jp_is_conf;
 
 
