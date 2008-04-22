@@ -7,9 +7,9 @@
 #include <fcntl.h>
 #include <signal.h>
 
+#include "glite/jobid/strmd5.h"
 #include "glite/jp/types.h"
 #include "glite/jp/context.h"
-#include "glite/jp/strmd5.h"
 #include "glite/jp/known_attr.h"
 #include "glite/jp/file_plugin.h"
 #include "glite/jp/builtin_plugins.h"

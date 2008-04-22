@@ -3,9 +3,9 @@
 #include <assert.h>
 
 #include "glite/lbu/trio.h"
+#include "glite/jobid/strmd5.h"
 #include "glite/jp/types.h"
 #include "glite/jp/context.h"
-#include "glite/jp/strmd5.h"
 #include "glite/jp/attr.h"
 #include "glite/jp/known_attr.h"
 

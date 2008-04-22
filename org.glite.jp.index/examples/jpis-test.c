@@ -5,7 +5,7 @@
 
 #include <glite/security/glite_gsplugin.h>
 #include <glite/security/glite_gss.h>
-#include "glite/jp/strmd5.h"
+#include "glite/jobid/strmd5.h"
 
 #include "jp_H.h"
 #include "jp_.nsmap"
