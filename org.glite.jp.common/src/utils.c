@@ -11,9 +11,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "glite/jobid/strmd5.h"
 #include "types.h"
 #include "context.h"
-#include "strmd5.h"
 #include "known_attr.h"
 #include "attr.h"
 

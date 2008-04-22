@@ -38,12 +38,12 @@ LINKXX:=libtool --mode=link ${CXX} ${LDFLAGS}
 INSTALL:=libtool --mode=install install
 COMPILE:=libtool --mode=compile ${CC} ${CFLAGS}
 
-HDRS:=types.h context.h strmd5.h attr.h known_attr.h backend.h builtin_plugins.h file_plugin.h
+HDRS:=types.h context.h attr.h known_attr.h backend.h builtin_plugins.h file_plugin.h
 
-SRCS:=context.c strmd5.c attr.c utils.c
+SRCS:=context.c attr.c utils.c
 OBJS:=${SRCS:.c=.lo}
 THROBJS:=${OBJS:.o=.thr.lo}
-LIBS:=-L${globus_prefix}/lib -lcrypto_${nothrflavour}
+LIBS:=-L${globus_prefix}/lib -lcrypto_${nothrflavour} -L${stagedir}/lib -lglite_jobid
 THRLIBS:=-L${globus_prefix}/lib -lcrypto_${thrflavour}
 
 commonlib:= libglite_jp_common_${nothrflavour}.la
@@ -63,11 +63,10 @@ ${commonlib}: ${OBJS}
 ${commonlib_thr}: ${THROBJS}
 	${LINK} -o $@ ${THROBJS} ${THRLIBS}
 
-check: base64_test type_test
-	./base64_test base64_test.xml
+check: type_test
 	./type_test type_test.xml
 
-type_test base64_test: %: %.cpp compile
+type_test: %: %.cpp compile
 	${CXX} -c ${CFLAGS} ${TEST_INC} $<
 	${LINKXX} -o $@ $@.o ${commonlib} ${TEST_LIBS} 
 

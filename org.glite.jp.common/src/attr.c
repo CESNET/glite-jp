@@ -4,7 +4,7 @@
 #include <string.h>
 #include <errno.h>
 
-#include "strmd5.h"
+#include "glite/jobid/strmd5.h"
 #include "types.h"
 #include "attr.h"
 #include "type_plugin.h"
