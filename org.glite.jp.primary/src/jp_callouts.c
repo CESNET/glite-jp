@@ -38,33 +38,66 @@
 */
 
 static globus_result_t
+query_db(glite_jp_context_t ctx, glite_lbu_Statement *res,
+         const char *format, ...)
+{
+    char *stmt = NULL;
+    int ret;
+    glite_lbu_Statement db_res;
+    va_list ap;
+    globus_result_t result = GLOBUS_FAILURE;
+
+    va_start(ap, format);
+    trio_vasprintf(&stmt, format, ap);
+    if (stmt == NULL) {
+       GLOBUS_GSI_AUTHZ_CALLOUT_ERRNO_ERROR(result, errno);
+       return result;
+    }
+    va_end(ap);
+
+    ret = glite_jp_db_ExecSQL(ctx, stmt, &db_res);
+    if (ret <= 0) {
+       GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(
+          result,
+          GLOBUS_GSI_AUTHZ_CALLOUT_AUTHZ_DENIED_BY_CALLOUT,
+          ((ret == 0) ? "No such file registered" :
+                        "Internal error: backend DB access failed"));
+       goto end;
+    }
+
+    *res = db_res;
+    result = GLOBUS_SUCCESS;
+
+end:
+    if (stmt)
+       free(stmt);
+
+    return result;
+}
+
+static globus_result_t
 authz_read(authz_jp_system_state_struct *state, char *object, char *client)
 {
-	int result = GLOBUS_FAILURE; /* deny access by default */
-
-	char *stmt = NULL;
+	globus_result_t result = GLOBUS_FAILURE;
 	int db_retn;
 	glite_lbu_Statement db_res;
 	char *db_row[1] = { NULL };
 
-	trio_asprintf(&stmt,"select j.owner from jobs j,files f where "
-			"f.ext_url='gsi%|Ss' and j.jobid=f.jobid", object);
-	if (!stmt) {
-		GLOBUS_GSI_AUTHZ_CALLOUT_ERRNO_ERROR(result, errno);
-		return GLOBUS_FAILURE;
-	}
+        result = query_db(state->jp_ctx, &db_res,
+                          "select j.owner from jobs j,files f where "
+                          "f.ext_url='%|Ss' and j.jobid=f.jobid", object);
+        if (result != GLOBUS_SUCCESS) {
+            /* XXX clear error stack ?*/
+            result = query_db(state->jp_ctx, &db_res,
+                               "select j.owner from jobs j,files f where "
+                               "f.ext_url='gsi%|Ss' and j.jobid=f.jobid", object);
+        }
+        if (result != GLOBUS_SUCCESS)
+            return result;
 
-	if ((db_retn = glite_jp_db_ExecSQL(state->jp_ctx, stmt, &db_res)) <= 0) {
-		GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(
-         	   result,
-         	   GLOBUS_GSI_AUTHZ_CALLOUT_AUTHZ_DENIED_BY_CALLOUT,
-		   ((db_retn == 0) ? "No such file registered" :
-			             "Internal error: backend DB access failed"));
-		goto out;
-	}
-	
 	db_retn = glite_jp_db_FetchRow(state->jp_ctx, db_res, 1, NULL, db_row);
 	if (db_retn != 1) {
+		result = GLOBUS_FAILURE;
 		glite_jp_db_FreeStmt(&db_res);
 		GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(
 		   result,
@@ -77,6 +110,7 @@ authz_read(authz_jp_system_state_struct *state, char *object, char *client)
 	if (!strcmp(db_row[0], client)) {
 		result = GLOBUS_SUCCESS;
 	} else {
+		result = GLOBUS_FAILURE;
 		GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(
 		   result,
 		   GLOBUS_GSI_AUTHZ_CALLOUT_AUTHZ_DENIED_BY_CALLOUT,
@@ -85,42 +119,34 @@ authz_read(authz_jp_system_state_struct *state, char *object, char *client)
 
 out:
 	free(db_row[0]);
-	free(stmt);
 	return result;
 }
 
 static globus_result_t
 authz_write(authz_jp_system_state_struct *state, char *object, char *client)
 {
-	int result = GLOBUS_FAILURE; /* deny access by default */
-	char *stmt = NULL;
+	globus_result_t result = GLOBUS_FAILURE;
 	int db_retn;
 	glite_lbu_Statement db_res;
 	char *db_row[1] = { NULL };
 
-	trio_asprintf(&stmt,"select state from files "
-			"where ext_url='gsi%|Ss' and ul_userid='%|Ss'",
-			object, client);
-	if (!stmt) {
-		GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(
-                   result,
-                   GLOBUS_GSI_AUTHZ_CALLOUT_AUTHZ_DENIED_BY_CALLOUT,
-		   ("Internal error: out of memory"));
-		return GLOBUS_FAILURE;
-	}
-
-	if ((db_retn = glite_jp_db_ExecSQL(state->jp_ctx, stmt, &db_res)) <= 0) {
-		GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(
-		   result,
-		   GLOBUS_GSI_AUTHZ_CALLOUT_AUTHZ_DENIED_BY_CALLOUT,
-		   ((db_retn == 0) ? "No such file registered" :
-				     "Internal error: backend DB access failed"));
-		goto out;
-	}
+	result = query_db(state->jp_ctx, &db_res,
+                           "select state from files where ext_url='%|Ss' and ul_userid='%|Ss'",
+                           object, client);
+        if (result != GLOBUS_SUCCESS) {
+            /* XXX clear error stack ? */
+            result = query_db(state->jp_ctx, &db_res,
+                              "select state from files where ext_url='gsi%|Ss' and ul_userid='%|Ss'",
+                              object, client);
+        }
+        if (result != GLOBUS_SUCCESS) {
+            return result;
+        }
 
 	db_retn = glite_jp_db_FetchRow(state->jp_ctx, db_res, 1, NULL, db_row);
 	if (db_retn != 1) {
 		glite_jp_db_FreeStmt(&db_res);
+                result = GLOBUS_FAILURE;
 		GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(
                   result,
                   GLOBUS_GSI_AUTHZ_CALLOUT_AUTHZ_DENIED_BY_CALLOUT,
@@ -132,15 +158,15 @@ authz_write(authz_jp_system_state_struct *state, char *object, char *client)
 	if (!strcmp(db_row[0], "uploading")) {
 		result = GLOBUS_SUCCESS;
 	} else {
+                result = GLOBUS_FAILURE;
 		GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(
 		   result,
 		   GLOBUS_GSI_AUTHZ_CALLOUT_AUTHZ_DENIED_BY_CALLOUT,
-		   ("Permission denied"));
+		   ("Upload not in progress"));
 	}
 
 out:
 	free(db_row[0]);
-	free(stmt);
 	return result;
 }
 
@@ -420,7 +446,6 @@ authz_jp_globus_mapping(va_list ap)
     char *                              service;
     char *                              desired_identity;
     char *                              identity_buffer;
-    char *                              local_identity;
     unsigned int                        buffer_length;
     char *logname;
     char *client = NULL;
@@ -458,7 +483,7 @@ authz_jp_globus_mapping(va_list ap)
     }
 
     if (strlen(logname) + 1 > buffer_length) {
-       GLOBUS_GRIDMAP_CALLOUT_ERROR(
+       GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(
             result,
             GLOBUS_GSI_AUTHZ_CALLOUT_SYSTEM_ERROR,
             ("Not enough space to store mapped identity"));
@@ -466,6 +491,7 @@ authz_jp_globus_mapping(va_list ap)
     }
 
     strcpy(identity_buffer, logname);
+    result = GLOBUS_SUCCESS;
        
 end:
     if (client)
