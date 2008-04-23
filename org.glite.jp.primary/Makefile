@@ -63,7 +63,7 @@ ps_prefix:=jpps_
 is_prefix:=jpis_
 sample_jobs:=sample_job_aborted  sample_job_cleared  sample_job_tagged_done  sample_job_waiting
 
-plugins:=glite-jp-ftpdauth.la glite-jp-classad.la glite-jp-sandbox.la
+plugins:=glite-jp-ftpdauth.la glite-jp-classad.la glite-jp-sandbox.la glite-jp-callouts_${nothrflavour}.la
 
 SRCS:= bones_server.c soap_ops.c \
 	new_ftp_backend.c file_plugin.c \
@@ -193,6 +193,9 @@ glite-jp-sandbox.la: sandbox_plugin.lo
 
 glite-jp-ftpdauth.la: ftpd_auth.lo
 	${SOLINK} -o $@ ftpd_auth.lo ${COMMONLIB} ${TRIOLIB} ${SRVCOMMONLIB}
+
+glite-jp-callouts_${nothrflavour}.la: jp_callouts.lo
+	${SOLINK} -o $@ $^ ${COMMONLIB} ${TRIOLIB} ${SRVCOMMONLIB}
 
 #glite-jp-classad.lo: classad_plugin.c
 #	${LTCOMPILE} -DPLUGIN_DEBUG -o $@ -c $<
