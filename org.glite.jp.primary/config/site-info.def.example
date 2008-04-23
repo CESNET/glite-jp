@@ -51,7 +51,7 @@ MYSQL_PASSWORD=set_this_to_a_good_password
 #GLITE_JP_PRIMARY_FTP_PORT=8911
 
 # List of privileged DN subjects
-#GLITE_JP_PRIMARY_PEERS=$GLITE_USER_HOME/jpps/jp.peers
+#GLITE_JP_PRIMARY_PEERS=$GLITE_LOCATION/etc/JPPS-peers
 
 # connection string to database (USER/PASSWORD@HOST:DBNAME)
 # If the default is changed, the database has to be created manually !
