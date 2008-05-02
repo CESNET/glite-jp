@@ -1,4 +1,4 @@
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN" "http://docbook.org/xml/4.1/docbookx.dtd">
 
 <refentry id='glitejpindexd'>
 
@@ -92,6 +92,11 @@
 				<arg>-D</arg>
 				<arg>--delete-db</arg>
 			</group></arg>
+
+			<arg><group choice='plain'>
+				<arg>-f</arg>
+				<arg>--feeding</arg>
+			</group> <replaceable>FILE</replaceable> </arg>
 
 		</cmdsynopsis>
 	</refsynopsisdiv>
@@ -221,6 +226,13 @@ Number of slave processes for responses (default: number of feeds, max. 20).
 				<term><option>-D</option>|<option>--delete-db</option></term>
 				<listitem><para>
 Delete and refetch the data in the database. You need use this parameter when feeds from primary storage are already expired.
+				</para></listitem>
+			</varlistentry>
+
+			<varlistentry>
+				<term><option>-f</option>|<option>--feeding</option></term>
+				<listitem><para>
+Feed the index server from the local file. Format of the file is job per line with attribute values using ";" separator. Attributes go in order according to server configuration file (possible attributes with jobid and owner in configuration file are ignored).
 				</para></listitem>
 			</varlistentry>
 

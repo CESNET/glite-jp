@@ -8,13 +8,16 @@
 #include <assert.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <string.h>
 
 #include <glite/lbu/trio.h>
 #include <glite/jobid/strmd5.h>
+#include <glite/jobid/cjobid.h>
 #include <glite/jp/types.h>
 #include <glite/jp/context.h>
 #include <glite/jp/db.h>
 #include <glite/jp/attr.h>
+#include "glite/jp/known_attr.h"
 
 #include "conf.h"
 #include "context.h"
@@ -36,7 +39,7 @@
 \n\
         INDEX (jobid),\n\
         INDEX (value)\n\
-);"
+) ENGINE=innodb;"
 #define SQLCMD_INSERT_ATTRVAL "INSERT INTO " TABLE_PREFIX_DATA "%|Ss (jobid, value, full_value, origin) VALUES (\n\
 	'%|Ss',\n\
 	'%|Ss',\n\
@@ -309,7 +312,7 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 	free(num);
 	glite_jp_db_FreeStmt(&stmt);
 	if (nattrs != 0) {
-		lprintf("database with %d attributes keeped (use -D for delete)\n");
+		lprintf("database with %d attributes kept (use -D for delete)\n", nattrs);
 		return 0;
 	}
 
@@ -423,7 +426,7 @@ fail:
 
 
 int glite_jpis_init_db(glite_jpis_context_t isctx) {
-	int ret;
+	int ret, caps;
 	const char *cs;
 	glite_jp_context_t jpctx;
 
@@ -431,6 +434,15 @@ int glite_jpis_init_db(glite_jpis_context_t isctx) {
 	if (glite_lbu_InitDBContext(((glite_lbu_DBContext *)&jpctx->dbhandle)) != 0) goto fail_db;
 	if ((cs = isctx->conf->cs) == NULL) cs = GLITE_JP_IS_DEFAULTCS;
 	if (glite_lbu_DBConnect(jpctx->dbhandle, cs) != 0) goto fail_db;
+
+	// try transaction for feeding
+	if (isctx->conf->feeding) {
+		caps = glite_lbu_DBQueryCaps(jpctx->dbhandle);
+		if (caps != -1) {
+			glite_lbu_DBSetCaps(jpctx->dbhandle, caps);
+			llprintf(LOG_SQL, "transactions %s\n", (caps & GLITE_LBU_DB_CAP_TRANSACTIONS) ? "supported" : "not supported");
+		}
+	}
 
 	// sql command: lock the feed (via uniqueid)
 	if ((ret = glite_jp_db_PrepareStmt(jpctx, "UPDATE feeds SET locked=1 WHERE (locked = 0) AND (uniqueid = ?)", &isctx->lock_feed_stmt)) != 0) goto fail;
@@ -633,6 +645,8 @@ int glite_jpis_insertAttrVal(glite_jpis_context_t ctx, const char *jobid, glite_
 	free(value);
 	free(full_value);
 	llprintf(LOG_SQL, "(%s) sql=%s\n", av->name, sql);
+//	if (ctx->conf->feeding) printf("FEED: %s\n", sql);
+//	else
 	if (glite_jp_db_ExecSQL(ctx->jpctx, sql, NULL) != 1) {
 		free(sql);
 		return ctx->jpctx->error->code;
@@ -688,4 +702,90 @@ fail:
 	free(md5_jobid);
 	free(md5_cert);
 	return ctx->jpctx->error->code;
+}
+
+
+#define FEEDING_SEPARATORS ";"
+#define FEEDING_JOBID_BKSERVER "localhost-test"
+#define FEEDING_JOBID_PORT 0
+#define FEEDING_PRIMARY_STORAGE "localhost:8901"
+#define FEEDING_OWNER "God"
+int glite_jpis_feeding(glite_jpis_context_t ctx, const char *fname) {
+	FILE *f;
+	char line[1024], *token, *lasts, *jobid = NULL;
+	int nattrs, lno, i, iname, c;
+	glite_jp_attrval_t *avs;
+	glite_jobid_t j;
+
+	if ((f = fopen(fname, "rt")) == NULL) {
+		glite_jpis_stack_error(ctx->jpctx, errno, "can't open csv dump file");
+		return 1;
+	}
+
+	for (nattrs = 0; ctx->conf->attrs[nattrs]; nattrs++);
+	avs = malloc(nattrs * sizeof avs[0]);
+
+	lno = 0;
+	while(fgets(line, sizeof line, f) != NULL) {
+		if ((lno % 100) == 0) {
+			if (lno) glite_jp_db_Commit(ctx->jpctx);
+			glite_jp_db_Transaction(ctx->jpctx);
+		}
+		lno++;
+		if (line[0]) {
+			c = strlen(line) - 1;
+			if (line[c] != '\r' && line[c] != '\n' && !feof(f)) {
+				glite_jpis_stack_error(ctx->jpctx, E2BIG, "line too large at %d (max. %d)", lno, sizeof line);
+				goto err;
+			}
+			while (c >= 0 && (line[c] == '\r' || line[c] == '\n')) c--;
+			line[c + 1] = 0;
+		}
+//		printf("'%s'\n", line);
+
+		memset(avs, 0, nattrs * sizeof avs[0]);
+		i = 0;
+		iname = 0;
+		token = strtok_r(line, FEEDING_SEPARATORS, &lasts);
+		while (token && iname < nattrs) {
+//			printf("\t'%s'\n", token);
+			do {
+				avs[i].name = ctx->conf->attrs[iname];
+				iname++;
+			} while (strcasecmp(avs[i].name, GLITE_JP_ATTR_JOBID) == 0 || strcasecmp(avs[i].name, GLITE_JP_ATTR_OWNER) == 0);
+			avs[i].value = token;
+			avs[i].timestamp = time(NULL);
+			fprintf(stderr, "\t %d: %s = '%s'\n", i, avs[i].name, avs[i].value);
+			i++;
+
+			token = strtok_r(NULL, FEEDING_SEPARATORS, &lasts);
+		}
+
+		if (glite_jobid_create(FEEDING_JOBID_BKSERVER, FEEDING_JOBID_PORT, &j) != 0) {
+			glite_jpis_stack_error(ctx->jpctx, errno, "can't create jobid");
+			goto err;
+		}
+		if ((jobid = glite_jobid_unparse(j)) == NULL) {
+			glite_jobid_free(j);
+			glite_jpis_stack_error(ctx->jpctx, ENOMEM, "can't unparse jobid");
+			goto err;
+		}
+		glite_jobid_free(j);
+		if (glite_jpis_lazyInsertJob(ctx, FEEDING_PRIMARY_STORAGE, jobid, FEEDING_OWNER)) goto err;
+		for (i = 0; i < nattrs && avs[i].name; i++) {
+			if (glite_jpis_insertAttrVal(ctx, jobid, &avs[i])) goto err;
+		}
+		free(jobid); jobid = NULL;
+	}
+	glite_jp_db_Commit(ctx->jpctx);
+
+	fclose(f);
+	free(avs);
+	return 0;
+err:
+	fclose(f);
+	free(avs);
+	free(jobid);
+	glite_jp_db_Rollback(ctx->jpctx);
+	return 1;
 }

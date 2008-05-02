@@ -60,7 +60,7 @@ int glite_jp_db_PrepareStmt(glite_jp_context_t ctx, const char *sql, glite_lbu_S
 
 	ret = glite_lbu_PrepareStmt(ctx->dbhandle, sql, stmt);
 	if (ret < 0) glite_jp_db_SetError(ctx, __FUNCTION__);
-	return glite_jp_db_SetError(ctx, __FUNCTION__);
+	return ret;
 }
 
 
@@ -71,10 +71,41 @@ int glite_jp_db_ExecPreparedStmt(glite_jp_context_t ctx, glite_lbu_Statement stm
 	va_start(ap, n);
 	ret = glite_lbu_ExecPreparedStmt_v(stmt, n, ap);
 	va_end(ap);
+	if (ret < 0) glite_jp_db_SetError(ctx, __FUNCTION__);
 	return ret;
 }
 
 
 void glite_jp_db_FreeStmt(glite_lbu_Statement *stmt) {
 	glite_lbu_FreeStmt(stmt);
+}
+
+
+int glite_jp_db_Transaction(glite_jp_context_t ctx) {
+	int ret;
+
+	ret = glite_lbu_Transaction(ctx->dbhandle);
+	if (ret != 0) glite_jp_db_SetError(ctx, __FUNCTION__);
+
+	return ret;
+}
+
+
+int glite_jp_db_Commit(glite_jp_context_t ctx) {
+	int ret;
+
+	ret = glite_lbu_Commit(ctx->dbhandle);
+	if (ret != 0) glite_jp_db_SetError(ctx, __FUNCTION__);
+
+	return ret;
+}
+
+
+int glite_jp_db_Rollback(glite_jp_context_t ctx) {
+	int ret;
+
+	ret = glite_lbu_Rollback(ctx->dbhandle);
+	if (ret != 0) glite_jp_db_SetError(ctx, __FUNCTION__);
+
+	return ret;
 }

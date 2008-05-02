@@ -50,6 +50,8 @@ typedef struct _glite_jp_is_conf {
 		*server_key;
 	int	slaves;
 	int	delete_db;
+
+	char	*feeding;               // feed DB from local file
 } glite_jp_is_conf;
 
 

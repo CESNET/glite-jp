@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
 	edg_wll_GssStatus	gss_code;
 	struct sockaddr_in	a;
 	glite_jpis_context_t	isctx;
-
+	int retval = 0;
 
 	glite_jp_init_context(&ctx);
 
@@ -105,21 +105,28 @@ int main(int argc, char *argv[])
 	if (conf->delete_db) {
 		if (glite_jpis_dropDatabase(isctx) != 0) {
 			fprintf(stderr, "Drop DB failed: %s (%s)\n", ctx->error->desc, ctx->error->source);
-			glite_jpis_free_db(isctx);
-			glite_jpis_free_context(isctx);
-			glite_jp_free_context(ctx);
-			glite_jp_free_conf(conf);
-			return 1;
+			retval = 1;
+			goto quit;
 		}
 	}
 
 	if (glite_jpis_initDatabase(isctx) != 0) {
 		fprintf(stderr, "Init DB failed: %s (%s)\n", ctx->error->desc, ctx->error->source);
-		glite_jpis_free_db(isctx);
-		glite_jpis_free_context(isctx);
-		glite_jp_free_context(ctx);
-		glite_jp_free_conf(conf);
-		return 1;
+		retval = 1;
+		goto quit;
+	}
+
+	if (conf->feeding) {
+		char *err;
+
+		fprintf(stderr, "%s: Feeding from '%s'\n", argv[0], conf->feeding);
+		retval = glite_jpis_feeding(isctx, conf->feeding);
+		if (retval) {
+			err = glite_jp_error_chain(isctx->jpctx);
+			fprintf(stderr, "%s: %s\n", argv[0], err);
+			free(err);
+		}
+		goto quit;
 	}
 
 	stab.conn = socket(PF_INET, SOCK_STREAM, 0);
@@ -190,12 +197,13 @@ int main(int argc, char *argv[])
 #endif
 	glite_srvbones_run(data_init,&stab,1 /* XXX: entries in stab */,debug);
 
+quit:
 	glite_jpis_free_db(isctx);
 	glite_jp_free_conf(conf);
 	glite_jpis_free_context(isctx);
 	glite_jp_free_context(ctx);
 
-	return 0;
+	return retval;
 }
 
 
@@ -227,7 +235,8 @@ static int feed_caller(struct soap *soap, glite_jpis_context_t isctx) {
 	feedid = NULL;
 	for (initialized = 0; initialized <= 1; initialized++) {
 		switch (glite_jpis_lockSearchFeed(isctx,initialized,&uniqueid,&PS_URL,&status,&feedid)) {
-		case 0: 
+		case 0:
+			// some locked feeds found
 			ok = 0;
 			for (i = 0; i < 10; i++) {
 				if (!initialized) {

@@ -42,4 +42,6 @@ int glite_jpis_insertAttrVal(glite_jpis_context_t ctx, const char *jobid, glite_
 
 int glite_jpis_lazyInsertJob(glite_jpis_context_t ctx, const char *ps, const char *jobid, const char *owner);
 
+int glite_jpis_feeding(glite_jpis_context_t ctx, const char *fname);
+
 #endif

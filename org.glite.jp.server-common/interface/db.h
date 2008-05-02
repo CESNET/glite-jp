@@ -16,6 +16,9 @@ int glite_jp_db_FetchRow(glite_jp_context_t ctx, glite_lbu_Statement stmt, unsig
 int glite_jp_db_PrepareStmt(glite_jp_context_t ctx, const char *sql, glite_lbu_Statement *stmt);
 int glite_jp_db_ExecPreparedStmt(glite_jp_context_t ctx, glite_lbu_Statement stmt, int n,...);
 void glite_jp_db_FreeStmt(glite_lbu_Statement *stmt);
+int glite_jp_db_Transaction(glite_jp_context_t ctx);
+int glite_jp_db_Commit(glite_jp_context_t ctx);
+int glite_jp_db_Rollback(glite_jp_context_t ctx);
 
 #ifdef __cplusplus
 }

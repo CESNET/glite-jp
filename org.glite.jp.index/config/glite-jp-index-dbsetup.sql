@@ -9,7 +9,7 @@ create table jobs (
 	unique (dg_jobid),
 	index (jobid),
 	index (dg_jobid)
-);
+) engine=innodb;
 
 create table attrs (
 	`attrid`		char(32)	binary not null,
@@ -20,7 +20,7 @@ create table attrs (
 	primary key (attrid),
 	index (attrid),
 	index (name)
-);
+) engine=innodb;
 
 create table feeds (
 	`uniqueid`	int		auto_increment not null,
@@ -35,7 +35,7 @@ create table feeds (
         index (uniqueid),
         index (feedid),
 	index (state)
-);
+) engine=innodb;
 
 create table acls (
 	`aclid`           char(32)        binary not null,
@@ -43,7 +43,7 @@ create table acls (
 	`refcnt`          int             not null,
 
         primary key (aclid)
-);
+) engine=innodb;
 
 create table users (
 	`userid`          char(32)        binary not null,
@@ -51,7 +51,7 @@ create table users (
 
         primary key (userid),
         unique (cert_subj)
-);
+) engine=innodb;
 
 
 # data tables - created one for each configured attribute, index on
@@ -65,5 +65,5 @@ create table users (
 #
 #        index (jobid),
 #        index (value)
-#);
+#) engine=innodb;
 
