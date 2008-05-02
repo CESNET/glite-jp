@@ -755,8 +755,13 @@ static int register_feed_deferred(glite_jp_context_t ctx,void *feed)
 	struct jpfeed	*f = feed;
 
 	if (glite_jppsbe_store_feed(ctx,f)) fputs(glite_jp_error_chain(ctx),stderr);
-	else kill(-master,SIGUSR1);	/* gracefully terminate slaves 
+	else{
+		time(&(f->expires));
+		f->expires += FEED_TTL;
+		glite_jppsbe_refresh_feed(ctx, f->id, f->expires);
+		kill(-master,SIGUSR1);	/* gracefully terminate slaves 
 				   and let master restart them */
+	}
 
 	return 0;
 }
@@ -785,6 +790,8 @@ int glite_jpps_refresh_feed(glite_jp_context_t ctx, char *feed_id,  time_t *expi
 	time(expires); *expires += FEED_TTL;
 
 	glite_jppsbe_refresh_feed(ctx, feed_id, expires);
+
+	printf("Feed %s has been refreshed.\n", feed_id);
 	
 	return 0;	
 }

@@ -1834,16 +1834,17 @@ cleanup:
 int glite_jppsbe_refresh_feed(
         glite_jp_context_t ctx,
         char *feed_id,
-	time_t *expires
+	time_t expires
 )
 {
 	glite_jp_error_t        err;
         memset(&err,0,sizeof err);
 
 	char *stmt = NULL;
-
-	trio_asprintf(&stmt, "update feeds set expires=%s where feedid='%ISs'",
-		expires, feed_id);
+	char *e = NULL;
+	glite_lbu_TimeToDB(expires, &e);
+	trio_asprintf(&stmt, "update feeds set expires=%s where feedid=%s",
+		e, feed_id);
 	if (!stmt) {
                 err.code = ENOMEM;
                 goto error_out;
