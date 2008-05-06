@@ -1005,7 +1005,7 @@ int glite_jppsbe_open_file(
 	if (handle->fd_gz == NULL){
 	        gzerror(((fhandle)handle)->fd_gz, &(err.code));
                 err.desc = "Cannot open requested file";
-                free(handle);
+                free(handle); handle = NULL;
                 error = 1;
                 goto error_out;
         }
@@ -1093,7 +1093,8 @@ int glite_jppsbe_close_file(
 	}
 
 error_out:
-	free(handle);
+	free(((fhandle)handle)->filedata);
+	free(handle); handle=NULL;
 	if (err.code) {
 		return glite_jp_stack_error(ctx,&err);
 	} else { 
@@ -1858,6 +1859,7 @@ int glite_jppsbe_refresh_feed(
 
 error_out:
         free(stmt);
+	free(e);
         if (err.code)
                 return glite_jp_stack_error(ctx,&err);
         else
@@ -1944,6 +1946,7 @@ int glite_jppsbe_read_feeds(
 		glite_jp_stack_error(ctx,&err);
 		goto cleanup;
 	}
+	free(stmt);
 
 	while ((rows = glite_jp_db_FetchRow(ctx,q,sizeof(res)/sizeof(res[0]),NULL, res)) > 0) {
 		struct jpfeed *f = calloc(1,sizeof *f);
@@ -2075,12 +2078,22 @@ int glite_jppsbe_read_tag(
 		return err.code;
 	}
 
+	int i;
+	for (i=0; i < h->n; i++){
+		free(h->tags[i].name);
+		free(h->tags[i].value);
+	}
+	free(h->tags);
+
 	if (glite_jppsbe_close_file(ctx,h->bhandle))
         {
                 err.code = EIO;
                 err.desc = "cannot close tags file";
+		free(h);
                 return glite_jp_stack_error(ctx,&err);
         }
+
+	free(h);
 	
 	return 0;
 }

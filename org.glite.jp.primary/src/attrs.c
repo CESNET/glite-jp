@@ -151,6 +151,10 @@ static void process_files(glite_jp_context_t ctx, const char *job, glite_jp_attr
 		keep_err = ctx->error; ctx->error = NULL;
 		if (keep_err) { ctx->error = keep_err; keep_err = NULL; }
 	}
+
+	for (n = 0; n < nnames; n++)
+		free(names[n]);
+	free(names);
 }
 
 int glite_jpps_get_attrs(glite_jp_context_t ctx,const char *job,char **attr,int nattr,glite_jp_attrval_t **attrs_out)
@@ -227,9 +231,6 @@ int glite_jpps_get_attrs(glite_jp_context_t ctx,const char *job,char **attr,int 
 	nout = merge_attrvals(&out,nout,meta);
 
 	free(meta); meta = NULL;
-
-	for (i = 0; i < nout; i++)
-                printf("%s\n", out[i].value);
 
 	if (nout) {
 		*attrs_out = out;

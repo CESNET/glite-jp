@@ -720,6 +720,7 @@ static int run_feed_deferred(glite_jp_context_t ctx,void *feed)
 	else meta[1] = NULL;
 
 	ret = glite_jppsbe_query(ctx,f->meta_qry,meta,f,feed_query_callback);
+	free(meta);
 	if (ret == 0) ret = drain_feed(ctx,f,1);
 	else if (ret == ENOENT) ret = 0; 
 	else drop_jobs(f);
@@ -775,7 +776,7 @@ int glite_jpps_register_feed(
 	char **feed_id,
 	time_t *expires)
 {
-	struct jpfeed	*f;
+	struct jpfeed	*f = NULL;
 
 	if (!*feed_id) *feed_id = generate_feedid();
 	time(expires); *expires += FEED_TTL;
