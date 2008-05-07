@@ -59,7 +59,7 @@ int glite_jp_db_PrepareStmt(glite_jp_context_t ctx, const char *sql, glite_lbu_S
 	int ret;
 
 	ret = glite_lbu_PrepareStmt(ctx->dbhandle, sql, stmt);
-	if (ret < 0) glite_jp_db_SetError(ctx, __FUNCTION__);
+	if (ret != 0) glite_jp_db_SetError(ctx, __FUNCTION__);
 	return ret;
 }
 

@@ -316,7 +316,10 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 		return 0;
 	}
 
-	if (glite_jp_db_PrepareStmt(jpctx, "INSERT INTO attrs (attrid, name, indexed, type) VALUES (?, ?, ?, ?)", &stmt) != 0) goto fail;
+	if (glite_jp_db_PrepareStmt(jpctx, "INSERT INTO attrs (attrid, name, indexed, type) VALUES (?, ?, ?, ?)", &stmt) != 0) {
+		glite_jpis_stack_error(ctx->jpctx, EIO, "can't create insert attributes statement");
+		goto fail;
+	}
 
 	// attrs table and attrid_* tables
 	attrs = ctx->conf->attrs;
@@ -331,13 +334,17 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 		  GLITE_LBU_DB_TYPE_VARCHAR, attrid,
 		  GLITE_LBU_DB_TYPE_VARCHAR, attrs[i],
 		  GLITE_LBU_DB_TYPE_INT, indexed,
-		  GLITE_LBU_DB_TYPE_VARCHAR, type_full) == -1) goto fail;
+		  GLITE_LBU_DB_TYPE_VARCHAR, type_full) == -1) {
+			glite_jpis_stack_error(ctx->jpctx, EIO, "can't create '%s' attribute", attrs[i]);
+			goto fail;
+		}
 
 		// silently drop
 		sql[sizeof(sql) - 1] = '\0';
 		snprintf(sql, sizeof(sql), SQLCMD_DROP_DATA_TABLE, attrid);
 		llprintf(LOG_SQL, "preventive dropping '%s' ==> '%s'\n", attrid, sql);
 		glite_jp_db_ExecSQL(jpctx, sql, NULL);
+		glite_jp_clear_error(ctx->jpctx);
 
 		// create table
 		sql[sizeof(sql) - 1] = '\0';
@@ -354,7 +361,10 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 	glite_jp_db_FreeStmt(&stmt);
 
 	// feeds table
-	if (glite_jp_db_PrepareStmt(jpctx, "INSERT INTO feeds (state, locked, source, condition) VALUES (?, ?, ?, ?)", &stmt) != 0) goto fail;
+	if (glite_jp_db_PrepareStmt(jpctx, "INSERT INTO feeds (`state`, `locked`, `source`, `condition`) VALUES (?, ?, ?, ?)", &stmt) != 0) {
+		glite_jpis_stack_error(ctx->jpctx, EIO, "can't create insert feeds statement");
+		goto fail;
+	}
 	feeds = ctx->conf->feeds;
 	i = 0;
 	if (feeds) while (feeds[i]) {
@@ -709,13 +719,14 @@ fail:
 #define FEEDING_JOBID_BKSERVER "localhost-test"
 #define FEEDING_JOBID_PORT 0
 #define FEEDING_PRIMARY_STORAGE "localhost:8901"
-#define FEEDING_OWNER "God"
-int glite_jpis_feeding(glite_jpis_context_t ctx, const char *fname) {
+#define FEEDING_DEFAULT_OWNER "God"
+int glite_jpis_feeding(glite_jpis_context_t ctx, const char *fname, const char *dn) {
 	FILE *f;
 	char line[1024], *token, *lasts, *jobid = NULL;
 	int nattrs, lno, i, iname, c;
 	glite_jp_attrval_t *avs;
 	glite_jobid_t j;
+	const char *owner = dn ? dn : FEEDING_DEFAULT_OWNER;
 
 	if ((f = fopen(fname, "rt")) == NULL) {
 		glite_jpis_stack_error(ctx->jpctx, errno, "can't open csv dump file");
@@ -755,7 +766,7 @@ int glite_jpis_feeding(glite_jpis_context_t ctx, const char *fname) {
 			} while (strcasecmp(avs[i].name, GLITE_JP_ATTR_JOBID) == 0 || strcasecmp(avs[i].name, GLITE_JP_ATTR_OWNER) == 0);
 			avs[i].value = token;
 			avs[i].timestamp = time(NULL);
-			fprintf(stderr, "\t %d: %s = '%s'\n", i, avs[i].name, avs[i].value);
+//			printf(stderr, "\t %d: %s = '%s'\n", i, avs[i].name, avs[i].value);
 			i++;
 
 			token = strtok_r(NULL, FEEDING_SEPARATORS, &lasts);
@@ -771,7 +782,7 @@ int glite_jpis_feeding(glite_jpis_context_t ctx, const char *fname) {
 			goto err;
 		}
 		glite_jobid_free(j);
-		if (glite_jpis_lazyInsertJob(ctx, FEEDING_PRIMARY_STORAGE, jobid, FEEDING_OWNER)) goto err;
+		if (glite_jpis_lazyInsertJob(ctx, FEEDING_PRIMARY_STORAGE, jobid, owner)) goto err;
 		for (i = 0; i < nattrs && avs[i].name; i++) {
 			if (glite_jpis_insertAttrVal(ctx, jobid, &avs[i])) goto err;
 		}

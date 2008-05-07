@@ -266,7 +266,7 @@ static int get_sql_indexvalue(char **sql, glite_jpis_context_t ctx, struct jptyp
 		attr.value = GSOAP_STRING(value);
 		attr.binary = 0;
 	} else if (GSOAP_ISBLOB(value)) {
-		attr.value = GSOAP_BLOB(value)->__ptr;
+		attr.value = (char *)GSOAP_BLOB(value)->__ptr;
 		attr.size = GSOAP_BLOB(value)->__size;
 		attr.binary = 1;
 	} else return 0;

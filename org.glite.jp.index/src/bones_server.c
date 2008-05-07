@@ -75,6 +75,7 @@ int main(int argc, char *argv[])
 	struct sockaddr_in	a;
 	glite_jpis_context_t	isctx;
 	int retval = 0;
+	char *err;
 
 	glite_jp_init_context(&ctx);
 
@@ -104,28 +105,36 @@ int main(int argc, char *argv[])
 
 	if (conf->delete_db) {
 		if (glite_jpis_dropDatabase(isctx) != 0) {
-			fprintf(stderr, "Drop DB failed: %s (%s)\n", ctx->error->desc, ctx->error->source);
+			fprintf(stderr, "Drop DB failed: ");
 			retval = 1;
 			goto quit;
 		}
 	}
 
 	if (glite_jpis_initDatabase(isctx) != 0) {
-		fprintf(stderr, "Init DB failed: %s (%s)\n", ctx->error->desc, ctx->error->source);
+		fprintf(stderr, "Init DB failed: ");
 		retval = 1;
 		goto quit;
 	}
 
-	if (conf->feeding) {
-		char *err;
+	server_cert = conf->server_cert;
+	server_key = conf->server_key;
 
+	if (!server_cert || !server_key)
+		fprintf(stderr, "%s: WARNING: key or certificate file not specified, "
+				"can't watch them for changes\n",
+				argv[0]);
+
+	if ( cadir ) setenv("X509_CERT_DIR", cadir, 1);
+	edg_wll_gss_watch_creds(server_cert, &cert_mtime);
+
+	if ( !edg_wll_gss_acquire_cred_gsi(server_cert, server_key, &mycred, &gss_code)) 
+		fprintf(stderr,"Server identity: %s\n",mycred ? mycred->name : "NULL");
+	else fputs("WARNING: Running unauthenticated\n",stderr);
+
+	if (conf->feeding) {
 		fprintf(stderr, "%s: Feeding from '%s'\n", argv[0], conf->feeding);
-		retval = glite_jpis_feeding(isctx, conf->feeding);
-		if (retval) {
-			err = glite_jp_error_chain(isctx->jpctx);
-			fprintf(stderr, "%s: %s\n", argv[0], err);
-			free(err);
-		}
+		retval = glite_jpis_feeding(isctx, conf->feeding, mycred ? mycred->name : NULL);
 		goto quit;
 	}
 
@@ -153,21 +162,6 @@ int main(int argc, char *argv[])
 		perror("listen()");
 		return 1;
 	}
-
-	server_cert = conf->server_cert;
-	server_key = conf->server_key;
-
-	if (!server_cert || !server_key)
-		fprintf(stderr, "%s: WARNING: key or certificate file not specified, "
-				"can't watch them for changes\n",
-				argv[0]);
-
-	if ( cadir ) setenv("X509_CERT_DIR", cadir, 1);
-	edg_wll_gss_watch_creds(server_cert, &cert_mtime);
-
-	if ( !edg_wll_gss_acquire_cred_gsi(server_cert, server_key, &mycred, &gss_code)) 
-		fprintf(stderr,"Server idenity: %s\n",mycred ? mycred->name : "NULL");
-	else fputs("WARNING: Running unauthenticated\n",stderr);
 
  	// XXX: more tests needed
 	if (conf->feeds)
@@ -198,6 +192,12 @@ int main(int argc, char *argv[])
 	glite_srvbones_run(data_init,&stab,1 /* XXX: entries in stab */,debug);
 
 quit:
+	if (isctx->jpctx->error) {
+		err = glite_jp_error_chain(isctx->jpctx);
+		fprintf(stderr, "%s: %s\n", argv[0], err);
+		free(err);
+	}
+
 	glite_jpis_free_db(isctx);
 	glite_jp_free_conf(conf);
 	glite_jpis_free_context(isctx);
