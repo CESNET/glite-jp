@@ -2050,6 +2050,7 @@ int glite_jppsbe_read_tag(
         glite_jp_error_t        err;
         glite_jp_context_t      ctx = fpctx;
 	struct tags_handle     	*h;
+	int i;
 
 	memset(&err,0,sizeof err);
         err.source = __FUNCTION__;
@@ -2063,7 +2064,8 @@ int glite_jppsbe_read_tag(
         ) {
                 err.code = EIO;
                 err.desc = "cannot open tags file";
-                return glite_jp_stack_error(ctx,&err);
+		glite_jp_stack_error(ctx,&err);
+		goto cleanup;
         }
 
 	if (tag_attr(ctx,h,attr,attrval)){
@@ -2075,27 +2077,26 @@ int glite_jppsbe_read_tag(
 		ctx->error = NULL;
 		glite_jppsbe_close_file(ctx,h->bhandle);
 		ctx->error = e;
-		return err.code;
+		goto cleanup;
 	}
-
-	int i;
-	for (i=0; i < h->n; i++){
-		free(h->tags[i].name);
-		free(h->tags[i].value);
-	}
-	free(h->tags);
 
 	if (glite_jppsbe_close_file(ctx,h->bhandle))
         {
                 err.code = EIO;
                 err.desc = "cannot close tags file";
-		free(h);
-                return glite_jp_stack_error(ctx,&err);
+		glite_jp_stack_error(ctx,&err);
+		goto cleanup;
         }
-
+	
+cleanup:
+        for (i=0; i < h->n; i++){
+                free(h->tags[i].name);
+                free(h->tags[i].value);
+        }
+        free(h->tags);
 	free(h);
 	
-	return 0;
+	return err.code;
 }
 
 
