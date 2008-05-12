@@ -53,9 +53,8 @@ create table users (
         unique (cert_subj)
 ) engine=innodb;
 
-
-# data tables - created one for each configured attribute, index on
-# value is created only for attributes configured to be indexed
+# data tables - created one for each configured and indexed attribute,
+# in future values of the non-indexed attributes will be stored in attr_values
 #
 #create table attr_<attrid> (
 #        `jobid`		char(32)	binary not null,
@@ -67,3 +66,31 @@ create table users (
 #        index (value)
 #) engine=innodb;
 
+
+# ---- future schema improvements ----
+
+#create table attr_values (
+#	`jobid`           char(32),
+#	`attrid`          char(32) binary not null,
+#	`value`           varchar(255) binary not null,
+#	`full_value`      mediumblob not null,
+#	`origin`          int not null,
+##	`is_multival`     int,
+#
+##        primary key (jobid, attrid)
+#	index (jobid),
+#	index (attrid),
+#	index (value)
+#) engine=innodb;
+
+#create table attr_multivalues (
+#	`jobid`           char(32),
+#	`attrid`          char(32) binary not null,
+#	`value`           varchar(255) binary not null,
+#	`full_value`      mediumblob not null,
+#	`origin`          int not null,
+#
+#	index (jobid),
+#	index (attrid)
+#	index (value)
+#) engine=innodb;

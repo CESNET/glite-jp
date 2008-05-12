@@ -8,6 +8,7 @@
 #include "types.h"
 #include "attr.h"
 #include "type_plugin.h"
+#include "context.h"
 
 void glite_jp_attrval_free(glite_jp_attrval_t *a,int f)
 {
@@ -26,7 +27,7 @@ void glite_jp_attrval_copy(glite_jp_attrval_t *dst,const glite_jp_attrval_t *src
 	dst->timestamp = src->timestamp;
 	dst->origin_detail = src->origin_detail ? 
 		strdup(src->origin_detail) : NULL;
-	if (dst->binary = src->binary) {
+	if ((dst->binary = src->binary)) {
 		dst->value = malloc(src->size);
 		memcpy(dst->value,src->value,src->size);
 	}

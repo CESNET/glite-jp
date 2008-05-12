@@ -8,6 +8,7 @@
 #include "glite/jp/context.h"
 #include "glite/jp/attr.h"
 #include "glite/jp/known_attr.h"
+#include "glite/jp/indexdb.h"
 
 #include "jp_H.h"
 #include "soap_version.h"
@@ -361,7 +362,7 @@ static int get_jobids(glite_jpis_context_t ctx, struct _jpelem__QueryJobs *in, c
 			attr_md5 = NULL;
 			qa = strdup("");
 		} else {
-			attr_md5 = glite_jpis_attr_name2id(condition->attr);
+			attr_md5 = glite_jp_indexdb_attr2id(condition->attr);
 			add_attr_table(attr_md5, &attr_tables);
 
 			/* origin */
@@ -475,7 +476,7 @@ static int get_attr(struct soap *soap, glite_jpis_context_t ctx, char *jobid, ch
 
 	memset(&jav,0,sizeof(jav));
 	jobid_md5 = str2md5(jobid);
-	attr_md5 = glite_jpis_attr_name2id(attr_name);
+	attr_md5 = glite_jp_indexdb_attr2id(attr_name);
 	trio_asprintf(&query,"SELECT full_value FROM attr_%|Ss WHERE jobid = \"%s\"",
 		attr_md5, jobid_md5);
 	free(attr_md5);

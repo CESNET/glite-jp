@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "types.h"
 #include "context.h"
@@ -37,7 +38,7 @@ char *glite_jp_error_chain(glite_jp_context_t ctx)
 		ret = realloc(ret,len + add + 1);
 		strncpy(ret + len,buf,add); ret[len += add] = 0;
 		strcat(indent,"  ");
-	} while (ep = ep->reason);
+	} while ((ep = ep->reason));
 
 	return ret;
 }
@@ -97,7 +98,7 @@ int glite_jp_run_deferred(glite_jp_context_t ctx)
 	glite_jp_clear_error(ctx);
 	for (cnt=0;ctx->deferred_func[cnt];cnt++);
 	for (i=0; i<cnt; i++) {
-		if (ret = (*ctx->deferred_func)(ctx,*ctx->deferred_arg)) {
+		if ((ret = (*ctx->deferred_func)(ctx,*ctx->deferred_arg))) {
 			glite_jp_error_t	err;
 			char	desc[100];
 

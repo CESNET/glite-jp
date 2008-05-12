@@ -25,8 +25,8 @@ VPATH=${top_srcdir}/src:${top_srcdir}/test:${top_srcdir}/project:${jpproject}
 GLOBUSINC:= -I${globus_prefix}/include/${nothrflavour}
 GLOBUSINCTHR:= -I${globus_prefix}/include/${thrflavour}
 
-DEBUG:=-g -O0 
-CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${stagedir}/include
+DEBUG:=-g -O0 -W -Wno-sign-compare
+CFLAGS:=${DEBUG} -D_GNU_SOURCE -I. -I${top_srcdir}/interface -I${stagedir}/include
 
 offset=0
 version_info:=-version-info ${shell \
@@ -38,12 +38,12 @@ LINKXX:=libtool --mode=link ${CXX} ${LDFLAGS}
 INSTALL:=libtool --mode=install install
 COMPILE:=libtool --mode=compile ${CC} ${CFLAGS}
 
-HDRS:=types.h context.h attr.h known_attr.h backend.h builtin_plugins.h file_plugin.h
+HDRS:=types.h context.h attr.h known_attr.h backend.h builtin_plugins.h file_plugin.h indexdb.h
 
-SRCS:=context.c attr.c utils.c
+SRCS:=context.c attr.c utils.c indexdb.c
 OBJS:=${SRCS:.c=.lo}
 THROBJS:=${OBJS:.o=.thr.lo}
-LIBS:=-L${globus_prefix}/lib -lcrypto_${nothrflavour} -L${stagedir}/lib -lglite_jobid
+LIBS:=-L${globus_prefix}/lib -lcrypto_${nothrflavour} -L${stagedir}/lib -lglite_jobid -lglite_lbu_db
 THRLIBS:=-L${globus_prefix}/lib -lcrypto_${thrflavour}
 
 commonlib:= libglite_jp_common_${nothrflavour}.la

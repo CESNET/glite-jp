@@ -10,6 +10,8 @@
 #include <ctype.h>
 #include <string.h>
 
+#define GLITE_JP_INDEX_COMPILE 1
+
 #include <glite/lbu/trio.h>
 #include <glite/jobid/strmd5.h>
 #include <glite/jobid/cjobid.h>
@@ -18,6 +20,7 @@
 #include <glite/jp/db.h>
 #include <glite/jp/attr.h>
 #include "glite/jp/known_attr.h"
+#include "glite/jp/indexdb.h"
 
 #include "conf.h"
 #include "context.h"
@@ -29,9 +32,8 @@
 #define LOG_SQL 1
 #endif
 
-#define TABLE_PREFIX_DATA "attr_"
-#define SQLCMD_DROP_DATA_TABLE "DROP TABLE " TABLE_PREFIX_DATA "%s"
-#define SQLCMD_CREATE_DATA_TABLE "CREATE TABLE " TABLE_PREFIX_DATA "%s (\n\
+#define SQLCMD_DROP_DATA_TABLE "DROP TABLE " GLITE_JP_INDEXDB_TABLE_ATTR_PREFIX "%s"
+#define SQLCMD_CREATE_DATA_TABLE "CREATE TABLE " GLITE_JP_INDEXDB_TABLE_ATTR_PREFIX "%s (\n\
         `jobid`          CHAR(32)    BINARY NOT NULL,\n\
         `value`          %s          BINARY NOT NULL,\n\
         `full_value`     %s          NOT NULL,\n\
@@ -40,7 +42,7 @@
         INDEX (jobid),\n\
         INDEX (value)\n\
 ) ENGINE=innodb;"
-#define SQLCMD_INSERT_ATTRVAL "INSERT INTO " TABLE_PREFIX_DATA "%|Ss (jobid, value, full_value, origin) VALUES (\n\
+#define SQLCMD_INSERT_ATTRVAL "INSERT INTO " GLITE_JP_INDEXDB_TABLE_ATTR_PREFIX "%|Ss (jobid, value, full_value, origin) VALUES (\n\
 	'%|Ss',\n\
 	'%|Ss',\n\
 	'%|Ss',\n\
@@ -260,24 +262,6 @@ fail:
 }
 
 
-/**
- * Convert attribute name to attribute id.
- */
-char *glite_jpis_attr_name2id(const char *name) {
-	size_t i, len;
-	char *lname, *id;
-
-	len = strlen(name);
-	lname = malloc(len + 1);
-	for (i = 0; i < len + 1; i++) lname[i] = tolower(name[i]);
-	id = str2md5(lname);
-	free(lname);
-
-	return id;
-//	return str2md5(name);
-}
-
-
 /* Init the database. 
  *
  * \retval 0        OK
@@ -328,7 +312,7 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 		type_full = glite_jp_attrval_db_type_full(jpctx, attrs[i]);
 		type_index = glite_jp_attrval_db_type_index(jpctx, attrs[i], INDEX_LENGTH);
 
-		attrid = glite_jpis_attr_name2id(attrs[i]);
+		attrid = glite_jp_indexdb_attr2id(attrs[i]);
 		indexed = is_indexed(ctx->conf, attrs[i]);
 		if (glite_jp_db_ExecPreparedStmt(jpctx, stmt, 4,
 		  GLITE_LBU_DB_TYPE_VARCHAR, attrid,
@@ -415,7 +399,7 @@ int glite_jpis_dropDatabase(glite_jpis_context_t ctx) {
 	while ((ret = glite_jp_db_FetchRow(jpctx, stmt_tabs, 1, &len, &attrid)) > 0) {
 		snprintf(sql, sizeof(sql), SQLCMD_DROP_DATA_TABLE, attrid);
 		llprintf(LOG_SQL, "dropping '%s' ==> '%s'\n", attrid, sql);
-		if (glite_jp_db_ExecSQL(jpctx, sql, NULL) == -1) printf("warning: can't drop table '" TABLE_PREFIX_DATA "%s': %s (%s)\n", attrid, jpctx->error->desc, jpctx->error->source);
+		if (glite_jp_db_ExecSQL(jpctx, sql, NULL) == -1) printf("warning: can't drop table '" GLITE_JP_INDEXDB_TABLE_ATTR_PREFIX "%s': %s (%s)\n", attrid, jpctx->error->desc, jpctx->error->source);
 	}
 	if (ret != 0) goto fail;
 	glite_jp_db_FreeStmt(&stmt_tabs);
@@ -644,7 +628,7 @@ int glite_jpis_insertAttrVal(glite_jpis_context_t ctx, const char *jobid, glite_
 	char *sql, *table, *value, *full_value, *md5_jobid;
 	long int origin;
 
-	table = glite_jpis_attr_name2id(av->name);
+	table = glite_jp_indexdb_attr2id(av->name);
 	value = glite_jp_attrval_to_db_index(ctx->jpctx, av, INDEX_LENGTH);
 	full_value = glite_jp_attrval_to_db_full(ctx->jpctx, av);
 	md5_jobid = str2md5(jobid);

@@ -538,6 +538,8 @@ static int dump_importer(void)
 	dprintf("[%s] dump JP import request received\n", name);
 	if ( !debug ) syslog(LOG_INFO, "dump JP import request received");
 
+	soap_begin(soap);
+
 	ret = 0;
 	if ( parse_msg(msg, tab) < 0 ) {
 		dprintf("[%s] Wrong format of message!\n", name);
@@ -569,7 +571,6 @@ static int dump_importer(void)
 			}
 			if (perf.name && !perf.limit) stats_get_limit(&perf, name);
 		}
-		soap_begin(soap)
 		if (!(sink & 2)) {
 #endif
 		retry_upload = 2;
