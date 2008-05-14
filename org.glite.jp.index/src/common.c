@@ -13,20 +13,15 @@
 #define WHITE_SPACE_SET "\n\r \t"
 
 
-void glite_jpis_trim_soap(struct soap *soap, char **soap_str) {
+void glite_jpis_trim(char *str) {
 	size_t pos, len;
-	char *s;
 
-	if (!*soap_str) return;
+	if (!str) return;
 
-	pos = strspn(*soap_str, WHITE_SPACE_SET);
-	len = strcspn(*soap_str + pos, WHITE_SPACE_SET);
-	s = soap_malloc(soap, len + 1);
-	memcpy(s, *soap_str + pos, len);
-	s[len] = '\0';
-
-	soap_dealloc(soap, *soap_str);
-	*soap_str = s;
+	pos = strspn(str, WHITE_SPACE_SET);
+	len = strcspn(str + pos, WHITE_SPACE_SET);
+	if (pos) memmove(str, str + pos, len);
+	str[len] = '\0';
 }
 
 

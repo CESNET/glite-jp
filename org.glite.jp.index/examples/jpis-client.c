@@ -174,9 +174,9 @@ static int query_recv(struct soap *soap, int fd, struct _jpelem__QueryJobs *qj) 
 
 	/* strip white-space characters from attributes */
 	for (i = 0; i < qj->__sizeattributes; i++)
-		glite_jpis_trim_soap(soap, &qj->attributes[i]);
+		glite_jpis_trim(qj->attributes[i]);
 	for (i = 0; i < qj->__sizeconditions; i++)
-		glite_jpis_trim_soap(soap, &GLITE_SECURITY_GSOAP_LIST_GET(qj->conditions, i)->attr);
+		glite_jpis_trim(GLITE_SECURITY_GSOAP_LIST_GET(qj->conditions, i)->attr);
 
 	return 0;
 }

@@ -748,9 +748,11 @@ int glite_jpis_feeding(glite_jpis_context_t ctx, const char *fname, const char *
 				avs[i].name = ctx->conf->attrs[iname];
 				iname++;
 			} while (strcasecmp(avs[i].name, GLITE_JP_ATTR_JOBID) == 0 || strcasecmp(avs[i].name, GLITE_JP_ATTR_OWNER) == 0);
+			glite_jpis_trim(token);
 			avs[i].value = token;
 			avs[i].timestamp = time(NULL);
-//			printf(stderr, "\t %d: %s = '%s'\n", i, avs[i].name, avs[i].value);
+			avs[i].origin = GLITE_JP_ATTR_ORIG_FILE;
+//			printf("\t %d: %s = '%s'\n", i, avs[i].name, avs[i].value);
 			i++;
 
 			token = strtok_r(NULL, FEEDING_SEPARATORS, &lasts);
