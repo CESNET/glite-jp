@@ -82,16 +82,26 @@ authz_read(authz_jp_system_state_struct *state, char *object, char *client)
 	int db_retn;
 	glite_lbu_Statement db_res;
 	char *db_row[1] = { NULL };
+	char *p;
+
+        /* skip the gsiftp:// or ftp:// prefix */
+        p = strstr(object, "ftp://");
+        if (p == NULL) {
+           result = GLOBUS_FAILURE;
+           GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(
+              result,
+              GLOBUS_GSI_AUTHZ_CALLOUT_AUTHZ_DENIED_BY_CALLOUT,
+              ("Unsupported file type, access denied"));
+           goto out;
+        }
+        p += 6;
+
+        /* find where the filename starts in the URL */
+        p = strchr(p, '/');
 
         result = query_db(state->jp_ctx, &db_res,
                           "select j.owner from jobs j,files f where "
-                          "f.ext_url='%|Ss' and j.jobid=f.jobid", object);
-        if (result != GLOBUS_SUCCESS) {
-            /* XXX clear error stack ?*/
-            result = query_db(state->jp_ctx, &db_res,
-                               "select j.owner from jobs j,files f where "
-                               "f.ext_url='gsi%|Ss' and j.jobid=f.jobid", object);
-        }
+                          "f.int_path='%|Ss' and j.jobid=f.jobid", p);
         if (result != GLOBUS_SUCCESS)
             return result;
 
@@ -129,19 +139,30 @@ authz_write(authz_jp_system_state_struct *state, char *object, char *client)
 	int db_retn;
 	glite_lbu_Statement db_res;
 	char *db_row[1] = { NULL };
+        char *p;
+
+        /* skip the gsiftp:// or ftp:// prefix */
+        p = strstr(object, "ftp://");
+        if (p == NULL) {
+           result = GLOBUS_FAILURE;
+           GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(
+              result,
+              GLOBUS_GSI_AUTHZ_CALLOUT_AUTHZ_DENIED_BY_CALLOUT,
+              ("Unsupported file type, access denied"));
+           goto out;
+        }
+        p += 6;
+
+        /* find where the filename starts in the URL */
+        p = strchr(p, '/');
 
 	result = query_db(state->jp_ctx, &db_res,
-                           "select state from files where ext_url='%|Ss' and ul_userid='%|Ss'",
-                           object, client);
-        if (result != GLOBUS_SUCCESS) {
-            /* XXX clear error stack ? */
-            result = query_db(state->jp_ctx, &db_res,
-                              "select state from files where ext_url='gsi%|Ss' and ul_userid='%|Ss'",
-                              object, client);
-        }
-        if (result != GLOBUS_SUCCESS) {
+                           "select f.state from files f, users u "
+			   "where f.int_path='%|Ss' and f.ul_userid=u.userid "
+			   "and u.cert_subj='%|Ss'",
+                           p, client);
+        if (result != GLOBUS_SUCCESS)
             return result;
-        }
 
 	db_retn = glite_jp_db_FetchRow(state->jp_ctx, db_res, 1, NULL, db_row);
 	if (db_retn != 1) {
