@@ -226,7 +226,7 @@ int glite_jp_attrval_cmp(glite_jp_context_t ctx,const glite_jp_attrval_t *a,cons
 		return glite_jp_stack_error(ctx,&err);
 	}
 
-	return ap->cmp(ap->pctx,a,b,result);
+	return ap->cmp ? ap->cmp(ap->pctx,a,b,result) : fb_cmp(ap->pctx,a,b,result);
 }
 
 char *glite_jp_attrval_to_db_full(glite_jp_context_t ctx,const glite_jp_attrval_t *attr)
@@ -234,7 +234,7 @@ char *glite_jp_attrval_to_db_full(glite_jp_context_t ctx,const glite_jp_attrval_
 	glite_jp_tplug_data_t	*ap = get_plugin(ctx,attr->name);
 
 	glite_jp_clear_error(ctx);
-	return ap->to_db_full(ap->pctx,attr);
+	return ap->to_db_full ? ap->to_db_full(ap->pctx,attr) : fb_to_db_full(ap->pctx,attr);
 }
 
 char *glite_jp_attrval_to_db_index(glite_jp_context_t ctx,const glite_jp_attrval_t *attr,int len)
@@ -242,7 +242,7 @@ char *glite_jp_attrval_to_db_index(glite_jp_context_t ctx,const glite_jp_attrval
 	glite_jp_tplug_data_t	*ap = get_plugin(ctx,attr->name);
 
 	glite_jp_clear_error(ctx);
-	return ap->to_db_index(ap->pctx,attr,len);
+	return ap->to_db_index ? ap->to_db_index(ap->pctx,attr,len) : fb_to_db_index(ap->pctx,attr,len);
 }
 
 
@@ -251,7 +251,7 @@ int glite_jp_attrval_from_db(glite_jp_context_t ctx,const char *str,glite_jp_att
 	glite_jp_tplug_data_t	*ap = get_plugin(ctx,attr->name);
 
 	glite_jp_clear_error(ctx);
-	return ap->from_db(ap->pctx,str,attr);
+	return ap->from_db ? ap->from_db(ap->pctx,str,attr) : fb_from_db(ap->pctx,str,attr);
 }
 
 const char *glite_jp_attrval_db_type_full(glite_jp_context_t ctx,const char *attr)
@@ -259,7 +259,7 @@ const char *glite_jp_attrval_db_type_full(glite_jp_context_t ctx,const char *att
 	glite_jp_tplug_data_t	*ap = get_plugin(ctx,attr);
 
 	glite_jp_clear_error(ctx);
-	return ap->db_type_full(ap->pctx,attr);
+	return ap->db_type_full ? ap->db_type_full(ap->pctx,attr) : fb_db_type_full(ap->pctx,attr);
 }
 
 const char *glite_jp_attrval_db_type_index(glite_jp_context_t ctx,const char *attr,int len)
@@ -267,7 +267,7 @@ const char *glite_jp_attrval_db_type_index(glite_jp_context_t ctx,const char *at
 	glite_jp_tplug_data_t	*ap = get_plugin(ctx,attr);
 
 	glite_jp_clear_error(ctx);
-	return ap->db_type_index(ap->pctx,attr,len);
+	return ap->db_type_full ?  ap->db_type_index(ap->pctx,attr,len) : fb_db_type_index(ap->pctx,attr,len);
 }
 
 /* XXX: UNIX time, should be ISO blahblah */
