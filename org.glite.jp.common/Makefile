@@ -38,7 +38,7 @@ LINKXX:=libtool --mode=link ${CXX} ${LDFLAGS}
 INSTALL:=libtool --mode=install install
 COMPILE:=libtool --mode=compile ${CC} ${CFLAGS}
 
-HDRS:=types.h context.h attr.h known_attr.h backend.h builtin_plugins.h file_plugin.h indexdb.h
+HDRS:=types.h context.h attr.h known_attr.h backend.h builtin_plugins.h file_plugin.h indexdb.h type_plugin.h
 
 SRCS:=context.c attr.c utils.c indexdb.c
 OBJS:=${SRCS:.c=.lo}
