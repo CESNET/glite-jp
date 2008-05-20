@@ -1844,7 +1844,7 @@ int glite_jppsbe_refresh_feed(
 	char *stmt = NULL;
 	char *e = NULL;
 	glite_lbu_TimeToDB(expires, &e);
-	trio_asprintf(&stmt, "update feeds set expires=%s where feedid=%s",
+	trio_asprintf(&stmt, "update feeds set expires=%s where feedid='%s'",
 		e, feed_id);
 	if (!stmt) {
                 err.code = ENOMEM;

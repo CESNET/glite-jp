@@ -790,7 +790,7 @@ int glite_jpps_register_feed(
 int glite_jpps_refresh_feed(glite_jp_context_t ctx, char *feed_id,  time_t *expires){
 	time(expires); *expires += FEED_TTL;
 
-	glite_jppsbe_refresh_feed(ctx, feed_id, expires);
+	glite_jppsbe_refresh_feed(ctx, feed_id, *expires);
 
 	printf("Feed %s has been refreshed.\n", feed_id);
 	
