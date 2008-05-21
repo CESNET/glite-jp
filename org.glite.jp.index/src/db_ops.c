@@ -34,14 +34,14 @@
 
 #define SQLCMD_DROP_DATA_TABLE "DROP TABLE " GLITE_JP_INDEXDB_TABLE_ATTR_PREFIX "%s"
 #define SQLCMD_CREATE_DATA_TABLE "CREATE TABLE " GLITE_JP_INDEXDB_TABLE_ATTR_PREFIX "%s (\n\
-        `jobid`          CHAR(32)    BINARY NOT NULL,\n\
-        `value`          %s          BINARY NOT NULL,\n\
+        `jobid`          CHAR(32)    NOT NULL,\n\
+        `value`          %s          NOT NULL,\n\
         `full_value`     %s          NOT NULL,\n\
         `origin`         INT         NOT NULL,\n\
 \n\
         INDEX (jobid),\n\
         INDEX (value)\n\
-) ENGINE=innodb;"
+) CHARACTER SET utf8 COLLATE utf8_bin ENGINE=innodb;"
 #define SQLCMD_INSERT_ATTRVAL "INSERT INTO " GLITE_JP_INDEXDB_TABLE_ATTR_PREFIX "%|Ss (jobid, value, full_value, origin) VALUES (\n\
 	'%|Ss',\n\
 	'%|Ss',\n\
