@@ -267,7 +267,7 @@ const char *glite_jp_attrval_db_type_index(glite_jp_context_t ctx,const char *at
 	glite_jp_tplug_data_t	*ap = get_plugin(ctx,attr);
 
 	glite_jp_clear_error(ctx);
-	return ap->db_type_full ?  ap->db_type_index(ap->pctx,attr,len) : fb_type_index(ap->pctx,attr,len);
+	return ap->db_type_index ?  ap->db_type_index(ap->pctx,attr,len) : fb_type_index(ap->pctx,attr,len);
 }
 
 /* XXX: UNIX time, should be ISO blahblah */
