@@ -206,6 +206,7 @@ static glite_jp_tplug_data_t *get_plugin(glite_jp_context_t ctx,const char *anam
 			free(ns);
 			return p;
 		}
+		cp++;
 	}
 	free(ns);
 	return &fallback_plugin;	/* XXX: is it always desirable? */
