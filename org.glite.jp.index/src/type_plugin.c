@@ -44,10 +44,11 @@ int glite_jp_typeplugin_load(glite_jp_context_t ctx,const char *so){
         if (init(ctx, NULL, data)) return -1;
 
         i = 0;
-        if (ctx->plugins) for (i=0; ctx->plugins[i]; i++);
-        ctx->plugins = realloc(ctx->plugins, (i+2) * sizeof *ctx->plugins);
-        ctx->plugins[i] = data;
-        ctx->plugins[i+1] = NULL;
+        if (ctx->type_plugins) for (i=0; ctx->type_plugins[i]; i++);
+        ctx->type_plugins = realloc(ctx->type_plugins, 
+		(i+2) * sizeof *ctx->type_plugins);
+        ctx->type_plugins[i] = data;
+        ctx->type_plugins[i+1] = NULL;
 
         /* TODO: check consistency of uri+class pairs wrt. previous plugins */
 
