@@ -76,6 +76,7 @@ int main(int argc, char *argv[])
 	glite_jpis_context_t	isctx;
 	int retval = 0;
 	char *err;
+	int 			i;
 
 	glite_jp_init_context(&ctx);
 
@@ -97,11 +98,9 @@ int main(int argc, char *argv[])
 	/* daemonize */
 	if (!conf->debug) glite_srvbones_daemonize("glite-jp-indexd", conf->pidfile, conf->logfile);
 
-	/* XXX preliminary support for plugins 
+	/* load plugins */ 
 	for (i=0; conf->plugins[i]; i++)
 		glite_jp_typeplugin_load(ctx,conf->plugins[i]);
-	*/
-	
 
 	if (conf->delete_db) {
 		if (glite_jpis_dropDatabase(isctx) != 0) {
