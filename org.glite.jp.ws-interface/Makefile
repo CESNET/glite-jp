@@ -59,5 +59,5 @@ JobProvenance.html: doc.xml JobProvenancePS.xml JobProvenanceIS.xml JobProvenanc
 	-${XMLLINT} --valid --noout doc-html.xml
 	-${TIDY} -asxhtml -m $@
 
-jpdev.xml: jpdev.xml.sh
+jpdev.xml: jpdev.xml.sh JobProvenancePS.xml JobProvenanceIS.xml JobProvenanceTypes.xml
 	${top_srcdir}/src/jpdev.sh $< > $@

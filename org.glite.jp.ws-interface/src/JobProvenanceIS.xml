@@ -91,6 +91,9 @@
                         <output name="indexedAttrs" type="xsd:string" list="yes">
                                 List of indexed attributes which will JPPS send to JPIS.
                         </output>
+			<output name="singlevalAttrs" type="xsd:string" list="yes">
+                                List of indexed single value attributes which will JPPS send to JPIS.
+                        </output>
                         <output name="plugins" type="xsd:string" optional="yes" list="yes">
                                 List of type plugins.
                         </output>
