@@ -9,7 +9,7 @@ create table jobs (
 	unique (dg_jobid),
 	index (jobid),
 	index (dg_jobid)
-) engine=innodb;
+) character set utf8 collate utf8_bin engine=innodb;
 
 create table attrs (
 	`attrid`		char(32)	binary not null,
@@ -20,7 +20,7 @@ create table attrs (
 	primary key (attrid),
 	index (attrid),
 	index (name)
-) engine=innodb;
+) character set utf8 collate utf8_bin engine=innodb;
 
 create table feeds (
 	`uniqueid`	int		auto_increment not null,
@@ -35,7 +35,7 @@ create table feeds (
         index (uniqueid),
         index (feedid),
 	index (state)
-) engine=innodb;
+) character set utf8 collate utf8_bin engine=innodb;
 
 create table acls (
 	`aclid`           char(32)        binary not null,
@@ -43,7 +43,7 @@ create table acls (
 	`refcnt`          int             not null,
 
         primary key (aclid)
-) engine=innodb;
+) character set utf8 collate utf8_bin engine=innodb;
 
 create table users (
 	`userid`          char(32)        binary not null,
@@ -51,7 +51,7 @@ create table users (
 
         primary key (userid),
         unique (cert_subj)
-) engine=innodb;
+) character set utf8 collate utf8_bin engine=innodb;
 
 # data tables - created one for each configured and indexed attribute,
 # in future values of the non-indexed attributes will be stored in attr_values
@@ -64,7 +64,7 @@ create table users (
 #
 #        index (jobid),
 #        index (value)
-#) engine=innodb;
+#) character set utf8 collate utf8_bin engine=innodb;
 
 
 # ---- future schema improvements ----
@@ -81,7 +81,7 @@ create table users (
 #	index (jobid),
 #	index (attrid),
 #	index (value)
-#) engine=innodb;
+#) character set utf8 collate utf8_bin engine=innodb;
 
 #create table attr_multivalues (
 #	`jobid`           char(32),
@@ -93,4 +93,4 @@ create table users (
 #	index (jobid),
 #	index (attrid)
 #	index (value)
-#) engine=innodb;
+#) character set utf8 collate utf8_bin engine=innodb;

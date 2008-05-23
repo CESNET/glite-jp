@@ -134,6 +134,7 @@ void glite_jp_free_conf(glite_jp_is_conf *conf)
 
 	if (conf->attrs) for (i = 0; conf->attrs[i]; i++) free(conf->attrs[i]);
 	if (conf->indexed_attrs) for (i = 0; conf->indexed_attrs[i]; i++) free(conf->indexed_attrs[i]);
+	if (conf->singleval_attrs) for (i = 0; conf->singleval_attrs[i]; i++) free(conf->singleval_attrs[i]);
 	if (conf->plugins) for (i = 0; conf->plugins[i]; i++) free(conf->plugins[i]);
 	if (conf->feeds) for (i = 0; conf->feeds[i]; i++) {
 		feed = conf->feeds[i];
@@ -144,6 +145,7 @@ void glite_jp_free_conf(glite_jp_is_conf *conf)
 	}
 	free(conf->attrs);
 	free(conf->indexed_attrs);
+	free(conf->singleval_attrs);
 	free(conf->plugins);
 	free(conf->feeds);
 	free(conf);
@@ -201,6 +203,11 @@ static int read_conf(glite_jp_is_conf *conf, char *conf_file)
 		for (i=0; i < out.__sizeindexedAttrs; i++) {
 			conf->indexed_attrs[i] = strdup(out.indexedAttrs[i]);
 		}
+	}
+	if (out.__sizesinglevalAttrs){
+		conf->singleval_attrs = calloc(out.__sizesinglevalAttrs + 1, sizeof(*conf->singleval_attrs));
+		for (i = 0; i < out.__sizesinglevalAttrs; i++)
+			 conf->singleval_attrs[i] = strdup(out.singlevalAttrs[i]);
 	}
 	if (out.__sizeplugins) {
 		conf->plugins = calloc(out.__sizeplugins + 1, sizeof(*conf->plugins));

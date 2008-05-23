@@ -42,12 +42,29 @@
         INDEX (jobid),\n\
         INDEX (value)\n\
 ) CHARACTER SET utf8 COLLATE utf8_bin ENGINE=innodb;"
+
+#define SQLCMD_CREATE_JOBS_TABLE_BEGIN "CREATE TABLE jobs (\n\
+	`jobid`         char(32)        NOT NULL,\n\
+        `dg_jobid`        varchar(255)    NOT NULL,\n\
+        `ownerid`         char(32)        NOT NULL,\n\
+        `aclid`           char(32)        NOT NULL,\n\
+        `ps`            varchar(255)    NOT NULL,\n"
+#define SQLCMD_CREATE_JOBS_TABLE_END "\
+	primary key (jobid),\n\
+        unique (dg_jobid),\n\
+        index (jobid),\n\
+        index (dg_jobid)\n\
+) character set utf8 collate utf8_bin engine=innodb;"
+
 #define SQLCMD_INSERT_ATTRVAL "INSERT INTO " GLITE_JP_INDEXDB_TABLE_ATTR_PREFIX "%|Ss (jobid, value, full_value, origin) VALUES (\n\
 	'%|Ss',\n\
 	'%|Ss',\n\
 	'%|Ss',\n\
 	'%ld'\n\
 )"
+#define SQL_CMD_INSERT_SINGLEATTRVAL "UPDATE jobs \n\
+	SET %s='%s' \n\
+	WHERE dg_jobid='%s'"
 #define INDEX_LENGTH 255
 
 #define WORD_SWAP(X) ((((X) >> 8) & 0xFF) | (((X) & 0xFF) << 8))
@@ -75,6 +92,22 @@ static int is_indexed(glite_jp_is_conf *conf, const char *attr) {
 	return 0;
 }
 
+static int is_singleval(glite_jp_is_conf *conf, const char *attr) {
+        size_t i;
+
+        i = 0;
+        if (conf->singleval_attrs) while (conf->singleval_attrs[i]) {
+                if (strcasecmp(attr, conf->singleval_attrs[i]) == 0) return 1;
+                i++;
+        }
+        return 0;
+}
+
+static char *get_simple_name(char *attr){
+	char *p = strrchr(attr, ':');
+	if (p) return p+1;
+	else return attr;
+}
 
 static size_t db_arg1_length(glite_jpis_context_t isctx, glite_jp_query_rec_t *query) {
 	size_t len;
@@ -369,6 +402,21 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 	}
 	glite_jp_db_FreeStmt(&stmt);
 
+	// create jobs table
+	snprintf(sql, sizeof(sql) - 1, SQLCMD_CREATE_JOBS_TABLE_BEGIN);
+	if (ctx->conf->singleval_attrs) for (i = 0; ctx->conf->singleval_attrs[i]; i++)
+		snprintf(sql + strlen(sql), sizeof(sql) - 1, 
+			"	`%s`	%s	NOT NULL,\n	index (%s),\n",
+			get_simple_name(ctx->conf->singleval_attrs[i]),
+			glite_jp_attrval_db_type_full(jpctx, ctx->conf->singleval_attrs[i]),
+			get_simple_name(ctx->conf->singleval_attrs[i]));
+	snprintf(sql + strlen(sql), sizeof(sql) - 1, SQLCMD_CREATE_JOBS_TABLE_END);
+	llprintf(LOG_SQL, "sql=%s\n", sql);
+	if ((glite_jp_db_ExecSQL(jpctx, sql, NULL)) == -1) {
+                        glite_jpis_stack_error(ctx->jpctx, EAGAIN, "Cannot create table 'jobs'!");
+                        goto fail;
+                }
+
 	return 0;
 
 fail_conds:
@@ -403,11 +451,13 @@ int glite_jpis_dropDatabase(glite_jpis_context_t ctx) {
 	}
 	if (ret != 0) goto fail;
 	glite_jp_db_FreeStmt(&stmt_tabs);
+	snprintf(sql, sizeof(sql)-1, "DROP TABLE jobs");
+	llprintf(LOG_SQL, "dropping 'jobs'");
+	if (glite_jp_db_ExecSQL(jpctx, sql, NULL) == -1) printf("warning: can't drop table 'jobs'\n");
 
 	// drop feeds and atributes
 	if (glite_jp_db_ExecSQL(jpctx, "DELETE FROM attrs", NULL) == -1) goto fail;
 	if (glite_jp_db_ExecSQL(jpctx, "DELETE FROM feeds", NULL) == -1) goto fail;
-	if (glite_jp_db_ExecSQL(jpctx, "DELETE FROM jobs", NULL) == -1) goto fail;
 	if (glite_jp_db_ExecSQL(jpctx, "DELETE FROM users", NULL) == -1) goto fail;
 	if (glite_jp_db_ExecSQL(jpctx, "DELETE FROM acls", NULL) == -1) goto fail;
 
@@ -627,6 +677,11 @@ int glite_jpis_destroyTryReconnectFeed(glite_jpis_context_t ctx, long int unique
 int glite_jpis_insertAttrVal(glite_jpis_context_t ctx, const char *jobid, glite_jp_attrval_t *av) {
 	char *sql, *table, *value, *full_value, *md5_jobid;
 	long int origin;
+	glite_jp_error_t err;
+
+	glite_jp_clear_error(ctx->jpctx);
+        memset(&err,0,sizeof err);
+        err.source = __FUNCTION__;
 
 	table = glite_jp_indexdb_attr2id(av->name);
 	value = glite_jp_attrval_to_db_index(ctx->jpctx, av, INDEX_LENGTH);
@@ -634,20 +689,39 @@ int glite_jpis_insertAttrVal(glite_jpis_context_t ctx, const char *jobid, glite_
 	md5_jobid = str2md5(jobid);
 	origin = av->origin;
 	trio_asprintf(&sql, SQLCMD_INSERT_ATTRVAL, table, md5_jobid, value, full_value, origin);
-	free(md5_jobid);
-	free(table);
-	free(value);
-	free(full_value);
 	llprintf(LOG_SQL, "(%s) sql=%s\n", av->name, sql);
 //	if (ctx->conf->feeding) printf("FEED: %s\n", sql);
 //	else
-	if (glite_jp_db_ExecSQL(ctx->jpctx, sql, NULL) != 1) {
-		free(sql);
-		return ctx->jpctx->error->code;
+	if (glite_jp_db_ExecSQL(ctx->jpctx, sql, NULL) != 1){ 
+		err.code = EIO;
+		err.desc = "DB access failed";
+		goto cleanup;
 	}
-	free(sql);
+	free(sql); sql=NULL;
 
-	return 0;
+	if (is_singleval(ctx->conf, av->name)){
+		trio_asprintf(&sql, SQL_CMD_INSERT_SINGLEATTRVAL, 
+			get_simple_name(av->name), value, jobid);
+		llprintf(LOG_SQL, "(%s) sql=%s\n", av->name, sql);
+		if (glite_jp_db_ExecSQL(ctx->jpctx, sql, NULL) != 1){
+			err.code = EIO;
+                	err.desc = "DB access failed";
+	                goto cleanup;
+		}
+		free(sql);sql=NULL;
+	}
+
+cleanup:
+	free(md5_jobid);
+        free(table);
+        free(value);
+        free(full_value);
+
+	if (err.code) {
+                return glite_jpis_stack_error(ctx->jpctx, err.code, err.desc);
+        } else {
+                return 0;
+        }
 }
 
 

@@ -53,7 +53,7 @@ ps_prefix:=${ws_prefix}
 
 SRCS:= conf.c bones_server.c soap_ops.c soap_ps_calls.c common.c \
 	${is_prefix}Server.c ${ps_prefix}Client.c ${ws_prefix}C.c \
-	ws_ps_typeref.c ws_is_typeref.c db_ops.c context.c
+	ws_ps_typeref.c ws_is_typeref.c db_ops.c context.c type_plugin.c
 
 EXA_TEST_SRCS:=jpis-test.c ${is_prefix}Client.c ${is_prefix}C.c context.c db_ops.c conf.c ws_is_typeref.c common.c
 EXA_DB_SRCS:=jpis-db-internal.c db_ops.c conf.c context.c ws_is_typeref.c common.c
