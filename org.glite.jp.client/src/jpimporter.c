@@ -61,7 +61,7 @@ typedef struct {
 #define JP_REPEAT_TIMEOUT			360
 #define JP_GIVUP_TIMEOUT			3600
 #define PID_POOL_SIZE				20
-#define DUMP_SLAVES_DEFAULT			1
+#define DEFAULT_DUMP_SLAVES_NUMBER		1
 
 
 static int		debug = 0;
