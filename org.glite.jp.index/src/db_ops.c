@@ -307,7 +307,7 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 	size_t i;
 	int indexed, state, locked, nattrs;
 	size_t conds_len;
-	char sql[512];
+	char sql[2048];
 	glite_jp_is_feed **feeds;
 	void *conds;
 	glite_jp_context_t jpctx = ctx->jpctx;
@@ -405,12 +405,12 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 	// create jobs table
 	snprintf(sql, sizeof(sql) - 1, SQLCMD_CREATE_JOBS_TABLE_BEGIN);
 	if (ctx->conf->singleval_attrs) for (i = 0; ctx->conf->singleval_attrs[i]; i++)
-		snprintf(sql + strlen(sql), sizeof(sql) - 1, 
+		snprintf(sql + strlen(sql), sizeof(sql) - strlen(sql), 
 			"	`%s`	%s	NOT NULL,\n	index (%s),\n",
 			get_simple_name(ctx->conf->singleval_attrs[i]),
-			glite_jp_attrval_db_type_full(jpctx, ctx->conf->singleval_attrs[i]),
+			glite_jp_attrval_db_type_index(jpctx, ctx->conf->singleval_attrs[i], INDEX_LENGTH),
 			get_simple_name(ctx->conf->singleval_attrs[i]));
-	snprintf(sql + strlen(sql), sizeof(sql) - 1, SQLCMD_CREATE_JOBS_TABLE_END);
+	snprintf(sql + strlen(sql), sizeof(sql) - strlen(sql), SQLCMD_CREATE_JOBS_TABLE_END);
 	llprintf(LOG_SQL, "sql=%s\n", sql);
 	if ((glite_jp_db_ExecSQL(jpctx, sql, NULL)) == -1) {
                         glite_jpis_stack_error(ctx->jpctx, EAGAIN, "Cannot create table 'jobs'!");
