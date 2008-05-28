@@ -246,13 +246,19 @@ int main(int argc,char *argv[])
 		struct _jpelem__GetJobAttributes	in;
 		struct _jpelem__GetJobAttributesResponse	out;
 		struct jptype__attrValue	*outav;
+
+		int	rep = 1;
 		
-		if (argc != 4) usage(argv[0]);
+		if (argc < 4 || argc > 5) usage(argv[0]);
+
+		if (argc == 5) rep = atoi(argv[4]); 
+
 		in.jobid = argv[2];
 		in.__sizeattributes = 1;
 		in.attributes = &argv[3];
 
-		if (!(ret = check_fault(soap,soap_call___jpsrv__GetJobAttributes(soap,server,"",&in,&out))))
+		soap->omode |= SOAP_IO_KEEPALIVE;
+		for (;rep;rep--) if (!(ret = check_fault(soap,soap_call___jpsrv__GetJobAttributes(soap,server,"",&in,&out))))
 		{
 			int	i;
 
