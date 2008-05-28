@@ -63,7 +63,7 @@
 	'%ld'\n\
 )"
 #define SQL_CMD_INSERT_SINGLEATTRVAL "UPDATE jobs \n\
-	SET %s='%s' \n\
+	SET attr_%s='%s' \n\
 	WHERE dg_jobid='%s'"
 #define INDEX_LENGTH 255
 
@@ -101,12 +101,6 @@ static int is_singleval(glite_jp_is_conf *conf, const char *attr) {
                 i++;
         }
         return 0;
-}
-
-static char *get_simple_name(char *attr){
-	char *p = strrchr(attr, ':');
-	if (p) return p+1;
-	else return attr;
 }
 
 static size_t db_arg1_length(glite_jpis_context_t isctx, glite_jp_query_rec_t *query) {
@@ -406,10 +400,10 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 	snprintf(sql, sizeof(sql) - 1, SQLCMD_CREATE_JOBS_TABLE_BEGIN);
 	if (ctx->conf->singleval_attrs) for (i = 0; ctx->conf->singleval_attrs[i]; i++)
 		snprintf(sql + strlen(sql), sizeof(sql) - strlen(sql), 
-			"	`%s`	%s	NOT NULL,\n	index (%s),\n",
-			get_simple_name(ctx->conf->singleval_attrs[i]),
+			"	`attr_%s`	%s	NOT NULL,\n	index (attr_%s),\n",
+			glite_jp_indexdb_attr2id(ctx->conf->singleval_attrs[i]),
 			glite_jp_attrval_db_type_index(jpctx, ctx->conf->singleval_attrs[i], INDEX_LENGTH),
-			get_simple_name(ctx->conf->singleval_attrs[i]));
+			glite_jp_indexdb_attr2id(ctx->conf->singleval_attrs[i]));
 	snprintf(sql + strlen(sql), sizeof(sql) - strlen(sql), SQLCMD_CREATE_JOBS_TABLE_END);
 	llprintf(LOG_SQL, "sql=%s\n", sql);
 	if ((glite_jp_db_ExecSQL(jpctx, sql, NULL)) == -1) {
@@ -701,7 +695,7 @@ int glite_jpis_insertAttrVal(glite_jpis_context_t ctx, const char *jobid, glite_
 
 	if (is_singleval(ctx->conf, av->name)){
 		trio_asprintf(&sql, SQL_CMD_INSERT_SINGLEATTRVAL, 
-			get_simple_name(av->name), value, jobid);
+			glite_jp_indexdb_attr2id(av->name), value, jobid);
 		llprintf(LOG_SQL, "(%s) sql=%s\n", av->name, sql);
 		if (glite_jp_db_ExecSQL(ctx->jpctx, sql, NULL) != 1){
 			err.code = EIO;
