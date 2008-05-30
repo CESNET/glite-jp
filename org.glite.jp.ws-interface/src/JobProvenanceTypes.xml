@@ -117,6 +117,18 @@
 			<elem name="value" type="stringOrBlob" optional="yes">Value to compare attribute with.</elem>
 			<elem name="value2" type="stringOrBlob" optional="yes">Value to compare attribute with.</elem>
 		</struct>
+
+		<enum name="yesNo">
+			<val name="YES" />
+			<val name="NO" />
+		</enum>
+
+		<struct name="attrType">
+			Single type of an attribute
+			<elem name="name" type="xsd:string">Name of the attribute</elem>
+			<elem name="multival" type="yesNo">Cardinality of the attribute</elem>
+			<elem name="queriable" type="yesNo">Quariable attribute (indexed)</elem>
+		</struct>
 	
 		<list name="string"/>
 	</types>

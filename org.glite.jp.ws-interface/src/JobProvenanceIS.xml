@@ -85,14 +85,11 @@
 		<op name="ServerConfiguration">
 			Internal operation used for parsing XML config file.
 			Not called at all, only forcing gSoap to generate XML parsers.
-			<output name="attrs" type="xsd:string" list="yes">
+			<output name="attrs" type="attrType" list="yes">
                                 List of attributes which will JPPS send to JPIS.
                         </output>
                         <output name="indexedAttrs" type="xsd:string" list="yes">
                                 List of indexed attributes which will JPPS send to JPIS.
-                        </output>
-			<output name="singlevalAttrs" type="xsd:string" list="yes">
-                                List of indexed single value attributes which will JPPS send to JPIS.
                         </output>
                         <output name="plugins" type="xsd:string" optional="yes" list="yes">
                                 List of type plugins.
