@@ -36,7 +36,8 @@ typedef struct _glite_jp_is_conf {
 					// arrays are zero-terminated
 	char	**attrs;		// atributes to obtain
 	char	**indexed_attrs;	// list of indexed atributes
-	char	**singleval_attrs;	// list of single value attributes
+	char	**multival_attrs;	// list of multivalue attributes
+	char	**queriable_attrs;	// list of queriable attributes
 	char	**plugins;		// list of plugin.so's
 
 	glite_jp_is_feed	**feeds;	// null terminated list of feeds

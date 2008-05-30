@@ -80,27 +80,27 @@
 
 static int glite_jpis_db_queries_deserialize(glite_jp_query_rec_t **queries, void *blob, size_t blob_size) UNUSED;
 
-
-static int is_indexed(glite_jp_is_conf *conf, const char *attr) {
+static int find_attr(char **attrs, const char *attr){
 	size_t i;
 
-	i = 0;
-	while (conf->indexed_attrs[i]) {
-		if (strcasecmp(attr, conf->indexed_attrs[i]) == 0) return 1;
-		i++;
-	}
-	return 0;
-}
-
-static int is_singleval(glite_jp_is_conf *conf, const char *attr) {
-        size_t i;
-
         i = 0;
-        if (conf->singleval_attrs) while (conf->singleval_attrs[i]) {
-                if (strcasecmp(attr, conf->singleval_attrs[i]) == 0) return 1;
+	while (attrs[i]) {
+                if (strcasecmp(attr, attrs[i]) == 0) return 1;
                 i++;
         }
         return 0;
+}
+
+static int is_indexed(glite_jp_is_conf *conf, const char *attr) {
+	return find_attr(conf->indexed_attrs, attr);
+}
+
+static int is_singleval(glite_jp_is_conf *conf, const char *attr) {
+	return !find_attr(conf->multival_attrs, attr);
+}
+
+static int is_queriable(glite_jp_is_conf *conf, const char *attr){
+	return find_attr(conf->queriable_attrs, attr);
 }
 
 static size_t db_arg1_length(glite_jpis_context_t isctx, glite_jp_query_rec_t *query) {
@@ -398,12 +398,19 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 
 	// create jobs table
 	snprintf(sql, sizeof(sql) - 1, SQLCMD_CREATE_JOBS_TABLE_BEGIN);
-	if (ctx->conf->singleval_attrs) for (i = 0; ctx->conf->singleval_attrs[i]; i++)
-		snprintf(sql + strlen(sql), sizeof(sql) - strlen(sql), 
-			"	`attr_%s`	%s	NOT NULL,\n	index (attr_%s),\n",
-			glite_jp_indexdb_attr2id(ctx->conf->singleval_attrs[i]),
-			glite_jp_attrval_db_type_index(jpctx, ctx->conf->singleval_attrs[i], INDEX_LENGTH),
-			glite_jp_indexdb_attr2id(ctx->conf->singleval_attrs[i]));
+	if (ctx->conf->attrs) for (i = 0; ctx->conf->attrs[i]; i++)
+		if (is_singleval(ctx->conf, ctx->conf->attrs[i]) 
+			&& is_queriable(ctx->conf, ctx->conf->attrs[i])){
+			snprintf(sql + strlen(sql), sizeof(sql) - strlen(sql), 
+				"	`attr_%s`	%s	NOT NULL,\n",
+				glite_jp_indexdb_attr2id(ctx->conf->attrs[i]),
+				glite_jp_attrval_db_type_index(jpctx, ctx->conf->attrs[i], INDEX_LENGTH));
+				
+			if (is_indexed(ctx->conf, ctx->conf->attrs[i]))
+				snprintf(sql + strlen(sql), sizeof(sql) - strlen(sql),
+					"	index (attr_%s), \n",
+					glite_jp_indexdb_attr2id(ctx->conf->attrs[i]));
+		}
 	snprintf(sql + strlen(sql), sizeof(sql) - strlen(sql), SQLCMD_CREATE_JOBS_TABLE_END);
 	llprintf(LOG_SQL, "sql=%s\n", sql);
 	if ((glite_jp_db_ExecSQL(jpctx, sql, NULL)) == -1) {
@@ -693,7 +700,7 @@ int glite_jpis_insertAttrVal(glite_jpis_context_t ctx, const char *jobid, glite_
 	}
 	free(sql); sql=NULL;
 
-	if (is_singleval(ctx->conf, av->name)){
+	if (is_singleval(ctx->conf, av->name) && is_queriable(ctx->conf, av->name)){
 		trio_asprintf(&sql, SQL_CMD_INSERT_SINGLEATTRVAL, 
 			glite_jp_indexdb_attr2id(av->name), value, jobid);
 		llprintf(LOG_SQL, "(%s) sql=%s\n", av->name, sql);

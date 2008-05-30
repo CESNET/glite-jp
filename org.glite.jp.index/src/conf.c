@@ -134,8 +134,8 @@ void glite_jp_free_conf(glite_jp_is_conf *conf)
 
 	if (conf->attrs) for (i = 0; conf->attrs[i]; i++) free(conf->attrs[i]);
 	if (conf->indexed_attrs) for (i = 0; conf->indexed_attrs[i]; i++) free(conf->indexed_attrs[i]);
-	if (conf->singleval_attrs) for (i = 0; conf->singleval_attrs[i]; i++) free(conf->singleval_attrs[i]);
-	if (conf->plugins) for (i = 0; conf->plugins[i]; i++) free(conf->plugins[i]);
+	if (conf->multival_attrs) for (i = 0; conf->multival_attrs[i]; i++) free(conf->multival_attrs[i]);
+	if (conf->queriable_attrs) for (i = 0; conf->queriable_attrs[i]; i++) free(conf->queriable_attrs[i]);
 	if (conf->feeds) for (i = 0; conf->feeds[i]; i++) {
 		feed = conf->feeds[i];
 		free(feed->PS_URL);
@@ -145,7 +145,8 @@ void glite_jp_free_conf(glite_jp_is_conf *conf)
 	}
 	free(conf->attrs);
 	free(conf->indexed_attrs);
-	free(conf->singleval_attrs);
+	free(conf->multival_attrs);
+	free(conf->queriable_attrs);
 	free(conf->plugins);
 	free(conf->feeds);
 	free(conf);
@@ -194,8 +195,24 @@ static int read_conf(glite_jp_is_conf *conf, char *conf_file)
 
 	if (out.__sizeattrs) {
 		conf->attrs = calloc(out.__sizeattrs + 1, sizeof(*conf->attrs));
+		conf->multival_attrs = calloc(1, sizeof(*conf->multival_attrs));
+		conf->queriable_attrs = calloc(1, sizeof(*conf->queriable_attrs));
+		int mva = 0;
+		int qa = 0;
 		for (i=0; i < out.__sizeattrs; i++) {
-			conf->attrs[i] = strdup(out.attrs[i]);
+			struct jptype__attrType *attr;
+			attr = GLITE_SECURITY_GSOAP_LIST_GET(out.attrs, i);
+			conf->attrs[i] = strdup(attr->name);
+			if (attr->multival == jptype__yesNo__YES){
+				conf->multival_attrs = realloc(conf->multival_attrs, (mva+2)*sizeof(*conf->multival_attrs));
+				conf->multival_attrs[mva] = strdup(attr->name);
+				conf->multival_attrs[++mva] = NULL;
+			}
+			if (attr->queriable == jptype__yesNo__YES){
+				conf->queriable_attrs = realloc(conf->queriable_attrs, (qa+2)*sizeof(*conf->queriable_attrs));
+				conf->queriable_attrs[qa] = strdup(attr->name);
+				conf->queriable_attrs[++qa] = NULL;
+			}
 		}
 	}
 	if (out.__sizeindexedAttrs) {
@@ -203,11 +220,6 @@ static int read_conf(glite_jp_is_conf *conf, char *conf_file)
 		for (i=0; i < out.__sizeindexedAttrs; i++) {
 			conf->indexed_attrs[i] = strdup(out.indexedAttrs[i]);
 		}
-	}
-	if (out.__sizesinglevalAttrs){
-		conf->singleval_attrs = calloc(out.__sizesinglevalAttrs + 1, sizeof(*conf->singleval_attrs));
-		for (i = 0; i < out.__sizesinglevalAttrs; i++)
-			 conf->singleval_attrs[i] = strdup(out.singlevalAttrs[i]);
 	}
 	if (out.__sizeplugins) {
 		conf->plugins = calloc(out.__sizeplugins + 1, sizeof(*conf->plugins));
