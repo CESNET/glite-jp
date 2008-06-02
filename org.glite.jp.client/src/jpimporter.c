@@ -76,7 +76,7 @@ static char		sandbox_mdir[PATH_MAX] = GLITE_SANDBOX_IMPORTER_MDIR;
 static char		*store = NULL;
 static struct soap	*soap;
 
-static time_t		cert_mtime;
+static time_t		cert_mtime = 0;
 static char	   	*server_cert = NULL,
 			*server_key = NULL,
 			*cadir = NULL;
@@ -91,6 +91,8 @@ typedef struct {
 int			sink = 0;
 perf_t			perf = {name:NULL,};
 #endif
+static int gftp_initialized = 0;
+static globus_ftp_client_handle_t			hnd;
 
 
 static struct option opts[] = {
@@ -301,11 +303,13 @@ int main(int argc, char *argv[])
 	sigaddset(&sset, SIGINT);
 	sigprocmask(SIG_BLOCK, &sset, NULL);
 
-	soap = soap_new();
-	soap_init(soap);
+	soap = calloc(1, sizeof *soap);
+	soap_init2(soap, SOAP_IO_KEEPALIVE, SOAP_IO_KEEPALIVE);
+	soap_set_omode(soap, SOAP_IO_BUFFER);
 	soap_set_namespaces(soap, jpps__namespaces);
 
 	glite_gsplugin_init_context(&plugin_ctx);
+	glite_gsplugin_set_credential(plugin_ctx, mycred);
 	soap_register_plugin_arg(soap, glite_gsplugin,plugin_ctx);
 
 	if ( (reg_pid = slave(reg_importer, "reg-imp")) < 0 ) {
@@ -429,6 +433,9 @@ static int slave(int (*fn)(void), const char *nm)
 	}
     dprintf("[%s] Terminating after %d connections\n", name, conn_cnt);
     if ( !debug ) syslog(LOG_INFO, "Terminating after %d connections", conn_cnt);
+
+    if (gftp_initialized--)
+	globus_ftp_client_handle_destroy(&hnd);
 
 	exit(0);
 }
@@ -886,10 +893,10 @@ static void gftp_data_cb(
 
 static int gftp_put_file(const char *url, int fhnd)
 {
-	globus_ftp_client_handle_t			hnd;
-	globus_ftp_client_operationattr_t	op_attr;
-	globus_ftp_client_handleattr_t		hnd_attr;
+	static globus_ftp_client_operationattr_t	op_attr;
+	static globus_ftp_client_handleattr_t		hnd_attr;
 
+	if (!gftp_initialized++) {
 #define put_file_err(errs)		{			\
 	dprintf("[%s] %s\n", name, errs);		\
 	if ( !debug ) syslog(LOG_ERR, errs);	\
@@ -898,6 +905,9 @@ static int gftp_put_file(const char *url, int fhnd)
 	if ( globus_ftp_client_handleattr_init(&hnd_attr) != GLOBUS_SUCCESS )
 		put_file_err("Could not initialise handle attributes");
 	
+	if ( globus_ftp_client_handleattr_set_cache_all(&hnd_attr, GLOBUS_TRUE) != GLOBUS_SUCCESS)
+		put_file_err("Could not set connection caching");
+
 	if ( globus_ftp_client_operationattr_init(&op_attr) != GLOBUS_SUCCESS )
 		put_file_err("Could not initialise operation attributes");
 	
@@ -908,6 +918,7 @@ static int gftp_put_file(const char *url, int fhnd)
 
 	if ( globus_ftp_client_handle_init(&hnd, &hnd_attr) != GLOBUS_SUCCESS )
 		put_file_err("Could not initialise ftp client handle");
+	}
 #undef put_file_err
 
 	globus_mutex_init(&gLock, GLOBUS_NULL);
@@ -944,8 +955,6 @@ static int gftp_put_file(const char *url, int fhnd)
 	globus_mutex_lock(&gLock);
 	while ( !gDone ) globus_cond_wait(&gCond, &gLock);
 	globus_mutex_unlock(&gLock);
-
-	globus_ftp_client_handle_destroy(&hnd);
 
 
     return (gError == GLOBUS_TRUE)? 1: 0;
