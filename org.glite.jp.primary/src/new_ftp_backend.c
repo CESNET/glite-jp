@@ -1094,6 +1094,7 @@ int glite_jppsbe_close_file(
 
 error_out:
 	free(((fhandle)handle)->filedata);
+	free(((fhandle)handle)->filename);
 	free(handle); handle=NULL;
 	if (err.code) {
 		return glite_jp_stack_error(ctx,&err);
