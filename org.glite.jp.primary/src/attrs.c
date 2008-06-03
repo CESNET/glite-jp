@@ -222,8 +222,14 @@ int glite_jpps_get_attrs(glite_jp_context_t ctx,const char *job,char **attr,int 
 					, known_namespaces[i].plugin_handles[j]);
 				printf("closing plugin %i at class %s, file %s\n", known_namespaces[i].plugin_handles[j], known_namespaces[i].opened_classes[j], known_namespaces[i].opened_files[j]);
 				glite_jppsbe_close_file(ctx, known_namespaces[i].file_handles[j]);
-				known_namespaces[i].opened_classes[j] = NULL;
-                	        known_namespaces[i].opened_files[j] = NULL;
+				if (known_namespaces[i].opened_classes[j]){
+					free(known_namespaces[i].opened_classes[j]);
+					known_namespaces[i].opened_classes[j] = NULL;
+				}
+				if (known_namespaces[i].opened_files[j]){
+					free(known_namespaces[i].opened_files[j]);
+	                	        known_namespaces[i].opened_files[j] = NULL;
+				}
 				known_namespaces[i].plugin_handles[j] = NULL;
 				known_namespaces[i].file_handles[j] = NULL;
 			}
