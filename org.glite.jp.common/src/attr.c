@@ -106,10 +106,7 @@ static char * fb_to_db_full(void *ctx,const glite_jp_attrval_t *attr)
 	db[len++] = ':';
 
 	if (attr->binary) {
-/* FIXME: binary unsupported, base64_* not available after restructuring
 		vsize = base64_encode(attr->value,attr->size,db+len,vsize-1);
-*/
-		abort();
 		if (vsize < 0) { free(db); return NULL; }
 		db[len+vsize] = 0;
 	}
@@ -159,10 +156,7 @@ static int fb_from_db(void *ctx,const char *str,glite_jp_attrval_t *attr)
 	if (cp[p++] != ':') return EINVAL;
 
 	if (attr->binary) {
-/* FIXME: binary unsupported, base64_* not available after restructuring
 		attr->size = base64_decode(str+p,attr->value,strlen(str));
-*/
-		abort();
 		if (attr->size < 0) return EINVAL;
 	}
 	else strcpy(attr->value,str+p);
