@@ -895,6 +895,13 @@ static int gftp_put_file(const char *url, int fhnd)
 {
 	static globus_ftp_client_operationattr_t	op_attr;
 	static globus_ftp_client_handleattr_t		hnd_attr;
+	int gftp_retried = 0;
+
+	globus_mutex_init(&gLock, GLOBUS_NULL);
+	globus_cond_init(&gCond, GLOBUS_NULL);
+
+	/* one lost connection survival cycle */
+	do {
 
 	if (!gftp_initialized++) {
 #define put_file_err(errs)		{			\
@@ -911,18 +918,14 @@ static int gftp_put_file(const char *url, int fhnd)
 	if ( globus_ftp_client_operationattr_init(&op_attr) != GLOBUS_SUCCESS )
 		put_file_err("Could not initialise operation attributes");
 	
+	if ( globus_ftp_client_handle_init(&hnd, &hnd_attr) != GLOBUS_SUCCESS )
+		put_file_err("Could not initialise ftp client handle");
+	}
 	if ( globus_ftp_client_operationattr_set_authorization(
 			&op_attr, server_cert? mycred->gss_cred: GSS_C_NO_CREDENTIAL,
 			NULL, "", 0, NULL) != GLOBUS_SUCCESS )
 		put_file_err("Could not set authorization procedure");
-
-	if ( globus_ftp_client_handle_init(&hnd, &hnd_attr) != GLOBUS_SUCCESS )
-		put_file_err("Could not initialise ftp client handle");
-	}
 #undef put_file_err
-
-	globus_mutex_init(&gLock, GLOBUS_NULL);
-	globus_cond_init(&gCond, GLOBUS_NULL);
 
 	gDone = GLOBUS_FALSE;
 	gError = GLOBUS_FALSE;
@@ -956,6 +959,13 @@ static int gftp_put_file(const char *url, int fhnd)
 	while ( !gDone ) globus_cond_wait(&gCond, &gLock);
 	globus_mutex_unlock(&gLock);
 
+        if (gError == GLOBUS_TRUE) {
+        	gftp_retried++;
+		gftp_initialized = 0;
+		globus_ftp_client_handle_destroy(&hnd);
+		dprintf("[%s] %s: FTP upload failed\n", name, gftp_retried <= 1 ? "Warning" : "Error");
+        }
+    } while (gError == GLOBUS_TRUE && gftp_retried <= 1);
 
     return (gError == GLOBUS_TRUE)? 1: 0;
 }
