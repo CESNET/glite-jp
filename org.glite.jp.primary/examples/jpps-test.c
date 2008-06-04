@@ -71,11 +71,11 @@ int main(int argc,char *argv[])
 {
 	char	*server = NULL;
 	int	opt,ret = 0;
-	struct soap	*soap = soap_new();
+	struct soap	*soap = soap_new2(SOAP_IO_KEEPALIVE,SOAP_IO_KEEPALIVE);
 
 	if (argc < 2) usage(argv[0]); 
 
-	soap_init(soap);
+/*	soap_init(soap); */
 	soap_set_namespaces(soap, jpps__namespaces);
 
 	soap_register_plugin(soap,glite_gsplugin);
@@ -257,7 +257,6 @@ int main(int argc,char *argv[])
 		in.__sizeattributes = 1;
 		in.attributes = &argv[3];
 
-		soap->omode |= SOAP_IO_KEEPALIVE;
 		for (;rep;rep--) if (!(ret = check_fault(soap,soap_call___jpsrv__GetJobAttributes(soap,server,"",&in,&out))))
 		{
 			int	i;
