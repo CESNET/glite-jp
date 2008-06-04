@@ -312,7 +312,6 @@ static int newconn(int conn,struct timeval *to,void *data)
 	return 0;
 
 cleanup:
-	glite_gsplugin_free_context(plugin_ctx); plugin_ctx = NULL;
 	soap_end(soap);
 
 	return ret;
