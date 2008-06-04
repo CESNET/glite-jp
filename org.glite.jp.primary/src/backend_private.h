@@ -40,6 +40,7 @@ int glite_jppsbe_commit_upload(
 	const char *destination
 );
 
+int glite_jppsbe_append_tags(void *fpctx, char *jobid, glite_jp_attrval_t *attr);
 
 /** mark the job as sent to this feed */
 int glite_jppsbe_set_fed(

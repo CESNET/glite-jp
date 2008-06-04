@@ -241,7 +241,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RecordTag(
 		err2fault(ctx,soap);
 		return SOAP_FAULT;
 	}*/
-	glite_jppsbe_append_tag(ctx,in->jobid,attr);
+	glite_jppsbe_append_tags(ctx,in->jobid,attr);
 
         /*if (tag_append(ctx,file_be,attr))
 	{
@@ -257,6 +257,82 @@ err:
 	glite_jp_attrval_free(meta,0);
 	err2fault(ctx,soap);
 	return SOAP_FAULT;
+}
+
+
+
+SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RecordMultiTags(
+	struct soap *soap,
+	struct _jpelem__RecordMultiTags *in,
+	struct _jpelem__RecordMultiTagsResponse *out
+)
+{
+	CONTEXT_FROM_SOAP(soap,ctx);
+	int	i,j,ret = SOAP_OK;
+	char	**jobs = NULL;
+	glite_jp_attrval_t	**attrs = NULL,meta[2];
+
+	memset(meta,0,sizeof meta);
+        meta[0].name = strdup(GLITE_JP_ATTR_OWNER);
+
+printf(__FUNCTION__);
+	for (i=0; i<in->__sizejobs; i++) {
+		struct jptype__jobRecord *jr = GLITE_SECURITY_GSOAP_LIST_GET(in->jobs,i);
+
+printf("jobid: %s\n",jr->jobid);
+
+		if (glite_jppsbe_get_job_metadata(ctx,jr->jobid,meta)) {
+			ret = SOAP_FAULT;
+			goto cleanup;
+		}
+
+/* XXX: the same as single tag */
+		if (glite_jpps_authz(ctx,SOAP_TYPE___jpsrv__RecordTag,jr->jobid,meta[0].value)) {
+			ret = SOAP_FAULT;
+			goto cleanup;
+		}
+
+		jobs = realloc(jobs,sizeof(*jobs) * (i+2));
+		jobs[i] = jr->jobid;
+		jobs[i+1] = NULL;
+
+		attrs = realloc(attrs,sizeof(*attrs) * (i+2));
+		attrs[i+1] = attrs[i] = NULL;
+
+		for (j=0; j < jr->__sizeattributes; j++) {
+			struct jptype__attrValue	*a = GLITE_SECURITY_GSOAP_LIST_GET(jr->attributes,j);
+
+			attrs[i][j].name = a->name;
+			if (GSOAP_ISSTRING(a->value)) {
+				attrs[i][j].value = GSOAP_STRING(a->value);
+				attrs[i][j].binary = 0;
+			}
+			else {
+				attrs[i][j].value = GSOAP_BLOB(a->value)->__ptr;
+				attrs[i][j].size = GSOAP_BLOB(a->value)->__size;
+				attrs[i][j].binary = 1;
+			}
+		/* XXX input not favoured */
+			attrs[i][j].origin = GLITE_JP_ATTR_ORIG_USER;
+			attrs[i][j].timestamp = time(NULL);
+			attrs[i][j].origin_detail = NULL;
+		}
+	}
+
+/* XXX: ignore error */
+	glite_jpps_match_attr_multi(ctx,(const char **) jobs,(const glite_jp_attrval_t **) attrs);
+
+cleanup:
+	for (i=0; attrs[i]; i++) {
+		for (j=0; attrs[i][j].name; j++) glite_jp_attrval_free(&attrs[i][j],0);
+		free(attrs[i]);
+	}
+	free(attrs);
+	free(jobs);
+
+	glite_jp_attrval_free(meta,0);
+	err2fault(ctx,soap);
+	return ret;
 }
 
 static void s2jp_qval(const struct jptype__stringOrBlob *in, char **value, int *binary, size_t *size)

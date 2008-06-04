@@ -2002,7 +2002,7 @@ cleanup:
 	return err.code;
 }
 
-int glite_jppsbe_append_tag(
+int glite_jppsbe_append_tags(
 	void *fpctx,
 	char *jobid,
 	glite_jp_attrval_t *attr
@@ -2011,6 +2011,8 @@ int glite_jppsbe_append_tag(
 	void 			*file_be;
 	glite_jp_error_t        err;
         glite_jp_context_t      ctx = fpctx;
+	int			i;
+
 	memset(&err,0,sizeof err);
         err.source = __FUNCTION__;
 
@@ -2023,12 +2025,20 @@ int glite_jppsbe_append_tag(
 		return glite_jp_stack_error(ctx,&err);
         }
 
-	if (tag_append(ctx,file_be,attr))
-        {
-		err.code = EIO;
-                err.desc = "cannot append tag";
-                return glite_jp_stack_error(ctx,&err);
-        }
+	for (i=0; attr[i].name; i++) {
+		if (tag_append(ctx,file_be,attr+i))
+        	{
+			glite_jp_error_t	*e = ctx->error;
+			err.code = EIO;
+       	        	err.desc = "cannot append tag";
+
+			glite_jppsbe_close_file(ctx,file_be);
+			glite_jp_clear_error(ctx);
+			ctx->error = e;
+
+       	        	return glite_jp_stack_error(ctx,&err);
+        	}
+	}
 
 	if (glite_jppsbe_close_file(ctx,file_be))
 	{

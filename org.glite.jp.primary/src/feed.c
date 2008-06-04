@@ -265,6 +265,16 @@ int glite_jpps_match_attr(
 	glite_jp_add_deferred(ctx, match_attr_deferred, ma);
 }
 
+int glite_jpps_match_attr_multi(
+		glite_jp_context_t	ctx,
+		const char	**jobs,
+		const glite_jp_attrval_t	**attrs
+)
+{
+/* TODO */
+	return 0;
+}
+
 static int attr_void_cmp(const void *a, const void *b)
 {
 	char const * const *ca = (char const * const *) a;
