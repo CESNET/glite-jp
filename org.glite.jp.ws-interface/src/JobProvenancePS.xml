@@ -66,6 +66,11 @@
 			<input name="tag" type="tagValue">Name and value of the tag.</input>
 			<fault name="genericFault" type="genericFault">Any error.</fault>
 		</op>
+
+		<op name="RecordMultiTags">
+			<input name="jobs" type="jobRecord" list="yes">Attributes per job</input>
+			<fault name="genericFault" type="genericFault">Any error.</fault>
+		</op>
 	
 		<op name="FeedIndex">
 			Request for feeding a JP Index server (issued by this server).
