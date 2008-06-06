@@ -22,9 +22,6 @@ CC=gcc
 
 VPATH=${top_srcdir}/src:${top_srcdir}/test:${top_srcdir}/project:${jpproject}
 
-GLOBUSINC:= -I${globus_prefix}/include/${nothrflavour}
-GLOBUSINCTHR:= -I${globus_prefix}/include/${thrflavour}
-
 DEBUG:=-g -O0 -W -Wno-sign-compare
 CFLAGS:=${DEBUG} -D_GNU_SOURCE -I. -I${top_srcdir}/interface -I${stagedir}/include
 
@@ -43,8 +40,8 @@ HDRS:=types.h context.h attr.h known_attr.h backend.h builtin_plugins.h file_plu
 SRCS:=context.c attr.c utils.c indexdb.c
 OBJS:=${SRCS:.c=.lo}
 THROBJS:=${OBJS:.o=.thr.lo}
-LIBS:=-L${globus_prefix}/lib -lcrypto_${nothrflavour} -L${stagedir}/lib -lglite_jobid -lglite_lbu_db
-THRLIBS:=-L${globus_prefix}/lib -lcrypto_${thrflavour}
+LIBS:=-L${stagedir}/lib -lglite_jobid -lglite_lbu_db
+THRLIBS:=${LIBS}
 
 commonlib:= libglite_jp_common_${nothrflavour}.la
 commonlib_thr:= libglite_jp_common_${thrflavour}.la
@@ -87,7 +84,7 @@ clean:
 	rm -f glite jp
 
 %.thr.lo: %.c
-	${COMPILE} ${GLOBUSTHRINC} -o $@ -c $<
+	${COMPILE} -o $@ -c $<
 
 %.lo: %.c
-	${COMPILE} ${GLOBUSINC} -o $@ -c $< 
+	${COMPILE} -o $@ -c $< 
