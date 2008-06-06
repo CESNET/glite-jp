@@ -6,8 +6,8 @@ use Data::Dumper;
 $ENV{HTTPS_CA_DIR}='/etc/grid-security/certificates';
 $ENV{HTTPS_VERSION}='3';
 
-$ENV{HTTPS_CERT_FILE}="$ENV{HOME}/.globus/usercert.pem";
-$ENV{HTTPS_KEY_FILE}="$ENV{HOME}/.globus/userkey.pem";
+$cred = $ENV{X509_USER_PROXY} ? $ENV{X509_USER_PROXY} : "/tmp/x509up_u$<";
+$ENV{HTTPS_CERT_FILE}= $ENV{HTTPS_KEY_FILE} = $ENV{HTTPS_CA_FILE} = $cred;
 
 $proxy = shift;
 $job = shift;
