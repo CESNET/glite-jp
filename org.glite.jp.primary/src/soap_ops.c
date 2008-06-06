@@ -228,26 +228,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RecordTag(
 	attr[0].origin_detail = NULL; 	/* XXX */
 	attr[1].name = NULL;
 
-        /*if (glite_jppsbe_open_file(ctx,in->jobid,"tags",NULL,
-                                                O_RDWR|O_CREAT,&file_be)
-                        // XXX: tags need reading to check magic number
-        ) {
-                err2fault(ctx,soap);
-                return SOAP_FAULT;
-        }
-
-	if (glite_jppsbe_close_file(ctx,file_be))
-	{
-		err2fault(ctx,soap);
-		return SOAP_FAULT;
-	}*/
-	glite_jppsbe_append_tags(ctx,in->jobid,attr);
-
-        /*if (tag_append(ctx,file_be,attr))
-	{
-                err2fault(ctx,soap);
-                return SOAP_FAULT;
-        }*/
+	if (glite_jppsbe_append_tags(ctx,in->jobid,attr)) goto err;
 
 	/* XXX: ignore errors but don't fail silenty */
 	glite_jpps_match_attr(ctx,in->jobid,attr);
@@ -275,11 +256,8 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RecordMultiTags(
 	memset(meta,0,sizeof meta);
         meta[0].name = strdup(GLITE_JP_ATTR_OWNER);
 
-printf(__FUNCTION__);
 	for (i=0; i<in->__sizejobs; i++) {
 		struct jptype__jobRecord *jr = GLITE_SECURITY_GSOAP_LIST_GET(in->jobs,i);
-
-printf("jobid: %s\n",jr->jobid);
 
 		if (glite_jppsbe_get_job_metadata(ctx,jr->jobid,meta)) {
 			ret = SOAP_FAULT;
@@ -297,7 +275,8 @@ printf("jobid: %s\n",jr->jobid);
 		jobs[i+1] = NULL;
 
 		attrs = realloc(attrs,sizeof(*attrs) * (i+2));
-		attrs[i+1] = attrs[i] = NULL;
+		attrs[i] = calloc(jr->__sizeattributes+1,sizeof attrs[i][0]);
+		attrs[i+1] = NULL;
 
 		for (j=0; j < jr->__sizeattributes; j++) {
 			struct jptype__attrValue	*a = GLITE_SECURITY_GSOAP_LIST_GET(jr->attributes,j);
@@ -317,6 +296,11 @@ printf("jobid: %s\n",jr->jobid);
 			attrs[i][j].timestamp = time(NULL);
 			attrs[i][j].origin_detail = NULL;
 		}
+		if (glite_jppsbe_append_tags(ctx,jobs[i],attrs[i])) {
+			err2fault(ctx,soap);
+			ret = SOAP_FAULT;
+			goto cleanup;
+		}
 	}
 
 /* XXX: ignore error */
@@ -331,7 +315,7 @@ cleanup:
 	free(jobs);
 
 	glite_jp_attrval_free(meta,0);
-	err2fault(ctx,soap);
+	if (ret == SOAP_FAULT) err2fault(ctx,soap);
 	return ret;
 }
 

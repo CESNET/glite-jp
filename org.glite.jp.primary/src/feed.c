@@ -272,6 +272,17 @@ int glite_jpps_match_attr_multi(
 )
 {
 /* TODO */
+	int	i,j;
+
+	puts(__FUNCTION__);
+	for (i=0; jobs[i]; i++) {
+		printf("job %s\n",jobs[i]);
+
+		for (j=0; attrs[i][j].name; j++) {
+			printf("\t%s = %s\n",attrs[i][j].name,attrs[i][j].value);
+		}
+	}
+
 	return 0;
 }
 

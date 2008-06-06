@@ -44,7 +44,7 @@ while ($_ = shift) {
 
 		push @a, SOAP::Data->name(attributes=>\SOAP::Data->value(
 			SOAP::Data->name(name=>$name),
-			SOAP::Data->name(value=> SOAP::Data->name(string=>$value))
+			SOAP::Data->name(value=> \SOAP::Data->value(SOAP::Data->name(string=>$value)))
 		))
 	}
 }
