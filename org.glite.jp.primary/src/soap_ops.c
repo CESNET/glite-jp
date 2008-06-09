@@ -307,11 +307,13 @@ SOAP_FMAC5 int SOAP_FMAC6 __jpsrv__RecordMultiTags(
 	glite_jpps_match_attr_multi(ctx,(const char **) jobs,(const glite_jp_attrval_t **) attrs);
 
 cleanup:
-	for (i=0; attrs[i]; i++) {
-		for (j=0; attrs[i][j].name; j++) glite_jp_attrval_free(&attrs[i][j],0);
-		free(attrs[i]);
+	if (attrs) {
+		for (i=0; attrs[i]; i++) {
+			for (j=0; attrs[i][j].name; j++) glite_jp_attrval_free(&attrs[i][j],0);
+			free(attrs[i]);
+		}
+		free(attrs);
 	}
-	free(attrs);
 	free(jobs);
 
 	glite_jp_attrval_free(meta,0);
