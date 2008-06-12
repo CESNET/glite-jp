@@ -52,6 +52,10 @@ static int updateJob(glite_jpis_context_t ctx, const char *ps, struct jptype__jo
 	for (iattrs = 0; iattrs < jobAttrs->__sizeattributes; iattrs++) {
 		attr = GLITE_SECURITY_GSOAP_LIST_GET(jobAttrs->attributes, iattrs);
 		glite_jpis_SoapToAttrVal(&av, attr);
+		if (!glite_jpis_find_attr(ctx->conf->attrs, av.name)) {
+			fprintf(stderr, "unkown attribute '%s'\n", av.name);
+			continue;
+		}
 		if ((ret = glite_jpis_insertAttrVal(ctx, jobAttrs->jobid, &av)) != 0) return ret;
 	}
 

@@ -79,27 +79,17 @@
 
 static int glite_jpis_db_queries_deserialize(glite_jp_query_rec_t **queries, void *blob, size_t blob_size) UNUSED;
 
-static int find_attr(char **attrs, const char *attr){
-	size_t i;
-
-        i = 0;
-	while (attrs[i]) {
-                if (strcasecmp(attr, attrs[i]) == 0) return 1;
-                i++;
-        }
-        return 0;
-}
 
 static int is_indexed(glite_jp_is_conf *conf, const char *attr) {
-	return find_attr(conf->indexed_attrs, attr);
+	return glite_jpis_find_attr(conf->indexed_attrs, attr);
 }
 
 static int is_singleval(glite_jp_is_conf *conf, const char *attr) {
-	return !find_attr(conf->multival_attrs, attr);
+	return !glite_jpis_find_attr(conf->multival_attrs, attr);
 }
 
 static int is_queriable(glite_jp_is_conf *conf, const char *attr){
-	return find_attr(conf->queriable_attrs, attr);
+	return glite_jpis_find_attr(conf->queriable_attrs, attr);
 }
 
 static size_t db_arg1_length(glite_jpis_context_t isctx, glite_jp_query_rec_t *query) {

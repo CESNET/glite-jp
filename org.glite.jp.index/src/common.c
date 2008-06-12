@@ -46,3 +46,15 @@ int glite_jpis_stack_error_source(glite_jp_context_t ctx, int code, const char *
 	va_end(ap);
 	return code;
 }
+
+
+int glite_jpis_find_attr(char **attrs, const char *attr){
+	size_t i;
+
+        i = 0;
+	while (attrs[i]) {
+                if (strcasecmp(attr, attrs[i]) == 0) return 1;
+                i++;
+        }
+        return 0;
+}

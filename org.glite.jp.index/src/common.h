@@ -14,4 +14,6 @@ int glite_jpis_stack_error_source(glite_jp_context_t ctx, int code, const char *
 
 int glite_jp_typeplugin_load(glite_jp_context_t ctx,const char *so);
 
+int glite_jpis_find_attr(char **attrs, const char *attr);
+
 #endif
