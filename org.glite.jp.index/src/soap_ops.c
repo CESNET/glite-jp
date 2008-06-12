@@ -215,7 +215,7 @@ static void add_attr_table(char *new, char ***attr_tables)
 	(*attr_tables)[i+1] = NULL;
 }	
 
-/* transform soap enum queryOp to mysql quivalent */
+/* transform soap enum queryOp to mysql equivalent */
 static int get_op(const enum jptype__queryOp in, char **out)
 {
 	char 			*qop;
@@ -273,7 +273,7 @@ static int get_sql_indexvalue(char **sql, glite_jpis_context_t ctx, struct jptyp
 	} else return 0;
 	glite_jpis_SoapToAttrOrig(condition->origin, &(attr.origin));
 
-	*sql = glite_jp_attrval_to_db_index(ctx->jpctx, &attr, 255);
+	*sql = glite_jp_attrval_to_db_index(ctx->jpctx, &attr, GLITE_JPIS_INDEX_LENGTH);
 	return 0;
 }
 

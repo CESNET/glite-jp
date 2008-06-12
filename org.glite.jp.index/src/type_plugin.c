@@ -5,6 +5,7 @@
 #include <errno.h>
 
 #include <glite/jp/types.h>
+#include <glite/jp/context.h>
 #include "glite/jp/type_plugin.h"
 
 int glite_jp_typeplugin_load(glite_jp_context_t ctx,const char *so){

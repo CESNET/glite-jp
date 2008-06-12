@@ -98,6 +98,11 @@
 				<arg>--feeding</arg>
 			</group> <replaceable>FILE</replaceable> </arg>
 
+			<arg><group choice='plain'>
+				<arg>-F</arg>
+				<arg>--force-feed</arg>
+			</group></arg>
+
 		</cmdsynopsis>
 	</refsynopsisdiv>
 
@@ -233,6 +238,13 @@ Delete and refetch the data in the database. You need use this parameter when fe
 				<term><option>-f</option>|<option>--feeding</option></term>
 				<listitem><para>
 Feed the index server from the local file. Format of the file is job per line with attribute values using ";" separator. Attributes go in order according to server configuration file (possible attributes with jobid and owner in configuration file are ignored).
+				</para></listitem>
+			</varlistentry>
+
+			<varlistentry>
+				<term><option>-F</option>|<option>--force-feed</option></term>
+				<listitem><para>
+By default old feeds in the database are untouched when JP index server is restarted, and further used and refreshed. This option forces dropping and reloading feeds from the configuration file.
 				</para></listitem>
 			</varlistentry>
 

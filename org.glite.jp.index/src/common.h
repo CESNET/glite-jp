@@ -12,4 +12,6 @@ int glite_jpis_stack_error_source(glite_jp_context_t ctx, int code, const char *
 
 #define glite_jpis_stack_error(CTX, CODE, DESCFMT...) glite_jpis_stack_error_source((CTX), (CODE), __FUNCTION__, __LINE__, ##DESCFMT);
 
+int glite_jp_typeplugin_load(glite_jp_context_t ctx,const char *so);
+
 #endif

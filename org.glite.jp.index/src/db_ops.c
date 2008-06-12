@@ -65,7 +65,6 @@
 #define SQL_CMD_INSERT_SINGLEATTRVAL "UPDATE jobs \n\
 	SET attr_%s='%s' \n\
 	WHERE dg_jobid='%s'"
-#define INDEX_LENGTH 255
 
 #define WORD_SWAP(X) ((((X) >> 8) & 0xFF) | (((X) & 0xFF) << 8))
 #define LONG_SWAP(X) (WORD_SWAP(((X) >> 16) & 0xFFFF) | ((WORD_SWAP(X) & 0xFFFF) << 16))
@@ -334,7 +333,7 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 	i = 0;
 	if (attrs) while (attrs[i]) {
 		type_full = glite_jp_attrval_db_type_full(jpctx, attrs[i]);
-		type_index = glite_jp_attrval_db_type_index(jpctx, attrs[i], INDEX_LENGTH);
+		type_index = glite_jp_attrval_db_type_index(jpctx, attrs[i], GLITE_JPIS_INDEX_LENGTH);
 
 		attrid = glite_jp_indexdb_attr2id(attrs[i]);
 		indexed = is_indexed(ctx->conf, attrs[i]);
@@ -376,7 +375,7 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 			snprintf(sql + strlen(sql), sizeof(sql) - strlen(sql), 
 				"	`attr_%s`	%s	NOT NULL,\n",
 				glite_jp_indexdb_attr2id(ctx->conf->attrs[i]),
-				glite_jp_attrval_db_type_index(jpctx, ctx->conf->attrs[i], INDEX_LENGTH));
+				glite_jp_attrval_db_type_index(jpctx, ctx->conf->attrs[i], GLITE_JPIS_INDEX_LENGTH));
 				
 			if (is_indexed(ctx->conf, ctx->conf->attrs[i]))
 				snprintf(sql + strlen(sql), sizeof(sql) - strlen(sql),
@@ -705,7 +704,7 @@ int glite_jpis_insertAttrVal(glite_jpis_context_t ctx, const char *jobid, glite_
         err.source = __FUNCTION__;
 
 	table = glite_jp_indexdb_attr2id(av->name);
-	value = glite_jp_attrval_to_db_index(ctx->jpctx, av, INDEX_LENGTH);
+	value = glite_jp_attrval_to_db_index(ctx->jpctx, av, GLITE_JPIS_INDEX_LENGTH);
 	full_value = glite_jp_attrval_to_db_full(ctx->jpctx, av);
 	md5_jobid = str2md5(jobid);
 	origin = av->origin;
