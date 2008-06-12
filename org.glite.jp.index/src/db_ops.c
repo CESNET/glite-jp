@@ -299,11 +299,8 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 	char **attrs, *attrid, *num;
 	const char *type_index, *type_full;
 	size_t i;
-	int indexed, state, locked, nattrs;
-	size_t conds_len;
+	int indexed, nattrs;
 	char sql[2048];
-	glite_jp_is_feed **feeds;
-	void *conds;
 	glite_jp_context_t jpctx = ctx->jpctx;
 	glite_lbu_Statement stmt = NULL;
 
@@ -371,31 +368,6 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
 	}
 	glite_jp_db_FreeStmt(&stmt);
 
-	// feeds table
-	if (glite_jp_db_PrepareStmt(jpctx, "INSERT INTO feeds (`state`, `locked`, `source`, `condition`) VALUES (?, ?, ?, ?)", &stmt) != 0) {
-		glite_jpis_stack_error(ctx->jpctx, EIO, "can't create insert feeds statement");
-		goto fail;
-	}
-	feeds = ctx->conf->feeds;
-	i = 0;
-	if (feeds) while (feeds[i]) {
-		state = (feeds[i]->history ? GLITE_JP_IS_STATE_HIST : 0) |
-		        (feeds[i]->continuous ? GLITE_JP_IS_STATE_CONT : 0);
-		locked = 0;
-		assert(glite_jpis_db_queries_serialize(ctx, &conds, &conds_len, feeds[i]->query) == 0);
-		if (glite_jp_db_ExecPreparedStmt(jpctx, stmt, 4,
-		  GLITE_LBU_DB_TYPE_INT, state,
-		  GLITE_LBU_DB_TYPE_INT, locked,
-		  GLITE_LBU_DB_TYPE_VARCHAR, feeds[i]->PS_URL,
-		  GLITE_LBU_DB_TYPE_MEDIUMBLOB, conds, conds_len) == -1)
-			goto fail_conds;
-		free(conds);
-		feeds[i]->uniqueid = glite_lbu_Lastid(stmt);
-
-		i++;
-	}
-	glite_jp_db_FreeStmt(&stmt);
-
 	// create jobs table
 	snprintf(sql, sizeof(sql) - 1, SQLCMD_CREATE_JOBS_TABLE_BEGIN);
 	if (ctx->conf->attrs) for (i = 0; ctx->conf->attrs[i]; i++)
@@ -418,6 +390,54 @@ int glite_jpis_initDatabase(glite_jpis_context_t ctx) {
                         goto fail;
                 }
 
+	return 0;
+
+fail:
+	glite_jp_db_FreeStmt(&stmt);
+	if (!jpctx->error) glite_jpis_stack_error(ctx->jpctx, EIO, "error during initial filling of the database");
+	return jpctx->error->code;
+}
+
+
+int glite_jpis_initDatabaseFeeds(glite_jpis_context_t ctx) {
+	glite_jp_context_t jpctx = ctx->jpctx;
+	glite_lbu_Statement stmt = NULL;
+	glite_jp_is_feed **feeds;
+	size_t i;
+	size_t conds_len;
+	void *conds;
+	int state, locked;
+
+	if (glite_jp_db_ExecSQL(jpctx, "DELETE FROM feeds", NULL) == -1) {
+		glite_jpis_stack_error(ctx->jpctx, EIO, "can't delete feeds");
+		goto fail;
+	}
+
+	// feeds table
+	if (glite_jp_db_PrepareStmt(jpctx, "INSERT INTO feeds (`state`, `locked`, `source`, `condition`) VALUES (?, ?, ?, ?)", &stmt) != 0) {
+		glite_jpis_stack_error(ctx->jpctx, EIO, "can't create insert feeds statement");
+		goto fail;
+	}
+	feeds = ctx->conf->feeds;
+	i = 0;
+	if (feeds) while (feeds[i]) {
+		state = (feeds[i]->history ? GLITE_JP_IS_STATE_HIST : 0) |
+		        (feeds[i]->continuous ? GLITE_JP_IS_STATE_CONT : 0);
+		locked = 0;
+		assert(glite_jpis_db_queries_serialize(ctx, &conds, &conds_len, feeds[i]->query) == 0);
+		if (glite_jp_db_ExecPreparedStmt(jpctx, stmt, 4,
+		  GLITE_LBU_DB_TYPE_INT, state,
+		  GLITE_LBU_DB_TYPE_INT, locked,
+		  GLITE_LBU_DB_TYPE_VARCHAR, feeds[i]->PS_URL,
+		  GLITE_LBU_DB_TYPE_MEDIUMBLOB, conds, conds_len) == -1)
+			goto fail_conds;
+		free(conds);
+		conds = NULL;
+		feeds[i]->uniqueid = glite_lbu_Lastid(stmt);
+
+		i++;
+	}
+	glite_jp_db_FreeStmt(&stmt);
 	return 0;
 
 fail_conds:

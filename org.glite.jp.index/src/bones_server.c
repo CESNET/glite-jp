@@ -116,6 +116,14 @@ int main(int argc, char *argv[])
 		goto quit;
 	}
 
+	if (conf->delete_db || conf->force_feed) {
+		if (glite_jpis_initDatabaseFeeds(isctx) != 0) {
+			fprintf(stderr, "Init feeds failed: ");
+			retval = 1;
+			goto quit;
+		}
+	}
+
 	server_cert = conf->server_cert;
 	server_key = conf->server_key;
 

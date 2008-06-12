@@ -176,3 +176,5 @@ int __jpsrv__FeedIndex(struct soap* soap UNUSED, struct _jpelem__FeedIndex *jpel
 int __jpsrv__FeedIndexRefresh(struct soap* soap UNUSED, struct _jpelem__FeedIndexRefresh *jpelem__FeedIndexRefresh UNUSED, struct _jpelem__FeedIndexRefreshResponse *jpelem__FeedIndexRefreshResponse UNUSED) { return 0; }
 int __jpsrv__GetJobFiles(struct soap* soap UNUSED, struct _jpelem__GetJobFiles *jpelem__GetJobFiles UNUSED, struct _jpelem__GetJobFilesResponse *jpelem__GetJobFilesResponse UNUSED) { return 0; }
 int __jpsrv__GetJobAttributes(struct soap* soap UNUSED, struct _jpelem__GetJobAttributes *jpelem__GetJobAttributes UNUSED, struct _jpelem__GetJobAttributesResponse *jpelem__GetJobAttributesResponse UNUSED) { return 0; }
+
+int __jpsrv__RecordMultiTags(struct soap* soap UNUSED, struct _jpelem__RecordMultiTags *jpelem__RecordMultiTags UNUSED, struct _jpelem__RecordMultiTagsResponse *jpelem__RecordMultiTagsResponse UNUSED) { return 0; }

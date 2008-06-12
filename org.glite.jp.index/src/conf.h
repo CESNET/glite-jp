@@ -54,6 +54,7 @@ typedef struct _glite_jp_is_conf {
 	int	delete_db;
 
 	char	*feeding;               // feed DB from local file
+	int	force_feed;
 } glite_jp_is_conf;
 
 

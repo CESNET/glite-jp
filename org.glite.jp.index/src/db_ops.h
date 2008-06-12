@@ -27,6 +27,7 @@
 char *glite_jpis_attr_name2id(const char *name);
 
 int glite_jpis_initDatabase(glite_jpis_context_t ctx);
+int glite_jpis_initDatabaseFeeds(glite_jpis_context_t ctx);
 int glite_jpis_dropDatabase(glite_jpis_context_t ctx);
 
 int glite_jpis_init_db(glite_jpis_context_t isctx);

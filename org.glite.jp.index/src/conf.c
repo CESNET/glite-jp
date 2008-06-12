@@ -24,7 +24,7 @@
 
 extern SOAP_NMAC struct Namespace jp__namespaces[];
 
-static const char *get_opt_string = "dq:c:k:C:V:nm:p:i:o:x:s:Df:";
+static const char *get_opt_string = "dq:c:k:C:V:nm:p:i:o:x:s:Df:F";
 
 static struct option opts[] = {
 	{"debug",       0, NULL,	'd'},
@@ -42,6 +42,7 @@ static struct option opts[] = {
 	{"slaves",      1, NULL,	's'},
 	{"delete-db",   0, NULL,	'D'},
 	{"feeding",     1, NULL,	'f'},
+	{"force-feed",	0, NULL, 	'F'},
 	{NULL,		0, NULL,	0}
 };
 
@@ -68,6 +69,7 @@ static void usage(char *me)
 		"\t-s, --slaves\t number of slaves for responses\n"
 		"\t-D, --delete-db\t delete and restore data in the database\n"
 		"\t-f, --feeding\t feed index server from local file\n"
+		"\t-F, --force-feed\t force reloading feeds from the config file\n"
 		"\n"
 	,me);
 }
@@ -98,6 +100,7 @@ int glite_jp_get_conf(int argc, char **argv, glite_jp_is_conf **configuration)
 		case 's': conf->slaves = atoi(optarg); if (conf->slaves > 0) break;
 		case 'D': conf->delete_db = 1; break;
 		case 'f': conf->feeding = optarg; break;
+		case 'F': conf->force_feed = 1; break;
 		default : usage(argv[0]); exit(0); break;
 	}
 
