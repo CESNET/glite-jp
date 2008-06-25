@@ -209,7 +209,14 @@ int glite_jppsbe_init(
 
 	while ((opt = getopt_long(argc, argv, "I:E:D:" /* G: */, ftpbe_opts, NULL)) != EOF) {
 		switch (opt) {
-			case 'I': config->internal_path = optarg; break;
+			case 'I': 
+				config->internal_path = optarg; 
+				int i = strlen(optarg) - 1;
+				while (optarg[i] == '/'){
+					optarg[i] = 0;
+					i--;
+				}
+				break;
 			case 'E': config->external_path = optarg; break;
 			case 'D': config->db_cs = optarg; break;
 //			case 'G': config->gridmap = optarg; break;
