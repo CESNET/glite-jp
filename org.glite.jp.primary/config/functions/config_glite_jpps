@@ -17,7 +17,7 @@ function config_glite_jpps_setenv(){
   yaimgridenv_set GLITE_JP_PRIMARY_EXTERNAL gsiftp://`hostname -f`:${GLITE_JP_PRIMARY_FTP_PORT:-8911}${GLITE_USER_HOME:-/home/glite}/jpps
    yaimgridenv_set GLITE_JP_PRIMARY_DBCS ${GLITE_JP_PRIMARY_DBCS:-jpps/@localhost:jpps}
   yaimgridenv_set GLITE_JP_PRIMARY_SPECIAL ${GLITE_JP_PRIMARY_SPECIAL:-}
-
+  yaimgridenv_set GLITE_JP_GSI_AUTHZ ${GLITE_JP_GSI_AUTHZ:-$GLITE_LOCATION/etc/gsi_authz.conf}
 
   yaimgridpath_append LD_LIBRARY_PATH ${INSTALL_ROOT:-opt}/glite/lib  
   yaimgridpath_append LD_LIBRARY_PATH ${INSTALL_ROOT:-opt}/globus/lib  

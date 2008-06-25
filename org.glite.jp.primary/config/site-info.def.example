@@ -50,6 +50,9 @@ MYSQL_PASSWORD=set_this_to_a_good_password
 # FTP port
 #GLITE_JP_PRIMARY_FTP_PORT=8911
 
+#FTP authz configuration file
+#GLITE_JP_GSI_AUTHZ=$GLITE_LOCATION/etc/gsi_authz.conf
+
 # List of privileged DN subjects
 #GLITE_JP_PRIMARY_PEERS=$GLITE_LOCATION/etc/JPPS-peers
 
