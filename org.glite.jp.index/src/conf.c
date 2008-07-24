@@ -116,6 +116,7 @@ int glite_jp_get_conf(int argc, char **argv, glite_jp_is_conf **configuration)
 	if (!conf_file) {
 		fprintf(stderr,"JP IS configuration file must be specified! "\
 			"Exiting.\n");
+		free(conf);
 		return 1;
 	}
 	else {
@@ -192,6 +193,7 @@ static int read_conf(glite_jp_is_conf *conf, char *conf_file)
 	if (!soap_get__jpelem__ServerConfigurationResponse(&soap, &out, "ServerConfiguration", NULL)) {
                 soap_end_recv(&soap);
                 soap_end(&soap);
+		soap_print_fault(&soap, stderr);
                 return EINVAL;
         }
 	soap_end_recv(&soap);
@@ -205,6 +207,10 @@ static int read_conf(glite_jp_is_conf *conf, char *conf_file)
 		for (i=0; i < out.__sizeattrs; i++) {
 			struct jptype__attrType *attr;
 			attr = GLITE_SECURITY_GSOAP_LIST_GET(out.attrs, i);
+			if (!attr->name) {
+		       		fprintf(stderr, "missing name of %d attribute in %s\n", i + 1, conf_file);
+				goto err;
+			}
 			conf->attrs[i] = strdup(attr->name);
 			if (attr->multival == jptype__yesNo__YES){
 				conf->multival_attrs = realloc(conf->multival_attrs, (mva+2)*sizeof(*conf->multival_attrs));
@@ -240,7 +246,7 @@ static int read_conf(glite_jp_is_conf *conf, char *conf_file)
 			conf->feeds[i]->PS_URL=strdup(feed->primaryServer);
 
 			if (glite_jpis_SoapToPrimaryQueryConds(feed->__sizecondition,
-				feed->condition, &conf->feeds[i]->query)) return EINVAL;
+				feed->condition, &conf->feeds[i]->query)) goto err;
 			
 			conf->feeds[i]->history = feed->history;
 			conf->feeds[i]->continuous = feed->continuous;
@@ -253,6 +259,13 @@ static int read_conf(glite_jp_is_conf *conf, char *conf_file)
 	soap_done(&soap);
 
 	return 0;
+
+err:
+	glite_jp_free_conf(conf);
+	soap_destroy(&soap);
+	soap_end(&soap);
+	soap_done(&soap);
+	return EINVAL;
 }
 
 #if 0

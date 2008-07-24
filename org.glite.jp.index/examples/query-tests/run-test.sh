@@ -176,7 +176,7 @@ run_test_query() {
 	echo -n "Q"
 	X509_USER_KEY=${X509_USER_KEY} X509_USER_CERT=${X509_USER_CERT} \
 	$GLITE_LOCATION/examples/glite-jpis-client -f hr -q $1 \
-		 -i http://localhost:$GLITE_JPIS_TEST_PORT > /tmp/result 2>&1
+		 -i http://localhost:$GLITE_JPIS_TEST_PORT 2>&1 | grep -v '^GSLITE_GSPLUGIN: ' > /tmp/result
 	echo -n "R "
 	DIFF=`diff -b -B --ignore-matching-lines="query: using JPIS" $2 /tmp/result`
 	if [ -z "$DIFF" -a "$?" -eq "0" ] ; then

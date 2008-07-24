@@ -73,7 +73,7 @@ static int clientGetFault(struct soap *soap, int err, const char **reason, struc
 		}
 		// client is based on gSoap 2.7.9b
 		assert(detail->__type == GFNUM);
-#if GSOAP_VERSIO >= 20709
+#if GSOAP_VERSION >= 20709
 		*f = (struct jptype__genericFault *)detail->fault;
 #elif GSOAP_VERSION >= 20700
 		*f = ((struct _genericFault *)detail->fault)->jpelem__genericFault;
