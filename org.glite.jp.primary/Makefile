@@ -212,7 +212,7 @@ soap_ops.o bones_server.o: soap_version.h
 
 soap_version.h:
 	${gsoap_bin_prefix}/soapcpp2 /dev/null
-	perl -ne '$$. == 2 && /.*([0-9])\.([0-9])\.([0-9]).*/ && printf "#define GSOAP_VERSION %d%02d%02d\n",$$1,$$2,$$3' soapH.h >$@
+	perl -ne '$$. == 2 && /.*([0-9]+)\.([0-9]+)\.([0-9]+).*/ && printf "#define GSOAP_VERSION %d%02d%02d\n",$$1,$$2,$$3' soapH.h >$@
 	-rm soapC.cpp soapH.h soapStub.h soapClient.cpp soapServer.cpp soapClientLib.cpp soapServerLib.cpp 
 
 soap_env_ctx.c soap_env_ctx.h soap_switch.c: env_C.c mk_soap_switch.pl
