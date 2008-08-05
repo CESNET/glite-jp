@@ -234,13 +234,13 @@ int glite_jppsbe_init(
 	}
 
 	if (glite_lbu_InitDBContext(((glite_lbu_DBContext *)&ctx->dbhandle)) != 0) {
-		err.code = EINVAL;
-		err.desc = "Cannot init backend's database";
+		err.code = glite_jp_db_SetError(ctx, __FUNCTION__);
+		err.desc = "Cannot init backend's database (during init)";
 		return glite_jp_stack_error(ctx,&err);
 	}
 	if (glite_lbu_DBConnect(ctx->dbhandle, config->db_cs)) {
-		err.code = EIO;
-		err.desc = "Cannot access backend's database (during init)";
+		err.code = glite_jp_db_SetError(ctx, __FUNCTION__);
+		err.desc = "Cannot access backend's database (during connect)";
 		return glite_jp_stack_error(ctx,&err);
 	} else {
 		/* slaves open their own connections */
@@ -262,13 +262,13 @@ int glite_jppsbe_init_slave(
 	err.source = __FUNCTION__;
 	
 	if (glite_lbu_InitDBContext(((glite_lbu_DBContext *)&ctx->dbhandle)) != 0) {
-		err.code = EINVAL;
-		err.desc = "Cannot init backend's database";
+		err.code = glite_jp_db_SetError(ctx, __FUNCTION__);
+		err.desc = "Cannot init backend's database (during init)";
 		return glite_jp_stack_error(ctx,&err);
 	}
 	if (glite_lbu_DBConnect(ctx->dbhandle, config->db_cs)) {
-		err.code = EIO;
-		err.desc = "Cannot access backend's database";
+		err.code = glite_jp_db_SetError(ctx, __FUNCTION__);
+		err.desc = "Cannot access backend's database (during connect)";
 		return glite_jp_stack_error(ctx,&err);
 	} 
 
