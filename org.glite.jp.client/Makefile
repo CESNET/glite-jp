@@ -67,7 +67,10 @@ OBJS:=${SRCS:.c=.o}
 
 gsoap_bin_prefix:=${shell if [ -x  ${gsoap_prefix}/bin/soapcpp2 ]; then echo ${gsoap_prefix}/bin; else echo ${gsoap_prefix}; fi }
 dotless_gsoap_ver:=${shell echo ${gsoap_version} | tr -d . }
-GSOAPLIB:=-lglite_security_gsoap_plugin_${dotless_gsoap_ver}_${nothrflavour} 
+ifeq ($(shell test -f ${stagedir}/lib/libglite_security_gsoap_plugin_${dotless_gsoap_ver}_${nothrflavour}_c.so && echo ok),ok)
+       langflavour:=_c
+endif
+GSOAPLIB:=-lglite_security_gsoap_plugin_${dotless_gsoap_ver}_${nothrflavour}${langflavour}
 
 LBMAILDIRLIB:=-lglite_lbu_maildir
 
@@ -118,7 +121,7 @@ ${OBJS}: ${wsprefix}H.h soap_version.h
 
 soap_version.h:
 	${gsoap_bin_prefix}/soapcpp2 /dev/null
-	perl -ne '$$. == 2 && /.*([0-9])\.([0-9])\.([0-9]).*/ && printf "#define GSOAP_VERSION %d%02d%02d\n",$$1,$$2,$$3' soapH.h >$@
+	perl -ne '$$. == 2 && /.*([0-9]+)\.([0-9]+)\.([0-9]+).*/ && printf "#define GSOAP_VERSION %d%02d%02d\n",$$1,$$2,$$3' soapH.h >$@
 	-rm soapC.cpp soapH.h soapStub.h soapClient.cpp soapServer.cpp soapClientLib.cpp soapServerLib.cpp
 
 

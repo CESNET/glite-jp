@@ -614,8 +614,9 @@ static int dump_importer(void)
 				memset(&gja_in, 0, sizeof gja_in);
 				memset(&gja_out, 0, sizeof gja_out);
 				gja_in.jobid = su_in.job;
-				GLITE_SECURITY_GSOAP_LIST_CREATE(soap, &gja_in, attributes, struct _jpelem__GetJobAttributes, 1);
-				GLITE_SECURITY_GSOAP_LIST_GET(gja_in.attributes, 0) = GLITE_JP_ATTR_REGTIME;
+				gja_in.attributes = soap_malloc(soap, sizeof(char *));
+				gja_in.__sizeattributes = 1;
+				gja_in.attributes[0] = GLITE_JP_ATTR_REGTIME;
 				ret = soap_call___jpsrv__GetJobAttributes(soap, jpps, "", &gja_in, &gja_out);
 				jperrno = glite_jp_clientGetErrno(soap, ret);
 				/* no error ==> some application fault from JP */
@@ -629,7 +630,6 @@ static int dump_importer(void)
 					ret = check_soap_fault(soap, ret);
 					break;
 				}
-				GLITE_SECURITY_GSOAP_LIST_GET(gja_in.attributes, 0) = NULL;
 				/* "job not found" error ==> register job */
 				refresh_connection(soap);
 				rj_in.job = su_in.job;

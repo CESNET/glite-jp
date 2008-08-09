@@ -84,11 +84,14 @@ OBJS:=${SRCS:.c=.o}
 TEST_OBJS:=${TEST_SRCS:.c=.o}
 DAG_OBJS:=${DAG_SRCS:.c=.o}
 
-dotless_soap_ver:=${shell echo ${gsoap_version} | tr -d . }
+dotless_gsoap_ver:=${shell echo ${gsoap_version} | tr -d . }
+ifeq ($(shell test -f ${stagedir}/lib/libglite_security_gsoap_plugin_${dotless_gsoap_ver}_${nothrflavour}_c.so && echo ok),ok)
+       langflavour:=_c
+endif
 COMMONLIB:=-lglite_jp_common_${nothrflavour}
 SRVCOMMONLIB:=-lglite_jp_server_common
 BONESLIB:=-lglite_lbu_server_bones
-GSOAPLIB:=-L${stagedir}/lib -lglite_security_gsoap_plugin_${dotless_soap_ver}_${nothrflavour} 
+GSOAPLIB:=-L${stagedir}/lib -lglite_security_gsoap_plugin_${dotless_gsoap_ver}_${nothrflavour}${langflavour}
 TRIOLIB:=-lglite_lbu_trio
 LIBTARLIB:=-L${libtar_prefix}/lib -ltar
 GSSLIB:=-lglite_security_gss_${nothrflavour}

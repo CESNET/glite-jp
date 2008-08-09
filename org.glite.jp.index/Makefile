@@ -27,8 +27,11 @@ CPPFLAGS:=-DDEBUG -D_GNU_SOURCE -I. -I${top_srcdir}/interface -I${top_srcdir}/sr
 CFLAGS:=${DEBUG} ${CFLAGS}
 LDFLAGS:=-L${stagedir}/lib
 
-dotless_soap_ver:=${shell echo ${gsoap_version} | tr -d . }
-GSOAPLIB:=-L${stagedir}/lib -lglite_security_gsoap_plugin_${dotless_soap_ver}_${nothrflavour}
+dotless_gsoap_ver:=${shell echo ${gsoap_version} | tr -d . }
+ifeq ($(shell test -f ${stagedir}/lib/libglite_security_gsoap_plugin_${dotless_gsoap_ver}_${nothrflavour}_c.so && echo ok),ok)
+       langflavour:=_c
+endif
+GSOAPLIB:=-L${stagedir}/lib -lglite_security_gsoap_plugin_${dotless_gsoap_ver}_${nothrflavour}${langflavour}
 
 gsoap_bin_prefix:=${shell if [ -x  ${gsoap_prefix}/bin/soapcpp2 ]; then echo ${gsoap_prefix}/bin; else echo ${gsoap_prefix}; fi }
 
