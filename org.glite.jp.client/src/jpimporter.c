@@ -619,6 +619,7 @@ static int dump_importer(void)
 				gja_in.attributes[0] = GLITE_JP_ATTR_REGTIME;
 				ret = soap_call___jpsrv__GetJobAttributes(soap, jpps, "", &gja_in, &gja_out);
 				jperrno = glite_jp_clientGetErrno(soap, ret);
+				gja_in.attributes[0] = NULL;
 				/* no error ==> some application fault from JP */
 				if (jperrno == 0) {
 					dprintf("[%s] Dump failed when job %s exists\n", name, su_in.job);

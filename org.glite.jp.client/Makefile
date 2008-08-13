@@ -67,10 +67,11 @@ OBJS:=${SRCS:.c=.o}
 
 gsoap_bin_prefix:=${shell if [ -x  ${gsoap_prefix}/bin/soapcpp2 ]; then echo ${gsoap_prefix}/bin; else echo ${gsoap_prefix}; fi }
 dotless_gsoap_ver:=${shell echo ${gsoap_version} | tr -d . }
-ifeq ($(shell test -f ${stagedir}/lib/libglite_security_gsoap_plugin_${dotless_gsoap_ver}_${nothrflavour}_c.so && echo ok),ok)
+ifeq ($(shell test -f ${stagedir}/lib/libglite_security_gsoap_plugin_${dotless_gsoap_ver}_${nothrflavour}_c.la && echo ok),ok)
        langflavour:=_c
 endif
-GSOAPLIB:=-lglite_security_gsoap_plugin_${dotless_gsoap_ver}_${nothrflavour}${langflavour}
+# static linking for LB/JP compatibility from different glite releases
+GSOAPLIB:=-lglite_security_gsoap_plugin_${dotless_gsoap_ver}_${nothrflavour}${langflavour} -static
 
 LBMAILDIRLIB:=-lglite_lbu_maildir
 
