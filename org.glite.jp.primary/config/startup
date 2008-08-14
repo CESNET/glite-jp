@@ -67,7 +67,8 @@ start()
 	fi
 
 	echo -n Starting glite-jp-primarystoraged ...
-	su - $GLITE_USER -c " $GLITE_LOCATION/bin/glite-jp-primarystoraged \
+	su - $GLITE_USER -c "LD_LIBRARY_PATH=$GLOBUS_LOCATION/lib:$GLITE_LOCATION/lib:$CARES_LOCATION/lib \
+		$GLITE_LOCATION/bin/glite-jp-primarystoraged \
 		$GLITE_JP_DEBUG \
 		-P $GLITE_LOCATION/lib/glite_lb_plugin.so -P $GLITE_LOCATION/lib/glite-jp-sandbox.so \
 		$creds -a '$GLITE_JP_PRIMARY_PEERS' \
@@ -80,7 +81,7 @@ start()
                 X509_USER_KEY=\"$X509_USER_KEY\" \
                 GLITE_USER=\"$GLITE_USER\" \
                 FTPBE_INT_PREFIX=\"$GLITE_JP_PRIMARY_INTERNAL\" \
-                LD_LIBRARY_PATH=$GLOBUS_LOCATION/lib \
+                LD_LIBRARY_PATH=$GLOBUS_LOCATION/lib:$GLITE_LOCATION/lib \
 		FTPBE_DB_CS=$GLITE_JP_PRIMARY_DBCS \
 		GSI_AUTHZ_CONF=$GLITE_JP_GSI_AUTHZ \
 		$GLOBUS_LOCATION/sbin/globus-gridftp-server -debug -s -p $GLITE_JP_PRIMARY_FTP_PORT & \

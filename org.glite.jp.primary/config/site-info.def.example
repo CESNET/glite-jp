@@ -35,7 +35,7 @@ MYSQL_PASSWORD=set_this_to_a_good_password
 #
 
 #GLOBUS_LOCATION=/opt/globus
-
+#CARES_LOCATION=/opt/c-ares
 
 #
 # JPPS configuration default values
