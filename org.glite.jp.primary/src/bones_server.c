@@ -36,6 +36,8 @@ static struct glite_srvbones_service stab = {
 
 static time_t cert_mtime;
 char *server_cert, *server_key, *cadir;
+char file_prefix[PATH_MAX] = "/var/glite/log/dglogd.log";
+char *il_sock = NULL;
 edg_wll_GssCred mycred = NULL;
 static char *mysubj;
 
@@ -72,7 +74,7 @@ int main(int argc, char *argv[])
 
 	b_argc = p_argc = 1;
 
-	while ((opt = getopt(argc,argv,"B:P:a:p:s:dl:i:c:k:n")) != EOF) switch (opt) {
+	while ((opt = getopt(argc,argv,"B:P:a:p:s:dl:i:c:k:nf:w:")) != EOF) switch (opt) {
 		case 'B':
 			assert(b_argc < 20);
 			if (com = strchr(optarg,',')) *com = 0;
@@ -108,6 +110,8 @@ int main(int argc, char *argv[])
 		case 'c': server_cert = optarg; break;
 		case 'k': server_key = optarg; break;
 		case 'n': ctx->noauth = 1; break;
+        	case 'f': strncpy(file_prefix, optarg, PATH_MAX); file_prefix[PATH_MAX-1] = 0; break;
+        	case 'w': il_sock = strdup(optarg); break;
 		case '?': fprintf(stderr,"usage: %s: -Bb,val ... -Pplugin.so ...\n"
 					  "b is backend option\n",argv[0]);
 			  exit (1);
