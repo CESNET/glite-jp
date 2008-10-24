@@ -35,7 +35,7 @@ endif
 
 
 ifneq (${classads_prefix},/usr)
-        classadslib := -L${classads_prefix}/${archlib} -lclassad
+        classadslib := -L${classads_prefix}/${archlib} -L${classads_prefix}/lib -lclassad
 endif
 
 CLASSADPLUGIN_LIBS:= ${classadslib} -lstdc++ 
@@ -46,7 +46,7 @@ GLOBUS_CFLAGS:=-I${globus_prefix}/include/${nothrflavour}
 
 DEBUG:=-g -O0  -DDEBUG
 
-CFLAGS:=${DEBUG} -I. -I${top_srcdir}/src -I${gsoap_prefix}/include -I${gsoap_prefix} -I${stagedir}/include -I${classads_prefix}/include -I${libtar_prefix}/include ${GLOBUS_CFLAGS}
+CFLAGS:=${DEBUG} -I. -I${top_srcdir}/src -I${gsoap_prefix}/include -I${gsoap_prefix} -I${stagedir}/include -I${classads_prefix}/include -I${classads_prefix}/include/classad -I${libtar_prefix}/include ${GLOBUS_CFLAGS}
 # 3.1 CFLAGS:=${DEBUG} -I. -I${top_srcdir}/interface -I${top_srcdir}/src -I${gsoap_prefix}/include -I${gsoap_prefix} -I${stagedir}/include ${GLOBUS_CFLAGS} -I${mysql_prefix}/include -I${mysql_prefix}/include/mysql -I${classads_prefix}/include -I${libtar_prefix}/include
 
 LDFLAGS:=-L${stagedir}/lib
