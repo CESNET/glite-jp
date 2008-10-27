@@ -181,6 +181,7 @@ static int read_conf(glite_jp_is_conf *conf, char *conf_file)
                 return 1;
         }
 
+	memset(&soap, 0, sizeof(soap));
 	soap_init(&soap);
 	soap_set_namespaces(&soap, jp__namespaces);
 
