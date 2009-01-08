@@ -70,8 +70,12 @@ dotless_gsoap_ver:=${shell echo ${gsoap_default_version} | tr -d . }
 ifeq ($(shell test -f ${stagedir}/lib/libglite_security_gsoap_plugin_${dotless_gsoap_ver}_${nothrflavour}_c.la && echo ok),ok)
        langflavour:=_c
 endif
-# static linking for LB/JP compatibility from different glite releases
-GSOAPLIB:=-lglite_security_gsoap_plugin_${dotless_gsoap_ver}_${nothrflavour}${langflavour} -static
+GSOAPLIB:=-lglite_security_gsoap_plugin_${dotless_gsoap_ver}_${nothrflavour}${langflavour}
+# static linking may be useful for LB/JP compatibility from different glite
+# releases if we want to have the same prefix
+ifdef GSOAP_STATIC
+GSOAPLIB+=$(GSOAP_LIB) -static
+endif
 
 LBMAILDIRLIB:=-lglite_lbu_maildir
 
