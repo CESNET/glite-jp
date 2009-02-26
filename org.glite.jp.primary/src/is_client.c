@@ -247,7 +247,7 @@ static int check_other_soap(glite_jp_context_t ctx)
 			edg_wll_GssCred cred;
 
 			ret = edg_wll_gss_acquire_cred_gsi(server_cert, server_key, &cred, NULL);
-			glite_gsplugin_set_credential(plugin_ctx, cred);
+			glite_gsplugin_use_credential(plugin_ctx, cred);
 		}
 
 		ctx->other_soap = soap_new();

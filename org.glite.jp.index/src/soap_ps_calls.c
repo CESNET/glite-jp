@@ -66,7 +66,7 @@ static int refresh_gsoap(glite_jpis_context_t ctx, struct soap *soap) {
 
 	plugin_ctx = glite_gsplugin_get_context(soap);
 	glite_gsplugin_set_timeout(plugin_ctx, &to);
-	glite_gsplugin_set_credential(plugin_ctx, cred);
+	glite_gsplugin_use_credential(plugin_ctx, cred);
 
 	return 0;
 }

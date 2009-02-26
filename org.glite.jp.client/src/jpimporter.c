@@ -309,7 +309,7 @@ int main(int argc, char *argv[])
 	soap_set_namespaces(soap, jpps__namespaces);
 
 	glite_gsplugin_init_context(&plugin_ctx);
-	glite_gsplugin_set_credential(plugin_ctx, mycred);
+	glite_gsplugin_use_credential(plugin_ctx, mycred);
 	soap_register_plugin_arg(soap, glite_gsplugin,plugin_ctx);
 
 	if ( (reg_pid = slave(reg_importer, "reg-imp")) < 0 ) {
@@ -988,7 +988,7 @@ static int refresh_connection(struct soap *soap) {
 			dprintf("[%s] reloading credentials successful\n", name);
 			edg_wll_gss_release_cred(&mycred, &gss_code);
 			mycred = newcred;
-			glite_gsplugin_set_credential(gp_ctx, newcred);
+			glite_gsplugin_use_credential(gp_ctx, newcred);
 		} else { dprintf("[%s] reloading credentials failed, using old ones\n", name); }
 		break;
 	case -1: dprintf("[%s] edg_wll_gss_watch_creds failed\n", name); break;
