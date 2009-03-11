@@ -1,6 +1,0 @@
-JPPS_FUNCTIONS="
-config_host_certs
-config_edgusers
-config_globus_clients
-config_glite_jpps
-config_glite_initd"
